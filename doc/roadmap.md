@@ -1,0 +1,11 @@
+# Roadmap
+- Add a function to hack credit cards in addition to identity cards.
+- Include options to configure the mode in the sandbox menu.
+- Add a container for sending purchased items from the dark web, or a ticket (to consider).
+- Implement an interface to hack city CCTV for viewing zombies in specific areas.
+- Create an interface for trading goods like food and cigarettes in survival mode. No money? (to consider).
+- Add a contract interface for quests to earn money or goods.
+- Introduce an interface for purchasing cars.
+- Fix the ATM issue if the player has a "." in their name.
+- Include commissions for buying and selling actions in the trading interface.
+- Establish a link between contracts and trading actions; successful quests for a company could increase its value by 5%.
