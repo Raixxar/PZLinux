@@ -20,6 +20,12 @@ You can now engage in trading in-game by investing in fictional companies, givin
 [h2]Hacking:[/h2]
 Explore the hacking interface to try to hack bank accounts using ID cards found on zombies. Will you be able to decode the bank account codes?
 
+[h2]Contract:[/h2]
+Accept quests to earn even more money. Will you rise to the challenge?
+
+[h2]Request:[/h2]
+Spend your money to obtain useful items for your survival to live even longer.
+
 [h2]Enhanced Gameplay:[/h2]
 PZLinux not only adds depth to the economy but also enriches the gameplay experience. Explore the game's world with a new outlook, knowing that you might stumble upon hidden gems online! Don't miss out on money anymore; you can now profit from it to enhance your survival! Once found, deposit the money via an ATM into your bank account to make it available online
 

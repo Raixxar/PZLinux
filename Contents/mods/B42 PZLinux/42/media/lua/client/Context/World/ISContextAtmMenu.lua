@@ -464,7 +464,6 @@ function AtmMenu_AddContext(player, context, worldobjects)
 end
 
 function AtmMenu_OnUse(worldObject, player, x, y, z, sprite)
-    print(sprite)
     local playerSquare = getPlayer():getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
         local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)

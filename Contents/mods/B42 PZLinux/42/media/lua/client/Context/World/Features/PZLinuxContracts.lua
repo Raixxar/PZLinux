@@ -157,6 +157,7 @@ function contractsUI:initialise()
 
     local modData = getPlayer():getModData()
     if modData.PZLinuxActiveContract == 1 then
+        modData.PZLinuxOnZombieDead = modData.PZLinuxOnZombieDead or 0
         local logging = "\nZombie(s) killed during this contract: " .. modData.PZLinuxOnZombieDead
         self.activeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, "Contract already in progress" .. logging, 0, 1, 0, 1, UIFont.Small, true)
         self.activeContractMessage:setVisible(true)
@@ -186,7 +187,7 @@ function contractsUI:initialise()
         getHourTime = 168
     end
 
-    if (getHourTime - LAST_CONNECTION_TIME) > 168 then
+    if (getHourTime - LAST_CONNECTION_TIME) > 1 then
         shuffleTable(contracts)
         selectedContracts = {}
         local randCountContracts = ZombRand(1, 9)
@@ -353,6 +354,10 @@ function contractsUI:onContractId(contract)
             local modData = getPlayer():getModData()
             modData.PZLinuxOnZombieToKill = ZtoKill
 
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
@@ -363,65 +368,82 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = "Unknown: We are looking for a mercenary to clean the streets of our city."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for a mercenary to clean the streets of our city."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             typeText(self.typingMessage, "How many zombies do you need to kill ?", function()
-                message = message .. "\nYou: How many zombies do you need to kill ?"
+                message = message .. "\n" .. playerName .. "How many zombies do you need to kill ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": " .. modData.PZLinuxOnZombieToKill
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. modData.PZLinuxOnZombieToKill
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": $" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": " .. "Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
             self.yesButton.contractId = contract
@@ -429,7 +451,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -441,6 +463,10 @@ function contractsUI:onContractId(contract)
             local randomQuest = ZombRand(1, 6)
             local modData = getPlayer():getModData()
 
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
@@ -451,26 +477,32 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] .. ": We are looking for a courier to retrieve a package the town of\nRosewood."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for a courier to retrieve a package the town of\nRosewood."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "Where is the package exactly in Rosewood ?", function()
-                message = message .. "\nYou: Where is the package in Rosewood ?"
+                message = message .. "\n" .. playerName .. "Where is the package in Rosewood ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             local quests = {
                 [1] = { description = "In the police station, in a paper cabinet.", x = 8073, y = 11736, z = 0 },
@@ -482,64 +514,78 @@ function contractsUI:onContractId(contract)
 
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\nUnknown: " .. quest.description
+                message = message .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
             end
 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": $" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "How do I give you the package ?", function()
-                message = message .. "\nYou: How do I give you the package ?"
+                message = message .. "\n" .. playerName .. "How do I give you the package ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Put the package in a mailbox."
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -549,7 +595,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -561,6 +607,10 @@ function contractsUI:onContractId(contract)
             local randomQuest = ZombRand(1, 6)
             local modData = getPlayer():getModData()
 
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
@@ -571,26 +621,32 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] .. ": We are looking for someone for a simple race in the\ntown of March Ridge."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for someone for a simple race in the\ntown of March Ridge."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "Where is the package exactly in March Ridge ?", function()
-                message = message .. "\nYou: Where is the package exactly in March Ridge ?"
+                message = message .. "\n" .. playerName .. "Where is the package exactly in March Ridge ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             local quests = {
                 [1] = { description = "At the church, in a library.", x = 10322, y = 12800, z = 0 },
@@ -602,64 +658,78 @@ function contractsUI:onContractId(contract)
 
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\nUnknown: " .. quest.description
+                message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
             end
 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": " .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "How do I give you the package ?", function()
-                message = message .. "\nYou: How do I give you the package ?"
+                message = message .. "\n" .. playerName .. "How do I give you the package ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Put the package in a mailbox."
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -669,7 +739,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -680,6 +750,10 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local randomQuest = ZombRand(1, 6)
             local modData = getPlayer():getModData()
+
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
             
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
@@ -691,26 +765,32 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] .. ": We're looking for a brave person for simple missions at Muldraugh."
+            if self.isClosing then return end
+
+            message = sellerName .. "We're looking for a brave person for simple missions at Muldraugh."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "Where is the package in Muldraugh ?", function()
-                message = message .. "\nYou: Where is the package in Muldraugh ?"
+                message = message .. "\n" .. playerName .. "Where is the package in Muldraugh ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             local quests = {
                 [1] = { description = "At Jays Chicken, in a big trash outside.", x = 10627, y = 9564, z = 0 },
@@ -722,64 +802,78 @@ function contractsUI:onContractId(contract)
 
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\n" .. contractsCompanyCodes[contract] .. ": " .. quest.description
+                message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
             end
 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] ": $" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "How do I give you the package ?", function()
-                message = message .. "\nYou: How do I give you the package ?"
+                message = message .. "\n" .. playerName .. "How do I give you the package ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Put the package in a mailbox."
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -789,7 +883,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -801,6 +895,10 @@ function contractsUI:onContractId(contract)
             local randomQuest = ZombRand(1, 11)
             local modData = getPlayer():getModData()
 
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
@@ -811,26 +909,32 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] .. ": We are seeking soldiers for a retrieval mission in Louisville."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are seeking soldiers for a retrieval mission in Louisville."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "Where is the package in Louisville ?", function()
-                message = message .. "\nYou: Where is the package in Louisville ?"
+                message = message .. "\n" .. playerName .. "Where is the package in Louisville ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             local quests = {
                 [1]  = { description = "In the repurposed building, in a box.", x = 12436, y = 1420, z = 0 },
@@ -847,64 +951,79 @@ function contractsUI:onContractId(contract)
             
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\n" .. contractsCompanyCodes[contract] .. ": " .. quest.description
+                message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
             end
 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": $" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "How do I give you the package ?", function()
-                message = message .. "\nYou: How do I give you the package ?"
+                message = message .. "\n" .. playerName .. "How do I give you the package ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Put the package in a mailbox."
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+
+            message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -914,7 +1033,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -925,6 +1044,10 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local randomQuest = ZombRand(1, 11)
             local modData = getPlayer():getModData()
+
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
             
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
@@ -936,26 +1059,32 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] ": We are looking for a hunter."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for a hunter."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "Who is the target ?", function()
-                message = message .. "\nYou: Who is the target ?"
+                message = message .. "\n" .. playerName .. "Who is the target ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             local firstNameId = ZombRand(1, 101)
             local lastNameId = ZombRand(1, 101)
@@ -1062,27 +1191,32 @@ function contractsUI:onContractId(contract)
                 { id = 100, first = "Katherine", last = "Foster" },
             }
 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             local targetName = names[firstNameId].first .. " " .. names[lastNameId].last
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": The target is " .. targetName
+            message = message .. "\n" .. sellerName .. "The target is " .. targetName
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
+            if self.isClosing then return end
+
             typeText(self.typingMessage, "How do I find my target ?", function()
-                message = message .. "\nYou: How do I find my target ?"
+                message = message .. "\n" .. playerName .. "How do I find my target ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             local quests = {
                 [1] = { description = "The target was last seen at Rosewood police station.", x = 8061, y = 11725, z = 0 },
@@ -1099,62 +1233,77 @@ function contractsUI:onContractId(contract)
             
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\n" .. contractsCompanyCodes[contract] .. ": " .. quest.description
+                message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = tonumber(quest.x)
                 modData.PZLinuxContractLocationY = tonumber(quest.y)
                 modData.PZLinuxContractLocationZ = tonumber(quest.z)
             end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": $" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             typeText(self.typingMessage, "How can I prove to you that he is dead ?", function()
-                message = message .. "\nYou: How can I prove to you that he is dead ?"
+                message = message .. "\n" .. playerName .. "How can I prove to you that he is dead ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Send us the corpse, or what remains of it, with a mailbox."
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Send us the corpse, or what remains of it, with a mailbox."
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -1164,7 +1313,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -1175,6 +1324,10 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
             local message = ""
@@ -1185,45 +1338,57 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] .. ": We are looking for blood analyses of zombies."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for blood analyses of zombies."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": $" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
             self.yesButton.contractId = contract
@@ -1231,7 +1396,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -1242,6 +1407,10 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
             local message = ""
@@ -1252,26 +1421,32 @@ function contractsUI:onContractId(contract)
                 elapsed = elapsed + 0.016
             end
 
-            message = contractsCompanyCodes[contract] .. ": We are looking for someone to find auto parts for us."
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for someone to find auto parts for us."
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "Which auto parts do you need ?", function()
-                message = message .. "\nYou: Which auto parts do you need ?"
+                message = message .. "\n" .. playerName .. "Which auto parts do you need ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             local quests = {
                 [1] = { baseName = "Base.CarBattery3", name = "Sport Battery" },
@@ -1283,48 +1458,60 @@ function contractsUI:onContractId(contract)
             local randomQuest = ZombRand(1, 5)
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\n" .. contractsCompanyCodes[contract] .. ": ".. quest.name
+                message = message .. "\n" .. sellerName .. quest.name
                 modData.PZLinuxContractInfo = quest.baseName
             end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
             
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
             
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\nYou: What is the reward for this mission ?"
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": $" .. modData.PZLinuxOnReward 
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
 
-            message = message .. "\n" .. contractsCompanyCodes[contract] .. ": Do you accept the contract ?"
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(5, 15) do
+            while elapsed < ZombRand(25, 50) do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
+
+            if self.isClosing then return end
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
             self.yesButton.contractId = contract
@@ -1332,7 +1519,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
             
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
@@ -1385,10 +1572,16 @@ function contractsUI:onStop(button)
 end
 
 -- LOGOUT
-function contractsUI:onMinimize(button)
+function contractsUI:onMinimizeBack(button)
     self.isClosing = true
     self:removeFromUIManager()
     contractsMenu_ShowUI(player)
+end
+
+function contractsUI:onMinimize(button)
+    self.isClosing = true
+    self:removeFromUIManager()
+    linuxMenu_ShowUI(player)
 end
 
 -- CLOSE

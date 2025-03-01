@@ -5,19 +5,22 @@ requestUI = ISPanel:derive("requestUI")
 
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
+local PZLinuxOnItemRequest = ""
+local PZLinuxOnItemRequestCount = 0
 
 local requests = {
-    [1] = { baseName = "Canned food", price = 1000 },
-    [2] = { baseName = "Protein", price = 2000 },
-    [3] = { baseName = "Seafood", price = 2000 },
-    [4] = { baseName = "Fruits", price = 4000 },
-    [5] = { baseName = "Vegetables", price = 4000 },
-    [6] = { baseName = "Pickled food", price = 5000 },
-    [7] = { baseName = "Drink", price = 5000 },
+    [1] = { baseName = "Canned food", price = 50 },
+    [2] = { baseName = "Meat", price = 80 },
+    [3] = { baseName = "Fish", price = 1200 },
+    [4] = { baseName = "Fruits", price = 60 },
+    [5] = { baseName = "Vegetables", price = 60 },
+    [6] = { baseName = "Pickled food", price = 70 },
+    [7] = { baseName = "Drink", price = 30 },
+    [8] = { baseName = "Book", price = 150 }
 }
 
 local contracts = {}
-for i = 1, 7 do
+for i = 1, 8 do
     local getHourTimePriceValue = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)   
     itemName = requests[i].baseName
     itemPrice = math.ceil(ZombRand(requests[i].price, requests[i].price * getHourTimePriceValue)/10)*10
@@ -177,90 +180,241 @@ function requestUI:onContractId(contract)
         local modData = getPlayer():getModData()
         local message = ""
 
-        message = "Waiting for a seller..."
+        message = "You are alone in this IRC channel."
         self.loadingMessage:setName(message)
 
         local elapsed = 0
-        while elapsed < ZombRand(20, 100) do
+        while elapsed < ZombRand(50, 100) do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
 
-        message = "User Unknown has connected to the room."
+        if self.isClosing then return end
+
+        local globalVolume = getCore():getOptionSoundVolume() / 10
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        local sellerName = generateUsername()
+        local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+
+        message = "New user " .. sellerName .. " has joined the channel."
         self.loadingMessage:setName(message)
+        sellerName = "<" .. sellerName .. "> "
 
         local elapsed = 0
-        while elapsed < ZombRand(10, 50) do
+        while elapsed < ZombRand(25, 50) do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
 
-        message = "Unknown: Are you looking for " .. contracts[contract].name .. " ?"
+        if self.isClosing then return end
+
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        message = sellerName .. "Are you looking for " .. contracts[contract].name .. " ?"
         self.loadingMessage:setName(message)
         
         local elapsed = 0
-        while elapsed < ZombRand(5, 25) do
+        while elapsed < ZombRand(25, 50) do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
 
+        if self.isClosing then return end
+
         typeText(self.typingMessage, "Yes, do you have any for sale ?", function()
-            message = message .. "\nYou: Yes, do you have any for sale ?"
+            message = message .. "\n" .. playerName .. "Yes, do you have any for sale ?"
             self.loadingMessage:setName(message)
             self.typingMessage:setName("")
         end)
         
         local elapsed = 0
-        while elapsed < ZombRand(5, 25) do
+        while elapsed < ZombRand(25, 50) do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
 
+        if self.isClosing then return end
+
         local quests = {}
-        if contract == 1 then
+        if contract == 1 then -- Canned food
             quests = {
-                [1] = { baseName = "Base.TinnedBeans" },
-                [2] = { baseName = "Base.CannedCarrots2" },
-                [3] = { baseName = "Base.CannedChili" },
-                [4] = { baseName = "Base.CannedCorn" },
+                [1] = { baseName = "Base.TinnedBeans", weight = 1 },
+                [2] = { baseName = "Base.CannedCarrots2", weight = 1 },
+                [3] = { baseName = "Base.CannedChili", weight = 1 },
+                [4] = { baseName = "Base.CannedCorn", weight = 1 },
+                [5] = { baseName = "Base.CannedCornedBeef", weight = 1 },
+                [6] = { baseName = "Base.CannedMushroomSoup", weight = 1 },
+                [7] = { baseName = "Base.CannedPeaches", weight = 1 },
+                [8] = { baseName = "Base.CannedPeas", weight = 1 },
+                [9] = { baseName = "Base.CannedPineapple", weight = 1 },
+                [10] = { baseName = "Base.CannedPotato2", weight = 1 },
+                [11] = { baseName = "Base.CannedSardines", weight = 1 },
+                [12] = { baseName = "Base.TinnedSoup", weight = 1 },
+                [13] = { baseName = "Base.CannedBolognese", weight = 1 },
+                [14] = { baseName = "Base.CannedTomato2", weight = 1 },
+                [15] = { baseName = "Base.TunaTin", weight = 3 },
+                [16] = { baseName = "Base.Dogfood", weight = 1 },
+                [17] = { baseName = "Base.CannedMilk", weight = 1 },
+                [18] = { baseName = "Base.CannedFruitBeverage", weight = 1 }
+            }
+        end
+
+        if contract == 2 then -- Protein
+            quests = {
+                [1] = { baseName = "Base.Baloney", weight = 5 },
+                [2] = { baseName = "Base.Chicken", weight = 3 },
+                [3] = { baseName = "Base.Ham", weight = 1 },
+                [4] = { baseName = "Base.MincedMeat", weight = 3 },
+                [5] = { baseName = "Base.MuttonChop", weight = 3 },
+                [6] = { baseName = "Base.PorkChop", weight = 3 },
+                [7] = { baseName = "Base.Salami", weight = 10 },
+                [8] = { baseName = "Base.Sausage", weight = 10 },
+                [9] = { baseName = "Base.Steak", weight = 3 }
+            }
+        end
+
+        if contract == 3 then -- Seafood
+            quests = {
+                [1] = { basaName = "Base.RedearSunfish", weight = 0.1 },
+                [2] = { baseName = "Base.Paddlefish", weight = 0.1 },
+                [3] = { baseName = "Base.GreenSumfish", weight = 0.1 },
+                [4] = { baseName = "Base.FlatheadCatfish", weight = 0.1 },
+                [5] = { baseName = "Base.ChannelCatfish", weight = 0.1 },
+                [6] = { baseName = "Base.BlueCatfish", weight = 0.1 },
+                [8] = { baseName = "Base.BlackCrappie", weight = 0.1 },
+                [8] = { baseName = "Base.Bluegill", weight = 0.1 },
+                [8] = { baseName = "Base.Shrimp", weight = 0.1 },
+                [8] = { baseName = "Base.FreshwaterDrum", weight = 0.1 },
+                [8] = { baseName = "Base.Muskellunge", weight = 0.1 },
+                [8] = { baseName = "Base.SmallmouthBass", weight = 0.1 },
+                [8] = { baseName = "Base.StripedBass", weight = 0.1 },
+                [8] = { baseName = "Base.WhiteBass", weight = 0.1 },
+                [8] = { baseName = "Base.YellowPerch", weight = 0.1 },
+            }
+        end
+
+        if contract == 4 then -- fruits
+            quests = {
+               [1] = { baseName = "Base.Apple", weight = 5 },
+               [2] = { baseName = "Base.Banana", weight = 5 },
+               [3] = { baseName = "Base.BerryBlack", weight = 10 },
+               [4] = { baseName = "Base.BerryBlue", weight = 10 },
+               [5] = { baseName = "Base.Cherry", weight = 3 },
+               [6] = { baseName = "Base.Grapes", weight = 5 },
+               [7] = { baseName = "Base.Lemon", weight = 5 },
+               [8] = { baseName = "Base.Lime", weight = 5 },
+               [9] = { baseName = "Base.Mango", weight = 3 },
+               [10] = { baseName = "Base.Orange", weight = 5 },
+               [11] = { baseName = "Base.Peach", weight = 5 },
+               [12] = { baseName = "Base.Pear", weight = 5 },
+               [13] = { baseName = "Base.Pineapple", weight = 3 },
+               [14] = { baseName = "Base.Watermelon", weight = 3 },
             }
         end
         
+        if contract == 5 then -- Vegetables
+            quests = {
+                [1] = { baseName = "Base.Avocado", weight = 3 },
+                [2] = { baseName = "Base.BellPepper", weight = 5 },
+                [3] = { baseName = "Base.Blackbeans", weight = 10 },
+                [4] = { baseName = "Base.Broccoli", weight = 5 },
+                [5] = { baseName = "Base.Carrots", weight = 5 },
+                [6] = { baseName = "Base.Corn", weight = 5 },
+                [7] = { baseName = "Base.Daikon", weight = 5 },
+                [8] = { baseName = "Base.Edamame", weight = 10 },
+                [9] = { baseName = "Base.Eggplant", weight = 5 },
+                [10] = { baseName = "Base.PepperHabanero", weight = 10 },
+                [11] = { baseName = "Base.PepperJalapeno", weight = 10 },
+                [12] = { baseName = "Base.Leek", weight = 5 },
+                [13] = { baseName = "Base.Lettuce", weight = 1 },
+                [14] = { baseName = "Base.Onion", weight = 5 },
+                [15] = { baseName = "Base.Pickles", weight = 10 },
+                [16] = { baseName = "Base.Pumpkin", weight = 1 },
+                [17] = { baseName = "Base.Zucchini", weight = 3 },
+            }
+        end
+
+        if contract == 6 then  -- Pickled food
+            quests = {
+                [1] = { baseName = "Base.CannedBellPepper", weight = 2 },
+                [2] = { baseName = "Base.CannedBroccoli", weight = 2 },
+                [3] = { baseName = "Base.CannedCabbage", weight = 2 },
+                [4] = { baseName = "Base.CannedCarrots", weight = 2 },
+                [5] = { baseName = "Base.CannedEggplant", weight = 2 },
+                [6] = { baseName = "Base.CannedLeek", weight = 2 },
+                [7] = { baseName = "Base.CannedPotato", weight = 2 },
+                [8] = { baseName = "Base.CannedRedRadish", weight = 2 },
+                [9] = { baseName = "Base.CannedTomato", weight = 2 },
+            }
+        end
+
+        if contract == 7 then  -- Drink
+            quests = {
+                [1] = { baseName = "Base.JuiceBox", weight = 1 },
+                [2] = { baseName = "Base.Milk", weight = 1 },
+                [3] = { baseName = "Base.PopBottle", weight = 1 },
+                [4] = { baseName = "Base.Pop2", weight = 1 },
+                [5] = { baseName = "Base.Pop", weight = 1 },
+                [6] = { baseName = "Base.Pop3", weight = 1 },
+            }
+        end
+
+        if contract == 8 then  -- Book
+            quests = {
+                [1] = { baseName = "Base.Book", weight = 1 },
+                [2] = { baseName = "Base.Magazine", weight = 2 },
+            }
+        end
+
         local randomQuest = ZombRand(1, #quests + 1)
         local quest = quests[randomQuest]
+        local deltaWeight = 1
+
         if quest then
-            modData.PZLinuxOnItemRequest = quest.baseName
-            print(modData.PZLinuxOnItemRequest)
+            PZLinuxOnItemRequest = quest.baseName
+            deltaWeight = quest.weight
         end
-        
-        modData.PZLinuxOnItemRequestCount = ZombRand(5, 10)
-        message = message .. "\nUnknown: Yes, I can sell you " .. modData.PZLinuxOnItemRequestCount .. " for $" .. contracts[contract].price .. " each."
+
+        PZLinuxOnItemRequestCount = math.ceil(ZombRand(5, 10) * deltaWeight)
+        local checkProduceName = getScriptManager():FindItem(PZLinuxOnItemRequest)
+        local produceNameValide = checkProduceName and checkProduceName:getDisplayName() and checkProduceName:getDisplayName():match("%S")
+
+        if produceNameValide then
+            produceName = checkProduceName:getDisplayName()
+        else    
+            produceName = contracts[contract].name
+        end
+
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        message = message .. "\n" .. sellerName .. "Yes, I have ".. PZLinuxOnItemRequestCount .. " " .. produceName .. " for $" .. contracts[contract].price .. " each."
         self.loadingMessage:setName(message)
 
         local elapsed = 0
-        while elapsed < ZombRand(5, 25) do
+        while elapsed < ZombRand(25, 50) do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
 
-        message = message .. "\nUnknown: Do you want to buy ?"
+        if self.isClosing then return end
+
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        message = message .. "\n" .. sellerName .. "Do you want to buy ?"
         self.loadingMessage:setName(message)
 
-        local elapsed = 0
-        while elapsed < ZombRand(5, 25) do
-            coroutine.yield()
-            elapsed = elapsed + 0.016
+        message = message .. "\n\nTOTAL: $" .. PZLinuxOnItemRequestCount * contracts[contract].price
+        self.loadingMessage:setName(message)
+
+        local playerBalance = loadAtmBalance()
+        local noButton = "No"
+        if playerBalance < PZLinuxOnItemRequestCount * contracts[contract].price then
+            noButton = "Not enough money"
+        else
+            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+            self.yesButton.id = contract
+            self.yesButton:initialise()
+            self.yesButton:instantiate()
+            self.topBar:addChild(self.yesButton)
         end
-
-        message = message .. "\n\nTOTAL: $" .. modData.PZLinuxOnItemRequestCount * contracts[contract].price
-        self.loadingMessage:setName(message)
-
-        self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
-        self.yesButton:initialise()
-        self.yesButton:instantiate()
-        self.topBar:addChild(self.yesButton)
-        
-        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimize)
+        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, noButton, self, self.onMinimizeBack)
         self.noButton:initialise()
         self.noButton:instantiate()
         self.topBar:addChild(self.noButton)
@@ -281,6 +435,31 @@ end
 function requestUI:onYesButton(button)
     local modData = getPlayer():getModData()
     modData.PZLinuxActiveRequest = 1
+
+    local playerBalance = loadAtmBalance()
+    local newBalance = playerBalance - (PZLinuxOnItemRequestCount * contracts[button.id].price)
+    saveAtmBalance(newBalance)
+    self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
+
+    if type(modData.PZLinuxOnItemRequest) ~= "table" then
+        modData.PZLinuxOnItemRequest = {}
+    end
+
+    if type(modData.PZLinuxOnItemRequestCount) ~= "table" then
+        modData.PZLinuxOnItemRequestCount = {}
+    end
+
+    while #modData.PZLinuxOnItemRequest ~= #modData.PZLinuxOnItemRequestCount do
+        if #modData.PZLinuxOnItemRequest > #modData.PZLinuxOnItemRequestCount then
+            table.remove(modData.PZLinuxOnItemRequest, 1)
+        elseif #modData.PZLinuxOnItemRequest < #modData.PZLinuxOnItemRequestCount then
+            table.remove(modData.PZLinuxOnItemRequestCount, 1)
+        end
+    end
+
+    table.insert(modData.PZLinuxOnItemRequest, PZLinuxOnItemRequest)
+    table.insert(modData.PZLinuxOnItemRequestCount, PZLinuxOnItemRequestCount)
+    
     self.isClosing = true
     self:removeFromUIManager()
     requestMenu_ShowUI(player)
@@ -294,6 +473,12 @@ end
 
 -- LOGOUT
 function requestUI:onMinimize(button)
+    self.isClosing = true
+    self:removeFromUIManager()
+    linuxMenu_ShowUI(player)
+end
+
+function requestUI:onMinimizeBack(button)
     self.isClosing = true
     self:removeFromUIManager()
     requestMenu_ShowUI(player)

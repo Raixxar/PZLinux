@@ -1,7 +1,5 @@
-- Clean a building or area
-- List of items to send
-- Ability to buy canned goods and survival-related items
-- Ability to purchase cars."
+- Contract Clean a building or area
+- Ability to purchase cars.
 
 # Update v.0.1.8
 - All values are now integrated into ModData. the PZLinux.ini file is no longer used.
@@ -18,7 +16,10 @@
 - Fixed an issue where mailboxes could be opened remotely.
 - Fixed an issue where the ATM could be opened remotely.
 - The value of purchases is now indexed to the world's time. The longer survival lasts, the more expensive prices become.
-
+- You can now make requests on IRC to purchase canned goods, fish, books, fruits, meats, and vegetables.
+- Added a notification sound for new messages on IRC
+- Price balancing on the dark web. With contracts, selling prices are adjusted downward to balance the mod.
+  
 # Update v.0.1.7-rc1
 - Fix the issue where the mailbox interface was not available based on the mailbox direction.
 

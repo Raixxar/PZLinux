@@ -111,11 +111,18 @@ function MailBoxUI:onSendTakePackage()
 
     local modData = getPlayer():getModData()
     if modData.PZLinuxActiveRequest == 1 then
-        local inv = getPlayer():getInventory()
-        local parcel = inv:AddItem('Base.Parcel_Large')
-        local parcelInv = parcel:getInventory()
-        for i = 1, modData.PZLinuxOnItemRequestCount do
-            parcelInv:AddItem(modData.PZLinuxOnItemRequest)
+        while #modData.PZLinuxOnItemRequest > 0 do
+            local inv = getPlayer():getInventory()
+            local parcel = inv:AddItem('Base.Parcel_Large')
+            local parcelInv = parcel:getInventory()
+            local itemName = modData.PZLinuxOnItemRequest[1]
+            local itemCount = modData.PZLinuxOnItemRequestCount[1]
+            print("debug", itemName, itemCount)
+            for i = 1, itemCount do
+                parcelInv:AddItem(itemName)
+            end
+            table.remove(modData.PZLinuxOnItemRequest, 1)
+            table.remove(modData.PZLinuxOnItemRequestCount, 1)
         end
         modData.PZLinuxActiveRequest = 0
     end

@@ -168,5 +168,13 @@ module Base
 			file = media/sound/blood.ogg,
 		}
 	}
+	sound ircNotification
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/ircNotification.ogg,
+		}
+	}
 }
 

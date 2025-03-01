@@ -1,5 +1,6 @@
 local function OnZombieDead(zombie)
     local modData = getPlayer():getModData()
+    modData.PZLinuxOnZombieDead = modData.PZLinuxOnZombieDead or 0
     modData.PZLinuxOnZombieDead = modData.PZLinuxOnZombieDead + 1
     if modData.PZLinuxContractKillZombie == 1 then
         if modData.PZLinuxOnZombieDead >= modData.PZLinuxOnZombieToKill then

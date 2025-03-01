@@ -74,7 +74,7 @@ function linuxUI:initialise()
     self.topBar:addChild(self.bootOutput)
 
     -- PROMPT CLI
-    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux v.0.1.7-rc1.", 0, 1, 0, 1, UIFont.Small, true)
+    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux v.0.1.8.", 0, 1, 0, 1, UIFont.Small, true)
     self.promptLabel:setVisible(false)
     self.promptLabel:initialise()
     self.topBar:addChild(self.promptLabel)
@@ -166,7 +166,7 @@ function linuxUI:onBoot()
     local globalVolume = getCore():getOptionSoundVolume() / 10
     getSoundManager():PlayWorldSound("computerBoot", false, player:getSquare(), 0, 100, 1, true):setVolume(globalVolume)
     self.bootMessages = {
-        "<RGB:0,1,0>PZLinux version v.0.1.7-rc1 (POSIX compliant)",
+        "<RGB:0,1,0>PZLinux version v.0.1.8 (POSIX compliant)",
         "Copyright (c) 1991 The PZLinux Project",
         "The Regents of the University of Louisville, Kentucky, USA",
         "",
@@ -211,7 +211,7 @@ function linuxUI:onBoot()
         "Starting network services: inetd, named",
         "Starting virtual terminals: tty1 tty2 tty3 tty4",
         "",
-        "PZLinux v.0.1.7-rc1 (tty1)</RGB>"
+        "PZLinux v.0.1.8 (tty1)</RGB>"
     }
 
     self.terminalCoroutine = coroutine.create(function()

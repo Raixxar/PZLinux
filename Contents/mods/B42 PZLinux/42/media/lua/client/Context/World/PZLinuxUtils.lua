@@ -38,3 +38,31 @@ function getAdjacentFreeSquare(x, y, z, sprite)
     end
     return nil
 end
+
+function reverseString(str)
+    return str:reverse()
+end
+
+function generatePseudo(playerName)
+    local reversedName = reverseString(playerName)
+    local position = 3
+
+    if #reversedName > position then
+        local symbol = "_"
+        reversedName = reversedName:sub(1, position) .. symbol .. reversedName:sub(position + 1)
+    end
+
+    return "<" .. reversedName .. "> "
+end
+
+function generateUsername()
+    local prefixes = {"Xx", "Dark", "Neo", "Cyber", "Red", "Blue", "Fire", "Frost", "Shadow", "Ghost"}
+    local suffixes = {"99", "77", "Pro", "X", "V2", "Elite", "Bot", "Z", "Master", "King"}
+    local middle = {"_", ".", ""}
+
+    local name = prefixes[ZombRand(1, #prefixes + 1)] ..
+                 middle[ZombRand(1, #middle + 1)] ..
+                 suffixes[ZombRand(1, #suffixes + 1)]
+    
+    return name
+end
