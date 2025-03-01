@@ -144,4 +144,29 @@ module Base
 			file = media/sound/atmBip.ogg,
 		}
 	}
+	sound decapitate
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/decapitate.ogg,
+		}
+	}
+	sound openCloseCabinet
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/openCloseCabinet.ogg,
+		}
+	}
+	sound blood
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/blood.ogg,
+		}
+	}
 }
+

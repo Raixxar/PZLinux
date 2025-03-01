@@ -11,16 +11,16 @@ local tradingCompanyName = {
     { name = "Walker & Crawler", code = "WC", price = 1300 },
     { name = "Survival Solutions Inc", code = "SSI", price = 1200 },
     { name = "Reclaim Resources Ltd", code = "RRL", price = 1110 },
-    { name = "Brain Buffet Times", code = "BBT", price = 1000 },
+    { name = "Brain Beers Times", code = "BBT", price = 1000 },
     { name = "Zom Bin", code = "ZB", price = 950 },
     { name = "Endurance Equipments", code = "EE", price = 850 },
     { name = "Grinning Grim Goods", code = "GGG", price = 610 },
-    { name = "Couch Co-op", code = "CCO", price = 580 },
+    { name = "Country Court Outlaw", code = "CCO", price = 580 },
     { name = "ZomboTrade Co", code = "ZTC", price = 560 },
     { name = "COVID Pop Ltd", code = "CPL", price = 500 },
     { name = "Gorrest Fump", code = "GF", price = 450 },
     { name = "Phoenix Resupply Corp", code = "PRC", price = 350 },
-    { name = "Haven Supply Co", code = "HSC", price = 260 },
+    { name = "Heaven Saint Christ", code = "HSC", price = 260 },
     { name = "28 Ways to Stay Safe", code = "WSS", price = 245 },
     { name = "The Hunger Z", code = "THZ", price = 235 },
     { name = "Zombie of the rings", code = "ZOR", price = 220 },
@@ -118,6 +118,9 @@ function tradingUI:initialise()
 
     function self.topBar:onMouseUp(x, y)
         self.parent.isDragging = false
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIX = self.parent:getX()
+        modData.PZLinuxUIY = self.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
@@ -135,17 +138,26 @@ function tradingUI:initialise()
     self.topBar:addChild(self.titleLabel)
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
-    self.minimizeButton:setVisible(false)
+    self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
     self.minimizeTradingButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimizeTrading)
+    self.minimizeTradingButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeTradingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeTradingButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.minimizeTradingButton:setVisible(false)
     self.minimizeTradingButton:initialise()
     self.topBar:addChild(self.minimizeTradingButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
-    self.closeButton:setVisible(false)
+    self.closeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 end
@@ -158,7 +170,6 @@ function tradingUI:startTrading()
 
     local y = 0
     self.tradingButtons = {}
-    local prices = self.loadModFile() or {}
 
     local scrollPanel = ISScrollingListBox:new(self.width * 0.15, self.height * 0.25, self.width * 0.65, self.height * 0.46)
     scrollPanel.backgroundColor = {r=0, g=0, b=0, a=1}
@@ -224,9 +235,18 @@ function tradingUI:startTrading()
         infoButton:initialise()
 
         -- % PRICE
-        local priceHistory = prices[company.code] or {}
+
+        local dataName = "PZLinuxTrading" .. company.code
+
+        if isServer() then
+            ModData.transmit(dataName)
+        end
+        
+        local companyData = ModData.getOrCreate(dataName)
+        local priceHistory = companyData.dataName or {}
         local firstPrice = priceHistory[24]
-        local lastPrice = priceHistory[48]
+        local lastIndex = #priceHistory
+        local lastPrice = priceHistory[lastIndex]
         local secondLastPrice = priceHistory[47]
 
         -- H1
@@ -264,9 +284,16 @@ function tradingUI:startTrading()
 end
 
 function tradingUI:showCompanyInfo(code, name)
-    local prices = self.loadModFile() or {}
-    local priceHistory = prices[code] or {}
-    local lastPrice = priceHistory[48]
+    local dataName = "PZLinuxTrading" .. code
+
+    if isServer() then
+        ModData.transmit(dataName)
+    end
+    
+    local companyData = ModData.getOrCreate(dataName)
+    local priceHistory = companyData.dataName or {}
+    local lastIndex = #priceHistory
+    local lastPrice = priceHistory[lastIndex]
 
     self.closeButton:setVisible(true)
     self.minimizeTradingButton:setVisible(true)
@@ -327,28 +354,9 @@ function tradingUI:showCompanyInfo(code, name)
     end
     self.topBar:addChild(candlestickChart)
 
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
-    local lines = {}
-    local totalTokenQuantity = 0
-
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-            table.insert(lines, line)
-        else 
-            if section == "tradingPlayer" then
-                local tokenPlayer, tokenCode, tokenQuantity = line:match("^(%w+)=([%w]+),(%d+)")
-                if tokenCode == code and tokenPlayer == getSpecificPlayer(0):getUsername() then
-                    totalTokenQuantity = tokenQuantity
-                end
-            end
-        end
-        line = file:readLine()
-    end
-    file:close()
+    local player = getPlayer()
+    local playerWallet = "ZLinuxPlayerWallet" .. code
+    local totalTokenQuantity = player:getModData()[playerWallet] or 0
 
     self.tradingBalanceLabel = ISLabel:new(self.width * 0.20, self.height * 0.21, self.height * 0.025, "Account Balance $"  .. tostring(loadAtmBalance()), 0, 1, 0, 1, UIFont.Small, true)
     self.tradingBalanceLabel.backgroundColor = {r=0, g=0, b=0, a=0}
@@ -394,51 +402,23 @@ function tradingUI:showCompanyInfo(code, name)
 end
 
 function tradingUI:onTradingSold(code, lastPrice, quantityTrading)
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
-    local lines = {}
+    local player = getPlayer()
+    local playerWallet = "ZLinuxPlayerWallet" .. code
+    local totalTokenQuantity = player:getModData()[playerWallet] or 0
+    local newQuantity = tonumber(totalTokenQuantity) - tonumber(quantityTrading)
 
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-            table.insert(lines, line)
-        else 
-            if section == "tradingPlayer" then
-                local tokenPlayer, tokenCode, tokenQuantity = line:match("^(%w+)=([%w]+),(%d+)")
-                if tokenCode == code and tokenPlayer == getSpecificPlayer(0):getUsername() then
-                    local newQuantity = tonumber(tokenQuantity) - tonumber(quantityTrading)
-                    if newQuantity >= 0 then
-                        table.insert(lines, tokenPlayer .. "=" .. tokenCode .. "," .. newQuantity)
+    if newQuantity >= 0 then
+        local balance = tonumber(loadAtmBalance())
+        lastPrice = tonumber(lastPrice) * tonumber(quantityTrading)
+        local newBalance = balance + lastPrice
+        saveAtmBalance(newBalance)
+        self.tradingBalanceLabel:setName("Account Balance $" .. tostring(newBalance))
 
-                        local balance = tonumber(loadAtmBalance())
-                        lastPrice = tonumber(lastPrice) * tonumber(quantityTrading)
-                        local newBalance = balance + lastPrice
-                        saveAtmBalance(newBalance)
-                        self.tradingBalanceLabel:setName("Account Balance $" .. tostring(newBalance))
-                        self.tradingWalletLabel:setName("Wallet Balance " .. newQuantity .. " " .. tokenCode)
-                    end
-                else
-                    table.insert(lines, line)
-                end
-            else
-                table.insert(lines, line)
-            end
-        end
-        line = file:readLine()
-    end
-    file:close()
+        player:getModData()[playerWallet] = newQuantity
+        self.tradingWalletLabel:setName("Wallet Balance " .. newQuantity .. " " .. code)
 
-    if lines then
-        local fileSave = getFileWriter(fileName, false, false)
-        for _, line in ipairs(lines) do
-            fileSave:write(line .. "\n")
-        end
-        fileSave:close()
     end
 end
-    
 
 function tradingUI:onTradingBuy(code, lastPrice, quantityTrading)
     local balance = tonumber(loadAtmBalance())
@@ -450,146 +430,60 @@ function tradingUI:onTradingBuy(code, lastPrice, quantityTrading)
     saveAtmBalance(newBalance)
     self.tradingBalanceLabel:setName("Account Balance $" .. tostring(newBalance))
 
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
-    local lines = {}
-
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-            table.insert(lines, line)
-        else 
-            if section == "tradingPlayer" then
-                local tokenPlayer, tokenCode, tokenQuantity = line:match("^(%w+)=([%w]+),(%d+)")
-                if tokenCode == code and tokenPlayer == getSpecificPlayer(0):getUsername() then
-                    local newQuantity = tonumber(tokenQuantity) + tonumber(quantityTrading)
-                    table.insert(lines, tokenPlayer .. "=" .. tokenCode .. "," .. newQuantity)
-                    self.tradingWalletLabel:setName("Wallet Balance " .. newQuantity .. " " .. tokenCode)
-                else
-                    table.insert(lines, line)
-                end
-            else
-                table.insert(lines, line)
-            end
-        end
-        line = file:readLine()
-    end
-    file:close()
-
-    local codeFound = false
-    for _, line in ipairs(lines) do
-        if line:match("^" .. getSpecificPlayer(0):getUsername() .. "=" .. code .. ",") then
-            codeFound = true
-            break
-        end
-    end
-    if not codeFound then
-        table.insert(lines, getSpecificPlayer(0):getUsername() .. "=" .. code .. "," .. quantityTrading)
-        self.tradingWalletLabel:setName("Wallet Balance " .. quantityTrading .. " " .. code)
-    end
-
-    if lines then
-        local fileSave = getFileWriter(fileName, false, false)
-        for _, line in ipairs(lines) do
-            fileSave:write(line .. "\n")
-        end
-        fileSave:close()
-    end
+    local player = getPlayer()
+    local playerWallet = "ZLinuxPlayerWallet" .. code
+    local totalTokenQuantity = tonumber(player:getModData()[playerWallet] or 0)
+    local quantity = tonumber(quantityTrading)
+    player:getModData()[playerWallet] = totalTokenQuantity + quantity
 end
 
 function PZLinuxUpdateTradingPrices()
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
-    local lines = {}
-
     for _, company in ipairs(tradingCompanyName) do
+        local dataName = "PZLinuxTrading" .. company.code
+        local companyData = ModData.getOrCreate(dataName)
+        local priceHistory = companyData.dataName or {}
+        local lastIndex = #priceHistory
+        local lastPrice = priceHistory[lastIndex]
+
         local direction = ZombRand(1, 4)
         if direction == 1 then
-            company.price = ZombRand(math.max(1, company.price - company.price * 5 / 100), company.price + 2)
+            lastPrice = ZombRand(math.max(1, lastPrice - lastPrice * 5 / 100), lastPrice + 2)
         elseif direction == 3 then
-            company.price = ZombRand(company.price, company.price + company.price * 5 / 100)
+            lastPrice = ZombRand(lastPrice, lastPrice + lastPrice * 5 / 100)
         end
 
-        while line do
-            local sectionHeader = line:match("^%[(.-)%]$")
-            if sectionHeader then
-                section = sectionHeader
-                table.insert(lines, line)
-            else 
-                if section == "trading" then
-                    local code, values = line:match("^(%w+)=(.+)$")
-                    if company.code == code then
-                        local valueTable = {}
-                        for value in string.gmatch(values, "([^,]+)") do
-                            table.insert(valueTable, tonumber(value))
-                        end
-                        table.remove(valueTable, 1)
-                        table.insert(valueTable, tonumber(company.price))
-                        local newValues = table.concat(valueTable, ",")
-                        local newLine = code .. "=" .. newValues
-                        table.insert(lines, newLine)
-                    else
-                        table.insert(lines, line)
-                    end
-                else
-                    table.insert(lines, line)
-                end
-            end
-            line = file:readLine()
-        end
-        file:close()
-    
-        if lines then
-            local fileSave = getFileWriter(fileName, false, false)
-            for _, line in ipairs(lines) do
-                fileSave:write(line .. "\n")
-            end
-            fileSave:close()
+        local dataName = "PZLinuxTrading" .. company.code
+        local globalData = ModData.getOrCreate(dataName)
+        table.insert(globalData.dataName, lastPrice)
+        if #globalData.dataName > 48 then
+            table.remove(globalData.dataName, 1)
         end
     end
 end
 
 function tradingUI:initializePrices()
-    local prices = self.loadModFile() or {}
-    local isEmpty = true
-    for _ in pairs(prices) do
-        isEmpty = false
-        break
+    local globalData = ModData.getOrCreate("PZLinuxTrading")
+    if globalData.PZLinuxTrading == 1 then
+        return
     end
 
-    if isEmpty then
-        for _, company in ipairs(tradingCompanyName) do
-            if not prices[company.code] then
-                prices[company.code] = {}
+    globalData.PZLinuxTrading = 1
+    for _, company in ipairs(tradingCompanyName) do
+        local dataName = "PZLinuxTrading" .. company.code
+        local globalData = ModData.getOrCreate(dataName)
+        globalData.dataName = {}
+        local tempPrice = company.price
+        for i = 1, 48 do
+            local direction = ZombRand(1, 4)
+            if direction == 1 then
+                tempPrice = ZombRand(math.max(1, tempPrice - tempPrice * ZombRand(5, 25) / 100), tempPrice + 2)
+            elseif direction == 3 then
+                tempPrice = ZombRand(tempPrice, tempPrice + tempPrice * ZombRand(5, 25) / 100)
             end
-
-            local tempPrice = company.price
-            for i = 1, 48 do
-                local direction = ZombRand(1, 4)
-                local delta = 0
-                if direction == 1 then
-                    tempPrice = ZombRand(math.max(1, tempPrice - tempPrice * ZombRand(5, 25) / 100), tempPrice + 2)
-                elseif direction == 3 then
-                    tempPrice = ZombRand(tempPrice, tempPrice + tempPrice * ZombRand(5, 25) / 100)
-                end
-                table.insert(prices[company.code], tempPrice)
+            table.insert(globalData.dataName, tempPrice)
+            if #globalData.dataName > 48 then
+                table.remove(globalData.dataName, 1)
             end
-        end
-        if prices then
-            local fileName = "PZLinux.ini"
-            local file = getFileWriter(fileName, false, false)
-    
-            file:write("[trading]\n")
-            for companyCode, priceList in pairs(prices) do
-                file:write(companyCode .. "=" .. table.concat(priceList, ",") .. "\n")
-            end
-            file:write("[tradingWallet]\n")
-            file:write(getSpecificPlayer(0):getUsername() .. "= 0\n")
-            file:write("[tradingPlayer]\n")
-            file:close()
         end
     end
 end
@@ -635,7 +529,10 @@ function tradingMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
+    
+    local modData = getPlayer():getModData()
+    local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
+    local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = tradingUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)

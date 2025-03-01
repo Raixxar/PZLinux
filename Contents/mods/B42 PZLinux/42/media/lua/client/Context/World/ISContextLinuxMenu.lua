@@ -52,6 +52,9 @@ function linuxUI:initialise()
 
     function self.topBar:onMouseUp(x, y)
         self.parent.isDragging = false
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIX = self.parent:getX()
+        modData.PZLinuxUIY = self.parent:getY()
     end
 
     self.closeButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onClose)
@@ -142,6 +145,14 @@ function linuxUI:initialise()
     self.contractsButton:setVisible(false)
     self.contractsButton:initialise()
     self.topBar:addChild(self.contractsButton)
+
+    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05, self.height * 0.025, "SEND A REQUEST", self, self.onRequest)
+    self.requestButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.requestButton.textColor = {r=0, g=1, b=0, a=1}
+    self.requestButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.requestButton:setVisible(false)
+    self.requestButton:initialise()
+    self.topBar:addChild(self.requestButton)
 end
 
 -- CLOSE
@@ -254,6 +265,7 @@ function linuxUI:onPrompt()
     self.walletButton:setVisible(true)
     self.hackingIdButton:setVisible(true)
     self.contractsButton:setVisible(true)
+    self.requestButton:setVisible(true)
 end
 
 function linuxUI:onHackingId()
@@ -313,13 +325,23 @@ end
 
 function linuxUI:onContracts()
     if self.isConnected == true then
-        --self.promptLabel:setVisible(false)
-        --self.helpLabel:setVisible(false)
-        --self:onClose()
-        --contractsMenu_ShowUI(player)
-        self.promptLabel:setName("Available in a future update.")
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+        contractsMenu_ShowUI(player)
     else
-        self.promptLabel:setName("Available in a future update.")
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
+function linuxUI:onRequest()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+        requestMenu_ShowUI(player)
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
 end
 
@@ -344,7 +366,10 @@ function linuxMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
+
+    local modData = getPlayer():getModData()
+    local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
+    local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = linuxUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
@@ -378,6 +403,9 @@ end
 
 -- CONTEXT MENU
 function linuxMenu_AddContext(player, context, worldobjects)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIX = nil
+    modData.PZLinuxUIY = nil
     for _, obj in ipairs(worldobjects) do
         if instanceof(obj, "IsoObject") then
             local sprite = obj:getSprite()
@@ -390,7 +418,8 @@ function linuxMenu_AddContext(player, context, worldobjects)
                     if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or 
                      (getSandboxOptions():getElecShutModifier() > -1 and 
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
-                        context:addOption("PZLinux", obj, linuxMenu_OnUse, player)
+                        local x, y, z = square:getX(), square:getY(), square:getZ()
+                        context:addOption("PZLinux", obj, linuxMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                     end
                 end
@@ -399,9 +428,15 @@ function linuxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function linuxMenu_OnUse(worldObject, player)
-    CancelAction(player)
-    linuxMenu_ShowUI(player)
+function linuxMenu_OnUse(worldObject, player, x, y, z, sprite)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), freeSquare:getX(), freeSquare:getY(), freeSquare:getZ()))
+        end
+    end
+    ISTimedActionQueue.add(ISPZLinuxAction:new(getPlayer()))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(linuxMenu_AddContext)

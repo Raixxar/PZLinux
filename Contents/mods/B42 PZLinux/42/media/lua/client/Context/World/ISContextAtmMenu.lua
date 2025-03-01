@@ -20,18 +20,8 @@ function AtmUI:new(x, y, width, height, player)
 end
 
 -- SAVE BALANCE BANK ACCOUNT
-function getAtmSaveFileName()
-    local osSavePath = "darkWebATM_"
-    local fileName = osSavePath .. getSpecificPlayer(0):getUsername() .. ".ini"
-    return fileName
-end
-
 function saveAtmBalance(balance)
     if balance then
-        local fileName = getAtmSaveFileName()
-        local file = getFileWriter(fileName, false, false)
-        file:write(tostring(balance))
-        file:close()
         local player = getPlayer()
         player:getModData().PZLinuxBank = balance
     end
@@ -42,18 +32,6 @@ function loadAtmBalance()
     local bankBalance = player:getModData().PZLinuxBank
     if bankBalance then
         return bankBalance
-    end
-    
-    local fileName = getAtmSaveFileName()
-    local file = getFileReader(fileName, false)
-    if file then
-        while true do 
-            local line = file:readLine()
-            if line == nil then 
-                return 0
-            end
-            return line
-        end
     else
         return 0
     end
@@ -475,7 +453,8 @@ function AtmMenu_AddContext(player, context, worldobjects)
                     if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or 
                      (getSandboxOptions():getElecShutModifier() > -1 and 
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
-                        context:addOption("ATM", obj, AtmMenu_OnUse, player)
+                        local x, y, z = square:getX(), square:getY(), square:getZ()
+                        context:addOption("ATM", obj, AtmMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                     end
                 end
@@ -484,8 +463,16 @@ function AtmMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function AtmMenu_OnUse(option, worldObject, player)
-    AtmMenu_ShowUI(player)
+function AtmMenu_OnUse(worldObject, player, x, y, z, sprite)
+    print(sprite)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), freeSquare:getX(), freeSquare:getY(), freeSquare:getZ()))
+        end
+    end
+    ISTimedActionQueue.add(ISATMAction:new(getPlayer()))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(AtmMenu_AddContext)

@@ -47,6 +47,9 @@ function connectUI:initialise()
 
     function self.topBar:onMouseUp(x, y)
         self.parent.isDragging = false
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIX = self.parent:getX()
+        modData.PZLinuxUIY = self.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
@@ -58,11 +61,17 @@ function connectUI:initialise()
     self.topBar:addChild(self.stopButton)
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
+    self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
+    self.closeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
@@ -245,7 +254,10 @@ function connectMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
+    
+    local modData = getPlayer():getModData()
+    local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
+    local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = connectUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)

@@ -53,6 +53,8 @@ local darkWebItems = {
     { id = {"Base.x4Scope"}, Price = 2000 },
     -- SLING
     { id = {"Base.AmmoStraps"}, Price = 2500 },
+    -- HACKING
+    { id = {"Base.CreditCard"}, Price = 1000 },
     -- EXPLOSIVES
     { id = {"Base.SmokeBomb"}, Price = 100 },
     { id = {"Base.Molotov"}, Price = 150 },
@@ -102,13 +104,20 @@ local darkWebItems = {
     { id = {"Base.CrudeSword"}, Price = 1500 },
     { id = {"Base.Katana"}, Price = 8000 },
     { id = {"Base.Machete"}, Price = 1000 },
+    { id = {"Base.Machete_Crude"}, Price = 1000 },
     { id = {"Base.MacheteForged"}, Price = 1000 },
     { id = {"Base.ShortSword"}, Price = 1000 },
     { id = {"Base.Sword"}, Price = 2000 },
     -- SHORT BLADES
     { id = {"Base.FightingKnife"}, Price = 600 },
     { id = {"Base.HandguardDagger"}, Price = 600 },
+    { id = {"Base.LargeKnife"}, Price = 600 },
+    { id = {"Base.KnifeParing"}, Price = 600 },
+    { id = {"Base.HuntingKnife"}, Price = 600 },
+    { id = {"Base.KitchenKnife"}, Price = 600 },
+    { id = {"Base.KitchenKnifeForged"}, Price = 600 },
     { id = {"Base.HuntingKnifeForged"}, Price = 600 },
+    { id = {"Base.KnifePocket"}, Price = 800 },
     -- SPEARS
     { id = {"Base.SpearLong"}, Price = 444 },
     { id = {"Base.SpearShort"}, Price = 417 },
@@ -137,10 +146,12 @@ local darkWebItems = {
     { id = {"Base.Antibiotics"}, Price = 1500 },
     { id = {"Base.PillsAntiDep"}, Price = 500 },
     { id = {"Base.PillsBeta"}, Price = 500 },
-    { id = {"Base.Cigarettes"}, Price = 50 },
     { id = {"Base.Pills"}, Price = 100 },
     { id = {"Base.PillsSleepingTablets"}, Price = 200 },
     { id = {"Base.PillsVitamins"}, Price = 100 },
+    { id = {"Base.CigarettePack"}, Price = 50 },
+    { id = {"Base.CigaretteCarton"}, Price = 500 },
+    { id = {"Base.CigarBox"}, Price = 1000 },
     -- EQUIPMENT
     { id = {"Base.Bag_ALICEpack_Army"}, Price = 2000 },
     -- VEHICLE
@@ -184,6 +195,9 @@ local darkWebItems = {
     { id = {"Base.Underpants_Hide"}, Price = 200 },
     { id = {"Base.Underpants_White"}, Price = 200 },
     -- ARMOR
+    { id = {"Base.Hat_Beret"}, Price = 500 },
+    { id = {"Base.Hat_BalaclavaFull"}, Price = 500 },
+    { id = {"Base.Hat_Police"}, Price = 500 },
     { id = {"Base.Hat_Army"}, Price = 1000 },
     { id = {"Base.Hat_ArmyDesertNew"}, Price = 1000 },
     { id = {"Base.Hat_ArmyDesert"}, Price = 1000 },
@@ -305,7 +319,8 @@ function GenerateDarkWebOffers()
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
 
-            local rawPrice = math.ceil(ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))
+            local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190)
+            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime
             local transactionType = "Buy"
             local transactionQty = 1
 
@@ -368,6 +383,9 @@ function darkWebUI:initialise()
 
     function self.topBar:onMouseUp(x, y)
         self.parent.isDragging = false
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIX = self.parent:getX()
+        modData.PZLinuxUIY = self.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
@@ -385,12 +403,18 @@ function darkWebUI:initialise()
     self.topBar:addChild(self.titleLabel)
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
-    self.minimizeButton:setVisible(false)
+    self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
-    self.closeButton:setVisible(false)
+    self.closeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
@@ -1021,7 +1045,10 @@ function darkWebMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
+    
+    local modData = getPlayer():getModData()
+    local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
+    local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = darkWebUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
