@@ -67,19 +67,26 @@ function MailBoxUI:showLoginMenu()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.25, self.height * 0.027, "SEND THE PACKAGE", self, self.onSendPackage)
+    loginButtonName = "SEND THE PACKAGE"
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxActiveRequest == 1 then
+        loginButtonName = "TAKE THE PACKAGE"
+    end
+
+    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.25, self.height * 0.027, loginButtonName, self, self.onSendTakePackage)
     self.loginButton:setVisible(true)
     self.loginButton:initialise()
     self.topBar:addChild(self.loginButton)
 end
 
-function MailBoxUI:onSendPackage()
+function MailBoxUI:onSendTakePackage()
     local playerObj = getPlayer()
     local inventory = playerObj:getInventory()
     local items = inventory:getItems()
     
     for j = 0, items:size() - 1 do
         local item = items:get(j)
+        local modData = getPlayer():getModData()
         if item and item:getFullType() == "Base.SuspiciousPackage" then
             local boxName = item:getName()
             boxName = boxName:gsub("%$", "")
@@ -91,6 +98,33 @@ function MailBoxUI:onSendPackage()
                 break
             end
         end
+
+        if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
+        or (item and item:getFullType() == "Base.Bag_Mail" and modData.PZLinuxContractManhunt == 3)
+        or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
+        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1) then
+            modData.PZLinuxActiveContract = 2
+            inventory:Remove(item)
+            break
+        end
+    end
+
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxActiveRequest == 1 then
+        while #modData.PZLinuxOnItemRequest > 0 do
+            local inv = getPlayer():getInventory()
+            local parcel = inv:AddItem('Base.Parcel_Large')
+            local parcelInv = parcel:getInventory()
+            local itemName = modData.PZLinuxOnItemRequest[1]
+            local itemCount = modData.PZLinuxOnItemRequestCount[1]
+            print("debug", itemName, itemCount)
+            for i = 1, itemCount do
+                parcelInv:AddItem(itemName)
+            end
+            table.remove(modData.PZLinuxOnItemRequest, 1)
+            table.remove(modData.PZLinuxOnItemRequestCount, 1)
+        end
+        modData.PZLinuxActiveRequest = 0
     end
 end
 
@@ -127,6 +161,8 @@ function MailBoxMenu_ShowUI(player)
     uiMailBox.centeredImage = centeredImage
     uiMailBox:initialise()
     uiMailBox:addToUIManager()
+
+    return uiMailBox
 end
 
 function MailBoxMenu_AddContext(player, context, worldobjects)
@@ -140,7 +176,8 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
                 or string.find(sprite:getName(), "street_decoration_01_21") then
                     local square = obj:getSquare()
                     if square then
-                        context:addOption("MailBox", obj, MailBoxMenu_OnUse, player)
+                        local x, y, z = square:getX(), square:getY(), square:getZ()
+                        context:addOption("MailBox", obj, MailBoxMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                     end
                 end
@@ -149,8 +186,15 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function MailBoxMenu_OnUse(option, worldObject, player)
-    MailBoxMenu_ShowUI(player)
+function MailBoxMenu_OnUse(obj, player, x, y, z, sprite)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+        end
+    end
+    ISTimedActionQueue.add(ISMailBoxAction:new(getPlayer()), obj)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(MailBoxMenu_AddContext)

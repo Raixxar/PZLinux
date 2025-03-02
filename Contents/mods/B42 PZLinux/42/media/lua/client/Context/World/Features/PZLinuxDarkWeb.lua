@@ -53,6 +53,9 @@ local darkWebItems = {
     { id = {"Base.x4Scope"}, Price = 2000 },
     -- SLING
     { id = {"Base.AmmoStraps"}, Price = 2500 },
+    -- HACKING
+    { id = {"Base.CreditCard"}, Price = 1000 },
+    { id = {"Base.IDcard"}, Price = 1000 },
     -- EXPLOSIVES
     { id = {"Base.SmokeBomb"}, Price = 100 },
     { id = {"Base.Molotov"}, Price = 150 },
@@ -102,13 +105,20 @@ local darkWebItems = {
     { id = {"Base.CrudeSword"}, Price = 1500 },
     { id = {"Base.Katana"}, Price = 8000 },
     { id = {"Base.Machete"}, Price = 1000 },
+    { id = {"Base.Machete_Crude"}, Price = 1000 },
     { id = {"Base.MacheteForged"}, Price = 1000 },
     { id = {"Base.ShortSword"}, Price = 1000 },
     { id = {"Base.Sword"}, Price = 2000 },
     -- SHORT BLADES
     { id = {"Base.FightingKnife"}, Price = 600 },
     { id = {"Base.HandguardDagger"}, Price = 600 },
+    { id = {"Base.LargeKnife"}, Price = 600 },
+    { id = {"Base.KnifeParing"}, Price = 600 },
+    { id = {"Base.HuntingKnife"}, Price = 600 },
+    { id = {"Base.KitchenKnife"}, Price = 600 },
+    { id = {"Base.KitchenKnifeForged"}, Price = 600 },
     { id = {"Base.HuntingKnifeForged"}, Price = 600 },
+    { id = {"Base.KnifePocket"}, Price = 800 },
     -- SPEARS
     { id = {"Base.SpearLong"}, Price = 444 },
     { id = {"Base.SpearShort"}, Price = 417 },
@@ -137,10 +147,12 @@ local darkWebItems = {
     { id = {"Base.Antibiotics"}, Price = 1500 },
     { id = {"Base.PillsAntiDep"}, Price = 500 },
     { id = {"Base.PillsBeta"}, Price = 500 },
-    { id = {"Base.Cigarettes"}, Price = 50 },
     { id = {"Base.Pills"}, Price = 100 },
     { id = {"Base.PillsSleepingTablets"}, Price = 200 },
     { id = {"Base.PillsVitamins"}, Price = 100 },
+    { id = {"Base.CigarettePack"}, Price = 50 },
+    { id = {"Base.CigaretteCarton"}, Price = 500 },
+    { id = {"Base.CigarBox"}, Price = 1000 },
     -- EQUIPMENT
     { id = {"Base.Bag_ALICEpack_Army"}, Price = 2000 },
     -- VEHICLE
@@ -184,6 +196,9 @@ local darkWebItems = {
     { id = {"Base.Underpants_Hide"}, Price = 200 },
     { id = {"Base.Underpants_White"}, Price = 200 },
     -- ARMOR
+    { id = {"Base.Hat_Beret"}, Price = 500 },
+    { id = {"Base.Hat_BalaclavaFull"}, Price = 500 },
+    { id = {"Base.Hat_Police"}, Price = 500 },
     { id = {"Base.Hat_Army"}, Price = 1000 },
     { id = {"Base.Hat_ArmyDesertNew"}, Price = 1000 },
     { id = {"Base.Hat_ArmyDesert"}, Price = 1000 },
@@ -207,75 +222,69 @@ local darkWebItems = {
     { id = {"Base.Vest_BulletPolice"}, Price = 5000 }, 
     { id = {"Base.Vest_BulletSWAT"}, Price = 5000 },
     -- GOLD
-    { id = {"Base.Medal_Bronze"}, Price = 600 },
-    { id = {"Base.Medal_Gold"}, Price = 3600 },
-    { id = {"Base.Medal_Silver"}, Price = 1800 },
-    { id = {"Base.Necklace_BoarTusk"}, Price = 10 },
-    { id = {"Base.Necklace_BoarTusk_Multi"}, Price = 10 },
-    { id = {"Base.Necklace_Crucifix"}, Price = 10 },
-    { id = {"Base.Necklace_DogTag", "Base.Necklace_DogTag_Female", "Base.Necklace_DogTag_Male"}, Price = 10 },
-    { id = {"Base.Necklace_Gold"}, Price = 900 },
-    { id = {"Base.Necklace_GoldDiamond"}, Price = 1200 },
-    { id = {"Base.Necklace_GoldRuby"}, Price = 1200 },
-    { id = {"Base.Necklace_Pearl"}, Price = 10 },
-    { id = {"Base.Necklace_Silver"}, Price = 600 },
-    { id = {"Base.Necklace_SilverCrucifix"}, Price = 600 },
-    { id = {"Base.Necklace_SilverDiamond"}, Price = 750 },
-    { id = {"Base.Necklace_SilverSapphire"}, Price = 750 },
-    { id = {"Base.Necklace_Teeth"}, Price = 10 },
+    { id = {"Base.Medal_Bronze"}, Price = 100 },
+    { id = {"Base.Medal_Gold"}, Price = 500 },
+    { id = {"Base.Medal_Silver"}, Price = 250 },
+    { id = {"Base.Necklace_Gold"}, Price = 600 },
+    { id = {"Base.Necklace_GoldDiamond"}, Price = 800 },
+    { id = {"Base.Necklace_GoldRuby"}, Price = 650 },
+    { id = {"Base.Necklace_Silver"}, Price = 300 },
+    { id = {"Base.Necklace_SilverCrucifix"}, Price = 250 },
+    { id = {"Base.Necklace_SilverDiamond"}, Price = 150 },
+    { id = {"Base.Necklace_SilverSapphire"}, Price = 200 },
     { id = {"Base.Necklace_YingYang"}, Price = 10 },
     { id = {"Base.NecklaceLong_Amber"}, Price = 50 },
-    { id = {"Base.NecklaceLong_GoldDiamond"}, Price = 1600, },
-    { id = {"Base.NecklaceLong_Gold"}, Price = 1200, },
-    { id = {"Base.NecklaceLong_SilverDiamond"}, Price = 750 },
-    { id = {"Base.NecklaceLong_SilverEmerald"}, Price = 750 },
-    { id = {"Base.NecklaceLong_SilverSapphire"}, Price = 750 },
-    { id = {"Base.NecklaceLong_Silver"}, Price = 600 },
-    { id = {"Base.NoseRing_Gold"}, Price = 1200, },
-    { id = {"Base.NoseRing_Silver"}, Price = 600 },
-    { id = {"Base.NoseStud_Gold"}, Price = 1200, },
-    { id = {"Base.NoseStud_Silver"}, Price = 600 },
-    { id = {"Base.Earring_Dangly_Diamond"}, Price = 1750, },
-    { id = {"Base.Earring_Dangly_Emerald"}, Price = 1750, },
-    { id = {"Base.Earring_Dangly_Pearl"}, Price = 1750, },
-    { id = {"Base.Earring_Dangly_Ruby"}, Price = 1750, },
-    { id = {"Base.Earring_Dangly_Sapphire"}, Price = 1750, },
-    { id = {"Base.Earring_Stone_Emerald"}, Price = 1750, },
-    { id = {"Base.Earring_Stud_Gold"}, Price = 1200, },
-    { id = {"Base.Earring_LoopLrg_Gold"}, Price = 1200, },
-    { id = {"Base.Earring_LoopLrg_Silver"}, Price = 600 },
-    { id = {"Base.Earring_LoopMed_Gold"}, Price = 1200, },
-    { id = {"Base.Earring_LoopMed_Silver"}, Price = 600 },
-    { id = {"Base.Earring_Pearl"}, Price = 1750, },
-    { id = {"Base.Earring_Stone_Ruby"}, Price = 1750, },
-    { id = {"Base.Earring_Stone_Sapphire"}, Price = 1750, },
-    { id = {"Base.Earring_Stud_Silver"}, Price = 600 },
-    { id = {"Base.Earring_LoopSmall_Gold_Both", "Base.Earring_LoopSmall_Gold_Top"}, Price = 300, },
-    { id = {"Base.Earring_LoopSmall_Silver_Both", "Base.Earring_LoopSmall_Silver_Top"}, Price = 150, },
-    { id = {"Base.Bracelet_BangleRightGold", "Base.Bracelet_BangleLeftGold"}, Price = 6000 },
-    { id = {"Base.Bracelet_BangleRightSilver", "Base.Bracelet_BangleLeftSilver"}, Price = 3000 },
-    { id = {"Base.Bracelet_ChainRightGold", "Base.Bracelet_ChainLeftGold"}, Price = 2400 },
-    { id = {"Base.Bracelet_ChainRightSilver", "Base.Bracelet_ChainLeftSilver"}, Price = 1200 },
-    { id = {"Base.WristWatch_Right_ClassicGold", "Base.WristWatch_Left_ClassicGold"}, Price = 8400 },
-    { id = {"WristWatch_Right_Expensive", "Base.WristWatch_Left_Expensive"}, Price = 17500 },
-    { id = {"Base.Ring_Right_MiddleFinger_GoldDiamond", "Base.Ring_Left_MiddleFinger_GoldDiamond", "Base.Ring_Right_RingFinger_GoldDiamond", "Base.Ring_Left_RingFinger_GoldDiamond"}, Price = 1200 },
-    { id = {"Base.Ring_Right_MiddleFinger_GoldRuby", "Base.Ring_Left_MiddleFinger_GoldRuby", "Base.Ring_Right_RingFinger_GoldRuby", "Base.Ring_Left_RingFinger_GoldRuby"}, Price = 1200 },
-    { id = {"Base.Ring_Right_MiddleFinger_Gold", "Base.Ring_Left_MiddleFinger_Gold", "Base.Ring_Right_RingFinger_Gold","Base.Ring_Left_RingFinger_Gold"}, Price = 1200 },
-    { id = {"Base.Ring_Right_MiddleFinger_SilverDiamond", "Base.Ring_Left_MiddleFinger_SilverDiamond", "Base.Ring_Right_RingFinger_SilverDiamond", "Base.Ring_Left_RingFinger_SilverDiamond"}, Price = 600 },
-    { id = {"Base.Ring_Right_MiddleFinger_Silver", "Base.Ring_Left_MiddleFinger_Silver", "Base.Ring_Right_RingFinger_Silver", "Base.Ring_Left_RingFinger_Silver"}, Price = 600 },
-    { id = {"Base.BellyButton_DangleGoldRuby"}, Price = 300 },
-    { id = {"Base.BellyButton_DangleGold"}, Price = 200 },
+    { id = {"Base.NecklaceLong_GoldDiamond"}, Price = 1000, },
+    { id = {"Base.NecklaceLong_Gold"}, Price = 850, },
+    { id = {"Base.NecklaceLong_SilverDiamond"}, Price = 450 },
+    { id = {"Base.NecklaceLong_SilverEmerald"}, Price = 450 },
+    { id = {"Base.NecklaceLong_SilverSapphire"}, Price = 450 },
+    { id = {"Base.NecklaceLong_Silver"}, Price = 250 },
+    { id = {"Base.NoseRing_Gold"}, Price = 100, },
+    { id = {"Base.NoseRing_Silver"}, Price = 50 },
+    { id = {"Base.NoseStud_Gold"}, Price = 80, },
+    { id = {"Base.NoseStud_Silver"}, Price = 40 },
+    { id = {"Base.Earring_Dangly_Diamond"}, Price = 100, },
+    { id = {"Base.Earring_Dangly_Emerald"}, Price = 100, },
+    { id = {"Base.Earring_Dangly_Pearl"}, Price = 100, },
+    { id = {"Base.Earring_Dangly_Ruby"}, Price = 100, },
+    { id = {"Base.Earring_Dangly_Sapphire"}, Price = 100, },
+    { id = {"Base.Earring_Stone_Emerald"}, Price = 100, },
+    { id = {"Base.Earring_Stud_Gold"}, Price = 250, },
+    { id = {"Base.Earring_LoopLrg_Gold"}, Price = 250, },
+    { id = {"Base.Earring_LoopLrg_Silver"}, Price = 80 },
+    { id = {"Base.Earring_LoopMed_Gold"}, Price = 100, },
+    { id = {"Base.Earring_LoopMed_Silver"}, Price = 80 },
+    { id = {"Base.Earring_Pearl"}, Price = 60, },
+    { id = {"Base.Earring_Stone_Ruby"}, Price = 60, },
+    { id = {"Base.Earring_Stone_Sapphire"}, Price = 60, },
+    { id = {"Base.Earring_Stud_Silver"}, Price = 50 },
+    { id = {"Base.Earring_LoopSmall_Gold_Both", "Base.Earring_LoopSmall_Gold_Top"}, Price = 50, },
+    { id = {"Base.Earring_LoopSmall_Silver_Both", "Base.Earring_LoopSmall_Silver_Top"}, Price = 50, },
+    { id = {"Base.Bracelet_BangleRightGold", "Base.Bracelet_BangleLeftGold"}, Price = 300 },
+    { id = {"Base.Bracelet_BangleRightSilver", "Base.Bracelet_BangleLeftSilver"}, Price = 250 },
+    { id = {"Base.Bracelet_ChainRightGold", "Base.Bracelet_ChainLeftGold"}, Price = 250 },
+    { id = {"Base.Bracelet_ChainRightSilver", "Base.Bracelet_ChainLeftSilver"}, Price = 150 },
+    { id = {"Base.WristWatch_Right_ClassicGold", "Base.WristWatch_Left_ClassicGold"}, Price = 1500 },
+    { id = {"WristWatch_Right_Expensive", "Base.WristWatch_Left_Expensive"}, Price = 1500 },
+    { id = {"Base.Ring_Right_MiddleFinger_GoldDiamond", "Base.Ring_Left_MiddleFinger_GoldDiamond", "Base.Ring_Right_RingFinger_GoldDiamond", "Base.Ring_Left_RingFinger_GoldDiamond"}, Price = 500 },
+    { id = {"Base.Ring_Right_MiddleFinger_GoldRuby", "Base.Ring_Left_MiddleFinger_GoldRuby", "Base.Ring_Right_RingFinger_GoldRuby", "Base.Ring_Left_RingFinger_GoldRuby"}, Price = 500 },
+    { id = {"Base.Ring_Right_MiddleFinger_Gold", "Base.Ring_Left_MiddleFinger_Gold", "Base.Ring_Right_RingFinger_Gold","Base.Ring_Left_RingFinger_Gold"}, Price = 500 },
+    { id = {"Base.Ring_Right_MiddleFinger_SilverDiamond", "Base.Ring_Left_MiddleFinger_SilverDiamond", "Base.Ring_Right_RingFinger_SilverDiamond", "Base.Ring_Left_RingFinger_SilverDiamond"}, Price = 300 },
+    { id = {"Base.Ring_Right_MiddleFinger_Silver", "Base.Ring_Left_MiddleFinger_Silver", "Base.Ring_Right_RingFinger_Silver", "Base.Ring_Left_RingFinger_Silver"}, Price = 300 },
+    { id = {"Base.BellyButton_DangleGoldRuby"}, Price = 150 },
+    { id = {"Base.BellyButton_DangleGold"}, Price = 250 },
     { id = {"Base.BellyButton_DangleSilverDiamond"}, Price = 150 },
     { id = {"Base.BellyButton_DangleSilver"}, Price = 50 },
-    { id = {"Base.BellyButton_RingGoldDiamond"}, Price = 300 },
-    { id = {"Base.BellyButton_RingGoldRuby"}, Price = 300 },
-    { id = {"Base.BellyButton_RingGold"}, Price = 200 },
+    { id = {"Base.BellyButton_RingGoldDiamond"}, Price = 150 },
+    { id = {"Base.BellyButton_RingGoldRuby"}, Price = 150 },
+    { id = {"Base.BellyButton_RingGold"}, Price = 250 },
     { id = {"Base.BellyButton_RingSilverAmethyst"}, Price = 75 },
     { id = {"Base.BellyButton_RingSilverDiamond"}, Price = 75 },
     { id = {"Base.BellyButton_RingSilverRuby"}, Price = 75 },
     { id = {"Base.BellyButton_RingSilver"}, Price = 50 },
-    { id = {"Base.BellyButton_StudGoldDiamond"}, Price = 300 },
-    { id = {"Base.BellyButton_StudGold"}, Price = 200 },
+    { id = {"Base.BellyButton_StudGoldDiamond"}, Price = 150 },
+    { id = {"Base.BellyButton_StudGold"}, Price = 150 },
     { id = {"Base.BellyButton_StudSilverDiamond"}, Price = 75 },
     { id = {"Base.BellyButton_StudSilver"}, Price = 50 }
 }
@@ -305,7 +314,8 @@ function GenerateDarkWebOffers()
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
 
-            local rawPrice = math.ceil(ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))
+            local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190)
+            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime
             local transactionType = "Buy"
             local transactionQty = 1
 
@@ -368,6 +378,9 @@ function darkWebUI:initialise()
 
     function self.topBar:onMouseUp(x, y)
         self.parent.isDragging = false
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIX = self.parent:getX()
+        modData.PZLinuxUIY = self.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
@@ -385,12 +398,18 @@ function darkWebUI:initialise()
     self.topBar:addChild(self.titleLabel)
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
-    self.minimizeButton:setVisible(false)
+    self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
-    self.closeButton:setVisible(false)
+    self.closeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
@@ -407,16 +426,25 @@ function darkWebUI:initialise()
     self:addChild(self.searchBtn)
 
     self.shoppingBuyButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, "BUY", self, self.onBuy)
+    self.shoppingBuyButton.textColor = {r=0, g=1, b=0, a=1}
+    self.shoppingBuyButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.shoppingBuyButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.shoppingBuyButton:setVisible(true)
     self.shoppingBuyButton:initialise()
     self.topBar:addChild(self.shoppingBuyButton)
 
     self.shoppingSellButton = ISButton:new(self.width * 0.35, self.width * 0.43, self.width * 0.25, self.height * 0.08, "SELL", self, self.onSell)
+    self.shoppingSellButton.textColor = {r=0, g=1, b=0, a=1}
+    self.shoppingSellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.shoppingSellButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.shoppingSellButton:setVisible(true)
     self.shoppingSellButton:initialise()
     self.topBar:addChild(self.shoppingSellButton)
 
     self.shoppingHelpButton = ISButton:new(self.width * 0.35, self.width * 0.54, self.width * 0.25, self.height * 0.08, "HELP", self, self.onHelp)
+    self.shoppingHelpButton.textColor = {r=0, g=1, b=0, a=1}
+    self.shoppingHelpButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.shoppingHelpButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.shoppingHelpButton:setVisible(true)
     self.shoppingHelpButton:initialise()
     self.topBar:addChild(self.shoppingHelpButton)
@@ -552,14 +580,16 @@ end
 function darkWebUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- LOGOUT
 function darkWebUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- UPDATE UI
@@ -1021,7 +1051,10 @@ function darkWebMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
+    
+    local modData = getPlayer():getModData()
+    local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
+    local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = darkWebUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
@@ -1035,5 +1068,6 @@ function darkWebMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
     ui:startUI()
- 
+    
+    return ui 
 end

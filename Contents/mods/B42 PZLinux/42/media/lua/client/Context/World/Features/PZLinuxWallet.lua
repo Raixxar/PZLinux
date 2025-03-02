@@ -3,6 +3,40 @@
 
 walletUI = ISPanel:derive("walletUI")
 
+local walletCompanyName = {
+    { name = "Crisis Commerce Corp", code = "CCC" },
+    { name = "Umbrella Corp", code = "AC" },
+    { name = "Walker & Crawler", code = "WC" },
+    { name = "Survival Solutions Inc", code = "SSI" },
+    { name = "Reclaim Resources Ltd", code = "RRL" },
+    { name = "Brain Buffet Times", code = "BBT" },
+    { name = "Zom Bin", code = "ZB" },
+    { name = "Endurance Equipments", code = "EE" },
+    { name = "Grinning Grim Goods", code = "GGG" },
+    { name = "Couch Co-op", code = "CCO" },
+    { name = "ZomboTrade Co", code = "ZTC" },
+    { name = "COVID Pop Ltd", code = "CPL" },
+    { name = "Gorrest Fump", code = "GF" },
+    { name = "Phoenix Resupply Corp", code = "PRC" },
+    { name = "Haven Supply Co", code = "HSC" },
+    { name = "28 Ways to Stay Safe", code = "WSS" },
+    { name = "The Hunger Z", code = "THZ" },
+    { name = "Zombie of the rings", code = "ZOR" },
+    { name = "Zombie Zumba", code = "ZZ" },
+    { name = "Indoor Adventures", code = "IA" },
+    { name = "Pandemic Pills Inc", code = "PPI" },
+    { name = "Aftermath Trading Post", code = "ATP" },
+    { name = "Waste Not Industries", code = "WNI" },
+    { name = "NecroTech Innovations", code = "NTI" },
+    { name = "Z Max", code = "ZM" },
+    { name = "Vigilant Ventures", code = "VV" },
+    { name = "Flee Market", code = "FM" },
+    { name = "Raven Goods & Supply", code = "RGS" },
+    { name = "Brains & Bargains", code = "BB" },
+    { name = "Rot & Roll", code = "RR" },
+    { name = "Butcher Ltd", code = "BL" }
+}
+
 local walletBalance = 0
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
@@ -19,38 +53,6 @@ function walletUI:new(x, y, width, height, player)
     o.player = player
     o.isClosing = false
     return o
-end
-
-function walletUI:loadModFile()
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-
-    if not file then
-        return {}
-    end
-
-    local prices = {}
-    local section = nil
-    local line = file:readLine()
-
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-        elseif section == "trading" then
-            local code, values = line:match("^(%w+)=(.+)$")
-            if code and values then
-                prices[code] = {}
-                for price in values:gmatch("%d+") do
-                    table.insert(prices[code], tonumber(price))
-                end
-            end
-        end
-        line = file:readLine()
-    end
-
-    file:close()
-    return prices
 end
 
 -- INIT
@@ -86,6 +88,9 @@ function walletUI:initialise()
 
     function self.topBar:onMouseUp(x, y)
         self.parent.isDragging = false
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIX = self.parent:getX()
+        modData.PZLinuxUIY = self.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
@@ -103,12 +108,18 @@ function walletUI:initialise()
     self.topBar:addChild(self.titleLabel)
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
-    self.minimizeButton:setVisible(false)
+    self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
-    self.closeButton:setVisible(false)
+    self.closeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 end
@@ -168,39 +179,30 @@ function walletUI:startWallet()
     tradingMenuD1Label:initialise()
     self.topBar:addChild(tradingMenuD1Label)
 
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
     local tokens = {}
-    
-    local prices = self.loadModFile() or {}
     local totalWalletBalance = 0
-    
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-        else 
-            if section == "tradingPlayer" then
-                local tokenPlayer, tokenCode, tokenQuantity = line:match("^(%w+)=([%w]+),(%d+)")
-                if tokenPlayer == getSpecificPlayer(0):getUsername() and tonumber(tokenQuantity) > 0 then
-                    local values = prices[tokenCode] or {}
-                    local firstPrice = values[24]
-                    local lastPrice = values[48]
-                    local secondLastPrice = values[47]
-                    table.insert(tokens, {c = tokenCode, q = tokenQuantity, fp = firstPrice, lp = lastPrice, slp = secondLastPrice})
-                    totalWalletBalance = totalWalletBalance + lastPrice * tokenQuantity
-                    walletBalance = totalWalletBalance
-                end
-            end
-        end
-        line = file:readLine()
-    end
-    file:close()
+    local player = getPlayer()
+    for i, company in ipairs(walletCompanyName) do
+        local playerWallet = "ZLinuxPlayerWallet" .. company.code
+        local totalTokenQuantity = player:getModData()[playerWallet] or 0
 
+        local dataName = "PZLinuxTrading" .. company.code
+        local globalData = ModData.getOrCreate(dataName)
+        local priceHistory = globalData.dataName or {}
+        local firstPrice = priceHistory[24] or 0
+        local lastPrice = priceHistory[48] or 0
+        local secondLastPrice = priceHistory[47] or 0
+
+        if totalTokenQuantity > 0 then
+            table.insert(tokens, {c = company.code, q = tostring(totalTokenQuantity), fp = firstPrice, lp = lastPrice, slp = secondLastPrice})
+            totalWalletBalance = totalWalletBalance + lastPrice * totalTokenQuantity
+            walletBalance = totalWalletBalance
+        end
+    end
+    
     local y = 0
     for i, token in ipairs(tokens) do
-        local codeButton = ISButton:new(self.width * 0.050, y, self.width * 0.12, self.height * 0.025, token.c .. "/USD", self, nil)
+        local codeButton = ISButton:new(self.width * 0.050, y, self.width * 0.12, self.height * 0.025, tostring(token.c) .. "/USD", self, nil)
         codeButton:initialise()
         self:addChild(codeButton)
         scrollPanel:addChild(codeButton)
@@ -244,30 +246,7 @@ function walletUI:startWallet()
     self.walletTitleLabel.backgroundColor = {r=0, g=0, b=0, a=0}
     self.walletTitleLabel:setVisible(true)
     self.walletTitleLabel:initialise()
-    self.topBar:addChild(self.walletTitleLabel)
-
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
-    local values = {}
-
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-        else
-            if section == "tradingWallet" then
-                local walletPlayer, walletValues = line:match("^(%w+)=(.+)$")
-                if walletPlayer == getSpecificPlayer(0):getUsername() then
-                    for value in string.gmatch(walletValues, "([^,]+)") do
-                        table.insert(values, tonumber(value))
-                    end
-                end
-            end
-        end
-        line = file:readLine()
-    end
-    file:close()
+    self.topBar:addChild(self.walletTitleLabel) 
     
     local chartWidth = self.width * 0.589
     local chartHeight = self.height * 0.20
@@ -281,6 +260,8 @@ function walletUI:startWallet()
     self.walletChart:initialise()
 
     function  self.walletChart:render()
+        local player = getPlayer()
+        local values = player:getModData().playerWallet
         local numPoints = #values
         if numPoints < 2 then return end
     
@@ -303,60 +284,28 @@ function walletUI:startWallet()
 end
 
 function walletUI:updateWallet()
-    local fileName = "PZLinux.ini"
-    local file = getFileReader(fileName, false)
-    local line = file:readLine()
-    local lines = {}
-    local lastValue = 0
+    local totalWalletBalance = 0
+    local player = getPlayer()
 
-    while line do
-        local sectionHeader = line:match("^%[(.-)%]$")
-        if sectionHeader then
-            section = sectionHeader
-            table.insert(lines, line)
-        else 
-            if section == "tradingWallet" then
-                local walletPlayer, values = line:match("^(%w+)=(.+)$")
-                if walletPlayer == getSpecificPlayer(0):getUsername() then
-                    local valueTable = {}
-                    for value in string.gmatch(values, "([^,]+)") do
-                        table.insert(valueTable, tonumber(value))
-                    end
-                    table.insert(valueTable, tonumber(walletBalance))
-                    if #valueTable > 24 then
-                        table.remove(valueTable, 1)
-                    end
-                    local newValues = table.concat(valueTable, ",")
-                    local newLine = walletPlayer .. "=" .. newValues
-                    table.insert(lines, newLine)
-                else
-                    table.insert(lines, line)
-                end
-            else
-                table.insert(lines, line)
-            end
-        end
-        line = file:readLine()
-    end
-    file:close()
-    
-    local codeFound = false
-    for _, line in ipairs(lines) do
-        if line:match("^" .. getSpecificPlayer(0):getUsername() .. "=(%d+)") then
-            codeFound = true
-            break
-        end
-    end
-    if not codeFound then
-        table.insert(lines, getSpecificPlayer(0):getUsername() .. "=" .. "0")
+    if not player:getModData().playerWallet then
+        player:getModData().playerWallet = {}
     end
 
-    if lines then
-        local fileSave = getFileWriter(fileName, false, false)
-        for _, line in ipairs(lines) do
-            fileSave:write(line .. "\n")
-        end
-        fileSave:close()
+    for i, company in ipairs(walletCompanyName) do
+        local playerWallet = "ZLinuxPlayerWallet" .. company.code
+        local totalTokenQuantity = player:getModData()[playerWallet] or 0
+
+        local dataName = "PZLinuxTrading" .. company.code
+        local globalData = ModData.getOrCreate(dataName)
+        local priceHistory = globalData.dataName or {}
+        local lastPrice = tonumber(priceHistory[48]) or 0
+
+        totalWalletBalance = totalWalletBalance + lastPrice * totalTokenQuantity
+        walletBalance = totalWalletBalance + walletBalance
+    end
+    table.insert(player:getModData().playerWallet, walletBalance)
+    if #player:getModData().playerWallet > 48 then
+        table.remove(player:getModData().playerWallet, 1)
     end
 end
 
@@ -371,7 +320,8 @@ end
 function walletUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
@@ -379,7 +329,8 @@ function walletUI:onClose(button)
     self.isClosing = true
     lastConnectionTimestamp = 0
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 function walletMenu_ShowUI(player)
@@ -397,7 +348,10 @@ function walletMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
+    
+    local modData = getPlayer():getModData()
+    local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
+    local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = walletUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
@@ -424,4 +378,6 @@ function walletMenu_ShowUI(player)
         end
     end
     ui:startWallet()
+
+    return ui
 end

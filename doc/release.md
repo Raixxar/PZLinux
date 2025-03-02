@@ -1,3 +1,26 @@
+- Contract Clean a building or area
+- Ability to purchase cars.
+- Close interface if player are not nearby interface
+
+# Update v.0.1.8
+- All values are now integrated into ModData. the PZLinux.ini file is no longer used.
+- Fix an issue where the interface position resets to default with each submenu change.
+- Add cigarettes and cigars to the list of items that can be bought and sold.
+- Add several knives and hats to purchase and sale on Dark Web. Thank you CdrCanteets for your help.
+- Add credit cards on the Dark Web. These cards can then be hacked to obtain more money.
+- Fix an issue where stock prices for companies were capped.
+- Added bounty contracts for hunting down targets and eliminating them.
+- Added contracts for object retrieval.
+- Added contracts for zombie blood analysis.
+- Added contract to send sports car parts.
+- Fix an issue where the computer could be launched remotely
+- Fixed an issue where mailboxes could be opened remotely.
+- Fixed an issue where the ATM could be opened remotely.
+- The value of purchases is now indexed to the world's time. The longer survival lasts, the more expensive prices become.
+- You can now make requests on IRC to purchase canned goods, fish, books, fruits, meats, and vegetables.
+- Added a notification sound for new messages on IRC
+- Price balancing on the dark web. With contracts and requests features, selling prices are adjusted downward to balance the mod.
+  
 # Update v.0.1.7-rc1
 - Fix the issue where the mailbox interface was not available based on the mailbox direction.
 

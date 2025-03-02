@@ -12,10 +12,6 @@ A bank account is linked to your game save and character. You can deposit or wit
 
 [h2]Computer:[/h2]
 
-[h3]How long does a computer stay on ?[/h3]
-
-The computer stays in sleep mode for 24 hours before automatically shutting down. It also remains connected to the internet for 1 hour if not in use. If you stay on the computer, there's no need to reconnect every 5 minutes with this setup.
-
 [h3]What can we do on the computer?[/h3]
 
 The first submenu is the dark web. This interface allows you to buy weapons, armor, and ammunition, as well as sell items to earn money.
@@ -24,24 +20,41 @@ You can also trade with fictional companies. Stock prices are updated every hour
 
 To track your stock market activities and simplify your investment overview, the portfolio will help you. All your stocks are stored in your digital wallet where you can monitor your gains and losses.
 
-The last available submenu is hacking. ID cards from zombies allow you to recover valuable information about bank accounts. Zombies don’t need money, so why not get rid of it! 😄
+To hack an ID card. ID cards from zombies allow you to recover valuable information about bank accounts. Zombies don’t need money, so why not get rid of it! 😄
+
+You can also accept contracts in the form of quests or missions that will require you to complete certain tasks, varying in difficulty.
+
+The last available submenu is Request. This feature allows players to request services, enabling them to spend their hard-earned money to hope for a bit more survival!
+
+[h3]Why isn't any interface working ?[/h3]
+
+To use the interfaces, you must first log in. Use the CONNECT button before accessing any features.
+
+[h3]How long does a computer stay on ?[/h3]
+
+The computer stays in sleep mode for 24 hours before automatically shutting down. It also remains connected to the internet for 1 hour if not in use. If you stay on the computer, there's no need to reconnect every 5 minutes with this setup.
+
+[h2] Connect:[/h2]
+
+[h3]How it works ?[/h3]
+
+The login mechanism is based on your character's name. He uses utilize the electrical skill to enhance the player’s connection speed. The higher their electrical skill, the faster they will be able to input this information.
 
 [h2]Dark Web:[/h2]
 
 [h3]How it works ?[/h3]
 
-Once you have deposited funds into your bank account, you can access the Dark Web to make your first purchases. If you don't have enough money yet, you can also sell items. The Dark Web offers a randomly generated list of 272 items. In the backend, the game rolls a dice between 5 and 100 to create this item list. Some items may appear multiple times at different prices, giving you the opportunity to choose the best deals for selling or buying.
+Once you have deposited funds into your bank account, you can access the Dark Web to make your first purchases. If you don't have enough money yet, you can also sell items. The Dark Web offers a randomly generated list of 272 items. In the backend, the game rolls a dice between 5 and 100 to create this item list. Some items may appear multiple times at different prices, giving you the opportunity to choose the best deals for buying.
 
-[h3]How does login work?[/h3]
+[h3]How do I sell items ?[/h3]
 
-The login mechanism is based on your character's name. In the future, it will utilize the electrical skill to enhance the player’s connection speed. Also, I would like to link this speed with the player's stress level. The more stressed the player is, the longer it takes to enter their login and password. Conversely, the higher their electrical skill, the faster they will be able to input this information.
+To sell items, they must be listed. You can view this list using the help button. Then, place the item in your main inventory and click Sell. A suspicious package will be given to you instead of your item. Drop it in a mailbox to receive your money.
 
 [h3]How are purchase and selling prices defined ?[/h3]
 
 The prices of items are also generated randomly, allowing you to find items listed at different prices within the same category. To determine the price of an item, I assign a base price that varies depending on its category. For weapons, the price is set based on the damage they can inflict without critical hits, the weight of the item, and the number of hands required to use it. Consequently, two-handed weapons are generally more expensive than one-handed ones. Jewelry and lingerie utilize a value system without a formula, which serves to balance the gameplay by ensuring a steady income for players and rewarding farming efforts. Gold jewelry and the WristWatch are considered reliable items for generating substantial profit.
 
 Once the base price is established, a purchase value is generated that falls between the initial price and three times that value. The selling price is calculated to be between the initial price and one-and-a-half times that price, divided by two. This initial pricing configuration ensures a balance between farming and acquiring rare items within the game.
-
 
 [h3]How much is an item available for on the dark web ?[/h3]
 
@@ -69,16 +82,38 @@ Your assets are grouped in your digital wallet, allowing you to track the real-t
 
 The hacking interface is available as long as you have an ID card. Currently, there are no restrictions for hacking an ID card. Once you have a zombie's name, you try to retrieve the balance of their bank account by hacking the central bank. Your electrical skill level gives you the chance to find more money, but that's not all; to unlock access to the account, you must find the correct code. After six attempts without finding the correct code, the account will be locked and cannot be recovered. Similar to the game Mastermind, the code helps you find the right numbers. You need to find four unique digits; This means there will never be any duplicate or triplicate numbers in the code.
 
-[h3]What is the future of this project ?[/h3]
+[h2]Contracts:[/h2]
 
-Currently, only the basic feature that allows for a functional mod is implemented. My aim was to provide something quickly and gather your initial feedback to ensure that I'm heading in the right direction based on community input.
+[h3]How it works ?[/h3]
 
-I plan to integrate stock market speculation into this mod (Trading UI), which would give players an additional option to earn more money. Additionally, I would like to replace the current acquisition system, which I believe is not very realistic. Instead of obtaining an item with a simple click, where it either appears in your inventory or disappears upon sale, I envision creating expeditions to retrieve or sell these items, with a nearby safe that introduces an element of risk.
+Contracts are like quests in this mod. Once you connect to the contract interface, available companies on the stock market will offer contracts to meet their needs. Successfully completing a mission will increase the company's stock value.
 
-Furthermore, I intend to establish a contract system within the dark web, offering quests of varying difficulty with rewards tied to that difficulty. This would add depth and engagement to the gameplay experience.
+Contracts are a way to get you out of your hideout and earn a lot of money. They reset every week. In the first week of the game, contracts are intentionally unavailable to allow players to settle into the world.
 
-Based on the electrical skill, which I believe is the most relevant within the game for using computers, I am considering the integration of IT functionalities, including:
+[h3]How do I complete my mission ?[/h3]
 
-- Hacking a bank to gain a chance to empty a bank account linked to an ID card found on a zombie.
-- Hacking the city’s surveillance cameras to examine an area and assess the number of zombies present.
-- And more...
+Generally, contracts will require you to go to a specific location. The place is mentioned in the conversation with your employer. Once there, either kill your target or retrieve the contract item. The item isn't located in containers in the usual way; you validate your contract by right-clicking in the context menu to avoid interference with other game interactions.
+
+Once you click on the context menu, your character will launch an animation to automatically retrieve the items related to the contract. Don't lose them, or you may have to cancel your mission. Keep the quest item in your main inventory, go to a mailbox, and send your package. When you return to the computer on the contract interface, your account will be credited with the quest amount.
+
+[h3]How to cancel a contract ?[/h3]
+
+You can only hold one contract at a time. If you find this contract too difficult, go to the contract interface to simply cancel it with no penalties.
+
+[h3]How do I return the mission item ?[/h3]
+
+Place the item in your main inventory and send it by mail. Be careful, only the item retrieved at the contract location will count as the successful completion of your mission.
+
+[h2]Requests:[/h2]
+
+[h3]How it works ?[/h3]
+
+The requests interface works like contracts but in reverse; this time, you make a request on IRC to obtain something.
+
+[h3]How do I retrieve my order ?[/h3]
+
+Your order is sent directly by mail, contained in a large box. There is no delay between ordering and receiving it.
+
+[h3]Why can't I place an order ? I have cash on me.[/h3]
+
+you need to deposit the money into your bank account via an ATM. Requests are automatically linked to your bank account; without money, you can't do anything online.

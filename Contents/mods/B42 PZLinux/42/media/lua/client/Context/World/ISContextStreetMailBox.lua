@@ -80,6 +80,7 @@ function StreetMailBoxUI:onSendPackage()
     
     for j = 0, items:size() - 1 do
         local item = items:get(j)
+        local modData = getPlayer():getModData()
         if item and item:getFullType() == "Base.SuspiciousPackage" then
             local boxName = item:getName()
             boxName = boxName:gsub("%$", "")
@@ -91,6 +92,33 @@ function StreetMailBoxUI:onSendPackage()
                 break
             end
         end
+
+        if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
+        or (item and item:getFullType() == "Base.Bag_Mail" and modData.PZLinuxContractManhunt == 3)
+        or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
+        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1) then
+            modData.PZLinuxActiveContract = 2
+            inventory:Remove(item)
+            break
+        end
+    end
+
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxActiveRequest == 1 then
+        while #modData.PZLinuxOnItemRequest > 0 do
+            local inv = getPlayer():getInventory()
+            local parcel = inv:AddItem('Base.Parcel_Large')
+            local parcelInv = parcel:getInventory()
+            local itemName = modData.PZLinuxOnItemRequest[1]
+            local itemCount = modData.PZLinuxOnItemRequestCount[1]
+            print("debug", itemName, itemCount)
+            for i = 1, itemCount do
+                parcelInv:AddItem(itemName)
+            end
+            table.remove(modData.PZLinuxOnItemRequest, 1)
+            table.remove(modData.PZLinuxOnItemRequestCount, 1)
+        end
+        modData.PZLinuxActiveRequest = 0
     end
 end
 
@@ -127,6 +155,8 @@ function StreetMailBoxMenu_ShowUI(player)
     uiStreetMailBox.centeredImage = centeredImage
     uiStreetMailBox:initialise()
     uiStreetMailBox:addToUIManager()
+
+    return uiStreetMailBox
 end
 
 function StreetMailBoxMenu_AddContext(player, context, worldobjects)
@@ -140,7 +170,8 @@ function StreetMailBoxMenu_AddContext(player, context, worldobjects)
                 or string.find(sprite:getName(), "street_decoration_01_10") then
                     local square = obj:getSquare()
                     if square then
-                        context:addOption("MailBox", obj, StreetMailBoxMenu_OnUse, player)
+                        local x, y, z = square:getX(), square:getY(), square:getZ()
+                        context:addOption("MailBox", obj, StreetMailBoxMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                     end
                 end
@@ -149,8 +180,15 @@ function StreetMailBoxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function StreetMailBoxMenu_OnUse(option, worldObject, player)
-    StreetMailBoxMenu_ShowUI(player)
+function StreetMailBoxMenu_OnUse(obj, player, x, y, z, sprite)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+        end
+    end
+    ISTimedActionQueue.add(ISStreetMailBoxAction:new(getPlayer()), obj)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(StreetMailBoxMenu_AddContext)
