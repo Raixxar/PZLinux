@@ -1,6 +1,7 @@
 - Contract Clean a building or area
 - Ability to purchase cars.
-- Close interface if player are not nearby interface
+- Create zombie races for online betting.
+- Add quests to capture zombies alive.
 
 # Update v.0.1.8
 - All values are now integrated into ModData. the PZLinux.ini file is no longer used.
@@ -20,7 +21,8 @@
 - You can now make requests on IRC to purchase canned goods, fish, books, fruits, meats, and vegetables.
 - Added a notification sound for new messages on IRC
 - Price balancing on the dark web. With contracts and requests features, selling prices are adjusted downward to balance the mod.
-  
+- Fix an issue where the interface closes correctly if the player moves away from the computer.
+
 # Update v.0.1.7-rc1
 - Fix the issue where the mailbox interface was not available based on the mailbox direction.
 
