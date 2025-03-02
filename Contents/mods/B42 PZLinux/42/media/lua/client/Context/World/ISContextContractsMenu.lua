@@ -63,25 +63,25 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function completeContractMenu_OnUse(worldObject, player,  x, y, z)
+function completeContractMenu_OnUse(obj, player,  x, y, z)
     local playerSquare = getPlayer():getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
         local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), freeSquare:getX(), freeSquare:getY(), freeSquare:getZ()))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISTakeThePackageAction:new(getPlayer(), worldObject))
+    ISTimedActionQueue.add(ISTakeThePackageAction:new(getPlayer(), obj))
 end
 
-function completeContractMenu_OnCut(worldObject, player, x, y, z)
+function completeContractMenu_OnCut(body, player, x, y, z)
     ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), x, y, z))
-    ISTimedActionQueue.add(ISDecapitateAction:new(getPlayer(), worldObject))
+    ISTimedActionQueue.add(ISDecapitateAction:new(getPlayer(), body))
 end
 
-function completeContractMenu_OnBlood(worldObject, player, x, y, z)
+function completeContractMenu_OnBlood(body, player, x, y, z)
     ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), x, y, z))
-    ISTimedActionQueue.add(ISBloodAction:new(getPlayer(), worldObject))
+    ISTimedActionQueue.add(ISBloodAction:new(getPlayer(), body))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(completeContractMenu_AddContext)

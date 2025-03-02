@@ -7,11 +7,12 @@ function ISDecapitateAction:isValid()
 end
 
 function ISDecapitateAction:waitToStart()
-    return false
+    self.character:faceThisObject(self.body)
+	return self.character:shouldBeTurning()
 end
 
 function ISDecapitateAction:update()
-    return false
+    self.character:faceThisObject(self.body)
 end
 
 function ISDecapitateAction:start()
@@ -30,18 +31,18 @@ function ISDecapitateAction:perform()
     local inv = self.character:getInventory()
     local parcel = inv:AddItem('Base.Bag_Mail')
     parcel:setName("Cut target")
-    self.item:removeFromWorld()
-    self.item:removeFromSquare()
+    self.body:removeFromWorld()
+    self.body:removeFromSquare()
     local modData = getPlayer():getModData()
     modData.PZLinuxContractManhunt = 3
 end
 
-function ISDecapitateAction:new(character, worldObject)
-    local o = {}
+function ISDecapitateAction:new(character, body)
+    local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
-    o.item = worldObject
+    o.body = body
     o.stopOnWalk = true
     o.maxTime = 350
     return o

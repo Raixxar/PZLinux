@@ -475,7 +475,8 @@ end
 function requestUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 function requestUI:onMinimizeBack(button)
@@ -522,4 +523,6 @@ function requestMenu_ShowUI(player)
     ui.centeredImage = centeredImage
     ui:initialise()
     ui:addToUIManager()
+
+    return ui
 end

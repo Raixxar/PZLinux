@@ -155,6 +155,8 @@ function StreetMailBoxMenu_ShowUI(player)
     uiStreetMailBox.centeredImage = centeredImage
     uiStreetMailBox:initialise()
     uiStreetMailBox:addToUIManager()
+
+    return uiStreetMailBox
 end
 
 function StreetMailBoxMenu_AddContext(player, context, worldobjects)
@@ -178,15 +180,15 @@ function StreetMailBoxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function StreetMailBoxMenu_OnUse(worldObject, player, x, y, z, sprite)
+function StreetMailBoxMenu_OnUse(obj, player, x, y, z, sprite)
     local playerSquare = getPlayer():getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
         local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), freeSquare:getX(), freeSquare:getY(), freeSquare:getZ()))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISStreetMailBoxAction:new(getPlayer()))
+    ISTimedActionQueue.add(ISStreetMailBoxAction:new(getPlayer()), obj)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(StreetMailBoxMenu_AddContext)

@@ -504,7 +504,8 @@ end
 function tradingUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
@@ -558,4 +559,6 @@ function tradingMenu_ShowUI(player)
         end
     end
     ui:startTrading()
+
+    return ui
 end

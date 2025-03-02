@@ -161,6 +161,8 @@ function MailBoxMenu_ShowUI(player)
     uiMailBox.centeredImage = centeredImage
     uiMailBox:initialise()
     uiMailBox:addToUIManager()
+
+    return uiMailBox
 end
 
 function MailBoxMenu_AddContext(player, context, worldobjects)
@@ -184,15 +186,15 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function MailBoxMenu_OnUse(worldObject, player, x, y, z, sprite)
+function MailBoxMenu_OnUse(obj, player, x, y, z, sprite)
     local playerSquare = getPlayer():getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
         local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), freeSquare:getX(), freeSquare:getY(), freeSquare:getZ()))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISMailBoxAction:new(getPlayer()))
+    ISTimedActionQueue.add(ISMailBoxAction:new(getPlayer()), obj)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(MailBoxMenu_AddContext)

@@ -230,7 +230,8 @@ end
 function connectUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
@@ -271,4 +272,6 @@ function connectMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
     ui:startConnect()
+
+    return ui
 end

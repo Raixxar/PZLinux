@@ -5,28 +5,33 @@ function ISStreetMailBoxAction:isValid()
 end
 
 function ISStreetMailBoxAction:waitToStart()
-    return false
+    self.character:faceThisObject(self.item)
+	return self.character:shouldBeTurning()
 end
 
 function ISStreetMailBoxAction:update()
-    return false
+    self.character:faceThisObject(self.item)
 end
 
 function ISStreetMailBoxAction:start()
-    return false
+    self.ui = StreetMailBoxMenu_ShowUI(self.character)
+    self:setActionAnim("Loot")
+    self.character:SetVariable("LootPosition", "Medium")
+    self.character:reportEvent("EventLootItem")
 end
 
 function ISStreetMailBoxAction:stop()
+    self.ui:removeFromUIManager()
     ISBaseTimedAction.stop(self)
 end
 
 function ISStreetMailBoxAction:perform()
-    StreetMailBoxMenu_ShowUI(self.character)
     ISBaseTimedAction.perform(self)
 end
 
-function ISStreetMailBoxAction:new(character)
+function ISStreetMailBoxAction:new(character, item)
     local o = ISBaseTimedAction.new(self, character)
-    o.maxTime = 5
+    o.item = item
+    o.maxTime = -1
     return o
 end

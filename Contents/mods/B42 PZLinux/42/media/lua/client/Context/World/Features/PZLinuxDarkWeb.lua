@@ -55,6 +55,7 @@ local darkWebItems = {
     { id = {"Base.AmmoStraps"}, Price = 2500 },
     -- HACKING
     { id = {"Base.CreditCard"}, Price = 1000 },
+    { id = {"Base.IDcard"}, Price = 1000 },
     -- EXPLOSIVES
     { id = {"Base.SmokeBomb"}, Price = 100 },
     { id = {"Base.Molotov"}, Price = 150 },
@@ -579,14 +580,16 @@ end
 function darkWebUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- LOGOUT
 function darkWebUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- UPDATE UI
@@ -1065,5 +1068,6 @@ function darkWebMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
     ui:startUI()
- 
+    
+    return ui 
 end

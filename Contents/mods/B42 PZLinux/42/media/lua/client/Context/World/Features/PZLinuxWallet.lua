@@ -320,7 +320,8 @@ end
 function walletUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
@@ -328,7 +329,8 @@ function walletUI:onClose(button)
     self.isClosing = true
     lastConnectionTimestamp = 0
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 function walletMenu_ShowUI(player)
@@ -376,4 +378,6 @@ function walletMenu_ShowUI(player)
         end
     end
     ui:startWallet()
+
+    return ui
 end

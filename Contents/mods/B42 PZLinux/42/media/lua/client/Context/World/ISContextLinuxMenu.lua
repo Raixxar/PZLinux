@@ -268,17 +268,6 @@ function linuxUI:onPrompt()
     self.requestButton:setVisible(true)
 end
 
-function linuxUI:onHackingId()
-    if self.isConnected == true then
-        self.promptLabel:setVisible(false)
-        self.helpLabel:setVisible(false)
-        self:onClose()
-        hackingMenu_ShowUI(player)
-    else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
-    end
-end
-
 function linuxUI:onInternet()
     if self.isConnected == false then
         CONNECTED_TO_INTERNET_TIME = math.ceil(getGameTime():getWorldAgeHours())
@@ -286,7 +275,9 @@ function linuxUI:onInternet()
         self.helpLabel:setVisible(false)
         self:onClose()
         self.isConnected = true
-        connectMenu_ShowUI(player)
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 2
     end
 end
 
@@ -295,7 +286,9 @@ function linuxUI:onDarkWeb()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        darkWebMenu_ShowUI(player)
+
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 3
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
@@ -306,7 +299,9 @@ function linuxUI:onTrading()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        tradingMenu_ShowUI(player)
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 4
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
@@ -317,7 +312,22 @@ function linuxUI:onWallet()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        walletMenu_ShowUI(player)
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 5
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
+function linuxUI:onHackingId()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 6
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
@@ -328,7 +338,9 @@ function linuxUI:onContracts()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        contractsMenu_ShowUI(player)
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 7
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
@@ -339,7 +351,9 @@ function linuxUI:onRequest()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        requestMenu_ShowUI(player)
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 8
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
@@ -399,6 +413,8 @@ function linuxMenu_ShowUI(player)
         ui:onBoot()
         STAY_CONNECTED_TIME = getHourTime
     end
+
+    return ui
 end
 
 -- CONTEXT MENU
@@ -428,15 +444,15 @@ function linuxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function linuxMenu_OnUse(worldObject, player, x, y, z, sprite)
+function linuxMenu_OnUse(obj, player, x, y, z, sprite, square)
     local playerSquare = getPlayer():getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
         local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), freeSquare:getX(), freeSquare:getY(), freeSquare:getZ()))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISPZLinuxAction:new(getPlayer()))
+    ISTimedActionQueue.add(ISPZLinuxAction:new(getPlayer()), obj)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(linuxMenu_AddContext)

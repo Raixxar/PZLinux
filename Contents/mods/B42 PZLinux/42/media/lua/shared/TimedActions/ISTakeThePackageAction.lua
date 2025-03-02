@@ -7,11 +7,12 @@ function ISTakeThePackageAction:isValid()
 end
 
 function ISTakeThePackageAction:waitToStart()
-    return false
+    self.character:faceThisObject(self.item)
+	return self.character:shouldBeTurning()
 end
 
 function ISTakeThePackageAction:update()
-    return false
+    self.character:faceThisObject(self.item)
 end
 
 function ISTakeThePackageAction:start()
@@ -34,12 +35,12 @@ function ISTakeThePackageAction:perform()
     modData.PZLinuxContractPickUp = 3
 end
 
-function ISTakeThePackageAction:new(character, worldObject)
-    local o = {}
+function ISTakeThePackageAction:new(character, item)
+    local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
-    o.item = worldObject
+    o.item = item
     o.stopOnWalk = true
     o.maxTime = 250
     return o

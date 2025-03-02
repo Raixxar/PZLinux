@@ -187,7 +187,7 @@ function contractsUI:initialise()
         getHourTime = 168
     end
 
-    if (getHourTime - LAST_CONNECTION_TIME) > 1 then
+    if (getHourTime - LAST_CONNECTION_TIME) > 168 then
         shuffleTable(contracts)
         selectedContracts = {}
         local randCountContracts = ZombRand(1, 9)
@@ -232,6 +232,18 @@ function contractsUI:onCancelContract(button)
 
     local inv = getPlayer():getInventory()
     local notebook = inv:Remove('Notebook')
+
+    local dataName = modData.PZLinuxContractCompanyUp
+    local companyData = ModData.getOrCreate(dataName)
+    local priceHistory = companyData.dataName or {}
+    local lastIndex = #priceHistory
+    local lastPrice = priceHistory[lastIndex]
+    local newPrice = math.ceil(lastPrice - (lastPrice * ZombRand(1, 10) / 100))
+
+    table.insert(companyData.dataName, newPrice)
+    if #companyData.dataName > 48 then
+        table.remove(companyData.dataName, 1)
+    end
 
     self.isClosing = true
     self:removeFromUIManager()
@@ -436,14 +448,6 @@ function contractsUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
             self.loadingMessage:setName(message)
-
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
-                coroutine.yield()
-                elapsed = elapsed + 0.016
-            end
-
-            if self.isClosing then return end
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
             self.yesButton.contractId = contract
@@ -1382,14 +1386,6 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
-                coroutine.yield()
-                elapsed = elapsed + 0.016
-            end
-
-            if self.isClosing then return end
-
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
             self.yesButton.contractId = contract
             self.yesButton:initialise()
@@ -1505,14 +1501,6 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
-                coroutine.yield()
-                elapsed = elapsed + 0.016
-            end
-
-            if self.isClosing then return end
-
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
             self.yesButton.contractId = contract
             self.yesButton:initialise()
@@ -1545,6 +1533,7 @@ end
 function contractsUI:onYesButton(button)
     local modData = getPlayer():getModData()
     modData.PZLinuxActiveContract = 1
+    modData.PZLinuxOnZombieDead = 0
     self.isClosing = true
     self:removeFromUIManager()
     contractsMenu_ShowUI(player)
@@ -1581,7 +1570,8 @@ end
 function contractsUI:onMinimize(button)
     self.isClosing = true
     self:removeFromUIManager()
-    linuxMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
@@ -1622,4 +1612,6 @@ function contractsMenu_ShowUI(player)
     ui.centeredImage = centeredImage
     ui:initialise()
     ui:addToUIManager()
+
+    return ui
 end

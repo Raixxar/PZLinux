@@ -7,11 +7,12 @@ function ISBloodAction:isValid()
 end
 
 function ISBloodAction:waitToStart()
-    return false
+    self.character:faceThisObject(self.body)
+	return self.character:shouldBeTurning()
 end
 
 function ISBloodAction:update()
-    return false
+    self.character:faceThisObject(self.body)
 end
 
 function ISBloodAction:start()
@@ -35,12 +36,12 @@ function ISBloodAction:perform()
     modData.PZLinuxContractBlood = 3
 end
 
-function ISBloodAction:new(character, worldObject)
-    local o = {}
+function ISBloodAction:new(character, body)
+    local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
-    o.item = worldObject
+    o.body = body
     o.stopOnWalk = true
     o.maxTime = 350
     return o
