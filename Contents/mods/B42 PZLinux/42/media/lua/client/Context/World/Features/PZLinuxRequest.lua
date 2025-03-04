@@ -7,6 +7,7 @@ local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
 local PZLinuxOnItemRequest = ""
 local PZLinuxOnItemRequestCount = 0
+local ZLinuxOnItemRequestPriceDelta = 1
 
 local requests = {
     [1] = { baseName = "Canned food", price = 50 },
@@ -16,11 +17,12 @@ local requests = {
     [5] = { baseName = "Vegetables", price = 60 },
     [6] = { baseName = "Pickled food", price = 70 },
     [7] = { baseName = "Drink", price = 30 },
-    [8] = { baseName = "Book", price = 150 }
+    [8] = { baseName = "Book", price = 150 },
+    [9] = { baseName = "Car", price = 15000 }
 }
 
 local contracts = {}
-for i = 1, 8 do
+for i = 1, #requests do
     local getHourTimePriceValue = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)   
     itemName = requests[i].baseName
     itemPrice = math.ceil(ZombRand(requests[i].price, requests[i].price * getHourTimePriceValue)/10)*10
@@ -93,6 +95,25 @@ function requestUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxUISFX == 0 then
+        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
+        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
+        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        self.skipAnimationButton:setVisible(true)
+        self.skipAnimationButton:initialise()
+        self.topBar:addChild(self.skipAnimationButton)
+    else
+        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
+        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
+        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        self.skipAnimationButton:setVisible(true)
+        self.skipAnimationButton:initialise()
+        self.topBar:addChild(self.skipAnimationButton)
+    end
+
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
     self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
@@ -100,6 +121,14 @@ function requestUI:initialise()
     self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
+
+    self.minimizeBackButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimizeBack)
+    self.minimizeBackButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeBackButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeBackButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeBackButton:setVisible(false)
+    self.minimizeBackButton:initialise()
+    self.topBar:addChild(self.minimizeBackButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -109,9 +138,14 @@ function requestUI:initialise()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
    
+    local itemsPerPage = 8
+    local currentPage = self.currentPage or 1
+    local startIndex = (currentPage - 1) * itemsPerPage + 1
+    local endIndex = math.min(startIndex + itemsPerPage - 1, #contracts)
+
     local y = 0.20
     self.contractButtons = {}
-    for i = 1, #contracts do
+    for i = startIndex, endIndex do
         local contract = contracts[i]
         local contractButton = ISButton:new(self.width * 0.20, self.height * y, self.width * 0.57, self.height * 0.05, contract.name, self, self.onSelectContract)
         contractButton.textColor = {r=0, g=1, b=0, a=1}
@@ -125,9 +159,75 @@ function requestUI:initialise()
         table.insert(self.contractButtons, contractButton)
         y = y + 0.06
     end
+
+    self.prevButton = ISButton:new(self.width * 0.454, self.height * 0.68, self.width * 0.030, self.height * 0.025, "<", self, function()
+        if currentPage == 1 then currentPage = 2 end
+        self.currentPage = currentPage - 1
+        self:refreshContracts()
+    end)
+    self.prevButton:initialise()
+    self.topBar:addChild(self.prevButton)
+
+    if endIndex < #contracts then
+        self.nextButton = ISButton:new(self.width * 0.484, self.height * 0.68, self.width * 0.030, self.height * 0.025, ">", self, function()
+            self.currentPage = currentPage + 1
+            self:refreshContracts()
+        end)
+        self.nextButton:initialise()
+        self.topBar:addChild(self.nextButton)
+    end
+end
+
+function requestUI:refreshContracts()
+    for _, button in ipairs(self.contractButtons) do
+        button:setVisible(false)
+    end
+    self.contractButtons = {}
+
+    local y = 0.20
+    local itemsPerPage = 8
+    local currentPage = self.currentPage or 1
+    local startIndex = (currentPage - 1) * itemsPerPage + 1
+    local endIndex = math.min(startIndex + itemsPerPage - 1, #contracts)
+
+    for i = startIndex, endIndex do
+        local contract = contracts[i]
+        local contractButton = ISButton:new(self.width * 0.20, self.height * y, self.width * 0.57, self.height * 0.05, contract.name, self, self.onSelectContract)
+        contractButton.textColor = {r=0, g=1, b=0, a=1}
+        contractButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        contractButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        contractButton.contractId = contract.id
+        contractButton.contractPosition = i
+        contractButton:setVisible(true)
+        contractButton:initialise()
+        self.topBar:addChild(contractButton)
+        table.insert(self.contractButtons, contractButton)
+        y = y + 0.06
+    end
+
+    self.prevButton = ISButton:new(self.width * 0.454, self.height * 0.68, self.width * 0.030, self.height * 0.025, "<", self, function()
+        if currentPage == 1 then currentPage = 2 end
+        self.currentPage = currentPage - 1
+        self:refreshContracts()
+    end)
+    self.prevButton:initialise()
+    self.topBar:addChild(self.prevButton)
+
+    if endIndex < #contracts then
+        self.nextButton = ISButton:new(self.width * 0.484, self.height * 0.68, self.width * 0.030, self.height * 0.025, ">", self, function()
+            self.currentPage = currentPage + 1
+            self:refreshContracts()
+        end)
+        self.nextButton:initialise()
+        self.topBar:addChild(self.nextButton)
+    end
 end
 
 function requestUI:onSelectContract(button)
+    self.minimizeButton:setVisible(false)
+    self.minimizeBackButton:setVisible(true)
+    self.prevButton:setVisible(false)
+    self.nextButton:setVisible(false)
     for _, button in ipairs(self.contractButtons) do
         button:setVisible(false)
     end
@@ -180,11 +280,14 @@ function requestUI:onContractId(contract)
         local modData = getPlayer():getModData()
         local message = ""
 
+        local sleepSFX = 1
+        if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
         message = "You are alone in this IRC channel."
         self.loadingMessage:setName(message)
 
         local elapsed = 0
-        while elapsed < ZombRand(50, 100) do
+        while elapsed < ZombRand(50, 100) * sleepSFX do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
@@ -201,7 +304,7 @@ function requestUI:onContractId(contract)
         sellerName = "<" .. sellerName .. "> "
 
         local elapsed = 0
-        while elapsed < ZombRand(25, 50) do
+        while elapsed < ZombRand(25, 50) * sleepSFX * sleepSFX do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
@@ -213,7 +316,7 @@ function requestUI:onContractId(contract)
         self.loadingMessage:setName(message)
         
         local elapsed = 0
-        while elapsed < ZombRand(25, 50) do
+        while elapsed < ZombRand(25, 50) * sleepSFX do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
@@ -227,7 +330,7 @@ function requestUI:onContractId(contract)
         end)
         
         local elapsed = 0
-        while elapsed < ZombRand(25, 50) do
+        while elapsed < ZombRand(25, 50) * sleepSFX do
             coroutine.yield()
             elapsed = elapsed + 0.016
         end
@@ -235,6 +338,7 @@ function requestUI:onContractId(contract)
         if self.isClosing then return end
 
         local quests = {}
+        local locations = {}
         if contract == 1 then -- Canned food
             quests = {
                 [1] = { baseName = "Base.TinnedBeans", weight = 1 },
@@ -365,9 +469,71 @@ function requestUI:onContractId(contract)
             }
         end
 
+        if contract == 9 then  -- Car
+            quests = {
+                [1] = { baseName = "Base.CarStationWagon", weight = 0.1, delta = 1.2 },
+                [2] = { baseName = "Base.CarStationWagon2", weight = 0.1, delta = 1.2 },
+                [3] = { baseName = "Base.SportsCar", weight = 0.1, delta = 4 },
+                [4] = { baseName = "Base.PickUpTruck", weight = 0.1, delta = 2 },
+                [5] = { baseName = "Base.PickUpTruckLightsFire", weight = 0.1, delta = 2.5 },
+                [6] = { baseName = "Base.PickUpTruckMccoy", weight = 0.1, delta = 2 },
+                [7] = { baseName = "Base.SmallCar", weight = 0.1, delta = 0.5 },
+                [8] = { baseName = "Base.CarNormal", weight = 0.1, delta = 1 },
+                [9] = { baseName = "Base.CarLightsPolice", weight = 0.1, delta = 2 },
+                [10] = { baseName = "Base.CarTaxi", weight = 0.1, delta = 1 },
+                [11] = { baseName = "Base.CarTaxi2", weight = 0.1, delta = 1 },
+                [12] = { baseName = "Base.ModernCar02", weight = 0.1, delta = 1.5 },
+                [13] = { baseName = "Base.StepVan", weight = 0.1, delta = 1.8 },
+                [14] = { baseName = "Base.StepVanMail", weight = 0.1, delta = 1.8 },
+                [15] = { baseName = "Base.StepVan_Heralds", weight = 0.1, delta = 1.8 },
+                [16] = { baseName = "Base.StepVan_Scarlet", weight = 0.1, delta = 1.8 },
+                [17] = { baseName = "Base.ModernCar", weight = 0.1, delta = 1.5 },
+                [18] = { baseName = "Base.OffRoad", weight = 0.1, delta = 3 },
+                [19] = { baseName = "Base.SUV", weight = 0.1, delta = 3 },
+                [20] = { baseName = "Base.Van", weight = 0.1, delta = 2 },
+                [21] = { baseName = "Base.VanAmbulance", weight = 0.1, delta = 2.5 },
+                [22] = { baseName = "Base.VanRadio", weight = 0.1, delta = 2 },
+                [23] = { baseName = "Base.VanSeats", weight = 0.1, delta = 2 },
+                [24] = { baseName = "Base.VanRadio_3N", weight = 0.1, delta = 2 },
+                [25] = { baseName = "Base.VanSpiffo", weight = 0.1, delta = 2 },
+                [26] = { baseName = "Base.Van_KnoxDisti", weight = 0.1, delta = 2 },
+                [27] = { baseName = "Base.Van_LectroMax", weight = 0.1, delta = 2 },
+                [28] = { baseName = "Base.Van_MassGenFac", weight = 0.1, delta = 2 },
+                [29] = { baseName = "Base.Van_Transit", weight = 0.1, delta = 2 },
+                [30] = { baseName = "Base.SmallCar02", weight = 0.1, delta = 0.5 },
+                [31] = { baseName = "Base.CarLuxury", weight = 0.1, delta = 4 }
+            }
+
+            locations = {
+                [1] = { name = "Storage Units of Riverside", x = 5550, y = 6080, z = 0 },
+                [2] = { name = "Storage Units of Brandenburg", x = 1995, y = 6519, z = 0 },
+                [3] = { name = "Storage Units of Irvington", x = 2442, y = 13917, z = 0 },
+                [4] = { name = "Storage Units of Muldraugh: South", x = 10771, y = 10323, z = 0 },
+                [5] = { name = "Storage Units of Muldraugh: North", x = 10696, y = 9814, z = 0 },
+                [6] = { name = "Storage Units of Muldraugh: North", x = 10696, y = 9814, z = 0 },
+                [7] = { name = "Storage Units of West Point", x = 12154, y = 6996, z = 0 },
+                [8] = { name = "Storage Units of Valley Station", x = 12963, y = 4851, z = 0 },           
+                [9] = { name = "Storage Units of Louisville: South", x = 12712, y = 2010, z = 0 },
+                [10] = { name = "Storage Units of Louisville: West", x = 12205, y = 1684, z = 0 },
+            }           
+        end
+
         local randomQuest = ZombRand(1, #quests + 1)
         local quest = quests[randomQuest]
         local deltaWeight = 1
+        local locationName = ""
+
+        if contract == 9 then
+            local randomLocation = ZombRand(1, #locations + 1)
+            local location = locations[randomLocation]
+            if quest and location then
+                PZLinuxOnItemRequestPriceDelta = quest.delta
+                modData.PZLinuxRequestLocationX = location.x
+                modData.PZLinuxRequestLocationY = location.y
+                modData.PZLinuxRequestLocationZ = location.z
+                locationName = location.name
+            end
+        end
 
         if quest then
             PZLinuxOnItemRequest = quest.baseName
@@ -378,20 +544,43 @@ function requestUI:onContractId(contract)
         local checkProduceName = getScriptManager():FindItem(PZLinuxOnItemRequest)
         local produceNameValide = checkProduceName and checkProduceName:getDisplayName() and checkProduceName:getDisplayName():match("%S")
 
+        local produceName = nil
         if produceNameValide then
             produceName = checkProduceName:getDisplayName()
         else    
             produceName = contracts[contract].name
         end
 
+        if contract == 9 then 
+            local vehicle = getScriptManager():getVehicle(PZLinuxOnItemRequest)
+            if vehicle then
+                produceName = getText("IGUI_VehicleName" .. vehicle:getName())
+            else
+                produceName = PZLinuxOnItemRequest
+            end
+        end
+
         getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-        message = message .. "\n" .. sellerName .. "Yes, I have ".. PZLinuxOnItemRequestCount .. " " .. produceName .. " for $" .. contracts[contract].price .. " each."
+        message = message .. "\n" .. sellerName .. "Yes, I have ".. PZLinuxOnItemRequestCount .. " " .. produceName .. " for $" .. contracts[contract].price
         self.loadingMessage:setName(message)
 
         local elapsed = 0
-        while elapsed < ZombRand(25, 50) do
+        while elapsed < ZombRand(25, 50) * sleepSFX do
             coroutine.yield()
             elapsed = elapsed + 0.016
+        end
+
+        if contract == 9 then
+            if self.isClosing then return end
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "The car is at the " .. locationName
+            self.loadingMessage:setName(message)
+    
+            local elapsed = 0
+            while elapsed < ZombRand(25, 50) * sleepSFX do
+                coroutine.yield()
+                elapsed = elapsed + 0.016
+            end
         end
 
         if self.isClosing then return end
@@ -434,13 +623,21 @@ end
 
 function requestUI:onYesButton(button)
     local modData = getPlayer():getModData()
-    modData.PZLinuxActiveRequest = 1
-
     local playerBalance = loadAtmBalance()
-    local newBalance = playerBalance - (PZLinuxOnItemRequestCount * contracts[button.id].price)
+    local newBalance = playerBalance - (PZLinuxOnItemRequestCount * contracts[button.id].price * ZLinuxOnItemRequestPriceDelta)
     saveAtmBalance(newBalance)
     self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
 
+    if button.id == 9 then 
+        modData.PZLinuxOnItemRequestCar = 1
+        modData.PZLinuxOnItemRequestCarName = PZLinuxOnItemRequest
+        self.isClosing = true
+        self:removeFromUIManager()
+        requestMenu_ShowUI(player)
+        return
+    end
+    
+    modData.PZLinuxActiveRequest = 1
     if type(modData.PZLinuxOnItemRequest) ~= "table" then
         modData.PZLinuxOnItemRequest = {}
     end
@@ -490,6 +687,32 @@ function requestUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
     requestMenu_ShowUI(player)
+end
+
+function requestUI:onSFXOn(button)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUISFX = 0
+    self.skipAnimationButton:close()
+    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
+    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
+    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.skipAnimationButton:setVisible(true)
+    self.skipAnimationButton:initialise()
+    self.topBar:addChild(self.skipAnimationButton)
+end
+
+function requestUI:onSFXOff(button)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUISFX = 1
+    self.skipAnimationButton:close()
+    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
+    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
+    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.skipAnimationButton:setVisible(true)
+    self.skipAnimationButton:initialise()
+    self.topBar:addChild(self.skipAnimationButton)
 end
 
 function requestMenu_ShowUI(player)

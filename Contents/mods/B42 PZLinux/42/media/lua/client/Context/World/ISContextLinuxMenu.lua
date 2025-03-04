@@ -2,6 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
+local PZLinuxVersion = "0.1.9"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -74,7 +75,7 @@ function linuxUI:initialise()
     self.topBar:addChild(self.bootOutput)
 
     -- PROMPT CLI
-    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux v.0.1.8.", 0, 1, 0, 1, UIFont.Small, true)
+    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux v.0.1.9.", 0, 1, 0, 1, UIFont.Small, true)
     self.promptLabel:setVisible(false)
     self.promptLabel:initialise()
     self.topBar:addChild(self.promptLabel)
@@ -153,6 +154,14 @@ function linuxUI:initialise()
     self.requestButton:setVisible(false)
     self.requestButton:initialise()
     self.topBar:addChild(self.requestButton)
+
+    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, "ONLINE BETTING", self, self.onBetting)
+    self.bettingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.bettingButton.textColor = {r=0, g=1, b=0, a=1}
+    self.bettingButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.bettingButton:setVisible(false)
+    self.bettingButton:initialise()
+    self.topBar:addChild(self.bettingButton)
 end
 
 -- CLOSE
@@ -166,19 +175,16 @@ function linuxUI:onBoot()
     local globalVolume = getCore():getOptionSoundVolume() / 10
     getSoundManager():PlayWorldSound("computerBoot", false, player:getSquare(), 0, 100, 1, true):setVolume(globalVolume)
     self.bootMessages = {
-        "<RGB:0,1,0>PZLinux version v.0.1.8 (POSIX compliant)",
+        "<RGB:0,1,0>PZLinux version " .. PZLinuxVersion .. " (POSIX compliant)",
         "Copyright (c) 1991 The PZLinux Project",
         "The Regents of the University of Louisville, Kentucky, USA",
-        "",
         "Booting PZLinux...",
         "Loading kernel version 1.0.0 (Wed Feb 6 12:00:00 UTC 1991)",
         "Memory: 4096k/4096k available (512k kernel, 256k reserved, 1024k shared)",
         "Kernel command line: root=/dev/hda1 ro",
-        "",
         "Checking 386/387 coupling... OK",
         "Calibrating delay loop... 5.27 BogoMIPS",
         "Checking BIOS EDD... OK",
-        "",
         "Detecting hardware...",
         " ide0: BM-DMA at 0x1f0-0x1f7,0x3f6 on IRQ 14",
         " ide1: BM-DMA at 0x170-0x177,0x376 on IRQ 15",
@@ -187,31 +193,25 @@ function linuxUI:onBoot()
         " hdc: CD-ROM 2X, ATAPI CD/DVD-ROM drive",
         " Floppy drive(s): fd0 is 1.44M",
         " FDC 0 is a post-1991 82077",
-        "",
         "Partition check:",
         " hda: hda1 hda2",
         " hdb: hdb1",
-        "",
         "RAMDISK: Compressed image found at block 0",
-        "",
         "Mounting root filesystem...",
         "EXT2-fs: mounted filesystem with ordered data mode.",
         "VFS: Mounted root (ext2 filesystem) readonly on device 03:01.",
         "Freeing unused kernel memory: 128k freed",
-        "",
         "INIT: version 1.0 booting",
         "Setting hostname to pzlinux.local",
         "Checking filesystems",
         "/dev/hda1: clean, 3021/32768 files, 10540/131072 blocks",
         "/dev/hdb1: clean, 2498/16384 files, 7340/65536 blocks",
-        "",
         "Mounting local filesystems... done",
         "Initializing random number generator... done",
         "Starting system log daemon: syslogd, klogd",
         "Starting network services: inetd, named",
         "Starting virtual terminals: tty1 tty2 tty3 tty4",
-        "",
-        "PZLinux v.0.1.8 (tty1)</RGB>"
+        "PZLinux  " .. PZLinuxVersion .. " (tty1)</RGB>"
     }
 
     self.terminalCoroutine = coroutine.create(function()
@@ -266,6 +266,7 @@ function linuxUI:onPrompt()
     self.hackingIdButton:setVisible(true)
     self.contractsButton:setVisible(true)
     self.requestButton:setVisible(true)
+    self.bettingButton:setVisible(true)
 end
 
 function linuxUI:onInternet()
@@ -359,6 +360,19 @@ function linuxUI:onRequest()
     end
 end
 
+function linuxUI:onBetting()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 9
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
 function linuxUI:onConnect()
     self.notConnectButton:setVisible(false)
     self.connectButton:setVisible(true)
@@ -422,6 +436,8 @@ function linuxMenu_AddContext(player, context, worldobjects)
     local modData = getPlayer():getModData()
     modData.PZLinuxUIX = nil
     modData.PZLinuxUIY = nil
+    local squareClicked = getPlayer():getSquare()
+    local targetX, targetY, targetZ = squareClicked:getX(), squareClicked:getY(), squareClicked:getZ()
     for _, obj in ipairs(worldobjects) do
         if instanceof(obj, "IsoObject") then
             local sprite = obj:getSprite()
@@ -435,8 +451,10 @@ function linuxMenu_AddContext(player, context, worldobjects)
                      (getSandboxOptions():getElecShutModifier() > -1 and 
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
-                        context:addOption("PZLinux", obj, linuxMenu_OnUse, player, x, y, z, sprite:getName())
-                        break
+                        if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
+                            context:addOption("PZLinux", obj, linuxMenu_OnUse, player, x, y, z, sprite:getName())
+                            break
+                        end
                     end
                 end
             end

@@ -1,7 +1,19 @@
-- Contract Clean a building or area
-- Ability to purchase cars.
+- Contract Clean a building or area.
+
+# Update v.0.1.9
 - Create zombie races for online betting.
-- Add quests to capture zombies alive.
+- Add a contract to capture a live zombie for the race.
+- Reducing the contract interface during message animation now correctly links back to the contract list.
+- Fixing a bug or buying and selling an item closes the PZLinux interface.
+- Added all modern and normal pieces to the auto part quest rotation.
+- Increase the detection menu radius for the PZLinux menu.
+- It is now possible to purchase vehicles.
+
+# Update v.0.1.8-rc2
+- Correct a variable error in contracts due to the v0.1.8-rc1 update. Sorry! 
+
+# Update v.0.1.8-rc1
+- Added an SFX button to shorten the duration of mod animation messages.
 
 # Update v.0.1.8
 - All values are now integrated into ModData. the PZLinux.ini file is no longer used.

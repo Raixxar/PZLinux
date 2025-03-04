@@ -52,6 +52,11 @@ function ISPZLinuxAction:update()
         self.ui = requestMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
     end
+
+    if modData.PZLinuxUIOpenMenu == 9 then
+        self.ui = bettingMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
 end
 
 function ISPZLinuxAction:start()

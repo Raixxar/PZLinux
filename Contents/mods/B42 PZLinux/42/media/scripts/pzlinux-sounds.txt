@@ -176,5 +176,13 @@ module Base
 			file = media/sound/ircNotification.ogg,
 		}
 	}
+		sound race
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/race.ogg,
+		}
+	}
 }
 

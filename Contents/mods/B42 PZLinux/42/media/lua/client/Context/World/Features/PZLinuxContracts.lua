@@ -42,7 +42,7 @@ local companyCode = {
 }
 
 local contracts = {}
-for i = 1, 8 do
+for i = 1, 9 do
     local randomId = ZombRand(1, 32)
     local difficulty = "0"
     local reward = 20
@@ -55,6 +55,7 @@ for i = 1, 8 do
     if i == 6 then difficulty = "3"; reward = 5000 end -- Manhunt
     if i == 7 then difficulty = "1"; reward = 1000 end -- Blood Market
     if i == 8 then difficulty = "4"; reward = 10000 end -- Car parts
+    if i == 9 then difficulty = "4"; reward = 10000 end -- Capture a Zombie
     local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)
     local randomCode = "Execute a contract for " .. companyCode[randomId].code .. " - Difficulty: " .. difficulty .. "/5"
     local dataName = "PZLinuxTrading" .. companyCode[randomId].code
@@ -139,6 +140,25 @@ function contractsUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxUISFX == 0 then
+        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
+        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
+        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        self.skipAnimationButton:setVisible(true)
+        self.skipAnimationButton:initialise()
+        self.topBar:addChild(self.skipAnimationButton)
+    else
+        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
+        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
+        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        self.skipAnimationButton:setVisible(true)
+        self.skipAnimationButton:initialise()
+        self.topBar:addChild(self.skipAnimationButton)
+    end
+
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
     self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
@@ -146,6 +166,14 @@ function contractsUI:initialise()
     self.minimizeButton:setVisible(true)
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
+
+    self.minimizeBackButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimizeBack)
+    self.minimizeBackButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeBackButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeBackButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeBackButton:setVisible(false)
+    self.minimizeBackButton:initialise()
+    self.topBar:addChild(self.minimizeBackButton)
 
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -316,9 +344,13 @@ function contractsUI:onContractComplete()
     modData.PZLinuxContractManhunt = 0
     modData.PZLinuxContractBlood = 0
     modData.PZLinuxContractCar = 0
+    modData.PZLinuxContractCapture = 0
 end
 
 function contractsUI:onContractId(contract)
+    self.minimizeBackButton:setVisible(true)
+    self.minimizeButton:setVisible(false)
+
     local globalVolume = getCore():getOptionSoundVolume() / 10
     local player = getPlayer()
     
@@ -373,6 +405,9 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
+            
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
             local elapsed = 0
             while elapsed < ZombRand(1, 2) do
@@ -386,7 +421,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -400,7 +435,7 @@ function contractsUI:onContractId(contract)
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -412,7 +447,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -426,7 +461,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -438,7 +473,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -475,6 +510,9 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
             while elapsed < ZombRand(1, 2) do
                 coroutine.yield()
@@ -487,7 +525,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -501,7 +539,7 @@ function contractsUI:onContractId(contract)
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -518,7 +556,7 @@ function contractsUI:onContractId(contract)
 
             local quest = quests[randomQuest]
             if quest then
-                message = message .. sellerName .. quest.description
+                message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
@@ -528,7 +566,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -542,7 +580,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -554,7 +592,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -568,7 +606,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -581,7 +619,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -619,6 +657,9 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
             while elapsed < ZombRand(1, 2) do
                 coroutine.yield()
@@ -631,7 +672,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -645,7 +686,7 @@ function contractsUI:onContractId(contract)
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -672,7 +713,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -686,7 +727,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -698,7 +739,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -712,7 +753,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -725,7 +766,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -763,6 +804,9 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
             while elapsed < ZombRand(1, 2) do
                 coroutine.yield()
@@ -775,7 +819,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -789,7 +833,7 @@ function contractsUI:onContractId(contract)
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -816,7 +860,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -830,7 +874,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -842,7 +886,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -856,7 +900,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -869,7 +913,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -907,6 +951,9 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
             while elapsed < ZombRand(1, 2) do
                 coroutine.yield()
@@ -919,7 +966,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -933,7 +980,7 @@ function contractsUI:onContractId(contract)
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -965,7 +1012,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -979,7 +1026,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -991,7 +1038,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1005,7 +1052,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1019,7 +1066,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1057,8 +1104,11 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            while elapsed < ZombRand(1, 2) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1069,7 +1119,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1083,7 +1133,7 @@ function contractsUI:onContractId(contract)
             end)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1201,7 +1251,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1215,7 +1265,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1247,7 +1297,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1261,7 +1311,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1273,7 +1323,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1287,7 +1337,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1299,7 +1349,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1336,8 +1386,11 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            while elapsed < ZombRand(1, 2) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1348,7 +1401,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1362,7 +1415,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1374,7 +1427,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1411,8 +1464,11 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
             local message = ""
 
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
             local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            while elapsed < ZombRand(1, 2) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1423,7 +1479,7 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1437,7 +1493,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1445,17 +1501,35 @@ function contractsUI:onContractId(contract)
             if self.isClosing then return end
 
             local quests = {
-                [1] = { baseName = "Base.CarBattery3", name = "Sport Battery" },
-                [2] = { baseName = "Base.ModernBrake3", name = "Sport type performance brakes" },
-                [3] = { baseName = "Base.ModernCarMuffler3", name = "Silent sport type muffler" },
-                [4] = { baseName = "Base.ModernSuspension3", name = "Sport type performance suspension" },
+                [1] = { baseName = "Base.CarBattery3", name = "Battery: Resistant", delta = 1 },
+                [2] = { baseName = "Base.CarBattery2", name = "Battery: Sport", delta = 0.9 },
+                [3] = { baseName = "Base.CarBattery1", name = "Battery: Standard", delta = 0.8 },
+                [4] = { baseName = "Base.ModernBrake3", name = "Performance brakes: Resistant", delta = 1 },
+                [5] = { baseName = "Base.ModernBrake2", name = "Performance brakes: Sport", delta = 0.9 },
+                [6] = { baseName = "Base.ModernBrake1", name = "Performance brakes: Standard", delta = 0.8 },
+                [7] = { baseName = "Base.ModernCarMuffler3", name = "Performance silencers: Resistant", delta = 1 },
+                [8] = { baseName = "Base.ModernCarMuffler2", name = "Performance silencers: Sport", delta = 0.9 },
+                [9] = { baseName = "Base.ModernCarMuffler1", name = "Performance silencers: Standard", delta = 0.8 },
+                [10] = { baseName = "Base.ModernSuspension3", name = "Performance suspension: Resistant", delta = 1 },
+                [11] = { baseName = "Base.ModernSuspension2", name = "Performance suspension: Sport", delta = 0.9 },
+                [12] = { baseName = "Base.ModernSuspension1", name = "Performance suspension: Standard", delta = 0.8 },
+                [13] = { baseName = "Base.NormalBrake3", name = "Standard brakes: Resistant", delta = 0.7 },
+                [14] = { baseName = "Base.NormalBrake2", name = "Standard brakes: Sport", delta = 0.6 },
+                [15] = { baseName = "Base.NormalBrake1", name = "Standard brakes: Standard", delta = 0.5 },
+                [16] = { baseName = "Base.NormalCarMuffler3", name = "Standard silencers: Resistant", delta = 0.7 },
+                [17] = { baseName = "Base.NormalCarMuffler2", name = "Standard silencers: Sport", delta = 0.6 },
+                [18] = { baseName = "Base.NormalCarMuffler1", name = "Standard silencers: Standard", delta = 0.5 },
+                [19] = { baseName = "Base.NormalSuspension3", name = "Standard suspension: Resistant", delta = 0.7 },
+                [20] = { baseName = "Base.NormalSuspension2", name = "Standard suspension: Sport", delta = 0.6 },
+                [21] = { baseName = "Base.NormalSuspension1", name = "Standard suspension: Standard", delta = 0.5 }
             }
-
-            local randomQuest = ZombRand(1, 5)
+            
+            local randomQuest = ZombRand(1, 22)
             local quest = quests[randomQuest]
             if quest then
                 message = message .. "\n" .. sellerName .. quest.name
                 modData.PZLinuxContractInfo = quest.baseName
+                modData.PZLinuxOnReward = math.ceil((modData.PZLinuxOnReward * quest.delta)/10)*10
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -1463,7 +1537,7 @@ function contractsUI:onContractId(contract)
             
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1477,7 +1551,7 @@ function contractsUI:onContractId(contract)
             end)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1489,7 +1563,85 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
 
             local elapsed = 0
-            while elapsed < ZombRand(25, 50) do
+            while elapsed < ZombRand(25, 50) * sleepSFX do
+                coroutine.yield()
+                elapsed = elapsed + 0.016
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            modData.PZLinuxContractNote = message
+            self.loadingMessage:setName(message)
+
+            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+            self.yesButton.contractId = contract
+            self.yesButton:initialise()
+            self.yesButton:instantiate()
+            self.topBar:addChild(self.yesButton)
+            
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+            self.noButton:initialise()
+            self.noButton:instantiate()
+            self.topBar:addChild(self.noButton)
+        end)
+    end
+
+    if contract == 9 then
+        self.terminalCoroutine = coroutine.create(function()
+            local modData = getPlayer():getModData()
+
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
+            modData.PZLinuxOnReward = contractsCompanyReward[contract]
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
+            local message = ""
+
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
+            local elapsed = 0
+            while elapsed < ZombRand(1, 2) * sleepSFX do
+                coroutine.yield()
+                elapsed = elapsed + 0.016
+            end
+
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for someone to capture a zombie alive."
+            self.loadingMessage:setName(message)
+            
+            local elapsed = 0
+            while elapsed < ZombRand(25, 50) * sleepSFX do
+                coroutine.yield()
+                elapsed = elapsed + 0.016
+            end
+
+            if self.isClosing then return end
+                        
+            typeText(self.typingMessage, "What is the reward for this mission ?", function()
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            local elapsed = 0
+            while elapsed < ZombRand(25, 50) * sleepSFX do
+                coroutine.yield()
+                elapsed = elapsed + 0.016
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            self.loadingMessage:setName(message)
+
+            local elapsed = 0
+            while elapsed < ZombRand(25, 50) * sleepSFX do
                 coroutine.yield()
                 elapsed = elapsed + 0.016
             end
@@ -1552,6 +1704,7 @@ function contractsUI:onYesButton(button)
     if button.contractId == 6 then modData.PZLinuxContractManhunt = 1 end
     if button.contractId == 7 then modData.PZLinuxContractBlood = 1 end
     if button.contractId == 8 then modData.PZLinuxContractCar = 1 end
+    if button.contractId == 9 then modData.PZLinuxContractCapture = 1 end
 end
 
 -- STOP
@@ -1580,6 +1733,33 @@ function contractsUI:onClose(button)
     self:removeFromUIManager()
     contractsMenu_ShowUI(player)
 end
+
+function contractsUI:onSFXOn(button)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUISFX = 0
+    self.skipAnimationButton:close()
+    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
+    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
+    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.skipAnimationButton:setVisible(true)
+    self.skipAnimationButton:initialise()
+    self.topBar:addChild(self.skipAnimationButton)
+end
+
+function contractsUI:onSFXOff(button)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUISFX = 1
+    self.skipAnimationButton:close()
+    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
+    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
+    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
+    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.skipAnimationButton:setVisible(true)
+    self.skipAnimationButton:initialise()
+    self.topBar:addChild(self.skipAnimationButton)
+end
+
 
 function contractsMenu_ShowUI(player)
     local texture = getTexture("media/ui/oldCRT.png")
