@@ -31,10 +31,12 @@ function ISDecapitateAction:perform()
     local inv = self.character:getInventory()
     local parcel = inv:AddItem('Base.Bag_Mail')
     parcel:setName("Cut target")
-    self.body:removeFromWorld()
-    self.body:removeFromSquare()
+    local parcelInv = parcel:getInventory()
+    parcelInv:AddItem("Base.CorpseMale")
     local modData = getPlayer():getModData()
     modData.PZLinuxContractManhunt = 3
+    self.body:removeFromWorld()
+    self.body:removeFromSquare()
 end
 
 function ISDecapitateAction:new(character, body)

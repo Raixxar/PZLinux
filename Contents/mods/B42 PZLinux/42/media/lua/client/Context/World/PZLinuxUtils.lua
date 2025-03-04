@@ -1,3 +1,11 @@
+function isNearTarget(x, y, z, targetX, targetY, targetZ)
+    return math.max(math.abs(x - targetX), math.abs(y - targetY)) <= 5 and z == targetZ
+end
+
+function isNearTargetCapture(x, y, z, targetX, targetY, targetZ)
+    return math.max(math.abs(x - targetX), math.abs(y - targetY)) <= 2 and z == targetZ
+end
+
 function getAdjacentFreeSquare(x, y, z, sprite)
     local square = getCell():getGridSquare(x, y, z)
     if not square then return nil end
@@ -65,4 +73,16 @@ function generateUsername()
                  suffixes[ZombRand(1, #suffixes + 1)]
     
     return name
+end
+
+function bagContainsCorpse(bag)
+    if not bag then return false end
+    local inv = bag:getInventory()
+    for i = 0, inv:getItems():size() - 1 do
+        local item = inv:getItems():get(i)
+        if item:getFullType() == "Base.CorpseMale" then
+            return true
+        end
+    end
+    return false
 end

@@ -2,10 +2,6 @@ completeContractUI = ISPanel:derive("completeContractUI")
 
 -- CONTEXT MENU
 function completeContractMenu_AddContext(player, context, worldobjects)
-    local function isNearTarget(x, y, z, targetX, targetY, targetZ)
-        return math.max(math.abs(x - targetX), math.abs(y - targetY)) <= 5 and z == targetZ
-    end
-
     local modData = getPlayer():getModData()
     local targetX = modData.PZLinuxContractLocationX
     local targetY = modData.PZLinuxContractLocationY
@@ -61,6 +57,23 @@ function completeContractMenu_AddContext(player, context, worldobjects)
             end
         end
     end
+
+    if modData.PZLinuxContractCapture == 1 then
+        local squareClicked = getPlayer():getSquare()
+        local targetX, targetY, targetZ = squareClicked:getX(), squareClicked:getY(), squareClicked:getZ()
+        local zombies = getCell():getZombieList()
+        for i = 0, zombies:size() - 1 do
+            local zombie = zombies:get(i)
+            local square = zombie:getSquare()
+            if square then
+                local x, y, z = square:getX(), square:getY(), square:getZ()
+                if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
+                    context:addOption("Capture a zombie", zombie, completeContractMenu_OnCapture, player, x, y, z)
+                    break
+                end
+            end
+        end
+    end
 end
 
 function completeContractMenu_OnUse(obj, player,  x, y, z)
@@ -82,6 +95,18 @@ end
 function completeContractMenu_OnBlood(body, player, x, y, z)
     ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), x, y, z))
     ISTimedActionQueue.add(ISBloodAction:new(getPlayer(), body))
+end
+
+function completeContractMenu_OnCapture(zombie, player, x, y, z)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+        end
+    end
+    --ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), x, y, z))
+    ISTimedActionQueue.add(ISCaptureAction:new(getPlayer(), zombie))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(completeContractMenu_AddContext)

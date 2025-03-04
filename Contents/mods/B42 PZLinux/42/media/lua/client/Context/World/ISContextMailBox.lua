@@ -100,9 +100,10 @@ function MailBoxUI:onSendTakePackage()
         end
 
         if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
-        or (item and item:getFullType() == "Base.Bag_Mail" and modData.PZLinuxContractManhunt == 3)
+        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractManhunt == 3)
         or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1) then
+        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1)
+        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3) then
             modData.PZLinuxActiveContract = 2
             inventory:Remove(item)
             break
