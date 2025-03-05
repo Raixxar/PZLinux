@@ -7,7 +7,7 @@ local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
 
 local bettings = {
-    [1] = { baseName = "Zombie Race", price = ZombRand(1,10000) },
+    [1] = { baseName = "Zombie Race", price = ZombRand(1,5000) },
 }
 
 local betGame = {}
@@ -153,40 +153,40 @@ function bettingUI:onSelectBet(button)
     local zombie = {
         [1] = { name = "Gallop Zomb", rating = ZombRand(1,10) },
         [2] = { name = "The Great Gallopino", rating = ZombRand(1,10) },
-        [3] = { name = "Zombplay", rating = ZombRand(1,20) },
-        [4] = { name = "AppleJack", rating = ZombRand(1,20) },
-        [5] = { name = "Hocus Pocus", rating = ZombRand(1,20) },
-        [6] = { name = "Mr Ed", rating = ZombRand(1,20) },
-        [7] = { name = "Whinny the Poop", rating = ZombRand(1,40) },
-        [8] = { name = "Long Drop Face", rating = ZombRand(1,40) },
-        [9] = { name = "Eyes Out", rating = ZombRand(1,40) },
-        [10] = { name = "Smell Bad", rating = ZombRand(1,40) },
-        [11] = { name = "Crawler Texas Ranger", rating = ZombRand(1,40) },
-        [12] = { name = "Walk to the Moon", rating = ZombRand(1,40) },
-        [13] = { name = "Never Sleep Again", rating = ZombRand(1,40) },
-        [14] = { name = "Tobit or not Tobit", rating = ZombRand(1,40) },
-        [15] = { name = "Toothless", rating = ZombRand(1,80) },
-        [16] = { name = "Barefoot", rating = ZombRand(1,80) },
-        [17] = { name = "Always Hungry", rating = ZombRand(1,80) },
-        [18] = { name = "Eat This", rating = ZombRand(1,80) },
-        [19] = { name = "Horde", rating = ZombRand(1,80) },
-        [20] = { name = "Toc toc toc", rating = ZombRand(1,80) },
-        [21] = { name = "I have Maggots", rating = ZombRand(1,80) },
-        [22] = { name = "Glenn", rating = ZombRand(1,80) },
-        [23] = { name = "Alpha", rating = ZombRand(1,80) },
-        [24] = { name = "A Zomb With No Name", rating = ZombRand(1,80) },
-        [25] = { name = "Nobody", rating = ZombRand(1,80) },
-        [26] = { name = "No Arms no Chocolate", rating = ZombRand(1,80) },
-        [27] = { name = "Zomby McZombyface", rating = ZombRand(1,80) },
-        [28] = { name = "Biscuit", rating = ZombRand(1,80) },
-        [29] = { name = "Zomby Jumper", rating = ZombRand(1,80) },
-        [30] = { name = "Rainbow Rider", rating = ZombRand(1,80) },
-        [31] = { name = "Fuzzy Wuzzy", rating = ZombRand(1,100) },
-        [32] = { name = "Tony Spark", rating = ZombRand(1,100) },
-        [33] = { name = "Thannos", rating = ZombRand(1,100) },
-        [34] = { name = "Worm", rating = ZombRand(1,100) },
-        [35] = { name = "Should be the wind", rating = ZombRand(1,100) },
-        [36] = { name = "Machu Pichtou", rating = ZombRand(1,100) },
+        [3] = { name = "Zombplay", rating = ZombRand(1,15) },
+        [4] = { name = "AppleJack", rating = ZombRand(1,15) },
+        [5] = { name = "Hocus Pocus", rating = ZombRand(1,15) },
+        [6] = { name = "Mr Ed", rating = ZombRand(1,15) },
+        [7] = { name = "Whinny the Poop", rating = ZombRand(1,15) },
+        [8] = { name = "Long Drop Face", rating = ZombRand(1,15) },
+        [9] = { name = "Eyes Out", rating = ZombRand(1,15) },
+        [10] = { name = "Smell Bad", rating = ZombRand(1,15) },
+        [11] = { name = "Crawler Texas Ranger", rating = ZombRand(1,15) },
+        [12] = { name = "Walk to the Moon", rating = ZombRand(1,15) },
+        [13] = { name = "Never Sleep Again", rating = ZombRand(1,15) },
+        [14] = { name = "Tobit or not Tobit", rating = ZombRand(1,15) },
+        [15] = { name = "Toothless", rating = ZombRand(1,20) },
+        [16] = { name = "Barefoot", rating = ZombRand(1,20) },
+        [17] = { name = "Always Hungry", rating = ZombRand(1,20) },
+        [18] = { name = "Eat This", rating = ZombRand(1,20) },
+        [19] = { name = "Horde", rating = ZombRand(1,20) },
+        [20] = { name = "Toc toc toc", rating = ZombRand(1,20) },
+        [21] = { name = "I have Maggots", rating = ZombRand(1,20) },
+        [22] = { name = "Glenn", rating = ZombRand(1,20) },
+        [23] = { name = "Alpha", rating = ZombRand(1,20) },
+        [24] = { name = "A Zomb With No Name", rating = ZombRand(1,20) },
+        [25] = { name = "Nobody", rating = ZombRand(1,20) },
+        [26] = { name = "No Arms no Chocolate", rating = ZombRand(1,20) },
+        [27] = { name = "Zomby McZombyface", rating = ZombRand(1,20) },
+        [28] = { name = "Biscuit", rating = ZombRand(1,20) },
+        [29] = { name = "Zomby Jumper", rating = ZombRand(1,20) },
+        [30] = { name = "Rainbow Rider", rating = ZombRand(1,20) },
+        [31] = { name = "Fuzzy Wuzzy", rating = ZombRand(1,50) },
+        [32] = { name = "Tony Spark", rating = ZombRand(1,50) },
+        [33] = { name = "Thannos", rating = ZombRand(1,50) },
+        [34] = { name = "Worm", rating = ZombRand(1,50) },
+        [35] = { name = "Should be the wind", rating = ZombRand(1,50) },
+        [36] = { name = "Machu Pichtou", rating = ZombRand(1,50) },
         [37] = { name = "Sponge Zomb", rating = ZombRand(1,100) },
         [38] = { name = "Jean Cloud", rating = ZombRand(1,100) },
         [39] = { name = "The King is dead", rating = ZombRand(1,100) },
@@ -293,16 +293,25 @@ function bettingUI:runRace()
         runner.position = runner.position + speed
     end
 
+    local actualPosition = -math.huge
+    local potentialWinner = nil
+    local pos = nil
+
     for i, runner in ipairs(self.raceProgress) do
-        if runner.position >= 135 then
-            self.raceFinished = true
-            self:declareWinner(i, runner.zombie)
-            return
+        if runner.position > actualPosition then
+            actualPosition = runner.position
+            potentialWinner = runner.zombie
+            pos = i
         end
     end
 
+    if actualPosition >= 130 then
+        self.raceFinished = true
+        self:declareWinner(pos, potentialWinner)
+    end
+
     self:updateRaceDisplay()
-    self:delayFunction(function() self:runRace() end, 3)
+    self:delayFunction(function() self:runRace() end, 20)
 end
 
 function bettingUI:updateRaceDisplay()
@@ -344,9 +353,8 @@ function bettingUI:updateRaceDisplay()
 end
 
 function bettingUI:declareWinner(winnerId, winner)
-    self.runResultLabel:setVisible(false)
     local winnerText = string.format("%s HAS WON!", winner.name)
-    self.winnerLabel = ISLabel:new(self.width * 0.20, self.height * 0.60, 20, winnerText, 1, 1, 0, 1, UIFont.Large, true)
+    self.winnerLabel = ISLabel:new(self.width * 0.20, self.height * 0.22, 20, winnerText, 1, 1, 0, 1, UIFont.Large, true)
     self.winnerLabel:initialise()
     self.winnerLabel:instantiate()
     self:addChild(self.winnerLabel)
@@ -363,14 +371,16 @@ function bettingUI:declareWinner(winnerId, winner)
 end
 
 function bettingUI:delayFunction(func, seconds)
-    local elapsedTime = 0
+    local startTime = getGameTime():getWorldAgeHours() * 3600
+    local targetTime = startTime + seconds
 
     local function timer()
-        elapsedTime = elapsedTime + 1 / 60
-
-        if elapsedTime >= seconds then
+        local elapsed = getGameTime():getWorldAgeHours() * 3600
+        if elapsed >= targetTime then
             Events.OnTick.Remove(timer)
-            func()
+            if not self.isClosing then
+                func()
+            end
         end
     end
 

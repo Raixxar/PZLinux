@@ -424,6 +424,14 @@ function darkWebUI:initialise()
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
+    self.minimizeBackButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimizeBack)
+    self.minimizeBackButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeBackButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeBackButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeBackButton:setVisible(false)
+    self.minimizeBackButton:initialise()
+    self.topBar:addChild(self.minimizeBackButton)
+
     self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
     self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
@@ -603,6 +611,13 @@ function darkWebUI:onMinimize(button)
     modData.PZLinuxUIOpenMenu = 1
 end
 
+function darkWebUI:onMinimizeBack(button)
+    self.isClosing = true
+    self:removeFromUIManager()
+    darkWebMenu_ShowUI(player)
+end
+
+
 -- LOGOUT
 function darkWebUI:onClose(button)
     self.isClosing = true
@@ -654,7 +669,8 @@ function darkWebUI:onBuy()
     self.shoppingSellButton:setVisible(false)
     self.shoppingHelpButton:setVisible(false)
     self.titleLabel:setVisible(true)
-    self.minimizeButton:setVisible(true)
+    self.minimizeButton:setVisible(false)
+    self.minimizeBackButton:setVisible(true)
     self.closeButton:setVisible(true)
     self.filterAllBtn:setVisible(true)
     self.searchField:setVisible(true)
@@ -742,6 +758,9 @@ function darkWebUI:onSell()
     self.shoppingBuyButton:setVisible(false)
     self.shoppingSellButton:setVisible(false)
     self.shoppingHelpButton:setVisible(false)
+    self.shoppingHelpButton:setVisible(false)
+    self.minimizeButton:setVisible(false)
+    self.minimizeBackButton:setVisible(true)
 
     local yOffset = 30
     local itemsToSell = {}
@@ -1018,6 +1037,8 @@ function darkWebUI:onHelp()
     self.shoppingBuyButton:setVisible(false)
     self.shoppingSellButton:setVisible(false)
     self.shoppingHelpButton:setVisible(false)
+    self.minimizeButton:setVisible(false)
+    self.minimizeBackButton:setVisible(true)
 
     local yOffset = 30
 

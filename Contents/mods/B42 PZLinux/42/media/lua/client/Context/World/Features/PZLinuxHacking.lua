@@ -249,6 +249,9 @@ function hackingUI:onIdCard()
         }
         local messages = {}
         self.terminalCoroutine = coroutine.create(function()
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local initialDelay = elapsed + 1
+    
             for _, line in ipairs(self.bootMessages) do
                 if self.isClosing then return end
 
@@ -260,11 +263,10 @@ function hackingUI:onIdCard()
                     self.bootOutput:setYScroll(-maxYScroll)
                 end
 
-                local lineDelay = ZombRand(1, 10) / 10
-                local elapsed = 0
+                local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 10)
                 while elapsed < lineDelay do
                     coroutine.yield()
-                    elapsed = elapsed + 0.016
+                    elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
                 end
             end
         end)
@@ -492,7 +494,9 @@ function hackingUI:hackTransfert()
 
     self.hackingCoroutine = coroutine.create(function()
         local playerBankBalance = tonumber(loadAtmBalance())
-
+        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+        local initialDelay = elapsed + 1
+        
         while hackingBankBalance > 0 do
             local chunk = 1
 
@@ -509,11 +513,10 @@ function hackingUI:hackTransfert()
             saveAtmBalance(playerBankBalance)
 
             self.titleLabelPlayer:setName("Bank balance: $" .. tostring(loadAtmBalance()) .. " < $" .. tostring(hackingBankBalance) .. "\nTransfer in progress...")
-            local lineDelay = 0.4
-            local elapsed = 0
+            local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 5)
             while elapsed < lineDelay do
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
     end)

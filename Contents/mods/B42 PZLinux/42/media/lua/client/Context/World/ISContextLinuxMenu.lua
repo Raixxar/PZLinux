@@ -215,12 +215,12 @@ function linuxUI:onBoot()
     }
 
     self.terminalCoroutine = coroutine.create(function()
-        local elapsed = 0
-        local initialDelay = 2.0
+        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+        local initialDelay = elapsed + 1
         while elapsed < initialDelay do
             if self.isClosing then return end
             coroutine.yield()
-            elapsed = elapsed + 0.016
+            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         end
 
         for _, line in ipairs(self.bootMessages) do
@@ -234,11 +234,10 @@ function linuxUI:onBoot()
                 self.bootOutput:setYScroll(-maxYScroll)
             end
 
-            local lineDelay = ZombRand(1, 10) / 15 
-            elapsed = 0
+            local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 10)
             while elapsed < lineDelay do
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
     end)

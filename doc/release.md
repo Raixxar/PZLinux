@@ -1,4 +1,5 @@
 - Contract Clean a building or area.
+- Fight a horde
 
 # Update v.0.1.9
 - Create zombie races for online betting.
@@ -8,6 +9,7 @@
 - Added all modern and normal pieces to the auto part quest rotation.
 - Increase the detection menu radius for the PZLinux menu.
 - It is now possible to purchase vehicles.
+- PZLinux actions can now be accelerated over time.
 
 # Update v.0.1.8-rc2
 - Correct a variable error in contracts due to the v0.1.8-rc1 update. Sorry! 

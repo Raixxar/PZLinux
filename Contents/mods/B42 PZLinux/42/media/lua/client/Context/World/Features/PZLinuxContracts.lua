@@ -370,6 +370,7 @@ function contractsUI:onContractId(contract)
         local index, message = 1, ""
         local totalLetters = string.len(text)
         
+        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         while index <= totalLetters do
             if self.isClosing then return end
             
@@ -380,11 +381,11 @@ function contractsUI:onContractId(contract)
             index = index + 1
             label:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(1, 3) / (player:getPerkLevel(Perks.Electricity) + 1) do
+            local letterDelay = elapsed + ZombRand(1, 10) / (getPlayer():getPerkLevel(Perks.Electricity) + 1)
+            while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
         
@@ -409,10 +410,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -420,10 +423,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for a mercenary to clean the streets of our city."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -434,10 +438,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -446,10 +451,11 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. modData.PZLinuxOnZombieToKill
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -460,10 +466,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -472,16 +479,17 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -513,10 +521,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -524,10 +534,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for a courier to retrieve a package the town of\nRosewood."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -538,10 +549,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -565,10 +577,11 @@ function contractsUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -579,10 +592,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -591,10 +605,11 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -605,10 +620,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -618,16 +634,17 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -660,10 +677,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -671,10 +690,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for someone for a simple race in the\ntown of March Ridge."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -685,10 +705,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -712,10 +733,11 @@ function contractsUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -726,22 +748,24 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
             
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. modData.PZLinuxOnReward 
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -752,10 +776,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -765,16 +790,17 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -807,10 +833,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -818,10 +846,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We're looking for a brave person for simple missions at Muldraugh."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -832,10 +861,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -859,10 +889,11 @@ function contractsUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -873,10 +904,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -885,10 +917,11 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -899,10 +932,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -912,16 +946,17 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -954,10 +989,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -965,10 +1002,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are seeking soldiers for a retrieval mission in Louisville."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -979,10 +1017,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1011,10 +1050,11 @@ function contractsUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1025,10 +1065,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1037,10 +1078,11 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1051,10 +1093,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1065,16 +1108,17 @@ function contractsUI:onContractId(contract)
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -1107,10 +1151,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) * sleepSFX do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1118,10 +1164,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for a hunter."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1132,10 +1179,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1250,10 +1298,11 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "The target is " .. targetName
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1264,10 +1313,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1296,10 +1346,11 @@ function contractsUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1310,10 +1361,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1322,10 +1374,11 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1336,10 +1389,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1348,16 +1402,17 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "Send us the corpse, or what remains of it, with a mailbox."
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -1389,10 +1444,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) * sleepSFX do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1400,10 +1457,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for blood analyses of zombies."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1414,10 +1472,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1426,16 +1485,17 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -1467,10 +1527,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) * sleepSFX do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1478,10 +1540,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for someone to find auto parts for us."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1492,10 +1555,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1536,10 +1600,11 @@ function contractsUI:onContractId(contract)
             self.loadingMessage:setName(message)
             
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1550,10 +1615,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1562,16 +1628,17 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 
@@ -1603,10 +1670,12 @@ function contractsUI:onContractId(contract)
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
 
-            local elapsed = 0
-            while elapsed < ZombRand(1, 2) * sleepSFX do
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1614,10 +1683,11 @@ function contractsUI:onContractId(contract)
             message = sellerName .. "We are looking for someone to capture a zombie alive."
             self.loadingMessage:setName(message)
             
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1628,10 +1698,11 @@ function contractsUI:onContractId(contract)
                 self.typingMessage:setName("")
             end)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
@@ -1640,16 +1711,17 @@ function contractsUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
-            local elapsed = 0
-            while elapsed < ZombRand(25, 50) * sleepSFX do
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
 
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Do you accept the contract ?"
+            message = message .. "\n" .. sellerName .. "Deal ?"
             modData.PZLinuxContractNote = message
             self.loadingMessage:setName(message)
 

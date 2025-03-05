@@ -197,25 +197,22 @@ function AtmUI:onLoginMenu()
     self.terminalCoroutine = coroutine.create(function()
         getSoundManager():PlayWorldSound("creditCard", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.loadingMessage:setName(loginBase)
-        local initialDelay = 8.0
-        local elapsed = 0
+
+        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+        local initialDelay = elapsed + 40
         while elapsed < initialDelay do
-            if self.isClosing then
-                return
-            end
+            if self.isClosing then return end
             coroutine.yield()
-            elapsed = elapsed + 0.016
+            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         end
 
         self.loadingMessage:setName(passwordBase)
-        local initialDelay = 4.0
-        local elapsed = 0
+        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+        local initialDelay = elapsed + 40
         while elapsed < initialDelay do
-            if self.isClosing then
-                return
-            end
+            if self.isClosing then return end
             coroutine.yield()
-            elapsed = elapsed + 0.016
+            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         end
 
         while passwordIndex <= totalAsterisks do
@@ -227,14 +224,13 @@ function AtmUI:onLoginMenu()
             currentPassword = currentPassword .. "*"
             passwordIndex = passwordIndex + 1
             self.loadingMessage:setName(currentPassword)
-            local passwordDelay = ZombRand(1, 3) / ZombRand(1, 4)
-            local elapsed = 0
-            while elapsed < passwordDelay do
-                if self.isClosing then
-                    return
-                end
+            
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = elapsed + ZombRand(1, 10) / (getPlayer():getPerkLevel(Perks.Electricity) + 1)
+            while elapsed < letterDelay do
+                if self.isClosing then return end
                 coroutine.yield()
-                elapsed = elapsed + 0.016
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
 
