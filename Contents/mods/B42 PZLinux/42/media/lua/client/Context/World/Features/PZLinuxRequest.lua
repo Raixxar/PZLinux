@@ -81,7 +81,7 @@ function requestUI:initialise()
         modData.PZLinuxUIY = self.parent:getY()
     end
 
-    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
+    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
     self.stopButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.stopButton.borderColor = {r=0, g=0, b=0, a=1}
     self.stopButton:setVisible(true)
@@ -130,7 +130,7 @@ function requestUI:initialise()
     self.minimizeBackButton:initialise()
     self.topBar:addChild(self.minimizeBackButton)
 
-    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
+    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onClose)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
     self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -392,15 +392,15 @@ function requestUI:onContractId(contract)
                 [4] = { baseName = "Base.FlatheadCatfish", weight = 0.1 },
                 [5] = { baseName = "Base.ChannelCatfish", weight = 0.1 },
                 [6] = { baseName = "Base.BlueCatfish", weight = 0.1 },
-                [8] = { baseName = "Base.BlackCrappie", weight = 0.1 },
+                [7] = { baseName = "Base.BlackCrappie", weight = 0.1 },
                 [8] = { baseName = "Base.Bluegill", weight = 0.1 },
-                [8] = { baseName = "Base.Shrimp", weight = 0.1 },
-                [8] = { baseName = "Base.FreshwaterDrum", weight = 0.1 },
-                [8] = { baseName = "Base.Muskellunge", weight = 0.1 },
-                [8] = { baseName = "Base.SmallmouthBass", weight = 0.1 },
-                [8] = { baseName = "Base.StripedBass", weight = 0.1 },
-                [8] = { baseName = "Base.WhiteBass", weight = 0.1 },
-                [8] = { baseName = "Base.YellowPerch", weight = 0.1 },
+                [9] = { baseName = "Base.Shrimp", weight = 0.1 },
+                [10] = { baseName = "Base.FreshwaterDrum", weight = 0.1 },
+                [11] = { baseName = "Base.Muskellunge", weight = 0.1 },
+                [12] = { baseName = "Base.SmallmouthBass", weight = 0.1 },
+                [13] = { baseName = "Base.StripedBass", weight = 0.1 },
+                [14] = { baseName = "Base.WhiteBass", weight = 0.1 },
+                [15] = { baseName = "Base.YellowPerch", weight = 0.1 },
             }
         end
 
@@ -544,7 +544,9 @@ function requestUI:onContractId(contract)
         end
 
         if quest then
+            print(randomQuest)
             PZLinuxOnItemRequest = quest.baseName
+            print(PZLinuxOnItemRequest)
             deltaWeight = quest.weight
         end
 
@@ -669,13 +671,8 @@ function requestUI:onYesButton(button)
     
     self.isClosing = true
     self:removeFromUIManager()
-    requestMenu_ShowUI(player)
-end
-
--- STOP
-function requestUI:onStop(button)
-    self.isClosing = true
-    self:removeFromUIManager()
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 8
 end
 
 -- LOGOUT
@@ -689,14 +686,22 @@ end
 function requestUI:onMinimizeBack(button)
     self.isClosing = true
     self:removeFromUIManager()
-    requestMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 8
 end
 
 -- CLOSE
 function requestUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
-    requestMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
+end
+
+function requestUI:onCloseX(button)
+    self.isClosing = true
+    getPlayer():StopAllActionQueue()
+
 end
 
 function requestUI:onSFXOn(button)

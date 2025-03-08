@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "0.1.9"
+local PZLinuxVersion = "0.1.9-rc1"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -58,7 +58,7 @@ function linuxUI:initialise()
         modData.PZLinuxUIY = self.parent:getY()
     end
 
-    self.closeButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onClose)
+    self.closeButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
     self.closeButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.closeButton.borderColor = {r=0, g=0, b=0, a=1}
     self.closeButton:setVisible(true)
@@ -165,6 +165,11 @@ function linuxUI:initialise()
 end
 
 -- CLOSE
+function linuxUI:onCloseX(button)
+    self.isClosing = true
+    getPlayer():StopAllActionQueue()
+end
+
 function linuxUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()

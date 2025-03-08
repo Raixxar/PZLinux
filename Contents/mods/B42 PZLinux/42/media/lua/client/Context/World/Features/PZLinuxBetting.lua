@@ -70,7 +70,7 @@ function bettingUI:initialise()
         modData.PZLinuxUIY = self.parent:getY()
     end
 
-    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
+    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
     self.stopButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.stopButton.borderColor = {r=0, g=0, b=0, a=1}
     self.stopButton:setVisible(true)
@@ -119,7 +119,7 @@ function bettingUI:initialise()
     self.minimizeBackButton:initialise()
     self.topBar:addChild(self.minimizeBackButton)
 
-    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
+    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onClose)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
     self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -146,6 +146,9 @@ function bettingUI:initialise()
 end
 
 function bettingUI:onSelectBet(button)
+    self.minimizeBackButton:setVisible(true)
+    self.minimizeButton:setVisible(false)
+
     for _, button in ipairs(self.betButtons) do
         button:setVisible(false)
     end
@@ -417,13 +420,8 @@ function bettingUI:onYesButton(button)
     
     self.isClosing = true
     self:removeFromUIManager()
-    bettingMenu_ShowUI(player)
-end
-
--- STOP
-function bettingUI:onStop(button)
-    self.isClosing = true
-    self:removeFromUIManager()
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 9
 end
 
 -- LOGOUT
@@ -437,14 +435,22 @@ end
 function bettingUI:onMinimizeBack(button)
     self.isClosing = true
     self:removeFromUIManager()
-    bettingMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 9
 end
 
 -- CLOSE
 function bettingUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
-    bettingMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
+end
+
+-- CLOSE
+function bettingUI:onCloseX(button)
+    self.isClosing = true
+    getPlayer():StopAllActionQueue()
 end
 
 function bettingUI:onSFXOn(button)

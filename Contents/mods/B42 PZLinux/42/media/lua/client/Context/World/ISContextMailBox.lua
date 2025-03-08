@@ -131,7 +131,7 @@ end
 
 function MailBoxUI:onClose()
     self.isClosing = true
-    self:removeFromUIManager()
+    getPlayer():StopAllActionQueue()
 end
 
 function MailBoxMenu_ShowUI(player)

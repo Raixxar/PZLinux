@@ -6,6 +6,7 @@ darkWebUI = ISPanel:derive("darkWebUI")
 local LAST_CONNECTION_TIME = 0
 local ITEMS_MAX = ZombRand(5,50)
 local currentOffers = {}
+local getItemName = nil
 
 local darkWebItems = {
     -- HUNDGUNS 
@@ -383,7 +384,7 @@ function darkWebUI:initialise()
         modData.PZLinuxUIY = self.parent:getY()
     end
 
-    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
+    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
     self.stopButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.stopButton.borderColor = {r=0, g=0, b=0, a=1}
     self.stopButton:setVisible(true)
@@ -432,7 +433,7 @@ function darkWebUI:initialise()
     self.minimizeBackButton:initialise()
     self.topBar:addChild(self.minimizeBackButton)
 
-    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
+    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onClose)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
     self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -614,7 +615,8 @@ end
 function darkWebUI:onMinimizeBack(button)
     self.isClosing = true
     self:removeFromUIManager()
-    darkWebMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 3
 end
 
 
@@ -624,6 +626,11 @@ function darkWebUI:onClose(button)
     self:removeFromUIManager()
     local modData = getPlayer():getModData()
     modData.PZLinuxUIOpenMenu = 1
+end
+
+function darkWebUI:onCloseX(button)
+    self.isClosing = true
+    getPlayer():StopAllActionQueue()
 end
 
 function darkWebUI:onSFXOn(button)
