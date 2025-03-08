@@ -10,6 +10,17 @@
 - Adding seeds components to the requests.
 - Items in the requests are now mixed to create a diverse selection in the delivery box.
 - Add options to the mod to make it sandbox.
+- Added multiple spawns for the quest to retrieve a package. 
+- Added multiple spawns for the quest to kill a target.
+- Data retrieval via a computer triggers an alarm and spawns a horde.
+- Tower defense: Protect the cargo for 1 day under alarm.
+- Radio station activates a message that attracts zombies to the area.
+- Find and send medical supplies.
+- Find and send fuel.
+- Find and send weapons.
+- Send food.
+- Prevent a trade by burning a cargo.
+- In a mission, each zombie killed = $10 bonus.
 
 # Update v.0.1.10
 
