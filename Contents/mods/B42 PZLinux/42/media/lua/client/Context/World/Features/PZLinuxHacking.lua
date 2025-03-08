@@ -61,7 +61,7 @@ function hackingUI:initialise()
         modData.PZLinuxUIY = self.parent:getY()
     end
 
-    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
+    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
     self.stopButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.stopButton.borderColor = {r=0, g=0, b=0, a=1}
     self.stopButton:setVisible(true)
@@ -96,19 +96,13 @@ function hackingUI:initialise()
     self.minimizeButton:initialise()
     self.topBar:addChild(self.minimizeButton)
 
-    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
+    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onClose)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
     self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
-end
-
--- STOP
-function hackingUI:onStop(button)
-    self.isClosing = true
-    self:removeFromUIManager()
 end
 
 -- LOGOUT
@@ -119,10 +113,17 @@ function hackingUI:onMinimize(button)
     modData.PZLinuxUIOpenMenu = 1
 end
 
--- CLOSE
+-- LOGOUT
 function hackingUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
+end
+
+function hackingUI:onCloseX(button)
+    self.isClosing = true
+    getPlayer():StopAllActionQueue()
 end
 
 function hackingUI:onSFXOn(button)
@@ -154,34 +155,20 @@ end
 -- ID CARD
 function hackingUI:onIdCard()
     local playerObj = getPlayer()
-    local containers = ISInventoryPaneContextMenu.getContainers(playerObj)
-    for i=1,containers:size() do
-        local newCount = 0
-        local container = containers:get(i-1)
-        local items = container:getItems()
-        for j = 0, items:size() - 1 do
-            local item = items:get(j)
-            if item:getFullType() == "Base.IDcard" 
-              or item:getFullType() == "Base.IDcard_Stolen" 
-              or item:getFullType() == "Base.IDcard_Female"
-              or item:getFullType() == "Base.IDcard_Male" then
-                hackZombieName = item:getName()
-                ISInventoryPaneContextMenu.transferIfNeeded(playerObj, item)
-                Events.OnTick.Add(function()
-                    local inventory = playerObj:getInventory()
-                    local items = inventory:getItems()
+    local inventory = playerObj:getInventory()
+    local items = inventory:getItems()
+    hackZombieName = nil
     
-                    for k = items:size() - 1, 0, -1 do
-                        local checkItem = items:get(k)
-                        if checkItem:getName() == hackZombieName then
-                            inventory:Remove(checkItem)
-                            Events.OnTick.Remove(self)
-                            break
-                        end
-                    end
-                end)
-                break
-            end
+    for j = 0, items:size() - 1 do
+        local item = items:get(j)
+        local modData = getPlayer():getModData()
+        if item:getFullType() == "Base.IDcard" 
+        or item:getFullType() == "Base.IDcard_Stolen" 
+        or item:getFullType() == "Base.IDcard_Female"
+        or item:getFullType() == "Base.IDcard_Male" then
+            hackZombieName = item:getName()
+            inventory:Remove(item)
+            break
         end
     end
 
@@ -541,37 +528,33 @@ function hackingUI:hackTransfert()
 end
 
 function hackingUI:hackNext()
-    hackZombieName = nil
     local playerObj = getPlayer()
-    local containers = ISInventoryPaneContextMenu.getContainers(playerObj)
-    for i=1,containers:size() do
-        local newCount = 0
-        local container = containers:get(i-1)
-        local items = container:getItems()
-        for j = 0, items:size() - 1 do
-            local item = items:get(j)
-            if item:getFullType() == "Base.IDcard" 
-              or item:getFullType() == "Base.IDcard_Stolen" 
-              or item:getFullType() == "Base.IDcard_Female"
-              or item:getFullType() == "Base.IDcard_Male" then
-                hackZombieName = item:getName()
-                ISInventoryPaneContextMenu.transferIfNeeded(playerObj, item)
-                if hackZombieName then
-                    self.hackNextButton:setVisible(false)
-                    self.triesCount = 0
-                    self.hackLabel:setName("")
-                    self.hackLabelHistory:setName("")
-                    self.hackLabelTitle:setName("")
-                    self.hackLabelAttempts:setName("")
-                    self.hackLabelTitle:setName("")
-                    self.promptCommand:setText("")
-                    self.promptCommand:focus()
-                    if self.hackTransfertButton then self.hackTransfertButton:setVisible(false) end
-                    if self.titleLabelPlayer then self.titleLabelPlayer:setName("") end
-                    self:onHack()
-                end
-                break
+    local inventory = playerObj:getInventory()
+    local items = inventory:getItems()
+    
+    for j = 0, items:size() - 1 do
+        local item = items:get(j)
+        local modData = getPlayer():getModData()
+        if item:getFullType() == "Base.IDcard" 
+        or item:getFullType() == "Base.IDcard_Stolen" 
+        or item:getFullType() == "Base.IDcard_Female"
+        or item:getFullType() == "Base.IDcard_Male" then
+            hackZombieName = item:getName()
+            if hackZombieName then
+                self.hackNextButton:setVisible(false)
+                self.triesCount = 0
+                self.hackLabel:setName("")
+                self.hackLabelHistory:setName("")
+                self.hackLabelTitle:setName("")
+                self.hackLabelAttempts:setName("")
+                self.hackLabelTitle:setName("")
+                self.promptCommand:setText("")
+                self.promptCommand:focus()
+                if self.hackTransfertButton then self.hackTransfertButton:setVisible(false) end
+                if self.titleLabelPlayer then self.titleLabelPlayer:setName("") end
+                self:onHack()
             end
+            break
         end
     end
 end

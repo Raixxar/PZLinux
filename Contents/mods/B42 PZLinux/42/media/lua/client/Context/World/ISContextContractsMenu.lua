@@ -44,7 +44,7 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                                             break
                                         end
                                         
-                                        if modData.PZLinuxContractBlood == 1 then
+                                        if modData.PZLinuxContractBlood == 1 and modData.PZLinuxOnZombieDead > 0 then
                                             context:addOption("Take the blood of the target", body, completeContractMenu_OnBlood, player, x, y, z)
                                             break
                                         end

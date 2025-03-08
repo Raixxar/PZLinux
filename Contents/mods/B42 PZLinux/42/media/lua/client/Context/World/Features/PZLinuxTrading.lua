@@ -123,7 +123,7 @@ function tradingUI:initialise()
         modData.PZLinuxUIY = self.parent:getY()
     end
 
-    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onStop)
+    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
     self.stopButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.stopButton.borderColor = {r=0, g=0, b=0, a=1}
     self.stopButton:setVisible(true)
@@ -172,7 +172,7 @@ function tradingUI:initialise()
     self.minimizeTradingButton:initialise()
     self.topBar:addChild(self.minimizeTradingButton)
 
-    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onStop)
+    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onClose)
     self.closeButton.textColor = {r=0, g=1, b=0, a=1}
     self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -507,17 +507,12 @@ function tradingUI:initializePrices()
     end
 end
 
--- STOP
-function tradingUI:onStop(button)
-    self.isClosing = true
-    self:removeFromUIManager()
-end
-
 -- LOGOUT
 function tradingUI:onMinimizeTrading(button)
     self.isClosing = true
     self:removeFromUIManager()
-    tradingMenu_ShowUI(player)
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 4
 end
 
 function tradingUI:onMinimize(button)
@@ -531,6 +526,13 @@ end
 function tradingUI:onClose(button)
     self.isClosing = true
     self:removeFromUIManager()
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 1
+end
+
+function tradingUI:onCloseX(button)
+    self.isClosing = true
+    getPlayer():StopAllActionQueue()
 end
 
 function tradingUI:onSFXOn(button)

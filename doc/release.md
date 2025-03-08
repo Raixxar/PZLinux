@@ -1,5 +1,23 @@
 - Contract Clean a building or area.
-- Fight a horde
+- Adding a quest where the player must fight a horde of zombies.
+- Adding electronic components to the requests.
+- Adding repairing components to the requests.
+- Adding materials components to the requests.
+- Adding Legal Equipment components to the requests.
+- Adding Legal Clothing components to the requests.
+- Adding skill books components to the requests.
+- Adding VHS components to the requests.
+- Adding seeds components to the requests.
+- Items in the requests are now mixed to create a diverse selection in the delivery box.
+- Add options to the mod to make it sandbox.
+
+# Update v.0.1.10
+
+# Update v.0.1.9-rc1
+- Fix an issue where the quest to collect zombie blood did not require killing a new target.
+- Fix an issue where TimedAction wasn't properly closed after an interface closure.
+- Fix for a glitch where the credit card was not properly consumed.
+- Fix an issue where the fish were not delivered after a purchase.
 
 # Update v.0.1.9
 - Create zombie races for online betting.

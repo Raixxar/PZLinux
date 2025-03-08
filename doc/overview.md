@@ -1,4 +1,4 @@
-version=0.1.8
+version=0.1.9-rc1
 id=3414468585
 title=B42 PZLinux [BETA]
 
@@ -25,6 +25,9 @@ Accept quests to earn even more money. Will you rise to the challenge?
 
 [h2]Request:[/h2]
 Spend your money to obtain useful items for your survival to live even longer.
+
+[h2]Online betting:[/h2]
+To try to double your balance or just to pass the time, you can also bet on zombie races.
 
 [h2]Enhanced Gameplay:[/h2]
 PZLinux not only adds depth to the economy but also enriches the gameplay experience. Explore the game's world with a new outlook, knowing that you might stumble upon hidden gems online! Don't miss out on money anymore; you can now profit from it to enhance your survival! Once found, deposit the money via an ATM into your bank account to make it available online

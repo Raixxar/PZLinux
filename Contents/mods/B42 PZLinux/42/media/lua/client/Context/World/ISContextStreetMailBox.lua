@@ -125,7 +125,7 @@ end
 
 function StreetMailBoxUI:onClose()
     self.isClosing = true
-    self:removeFromUIManager()
+    getPlayer():StopAllActionQueue()
 end
 
 function StreetMailBoxMenu_ShowUI(player)

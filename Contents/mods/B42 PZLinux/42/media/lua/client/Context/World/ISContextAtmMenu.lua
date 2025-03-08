@@ -268,7 +268,7 @@ end
 
 function AtmUI:onClose()
     self.isClosing = true
-    self:removeFromUIManager()
+    getPlayer():StopAllActionQueue()
 end
 
 function AtmUI:onWithdrawal()
