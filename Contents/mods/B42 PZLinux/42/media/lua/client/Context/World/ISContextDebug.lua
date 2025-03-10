@@ -1,10 +1,4 @@
-require "ISUI/Maps/ISWorldMapSymbols"
-require "ISUI/Maps/ISWorldMap"
-require "ISUI/ISPanelJoypad"
-require "ISUI/Maps/ISMap"
-require "ZoneCheck"
-
-local debug = 1
+local debug = 0
 local quests = {
     [1] = { baseName = "Base.RoseBagSeed", weight = 0.1 },
     [2] = { baseName = "Base.PoppyBagSeed", weight = 0.1 },
