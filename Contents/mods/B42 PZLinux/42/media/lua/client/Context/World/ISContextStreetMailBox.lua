@@ -89,7 +89,7 @@ function StreetMailBoxUI:onSendPackage()
         end
     end
 
-    if itemCount >= modData.PZLinuxContractInfoCount then
+    if modData.PZLinuxContractInfoCount and itemCount >= modData.PZLinuxContractInfoCount then
         if modData.PZLinuxContractInfoCount > 0 then 
             totalCountForContract = true 
         end

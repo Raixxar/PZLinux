@@ -38,8 +38,7 @@ function DebugtMenu_AddContext(player, context, worldobjects)
 end
 
 function DebugMenu_OnMap(x, y, message)
-    local x = 450
-    local y = 9792
+    local x, y = 7251, 8378
     local message = "CONTRACT Package $29038"
     contractsDrawOnMap(x, y, message)
 end
