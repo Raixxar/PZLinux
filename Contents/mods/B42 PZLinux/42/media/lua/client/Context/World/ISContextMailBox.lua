@@ -67,12 +67,7 @@ function MailBoxUI:showLoginMenu()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    loginButtonName = "SEND THE PACKAGE"
-    local modData = getPlayer():getModData()
-    if modData.PZLinuxActiveRequest == 1 then
-        loginButtonName = "TAKE THE PACKAGE"
-    end
-
+    local loginButtonName = "SEND/TAKE THE PACKAGE"
     self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.25, self.height * 0.027, loginButtonName, self, self.onSendTakePackage)
     self.loginButton:setVisible(true)
     self.loginButton:initialise()
@@ -82,11 +77,26 @@ end
 function MailBoxUI:onSendTakePackage()
     local playerObj = getPlayer()
     local inventory = playerObj:getInventory()
+    local modData = getPlayer():getModData()
     local items = inventory:getItems()
-    
+    local totalCountForContract = false
+
+    local itemCount = 0
     for j = 0, items:size() - 1 do
         local item = items:get(j)
-        local modData = getPlayer():getModData()
+        if item:getFullType() == modData.PZLinuxContractInfo then
+            itemCount = itemCount + 1
+        end
+    end
+
+    if itemCount >= modData.PZLinuxContractInfoCount then
+        if modData.PZLinuxContractInfoCount > 0 then 
+            totalCountForContract = true 
+        end
+    end
+    
+    for j = items:size() - 1, 0, -1 do
+        local item = items:get(j)
         if item and item:getFullType() == "Base.SuspiciousPackage" then
             local boxName = item:getName()
             boxName = boxName:gsub("%$", "")
@@ -95,35 +105,38 @@ function MailBoxUI:onSendTakePackage()
             if amount then
                 saveAtmBalance(balance + amount)
                 inventory:Remove(item)
-                break
             end
         end
 
         if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
         or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractManhunt == 3)
         or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1)
-        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3) then
-            modData.PZLinuxActiveContract = 2
-            inventory:Remove(item)
-            break
+        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3)
+        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractMedical == 1 and totalCountForContract)
+        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractWeapon == 1 and totalCountForContract) then
+            if modData.PZLinuxContractInfoCount > 0 then
+                modData.PZLinuxActiveContract = 2
+                inventory:Remove(item)
+                modData.PZLinuxContractInfoCount = modData.PZLinuxContractInfoCount - 1
+            else
+                modData.PZLinuxActiveContract = 2
+                inventory:Remove(item)
+            end
         end
     end
 
-    local modData = getPlayer():getModData()
     if modData.PZLinuxActiveRequest == 1 then
         while #modData.PZLinuxOnItemRequest > 0 do
             local inv = getPlayer():getInventory()
             local parcel = inv:AddItem('Base.Parcel_Large')
             local parcelInv = parcel:getInventory()
-            local itemName = modData.PZLinuxOnItemRequest[1]
-            local itemCount = modData.PZLinuxOnItemRequestCount[1]
-            print("debug", itemName, itemCount)
-            for i = 1, itemCount do
-                parcelInv:AddItem(itemName)
+            local lastBatch = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
+            if lastBatch then
+                for _, item in ipairs(lastBatch.items) do
+                    parcelInv:AddItem(item.name)
+                end
             end
-            table.remove(modData.PZLinuxOnItemRequest, 1)
-            table.remove(modData.PZLinuxOnItemRequestCount, 1)
+            table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
         end
         modData.PZLinuxActiveRequest = 0
     end

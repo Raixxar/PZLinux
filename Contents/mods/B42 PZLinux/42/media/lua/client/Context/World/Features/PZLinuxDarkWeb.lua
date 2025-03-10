@@ -55,8 +55,8 @@ local darkWebItems = {
     -- SLING
     { id = {"Base.AmmoStraps"}, Price = 2500 },
     -- HACKING
-    { id = {"Base.CreditCard"}, Price = 1000 },
-    { id = {"Base.IDcard"}, Price = 1000 },
+    { id = {"Base.IDcard_Stolen"}, Price = 1000 },
+    { id = {"Base.CreditCard_Stolen"}, Price = 1000 },
     -- EXPLOSIVES
     { id = {"Base.SmokeBomb"}, Price = 100 },
     { id = {"Base.Molotov"}, Price = 150 },

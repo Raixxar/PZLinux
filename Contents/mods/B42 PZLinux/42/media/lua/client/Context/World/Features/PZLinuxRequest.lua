@@ -5,9 +5,10 @@ requestUI = ISPanel:derive("requestUI")
 
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
-local PZLinuxOnItemRequest = ""
-local PZLinuxOnItemRequestCount = 0
+local PZLinuxOnItemRequest = {}
+local PZLinuxOnItemRequestName = ""
 local ZLinuxOnItemRequestPriceDelta = 1
+local PZLinuxOnItemRequestCount = 0
 
 local requests = {
     [1] = { baseName = "Canned food", price = 50 },
@@ -18,7 +19,12 @@ local requests = {
     [6] = { baseName = "Pickled food", price = 70 },
     [7] = { baseName = "Drink", price = 30 },
     [8] = { baseName = "Book", price = 150 },
-    [9] = { baseName = "Car", price = 15000 }
+    [9] = { baseName = "Car", price = 15000 },
+    [10] = { baseName = "Repairing", price = 40 },
+    [11] = { baseName = "Materials", price = 100 },
+    [12] = { baseName = "Paint bucket", price = 500 },
+    [13] = { baseName = "Electronics", price = 80 },
+    [14] = { baseName = "Seeds", price = 20 },
 }
 
 local contracts = {}
@@ -179,6 +185,8 @@ function requestUI:initialise()
 end
 
 function requestUI:refreshContracts()
+    self.prevButton:setVisible(false)
+    self.nextButton:setVisible(false)
     for _, button in ipairs(self.contractButtons) do
         button:setVisible(false)
     end
@@ -363,7 +371,7 @@ function requestUI:onContractId(contract)
                 [12] = { baseName = "Base.TinnedSoup", weight = 1 },
                 [13] = { baseName = "Base.CannedBolognese", weight = 1 },
                 [14] = { baseName = "Base.CannedTomato2", weight = 1 },
-                [15] = { baseName = "Base.TunaTin", weight = 3 },
+                [15] = { baseName = "Base.TunaTin", weight = 0.3 },
                 [16] = { baseName = "Base.Dogfood", weight = 1 },
                 [17] = { baseName = "Base.CannedMilk", weight = 1 },
                 [18] = { baseName = "Base.CannedFruitBeverage", weight = 1 }
@@ -372,90 +380,88 @@ function requestUI:onContractId(contract)
 
         if contract == 2 then -- Protein
             quests = {
-                [1] = { baseName = "Base.Baloney", weight = 5 },
-                [2] = { baseName = "Base.Chicken", weight = 3 },
-                [3] = { baseName = "Base.Ham", weight = 1 },
-                [4] = { baseName = "Base.MincedMeat", weight = 3 },
-                [5] = { baseName = "Base.MuttonChop", weight = 3 },
-                [6] = { baseName = "Base.PorkChop", weight = 3 },
-                [7] = { baseName = "Base.Salami", weight = 10 },
-                [8] = { baseName = "Base.Sausage", weight = 10 },
-                [9] = { baseName = "Base.Steak", weight = 3 }
+                [1] = { baseName = "Base.Baloney", weight = 0.5 },
+                [2] = { baseName = "Base.Chicken", weight = 0.3 },
+                [3] = { baseName = "Base.Ham", weight = 0.1 },
+                [4] = { baseName = "Base.MincedMeat", weight = 0.3 },
+                [5] = { baseName = "Base.MuttonChop", weight = 0.3 },
+                [6] = { baseName = "Base.PorkChop", weight = 0.3 },
+                [7] = { baseName = "Base.Salami", weight = 0.1 },
+                [8] = { baseName = "Base.Sausage", weight = 0.1 },
+                [9] = { baseName = "Base.Steak", weight = 0.3 }
             }
         end
 
         if contract == 3 then -- Seafood
             quests = {
-                [1] = { basaName = "Base.RedearSunfish", weight = 0.1 },
-                [2] = { baseName = "Base.Paddlefish", weight = 0.1 },
-                [3] = { baseName = "Base.GreenSumfish", weight = 0.1 },
-                [4] = { baseName = "Base.FlatheadCatfish", weight = 0.1 },
-                [5] = { baseName = "Base.ChannelCatfish", weight = 0.1 },
-                [6] = { baseName = "Base.BlueCatfish", weight = 0.1 },
-                [7] = { baseName = "Base.BlackCrappie", weight = 0.1 },
-                [8] = { baseName = "Base.Bluegill", weight = 0.1 },
-                [9] = { baseName = "Base.Shrimp", weight = 0.1 },
-                [10] = { baseName = "Base.FreshwaterDrum", weight = 0.1 },
-                [11] = { baseName = "Base.Muskellunge", weight = 0.1 },
-                [12] = { baseName = "Base.SmallmouthBass", weight = 0.1 },
-                [13] = { baseName = "Base.StripedBass", weight = 0.1 },
-                [14] = { baseName = "Base.WhiteBass", weight = 0.1 },
-                [15] = { baseName = "Base.YellowPerch", weight = 0.1 },
+                [1] = { baseName = "Base.Paddlefish", weight = 10 },
+                [2] = { baseName = "Base.FlatheadCatfish", weight = 10 },
+                [3] = { baseName = "Base.ChannelCatfish", weight = 10 },
+                [4] = { baseName = "Base.BlueCatfish", weight = 10 },
+                [5] = { baseName = "Base.BlackCrappie", weight = 10 },
+                [6] = { baseName = "Base.Bluegill", weight = 10 },
+                [7] = { baseName = "Base.Shrimp", weight = 10 },
+                [8] = { baseName = "Base.FreshwaterDrum", weight = 10 },
+                [9] = { baseName = "Base.Muskellunge", weight = 10 },
+                [10] = { baseName = "Base.SmallmouthBass", weight = 10 },
+                [11] = { baseName = "Base.StripedBass", weight = 10 },
+                [12] = { baseName = "Base.WhiteBass", weight = 10 },
+                [13] = { baseName = "Base.YellowPerch", weight = 10 },
             }
         end
 
         if contract == 4 then -- fruits
             quests = {
-               [1] = { baseName = "Base.Apple", weight = 5 },
-               [2] = { baseName = "Base.Banana", weight = 5 },
-               [3] = { baseName = "Base.BerryBlack", weight = 10 },
-               [4] = { baseName = "Base.BerryBlue", weight = 10 },
-               [5] = { baseName = "Base.Cherry", weight = 3 },
-               [6] = { baseName = "Base.Grapes", weight = 5 },
-               [7] = { baseName = "Base.Lemon", weight = 5 },
-               [8] = { baseName = "Base.Lime", weight = 5 },
-               [9] = { baseName = "Base.Mango", weight = 3 },
-               [10] = { baseName = "Base.Orange", weight = 5 },
-               [11] = { baseName = "Base.Peach", weight = 5 },
-               [12] = { baseName = "Base.Pear", weight = 5 },
-               [13] = { baseName = "Base.Pineapple", weight = 3 },
+               [1] = { baseName = "Base.Apple", weight = 0.3 },
+               [2] = { baseName = "Base.Banana", weight = 0.2 },
+               [3] = { baseName = "Base.BerryBlack", weight = 0.1 },
+               [4] = { baseName = "Base.BerryBlue", weight = 0.1 },
+               [5] = { baseName = "Base.Cherry", weight = 0.3 },
+               [6] = { baseName = "Base.Grapes", weight = 0.2 },
+               [7] = { baseName = "Base.Lemon", weight = 0.2 },
+               [8] = { baseName = "Base.Lime", weight = 0.2 },
+               [9] = { baseName = "Base.Mango", weight = 0.3 },
+               [10] = { baseName = "Base.Orange", weight = 0.2 },
+               [11] = { baseName = "Base.Peach", weight = 0.2 },
+               [12] = { baseName = "Base.Pear", weight = 0.2 },
+               [13] = { baseName = "Base.Pineapple", weight = 0.3 },
                [14] = { baseName = "Base.Watermelon", weight = 3 },
             }
         end
         
         if contract == 5 then -- Vegetables
             quests = {
-                [1] = { baseName = "Base.Avocado", weight = 3 },
-                [2] = { baseName = "Base.BellPepper", weight = 5 },
-                [3] = { baseName = "Base.Blackbeans", weight = 10 },
-                [4] = { baseName = "Base.Broccoli", weight = 5 },
-                [5] = { baseName = "Base.Carrots", weight = 5 },
-                [6] = { baseName = "Base.Corn", weight = 5 },
-                [7] = { baseName = "Base.Daikon", weight = 5 },
-                [8] = { baseName = "Base.Edamame", weight = 10 },
-                [9] = { baseName = "Base.Eggplant", weight = 5 },
-                [10] = { baseName = "Base.PepperHabanero", weight = 10 },
-                [11] = { baseName = "Base.PepperJalapeno", weight = 10 },
-                [12] = { baseName = "Base.Leek", weight = 5 },
-                [13] = { baseName = "Base.Lettuce", weight = 1 },
-                [14] = { baseName = "Base.Onion", weight = 5 },
-                [15] = { baseName = "Base.Pickles", weight = 10 },
+                [1] = { baseName = "Base.Avocado", weight = 0.3 },
+                [2] = { baseName = "Base.BellPepper", weight = 0.3 },
+                [3] = { baseName = "Base.Blackbeans", weight = 0.1 },
+                [4] = { baseName = "Base.Broccoli", weight = 0.2 },
+                [5] = { baseName = "Base.Carrots", weight = 0.3 },
+                [6] = { baseName = "Base.Corn", weight = 0.3 },
+                [7] = { baseName = "Base.Daikon", weight = 0.2 },
+                [8] = { baseName = "Base.Edamame", weight = 0.1 },
+                [9] = { baseName = "Base.Eggplant", weight = 0.3 },
+                [10] = { baseName = "Base.PepperHabanero", weight = 0.1 },
+                [11] = { baseName = "Base.PepperJalapeno", weight = 0.1 },
+                [12] = { baseName = "Base.Leek", weight = 0.2 },
+                [13] = { baseName = "Base.Lettuce", weight = 0.5 },
+                [14] = { baseName = "Base.Onion", weight = 0.2 },
+                [15] = { baseName = "Base.Pickles", weight = 0.1 },
                 [16] = { baseName = "Base.Pumpkin", weight = 1 },
-                [17] = { baseName = "Base.Zucchini", weight = 3 },
+                [17] = { baseName = "Base.Zucchini", weight = 0.3 },
             }
         end
 
         if contract == 6 then  -- Pickled food
             quests = {
-                [1] = { baseName = "Base.CannedBellPepper", weight = 2 },
-                [2] = { baseName = "Base.CannedBroccoli", weight = 2 },
-                [3] = { baseName = "Base.CannedCabbage", weight = 2 },
-                [4] = { baseName = "Base.CannedCarrots", weight = 2 },
-                [5] = { baseName = "Base.CannedEggplant", weight = 2 },
-                [6] = { baseName = "Base.CannedLeek", weight = 2 },
-                [7] = { baseName = "Base.CannedPotato", weight = 2 },
-                [8] = { baseName = "Base.CannedRedRadish", weight = 2 },
-                [9] = { baseName = "Base.CannedTomato", weight = 2 },
+                [1] = { baseName = "Base.CannedBellPepper", weight = 1 },
+                [2] = { baseName = "Base.CannedBroccoli", weight = 1 },
+                [3] = { baseName = "Base.CannedCabbage", weight = 1 },
+                [4] = { baseName = "Base.CannedCarrots", weight = 1 },
+                [5] = { baseName = "Base.CannedEggplant", weight = 1 },
+                [6] = { baseName = "Base.CannedLeek", weight = 1 },
+                [7] = { baseName = "Base.CannedPotato", weight = 1 },
+                [8] = { baseName = "Base.CannedRedRadish", weight = 1 },
+                [9] = { baseName = "Base.CannedTomato", weight = 1 },
             }
         end
 
@@ -473,43 +479,43 @@ function requestUI:onContractId(contract)
         if contract == 8 then  -- Book
             quests = {
                 [1] = { baseName = "Base.Book", weight = 1 },
-                [2] = { baseName = "Base.Magazine", weight = 2 },
+                [2] = { baseName = "Base.Magazine", weight = 0.5 },
             }
         end
 
         if contract == 9 then  -- Car
             quests = {
-                [1] = { baseName = "Base.CarStationWagon", weight = 0.1, delta = 1.2 },
-                [2] = { baseName = "Base.CarStationWagon2", weight = 0.1, delta = 1.2 },
-                [3] = { baseName = "Base.SportsCar", weight = 0.1, delta = 4 },
-                [4] = { baseName = "Base.PickUpTruck", weight = 0.1, delta = 2 },
-                [5] = { baseName = "Base.PickUpTruckLightsFire", weight = 0.1, delta = 2.5 },
-                [6] = { baseName = "Base.PickUpTruckMccoy", weight = 0.1, delta = 2 },
-                [7] = { baseName = "Base.SmallCar", weight = 0.1, delta = 0.5 },
-                [8] = { baseName = "Base.CarNormal", weight = 0.1, delta = 1 },
-                [9] = { baseName = "Base.CarLightsPolice", weight = 0.1, delta = 2 },
-                [10] = { baseName = "Base.CarTaxi", weight = 0.1, delta = 1 },
-                [11] = { baseName = "Base.CarTaxi2", weight = 0.1, delta = 1 },
-                [12] = { baseName = "Base.ModernCar02", weight = 0.1, delta = 1.5 },
-                [13] = { baseName = "Base.StepVan", weight = 0.1, delta = 1.8 },
-                [14] = { baseName = "Base.StepVanMail", weight = 0.1, delta = 1.8 },
-                [15] = { baseName = "Base.StepVan_Heralds", weight = 0.1, delta = 1.8 },
-                [16] = { baseName = "Base.StepVan_Scarlet", weight = 0.1, delta = 1.8 },
-                [17] = { baseName = "Base.ModernCar", weight = 0.1, delta = 1.5 },
-                [18] = { baseName = "Base.OffRoad", weight = 0.1, delta = 3 },
-                [19] = { baseName = "Base.SUV", weight = 0.1, delta = 3 },
-                [20] = { baseName = "Base.Van", weight = 0.1, delta = 2 },
-                [21] = { baseName = "Base.VanAmbulance", weight = 0.1, delta = 2.5 },
-                [22] = { baseName = "Base.VanRadio", weight = 0.1, delta = 2 },
-                [23] = { baseName = "Base.VanSeats", weight = 0.1, delta = 2 },
-                [24] = { baseName = "Base.VanRadio_3N", weight = 0.1, delta = 2 },
-                [25] = { baseName = "Base.VanSpiffo", weight = 0.1, delta = 2 },
-                [26] = { baseName = "Base.Van_KnoxDisti", weight = 0.1, delta = 2 },
-                [27] = { baseName = "Base.Van_LectroMax", weight = 0.1, delta = 2 },
-                [28] = { baseName = "Base.Van_MassGenFac", weight = 0.1, delta = 2 },
-                [29] = { baseName = "Base.Van_Transit", weight = 0.1, delta = 2 },
-                [30] = { baseName = "Base.SmallCar02", weight = 0.1, delta = 0.5 },
-                [31] = { baseName = "Base.CarLuxury", weight = 0.1, delta = 4 }
+                [1] = { baseName = "Base.CarStationWagon", weight = 10, delta = 1.2 },
+                [2] = { baseName = "Base.CarStationWagon2", weight = 10, delta = 1.2 },
+                [3] = { baseName = "Base.SportsCar", weight = 10, delta = 4 },
+                [4] = { baseName = "Base.PickUpTruck", weight = 10, delta = 2 },
+                [5] = { baseName = "Base.PickUpTruckLightsFire", weight = 10, delta = 2.5 },
+                [6] = { baseName = "Base.PickUpTruckMccoy", weight = 10, delta = 2 },
+                [7] = { baseName = "Base.SmallCar", weight = 10, delta = 0.5 },
+                [8] = { baseName = "Base.CarNormal", weight = 10, delta = 1 },
+                [9] = { baseName = "Base.CarLightsPolice", weight = 10, delta = 2 },
+                [10] = { baseName = "Base.CarTaxi", weight = 10, delta = 1 },
+                [11] = { baseName = "Base.CarTaxi2", weight = 10, delta = 1 },
+                [12] = { baseName = "Base.ModernCar02", weight = 10, delta = 1.5 },
+                [13] = { baseName = "Base.StepVan", weight = 10, delta = 1.8 },
+                [14] = { baseName = "Base.StepVanMail", weight = 10, delta = 1.8 },
+                [15] = { baseName = "Base.StepVan_Heralds", weight = 10, delta = 1.8 },
+                [16] = { baseName = "Base.StepVan_Scarlet", weight = 10, delta = 1.8 },
+                [17] = { baseName = "Base.ModernCar", weight = 10, delta = 1.5 },
+                [18] = { baseName = "Base.OffRoad", weight = 10, delta = 3 },
+                [19] = { baseName = "Base.SUV", weight = 10, delta = 3 },
+                [20] = { baseName = "Base.Van", weight = 10, delta = 2 },
+                [21] = { baseName = "Base.VanAmbulance", weight = 10, delta = 2.5 },
+                [22] = { baseName = "Base.VanRadio", weight = 10, delta = 2 },
+                [23] = { baseName = "Base.VanSeats", weight = 10, delta = 2 },
+                [24] = { baseName = "Base.VanRadio_3N", weight = 10, delta = 2 },
+                [25] = { baseName = "Base.VanSpiffo", weight = 10, delta = 2 },
+                [26] = { baseName = "Base.Van_KnoxDisti", weight = 10, delta = 2 },
+                [27] = { baseName = "Base.Van_LectroMax", weight = 10, delta = 2 },
+                [28] = { baseName = "Base.Van_MassGenFac", weight = 10, delta = 2 },
+                [29] = { baseName = "Base.Van_Transit", weight = 10, delta = 2 },
+                [30] = { baseName = "Base.SmallCar02", weight = 10, delta = 0.5 },
+                [31] = { baseName = "Base.CarLuxury", weight = 10, delta = 4 }
             }
 
             locations = {
@@ -526,10 +532,156 @@ function requestUI:onContractId(contract)
             }           
         end
 
+        if contract == 10 then  -- Repairing
+            quests = {
+                [1] = { baseName = "Base.Scotchtape", weight = 0.3 },
+                [2] = { baseName = "Base.DuctTape", weight = 0.5 },
+                [3] = { baseName = "Base.Glue", weight = 0.5 },
+                [4] = { baseName = "Base.Woodglue", weight = 1 },
+            }
+        end
+
+        if contract == 11 then  -- Materials
+            quests = {
+                [1] = { baseName = "Base.Aluminum", weight = 0.1 },
+                [2] = { baseName = "Base.ConcretePowder", weight = 5 },
+                [3] = { baseName = "Base.PlasterPowder", weight = 5 },
+                [4] = { baseName = "Base.BarbedWire", weight = 1 },
+                [5] = { baseName = "Base.NailsBox", weight = 0.3 },
+                [6] = { baseName = "Base.PaperclipBox", weight = 0.3 },
+                [7] = { baseName = "Base.Screws", weight = 0.3 },
+                [8] = { baseName = "Base.Sparklers", weight = 0.2 },
+                [9] = { baseName = "Base.Charcoal", weight = 8 },
+                [10] = { baseName = "Base.Dirtbag", weight = 2 },
+                [11] = { baseName = "Base.Hinge", weight = 0.3 },
+                [12] = { baseName = "Base.Doorknob", weight = 0.5 },
+                [13] = { baseName = "Base.Gravelbag", weight = 2 },
+                [14] = { baseName = "Base.GunPowder", weight = 0.1 },
+                [15] = { baseName = "Base.SheetMetal", weight = 1.5 },
+                [16] = { baseName = "Base.Nails", weight = 0.01 },
+                [17] = { baseName = "Base.Plank", weight = 3 },
+                [18] = { baseName = "Base.PropaneTank", weight = 10 },
+                [19] = { baseName = "Base.Rope", weight = 0.8 },
+                [20] = { baseName = "Base.SmallSheetMetal", weight = 0.4 },
+                [21] = { baseName = "Base.Staples", weight = 0.1 },
+                [22] = { baseName = "Base.Stone", weight = 1 },
+                [23] = { baseName = "Base.Tarp", weight = 1 },
+                [24] = { baseName = "Base.Thread", weight = 0.1 },
+                [25] = { baseName = "Base.Twine", weight = 0.1 },
+                [26] = { baseName = "Base.WeldingRods", weight = 1.5 },
+                [27] = { baseName = "Base.Wire", weight = 0.2 },
+                [28] = { baseName = "Base.Yarn", weight = 0.1 },
+                [29] = { baseName = "Base.DenimStrips", weight = 0.05 },
+                [30] = { baseName = "Base.LeatherStrips", weight = 0.05 },
+                [31] = { baseName = "Base.RippedSheets", weight = 0.05 },
+            }
+        end
+
+        if contract == 12 then  -- Paint
+            quests = {
+                [1] = { baseName = "Base.PaintBlack", weight = 5 },
+                [2] = { baseName = "Base.PaintBlue", weight = 5 },
+                [3] = { baseName = "Base.PaintBrown", weight = 5 },
+                [4] = { baseName = "Base.PaintCyan", weight = 5 },
+                [5] = { baseName = "Base.PaintGreen", weight = 5 },
+                [6] = { baseName = "Base.PaintGrey", weight = 5 },
+                [7] = { baseName = "Base.PaintLightBlue", weight = 5 },
+                [8] = { baseName = "Base.PaintLightBrown", weight = 5 },
+                [9] = { baseName = "Base.PaintOrange", weight = 5 },
+                [10] = { baseName = "Base.PaintPink", weight = 5 },
+                [11] = { baseName = "Base.PaintPurple", weight = 5 },
+                [12] = { baseName = "Base.PaintRed", weight = 5 },
+                [13] = { baseName = "Base.PaintTurquoise", weight = 5 },
+                [14] = { baseName = "Base.PaintWhite", weight = 5 },
+                [15] = { baseName = "Base.PaintYellow", weight = 5 },
+                [16] = { baseName = "Base.PaintbucketEmpty", weight = 5 },
+            }
+        end
+
+        if contract == 13 then  -- Electronics
+            quests = {
+                [1] = { baseName = "Base.Battery", weight = 0.1 },
+                [2] = { baseName = "Base.Amplifier", weight = 0.3 },
+                [3] = { baseName = "Base.TimerCrafted", weight = 0.5 },
+                [4] = { baseName = "Base.TriggerCrafted", weight = 0.2 },
+                [5] = { baseName = "Base.ElectricWire", weight = 0.1 },
+                [6] = { baseName = "Base.ElectronicsScrap", weight = 0.1 },
+                [7] = { baseName = "Base.MotionSensor", weight = 0.3 },
+                [8] = { baseName = "Base.RadioReceiver", weight = 0.1 },
+                [9] = { baseName = "Base.RadioTransmitter", weight = 0.1 },
+                [10] = { baseName = "Base.Receiver", weight = 0.1 },
+                [11] = { baseName = "Base.ScannerModule", weight = 0.1 },
+                [12] = { baseName = "Base.RemoteCraftedV1", weight = 0.4 },
+                [13] = { baseName = "Base.RemoteCraftedV2", weight = 0.4 },
+                [14] = { baseName = "Base.RemoteCraftedV3", weight = 0.4 },
+                [15] = { baseName = "Base.LightBulb", weight = 0.3 },
+                [16] = { baseName = "Base.LightBulbRed", weight = 0.3 },
+                [17] = { baseName = "Base.LightBulbGreen", weight = 0.3 },
+                [18] = { baseName = "Base.LightBulbBlue", weight = 0.3 },
+                [19] = { baseName = "Base.LightBulbYellow", weight = 0.3 },
+                [20] = { baseName = "Base.LightBulbCyan", weight = 0.3 },
+                [21] = { baseName = "Base.LightBulbMagenta", weight = 0.3 },
+                [22] = { baseName = "Base.LightBulbOrange", weight = 0.3 },
+                [23] = { baseName = "Base.LightBulbPurple", weight = 0.3 },
+                [24] = { baseName = "Base.LightBulbPink", weight = 0.3 },
+            }
+        end
+
+        if contract == 14 then  -- Seeds
+            quests = {
+                [1] = { baseName = "Base.RoseBagSeed", weight = 0.1 },
+                [2] = { baseName = "Base.PoppyBagSeed", weight = 0.1 },
+                [3] = { baseName = "Base.LavenderBagSeed", weight = 0.1 },
+                [4] = { baseName = "Base.BarleyBagSeed", weight = 0.1 },
+                [5] = { baseName = "Base.RyeBagSeed", weight = 0.1 },
+                [6] = { baseName = "Base.SugarBeetBagSeed", weight = 0.1 },
+                [7] = { baseName = "Base.WheatBagSeed", weight = 0.1 },
+                [8] = { baseName = "Base.ChamomileBagSeed", weight = 0.1 },
+                [9] = { baseName = "Base.MarigoldBagSeed", weight = 0.1 },
+                [10] = { baseName = "Base.LettuceBagSeed", weight = 0.1 },
+                [11] = { baseName = "Base.BellPepperBagSeed", weight = 0.1 },
+                [12] = { baseName = "Base.CauliflowerBagSeed", weight = 0.1 },
+                [13] = { baseName = "Base.CucumberBagSeed", weight = 0.1 },
+                [14] = { baseName = "Base.LeekBagSeed", weight = 0.1 },
+                [15] = { baseName = "Base.LemonGrassBagSeed", weight = 0.1 },
+                [16] = { baseName = "Base.ZucchiniBagSeed", weight = 0.1 },
+                [17] = { baseName = "Base.WatermelonBagSeed", weight = 0.1 },
+                [18] = { baseName = "Base.HabaneroBagSeed", weight = 0.1 },
+                [19] = { baseName = "Base.JalapenoBagSeed", weight = 0.1 },
+                [20] = { baseName = "Base.BlackSageBagSeed", weight = 0.1 },
+                [21] = { baseName = "Base.BroadleafPlantainBagSeed", weight = 0.1 },
+                [22] = { baseName = "Base.ComfreyBagSeed", weight = 0.1 },
+                [23] = { baseName = "Base.CommonMallowBagSeed", weight = 0.1 },
+                [24] = { baseName = "Base.HempBagSeed", weight = 0.1 },
+                [25] = { baseName = "Base.HopsBagSeed", weight = 0.1 },
+                [26] = { baseName = "Base.MintBagSeed", weight = 0.1 },
+                [27] = { baseName = "Base.TurnipBagSeed", weight = 0.1 },
+                [28] = { baseName = "Base.WildGarlicBagSeed", weight = 0.1 },
+                [29] = { baseName = "Base.PumpkinBagSeed", weight = 0.1 },
+            }
+        end
+
         local randomQuest = ZombRand(1, #quests + 1)
         local quest = quests[randomQuest]
-        local deltaWeight = 1
+        local deltaWeight = 10
         local locationName = ""
+        local weightPackage = 0
+        local itemCount = 0
+        local batch = { items = {} }
+
+        while weightPackage <= 9.5 do
+            local itemIdRand = ZombRand(1, #quests + 1)
+            local quest = quests[itemIdRand]
+            if quest then
+                table.insert(batch.items, { name = quest.baseName })
+                deltaWeight = quest.weight
+                weightPackage = weightPackage + quest.weight
+                itemCount = itemCount + 1
+            end
+        end
+
+        PZLinuxOnItemRequestCount = itemCount
+        table.insert(PZLinuxOnItemRequest, batch)
 
         if contract == 9 then
             local randomLocation = ZombRand(1, #locations + 1)
@@ -543,36 +695,39 @@ function requestUI:onContractId(contract)
             end
         end
 
-        if quest then
-            print(randomQuest)
-            PZLinuxOnItemRequest = quest.baseName
-            print(PZLinuxOnItemRequest)
-            deltaWeight = quest.weight
-        end
+        local produceName = ""
+        local lastBatch = PZLinuxOnItemRequest[#PZLinuxOnItemRequest]
+        for _, entry in ipairs(lastBatch.items) do
+            local itemBaseName = entry.name
+            local checkProduceName = getScriptManager():FindItem(itemBaseName)
+            local produceNameValide = checkProduceName and checkProduceName:getDisplayName() and checkProduceName:getDisplayName():match("%S")
+            if produceNameValide then
+                produceName = produceName .. "\n" .. sellerName .. checkProduceName:getDisplayName()
+            else    
+                produceName = produceName .. "\n" .. sellerName .. contracts[contract].name
+            end
 
-        PZLinuxOnItemRequestCount = math.ceil(ZombRand(5, 10) * deltaWeight)
-        local checkProduceName = getScriptManager():FindItem(PZLinuxOnItemRequest)
-        local produceNameValide = checkProduceName and checkProduceName:getDisplayName() and checkProduceName:getDisplayName():match("%S")
-
-        local produceName = nil
-        if produceNameValide then
-            produceName = checkProduceName:getDisplayName()
-        else    
-            produceName = contracts[contract].name
-        end
-
-        if contract == 9 then 
-            local vehicle = getScriptManager():getVehicle(PZLinuxOnItemRequest)
-            if vehicle then
-                produceName = getText("IGUI_VehicleName" .. vehicle:getName())
-            else
-                produceName = PZLinuxOnItemRequest
+            if contract == 9 then
+                PZLinuxOnItemRequestName = entry.name
+                local vehicle = getScriptManager():getVehicle(entry.name)
+                if vehicle then
+                    produceName = getText("IGUI_VehicleName" .. vehicle:getName())
+                else
+                    produceName = entry.name
+                end
             end
         end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-        message = message .. "\n" .. sellerName .. "Yes, I have ".. PZLinuxOnItemRequestCount .. " " .. produceName .. " for $" .. contracts[contract].price
-        self.loadingMessage:setName(message)
+        if contract == 9 then 
+            table.remove(PZLinuxOnItemRequest, #PZLinuxOnItemRequest)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount .. " " .. produceName
+            self.loadingMessage:setName(message)
+        else
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount
+            self.loadingMessage:setName(message)
+        end
 
         letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
         while elapsed < letterDelay do
@@ -601,12 +756,12 @@ function requestUI:onContractId(contract)
         message = message .. "\n" .. sellerName .. "Deal ?"
         self.loadingMessage:setName(message)
 
-        message = message .. "\n\nTOTAL: $" .. PZLinuxOnItemRequestCount * contracts[contract].price
+        message = message .. "\n\nTOTAL: $" .. PZLinuxOnItemRequestCount * contracts[contract].price * ZLinuxOnItemRequestPriceDelta
         self.loadingMessage:setName(message)
 
         local playerBalance = loadAtmBalance()
         local noButton = "No"
-        if playerBalance < PZLinuxOnItemRequestCount * contracts[contract].price then
+        if playerBalance < PZLinuxOnItemRequestCount * contracts[contract].price * ZLinuxOnItemRequestPriceDelta then
             noButton = "Not enough money"
         else
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -622,7 +777,7 @@ function requestUI:onContractId(contract)
     end)
     
     self.updateCoroutineFunc = function()
-        if coroutine.status(self.terminalCoroutine) ~= "dead" then
+        if self.terminalCoroutine and coroutine.status(self.terminalCoroutine) ~= "dead" then
             coroutine.resume(self.terminalCoroutine)
         else
             Events.OnTick.Remove(self.updateCoroutineFunc)
@@ -635,43 +790,30 @@ end
 
 function requestUI:onYesButton(button)
     local modData = getPlayer():getModData()
+    modData.PZLinuxActiveRequest = 1
+
     local playerBalance = loadAtmBalance()
     local newBalance = playerBalance - (PZLinuxOnItemRequestCount * contracts[button.id].price * ZLinuxOnItemRequestPriceDelta)
     saveAtmBalance(newBalance)
     self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
 
     if button.id == 9 then 
+        contractsDrawOnMap(modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, "* Car requested")
         modData.PZLinuxOnItemRequestCar = 1
-        modData.PZLinuxOnItemRequestCarName = PZLinuxOnItemRequest
+        modData.PZLinuxOnItemRequestCarName = PZLinuxOnItemRequestName
         self.isClosing = true
         self:removeFromUIManager()
         requestMenu_ShowUI(player)
         return
     end
-    
-    modData.PZLinuxActiveRequest = 1
+
     if type(modData.PZLinuxOnItemRequest) ~= "table" then
         modData.PZLinuxOnItemRequest = {}
     end
-
-    if type(modData.PZLinuxOnItemRequestCount) ~= "table" then
-        modData.PZLinuxOnItemRequestCount = {}
-    end
-
-    while #modData.PZLinuxOnItemRequest ~= #modData.PZLinuxOnItemRequestCount do
-        if #modData.PZLinuxOnItemRequest > #modData.PZLinuxOnItemRequestCount then
-            table.remove(modData.PZLinuxOnItemRequest, 1)
-        elseif #modData.PZLinuxOnItemRequest < #modData.PZLinuxOnItemRequestCount then
-            table.remove(modData.PZLinuxOnItemRequestCount, 1)
-        end
-    end
-
-    table.insert(modData.PZLinuxOnItemRequest, PZLinuxOnItemRequest)
-    table.insert(modData.PZLinuxOnItemRequestCount, PZLinuxOnItemRequestCount)
+    modData.PZLinuxOnItemRequest = PZLinuxOnItemRequest
     
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
     modData.PZLinuxUIOpenMenu = 8
 end
 

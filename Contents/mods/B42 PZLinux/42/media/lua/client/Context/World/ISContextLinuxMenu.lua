@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "0.1.9-rc1"
+local PZLinuxVersion = "0.1.10"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
