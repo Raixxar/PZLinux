@@ -1,28 +1,33 @@
+- Added multiple spawns for the quest to kill a target.
 - Contract Clean a building or area.
-- Adding a quest where the player must fight a horde of zombies.
+- Adding skill books components to the requests.
+- Add options to the mod to make it sandbox.
+- Data retrieval via a computer triggers an alarm (chance) and spawns a horde.
+- Radio station activates a message that attracts zombies to the area.
+- Prevent a trade by burning a cargo.
+- New contract: drop off a vehicle in a specific area.
+- New contract: deliver drinking water.
+
+# Update v.0.1.10
+- Added multiple spawns for the quest to retrieve a package. 
+- In a mission, each zombie killed = $5 bonus.
+- Fix a bug where the pagination did not disappear properly after selecting a query.
+- Fix a bug where the capture quest was not correctly reset upon completion.
+- Items in the requests are now mixed to create a diverse selection in the delivery box.
 - Adding electronic components to the requests.
 - Adding repairing components to the requests.
 - Adding materials components to the requests.
-- Adding Legal Equipment components to the requests.
-- Adding Legal Clothing components to the requests.
-- Adding skill books components to the requests.
-- Adding VHS components to the requests.
 - Adding seeds components to the requests.
-- Items in the requests are now mixed to create a diverse selection in the delivery box.
-- Add options to the mod to make it sandbox.
-- Added multiple spawns for the quest to retrieve a package. 
-- Added multiple spawns for the quest to kill a target.
-- Data retrieval via a computer triggers an alarm and spawns a horde.
-- Tower defense: Protect the cargo for 1 day under alarm.
-- Radio station activates a message that attracts zombies to the area.
-- Find and send medical supplies.
-- Find and send fuel.
-- Find and send weapons.
-- Send food.
-- Prevent a trade by burning a cargo.
-- In a mission, each zombie killed = $10 bonus.
-
-# Update v.0.1.10
+- New contract: prepare a cargo to be airlifted by helicopter (lvl:4)
+- New contract: Protect a building (lvl:5)
+- New contract: Find and send medical equipment (lvl:2)
+- New contract: Find and send weapons (lvl:3)
+- Contracts now add a circle and a summary directly on the map.
+- Fixed a bug where the ID card was not properly consumed after pressing 'Next'.
+- It is now possible to hack credit cards like ID cards.
+- When you request a car, it now appears on your map for you to pick up.
+- Mailboxes now allow for taking and depositing with a single click.
+- Zombies killed are now added to the contract notebook to track your mission status.
 
 # Update v.0.1.9-rc1
 - Fix an issue where the quest to collect zombie blood did not require killing a new target.

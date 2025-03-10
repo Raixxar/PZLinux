@@ -7,15 +7,20 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     local targetY = modData.PZLinuxContractLocationY
     local targetZ = modData.PZLinuxContractLocationZ
 
-    if modData.PZLinuxContractPickUp == 1 then
+    if modData.PZLinuxContractPickUp == 1 
+    or modData.PZLinuxContractCargo == 2 
+    or modData.PZLinuxContractProtect == 1
+    or modData.PZLinuxContractProtect == 3 then
         for _, obj in ipairs(worldobjects) do
             if instanceof(obj, "IsoObject") then
                 local square = obj:getSquare()
                 if square then
                     local x, y, z = square:getX(), square:getY(), square:getZ()
                     if isNearTarget(x, y, z, targetX, targetY, targetZ) then
-                        context:addOption("Take the package of the contract", obj, completeContractMenu_OnUse, player, x, y, z)
-                        break
+                        if modData.PZLinuxContractPickUp == 1 then context:addOption("Take the package of the contract", obj, completeContractMenu_OnUse, player, x, y, z); break end
+                        if modData.PZLinuxContractCargo == 2 then context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z); break end
+                        if modData.PZLinuxContractProtect == 1 then context:addOption("Protect the building", obj, completeContractMenu_OnProtect, player, x, y, z); break end
+                        if modData.PZLinuxContractProtect == 3 then context:addOption("Tag the sector as clear", obj, completeContractMenu_OnProtect, player, x, y, z); break end
                     end
                 end
             end
@@ -39,15 +44,8 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                                         local body = deadBodies:get(i)
                                         local x, y, z = nearbySquare:getX(), nearbySquare:getY(), nearbySquare:getZ()
 
-                                        if modData.PZLinuxContractManhunt == 2 then
-                                            context:addOption("Cut the target", body, completeContractMenu_OnCut, player, x, y, z)
-                                            break
-                                        end
-                                        
-                                        if modData.PZLinuxContractBlood == 1 and modData.PZLinuxOnZombieDead > 0 then
-                                            context:addOption("Take the blood of the target", body, completeContractMenu_OnBlood, player, x, y, z)
-                                            break
-                                        end
+                                        if modData.PZLinuxContractManhunt == 2 then context:addOption("Cut the target", body, completeContractMenu_OnCut, player, x, y, z); break end                             
+                                        if modData.PZLinuxContractBlood == 1 and modData.PZLinuxOnZombieDead > 0 then context:addOption("Take the blood of the target", body, completeContractMenu_OnBlood, player, x, y, z) break end
                                     end
                                 end
                             end
@@ -105,8 +103,45 @@ function completeContractMenu_OnCapture(zombie, player, x, y, z)
             ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
         end
     end
-    --ISTimedActionQueue.add(ISPathFindAction:pathToLocationF(getPlayer(), x, y, z))
     ISTimedActionQueue.add(ISCaptureAction:new(getPlayer(), zombie))
+end
+
+function completeContractMenu_OnCargo(obj, player, x, y, z)
+    addSound(getPlayer(), x, y, z, 1000, 100)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+        end
+    end
+    ISTimedActionQueue.add(ISTakeTheCargoAction:new(getPlayer(), obj))
+end
+
+function completeContractMenu_OnProtect(obj, player, x, y, z)
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxContractProtect == 3 then
+        local playerSquare = getPlayer():getSquare()
+        if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+            local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+            if freeSquare then
+                ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+            end
+        end
+        ISTimedActionQueue.add(ISProtectBuildingAction:new(getPlayer(), obj))
+    else
+        modData.PZLinuxContractProtect = 2
+        local randCountSpawn = ZombRand(50,200)
+        for i = 1, randCountSpawn do
+            local randRadiusSpawn = ZombRand(20,50)
+            local randDirectionSpawn = ZombRand(1,5)
+            if randDirectionSpawn == 1 then local zombie = createZombie(x + randRadiusSpawn, y + randRadiusSpawn, z, nil, 0, IsoDirections.S) end
+            if randDirectionSpawn == 2 then local zombie = createZombie(x - randRadiusSpawn, y - randRadiusSpawn, z, nil, 0, IsoDirections.S) end
+            if randDirectionSpawn == 3 then local zombie = createZombie(x + randRadiusSpawn, y - randRadiusSpawn, z, nil, 0, IsoDirections.S) end
+            if randDirectionSpawn == 4 then local zombie = createZombie(x - randRadiusSpawn, y + randRadiusSpawn, z, nil, 0, IsoDirections.S) end
+        end
+        addSound(getPlayer(), x, y, z, 1000, 100)
+    end
 end
 
 Events.OnFillWorldObjectContextMenu.Add(completeContractMenu_AddContext)

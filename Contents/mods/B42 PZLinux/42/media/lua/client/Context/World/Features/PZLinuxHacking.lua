@@ -165,7 +165,9 @@ function hackingUI:onIdCard()
         if item:getFullType() == "Base.IDcard" 
         or item:getFullType() == "Base.IDcard_Stolen" 
         or item:getFullType() == "Base.IDcard_Female"
-        or item:getFullType() == "Base.IDcard_Male" then
+        or item:getFullType() == "Base.IDcard_Male"
+        or item:getFullType() == "Base.CreditCard"
+        or item:getFullType() == "Base.CreditCard_Stolen" then
             hackZombieName = item:getName()
             inventory:Remove(item)
             break
@@ -270,7 +272,7 @@ function hackingUI:onIdCard()
         end
         Events.OnTick.Add(self.updateCoroutineFunc)
     else
-        self.hackLabelTitleError = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, "No ID Card...", 0, 1, 0, 1, UIFont.Small, true)
+        self.hackLabelTitleError = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, "No ID Card or Credit Card...", 0, 1, 0, 1, UIFont.Small, true)
         self.hackLabelTitleError.backgroundColor = {r=0, g=0, b=0, a=0}
         self.hackLabelTitleError.borderColor = {r=0, g=0, b=0, a=0}
         self.hackLabelTitleError:setVisible(true)
@@ -538,8 +540,11 @@ function hackingUI:hackNext()
         if item:getFullType() == "Base.IDcard" 
         or item:getFullType() == "Base.IDcard_Stolen" 
         or item:getFullType() == "Base.IDcard_Female"
-        or item:getFullType() == "Base.IDcard_Male" then
+        or item:getFullType() == "Base.IDcard_Male"
+        or item:getFullType() == "Base.CreditCard"
+        or item:getFullType() == "Base.CreditCard_Stolen" then
             hackZombieName = item:getName()
+            inventory:Remove(item)
             if hackZombieName then
                 self.hackNextButton:setVisible(false)
                 self.triesCount = 0

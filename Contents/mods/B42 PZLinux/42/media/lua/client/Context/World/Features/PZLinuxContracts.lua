@@ -6,6 +6,8 @@ contractsUI = ISPanel:derive("contractsUI")
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
 local selectedContracts = {}
+local locationQuestTown = "All around the world"
+local questDetailName = ""
 
 local companyCode = {
     { id = 1, code = "CCC" },
@@ -42,20 +44,24 @@ local companyCode = {
 }
 
 local contracts = {}
-for i = 1, 9 do
+for i = 1, 12 do
     local randomId = ZombRand(1, 32)
-    local difficulty = "0"
+    local difficulty = 0
     local reward = 20
+    local questName = ""
     -- 1 reward * 1000, 2 reward * 2500, 3 reward * 5000, 4 reward * 10000, 5 reward * 20000
-    if i == 1 then difficulty = "1"; reward = 1000 end -- Kill Zombies
-    if i == 2 then difficulty = "2"; reward = 2500 end -- Pick up a package in the town of Rosewood
-    if i == 3 then difficulty = "2"; reward = 2500 end -- Pick up a package in the town of March Ridge
-    if i == 4 then difficulty = "3"; reward = 5000 end -- Pick up a package in the town of Muldraugh
-    if i == 5 then difficulty = "5"; reward = 20000 end -- Pick up a package in the town of Louisville
-    if i == 6 then difficulty = "3"; reward = 5000 end -- Manhunt
-    if i == 7 then difficulty = "1"; reward = 1000 end -- Blood Market
-    if i == 8 then difficulty = "4"; reward = 10000 end -- Car parts
-    if i == 9 then difficulty = "4"; reward = 10000 end -- Capture a Zombie
+    if i == 1 then difficulty = 1; reward = 1000; questName = "Kill zombies" end
+    if i == 2 then difficulty = 2; reward = 2500; questName = "Retrieve the package." end
+    if i == 3 then difficulty = 3; reward = 5000; questName = "Retrieve the package." end
+    if i == 4 then difficulty = 5; reward = 20000; questName = "Retrieve the package." end
+    if i == 5 then difficulty = 3; reward = 5000; questName = "Eliminate the target." end
+    if i == 6 then difficulty = 1; reward = 1000; questName = "Collect zombie blood." end
+    if i == 7 then difficulty = 4; reward = 10000; questName = "Sent car parts." end
+    if i == 8 then difficulty = 4; reward = 10000; questName = "Capture a live zombie." end
+    if i == 9 then difficulty = 4; reward = 10000; questName = "Prepare the cargo." end
+    if i == 10 then difficulty = 5; reward = 20000; questName = "Protect the building." end
+    if i == 11 then difficulty = 2; reward = 2500; questName = "Sent medical equipment." end
+    if i == 12 then difficulty = 3; reward = 5000; questName = "Sent weapons." end
     local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)
     local randomCode = "Execute a contract for " .. companyCode[randomId].code .. " - Difficulty: " .. difficulty .. "/5"
     local dataName = "PZLinuxTrading" .. companyCode[randomId].code
@@ -64,14 +70,16 @@ for i = 1, 9 do
     local lastIndex = #priceHistory
     local lastPrice = priceHistory[lastIndex] or 1
     local PZReward = math.ceil((ZombRand(lastPrice, lastPrice * getHourTime) + reward)/10) * 10
-    contracts[i] = { id = i, name = randomCode, code = companyCode[randomId].code, reward = PZReward }
+    contracts[i] = { id = i, name = randomCode, code = companyCode[randomId].code, reward = PZReward, questName = questName }
 end
 
 local contractsCompanyCodes = {}
 local contractsCompanyReward = {}
+local contractsQuestName = {}
 for i, contract in ipairs(contracts) do
     contractsCompanyCodes[contract.id] = contract.code
     contractsCompanyReward[contract.id] = contract.reward
+    contractsQuestName[contract.id] = contract.questName
 end
 
 -- CONSTRUCTOR
@@ -248,15 +256,24 @@ end
 
 function contractsUI:onCancelContract(button)
     local modData = getPlayer():getModData()
+    modData.PZLinuxContractLocationX = 0
+    modData.PZLinuxContractLocationY = 0
+    modData.PZLinuxContractLocationZ = 0
     modData.PZLinuxOnZombieDead = 0
     modData.PZLinuxActiveContract = 0
     modData.PZLinuxContractNote = ""
     modData.PZLinuxContractInfo = ""
+    modData.PZLinuxContractInfoCount = 0
     modData.PZLinuxContractKillZombie = 0
     modData.PZLinuxContractPickUp = 0
     modData.PZLinuxContractManhunt = 0
     modData.PZLinuxContractBlood = 0
     modData.PZLinuxContractCar = 0
+    modData.PZLinuxContractCapture = 0
+    modData.PZLinuxContractCargo = 0
+    modData.PZLinuxContractProtect = 0
+    modData.PZLinuxContractMedical = 0
+    modData.PZLinuxContractWeapon = 0
 
     local inv = getPlayer():getInventory()
     local notebook = inv:Remove('Notebook')
@@ -304,15 +321,17 @@ function contractsUI:onSelectContract(button)
 end
 
 function contractsUI:onContractComplete()
-    self.completeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, "You have been paid for your contract.", 0, 1, 0, 1, UIFont.Small, true)
+    local modData = getPlayer():getModData()
+    local moneyEarned = modData.PZLinuxOnReward + modData.PZLinuxOnZombieDead * 5
+    local balance = loadAtmBalance() + moneyEarned
+    saveAtmBalance(balance)
+    self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
+
+    local logMessage = "You have been paid for your contract.\nTotal zombies killed: " .. modData.PZLinuxOnZombieDead .. "\nTotal money earned: $" .. moneyEarned
+    self.completeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, logMessage, 0, 1, 0, 1, UIFont.Small, true)
     self.completeContractMessage:setVisible(true)
     self.completeContractMessage:initialise()
     self.topBar:addChild(self.completeContractMessage)
-
-    local modData = getPlayer():getModData()
-    local balance = modData.PZLinuxOnReward + loadAtmBalance()
-    saveAtmBalance(balance)
-    self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
 
     local dataName = modData.PZLinuxContractCompanyUp
     local companyData = ModData.getOrCreate(dataName)
@@ -335,16 +354,24 @@ function contractsUI:onContractComplete()
     local notebook = inv:Remove('Notebook')
     
     LAST_CONNECTION_TIME = 0
+    modData.PZLinuxContractLocationX = 0
+    modData.PZLinuxContractLocationY = 0
+    modData.PZLinuxContractLocationZ = 0
     modData.PZLinuxOnZombieDead = 0
     modData.PZLinuxActiveContract = 0
     modData.PZLinuxContractNote = ""
     modData.PZLinuxContractInfo = ""
+    modData.PZLinuxContractInfoCount = 0
     modData.PZLinuxContractKillZombie = 0
     modData.PZLinuxContractPickUp = 0
     modData.PZLinuxContractManhunt = 0
     modData.PZLinuxContractBlood = 0
     modData.PZLinuxContractCar = 0
     modData.PZLinuxContractCapture = 0
+    modData.PZLinuxContractCargo = 0
+    modData.PZLinuxContractProtect = 0
+    modData.PZLinuxContractMedical = 0
+    modData.PZLinuxContractWeapon = 0
 end
 
 function contractsUI:onContractId(contract)
@@ -507,9 +534,7 @@ function contractsUI:onContractId(contract)
     
     if contract == 2 then
         self.terminalCoroutine = coroutine.create(function()
-            local randomQuest = ZombRand(1, 6)
             local modData = getPlayer():getModData()
-
             local globalVolume = getCore():getOptionSoundVolume() / 10
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
@@ -531,7 +556,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            message = sellerName .. "We are looking for a courier to retrieve a package the town of\nRosewood."
+            message = sellerName .. "We are looking for a courier to retrieve a package."
             self.loadingMessage:setName(message)
             
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -543,8 +568,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            typeText(self.typingMessage, "Where is the package exactly in Rosewood ?", function()
-                message = message .. "\n" .. playerName .. "Where is the package in Rosewood ?"
+            typeText(self.typingMessage, "Where is the package exactly ?", function()
+                message = message .. "\n" .. playerName .. "Where is the package exactly ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
@@ -559,19 +584,48 @@ function contractsUI:onContractId(contract)
             if self.isClosing then return end
             
             local quests = {
-                [1] = { description = "In the police station, in a paper cabinet.", x = 8073, y = 11736, z = 0 },
-                [2] = { description = "In the elementary school, in a school locker.", x = 8333, y = 11616, z = 0 },
-                [3] = { description = "In the church, in a gray cabinet.", x = 8134, y = 11542, z = 0 },
-                [4] = { description = "In the bar, under the sink in a cabinet.", x = 8022, y = 11423, z = 0 },
-                [5] = { description = "In the Knox Country Court of Justice, in a gray cabinet.", x = 8062, y = 11653, z = 0 }
+                -- Rosewood
+                [1] = { description = "In the police station of Rosewood, in a paper cabinet.", x = 8073, y = 11736, z = 0, city = "Rosewood" },
+                [2] = { description = "In the elementary school of Rosewood, in a school locker.", x = 8333, y = 11616, z = 0, city = "Rosewood" },
+                [3] = { description = "In the church of Rosewood, in a gray cabinet.", x = 8134, y = 11542, z = 0, city = "Rosewood" },
+                [4] = { description = "In the bar of Rosewood, under the sink in a cabinet.", x = 8022, y = 11423, z = 0, city = "Rosewood"  },
+                [5] = { description = "In the Knox Country Court of Justice of Rosewood, in a gray cabinet.", x = 8062, y = 11653, z = 0, city = "Rosewood"  },
+                -- March Ridge
+                [6] = { description = "At the church of March Ridge, in a library.", x = 10322, y = 12800, z = 0, city = "March Ridge" },
+                [7] = { description = "In the insurance office of March Ridge, in a paper box.", x = 10070, y = 12778, z = 0, city = "March Ridge" },
+                [8] = { description = "At the community center of March Ridge, in the blue locker.", x = 10038, y = 12720, z = 0, city = "March Ridge" },
+                [9] = { description = "At the Knox military apartments of March Ridge, in the clothing washer.", x = 10064, y = 12623, z = 0, city = "March Ridge" },
+                [10] = { description = "In the bar of March Ridge, in the trash inside.", x = 10171, y = 12667, z = 0, city = "March Ridge" },
+                -- Ekron
+                [11] = { description = "In the Metal Workshop of Ekron, in the trash outside.", x = 622, y = 9854, z = 0, city = "Ekron" },
+                [12] = { description = "In the Book Store of Ekron, in a library.", x = 451, y = 9794, z = 0, city = "Ekron" },
+                [13] = { description = "In the Broken Train of Ekron, in a box.", x = 550, y = 9861, z = 0, city = "Ekron" },
+                [14] = { description = "In the Gas Station of Ekron, in a small trash outside.", x = 675, y = 9921, z = 0, city = "Ekron" },
+                [15] = { description = "In the Church of Ekron, on the piano upstairs.", x = 445, y = 9914, z = 1, city = "Ekron" },
+                -- Echo Creek
+                [16] = { description = "In the Auto Repair Shop of Echo Creek, on the table inside.", x = 3676, y = 10893, z = 0, city = "Echo Creek" },
+                [17] = { description = "In the Church of Echo Creek, on the piano.", x = 3534, y = 11203, z = 0, city = "Echo Creek" },
+                [18] = { description = "In the Diner of Echo Creek, in the freezer.", x = 3571, y = 10907, z = 0, city = "Echo Creek" },
+                -- Fallas Lake
+                [19] = { description = "In the Police Station of Fallas Lake, in an archive cabinet.", x = 7251, y = 8378, z = 0, city = "Fallas Lake" },
+                [20] = { description = "In the Bar of Fallas Lake, in a jukebox.", x = 7248, y = 8521, z = 0, city = "Fallas Lake" },
+                [21] = { description = "In the Doctor's Office of Fallas Lake, in a fridge.", x = 7301, y = 8387, z = 0, city = "Fallas Lake" },
+                [22] = { description = "In the Burger Joint of Fallas Lake, under the sink.", x = 7234, y = 8208, z = 0, city = "Fallas Lake" },
+                -- Valley Station
+                [23] = { description = "In the Yummers of Valley Station, in a fridge.", x = 13581, y = 5744, z = 0, city = "Valley Station" },
+                [24] = { description = "In the Knox Bank of Valley Station, in a flower pot.", x = 13656, y = 5734, z = 0, city = "Valley Station" },
+                [25] = { description = "In the Elementary School of Valley Station, in a yellow locker.", x = 12861, y = 4863, z = 0, city = "Valley Station" },
+                [26] = { description = "In the Church of Valley Station, in boxs.", x = 14556, y = 4964, z = 0, city = "Valley Station" },
             }
 
+            local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
                 message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
+                locationQuestTown = quest.city
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -631,7 +685,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -645,7 +699,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -663,13 +717,12 @@ function contractsUI:onContractId(contract)
 
     if contract == 3 then
         self.terminalCoroutine = coroutine.create(function()
-            local randomQuest = ZombRand(1, 6)
             local modData = getPlayer():getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 10
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
-
+            
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
@@ -687,7 +740,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            message = sellerName .. "We are looking for someone for a simple race in the\ntown of March Ridge."
+            message = sellerName .. "We're looking for a brave person for simple missions."
             self.loadingMessage:setName(message)
             
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -699,8 +752,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            typeText(self.typingMessage, "Where is the package exactly in March Ridge ?", function()
-                message = message .. "\n" .. playerName .. "Where is the package exactly in March Ridge ?"
+            typeText(self.typingMessage, "Where is the package ?", function()
+                message = message .. "\n" .. playerName .. "Where is the package ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
@@ -713,21 +766,43 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-
+            
             local quests = {
-                [1] = { description = "At the church, in a library.", x = 10322, y = 12800, z = 0 },
-                [2] = { description = "In the insurance office, in a paper box.", x = 10070, y = 12778, z = 0 },
-                [3] = { description = "At the community center, in the blue locker.", x = 10038, y = 12720, z = 0 },
-                [4] = { description = "At the Knox military apartments, in the clothing washer.", x = 10064, y = 12623, z = 0 },
-                [5] = { description = "In the bar, in the trash inside.", x = 10171, y = 12667, z = 0 }
+                -- Muldraugh
+                [1] = { description = "At Jays Chicken of Muldraugh, in a big trash outside.", x = 10627, y = 9564, z = 0, city = "Muldraugh" },
+                [2] = { description = "At the police station of Muldraugh, in a blue locker.", x = 10646, y = 10409, z = 0, city = "Muldraugh" },
+                [3] = { description = "In the Cortman medical of Muldraugh, in an antique piece of furniture.", x = 10880, y = 10024, z = 0, city = "Muldraugh" },
+                [4] = { description = "At the electronics store of Muldraugh, in a fridge.", x = 10617, y = 9872, z = 0, city = "Muldraugh" },
+                [5] = { description = "In the McCoy logging Corp of Muldraugh, in a yellow locker.", x = 10310, y = 9340, z = 0, city = "Muldraugh" },
+                -- West Point
+                [6] = { description = "At the Mini Hotel of West Point, In the trash outside.", x = 12020, y = 6932, z = 0, city = "West Point" },
+                [7] = { description = "At the Thunder Gas of West Point, In a freezer.", x = 11825, y = 6868, z = 0, city = "West Point" },
+                [8] = { description = "At the Pizza Whirled of West Point, under the sink.", x = 11655, y = 7084, z = 0, city = "West Point" },
+                [9] = { description = "At the Church and Cemetery of West Point, On a tombstone.", x = 11070, y = 6703, z = 0, city = "West Point" },
+                [10] = { description = "At the Knox Bank of West Point, in a office.", x = 11899, y = 6909, z = 1, city = "West Point" },
+                -- Brandenburg
+                [11] = { description = "At the Police Station of Brandenburg, in the bathroom.", x = 2037 , y = 5975, z = 0, city = "Brandenburg" },
+                [12] = { description = "At the Dentist of Brandenburg, in a gray shelf.", x = 2077, y = 5912, z = 0, city = "Brandenburg" },
+                [13] = { description = "At the Community Center of Brandenburg, in the yellow locker.", x = 1858, y = 5944, z = 0, city = "Brandenburg" },
+                [14] = { description = "At the Fire Department of Brandenburg, in a tool cart.", x = 2069, y = 6288, z = 0, city = "Brandenburg" },
+                [15] = { description = "At the Destroyed Pile-O-Crepe of Brandenburg, on the table inside.", x = 2137, y = 6427, z = 0, city = "Brandenburg" },
+                -- Irvington
+                [16] = { description = "At the Liquor Store of Irvington, in a green crate.", x = 2542, y = 14468, z = 0, city = "Irvington" },
+                [17] = { description = "At the Gun Club of Irvington, on a metal shelf.", x = 1855, y = 14163, z = 0, city = "Irvington" },
+                [18] = { description = "At the Public Pool of Irvington, in a blue locker.", x = 1883, y = 14461, z = 0, city = "Irvington" },
+                [19] = { description = "At the Sport Store of Irvington, on a metal shelf.", x = 1862, y = 14853, z = 0, city = "Irvington" },
+                [20] = { description = "At the Farming Supply Store of Irvington, in a box.", x = 2466, y = 14317, z = 0, city = "Irvington" },
+                [21] = { description = "At the School of Irvington, in a library.", x = 2238, y = 14359, z = 0, city = "Irvington" },
             }
 
+            local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
                 message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
+                locationQuestTown = quest.city
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -787,7 +862,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -801,7 +876,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -819,13 +894,12 @@ function contractsUI:onContractId(contract)
 
     if contract == 4 then
         self.terminalCoroutine = coroutine.create(function()
-            local randomQuest = ZombRand(1, 6)
             local modData = getPlayer():getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 10
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
-            
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
             local message = ""
@@ -843,7 +917,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            message = sellerName .. "We're looking for a brave person for simple missions at Muldraugh."
+            message = sellerName .. "We are seeking soldiers for a retrieval mission."
             self.loadingMessage:setName(message)
             
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -855,8 +929,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            typeText(self.typingMessage, "Where is the package in Muldraugh ?", function()
-                message = message .. "\n" .. playerName .. "Where is the package in Muldraugh ?"
+            typeText(self.typingMessage, "Where is the package ?", function()
+                message = message .. "\n" .. playerName .. "Where is the package ?"
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
@@ -869,21 +943,35 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+        
             local quests = {
-                [1] = { description = "At Jays Chicken, in a big trash outside.", x = 10627, y = 9564, z = 0 },
-                [2] = { description = "At the police station, in a blue locker.", x = 10646, y = 10409, z = 0 },
-                [3] = { description = "In the Cortman medical, in an antique piece of furniture.", x = 10880, y = 10024, z = 0 },
-                [4] = { description = "At the electronics store, in a fridge.", x = 10617, y = 9872, z = 0 },
-                [5] = { description = "In the McCoy logging Corp, in a yellow locker.", x = 10310, y = 9340, z = 0 }
+                -- Louisville
+                [1]  = { description = "In the repurposed building of Louisville, in a box.", x = 12436, y = 1420, z = 0, city = "Louisville" },
+                [2]  = { description = "At the fire department of Louisville, in a gray wardrobe.", x = 13729, y = 1784, z = 0, city = "Louisville" },
+                [3]  = { description = "At the Knox bank of Louisville, on the last floor in a paper box.", x = 12653, y = 1636, z = 15, city = "Louisville" },
+                [4]  = { description = "In the hospital of Louisville, in a trash.", x = 12923, y = 2060, z = 2, city = "Louisville" },
+                [5]  = { description = "At the Scarlet Oak Distillery of Louisville, in a box.", x = 12021, y = 1934, z = 0, city = "Louisville" },
+                [6]  = { description = "At the Knox bank of Louisville, on the third floor in a metal cabinet.", x = 12561, y = 1707, z = 2, city = "Louisville" },
+                [7]  = { description = "At the Awl Work and Sew Play of Louisville, in the container somewhere below the register.", x = 12491, y = 1695, z = 0, city = "Louisville" },
+                [8]  = { description = "In the Evergreen public school of Louisville, in a yellow locker.", x = 13581, y = 2782, z = 0, city = "Louisville" },
+                [9]  = { description = "In the Leafhill heights elementary school of Louisville, in the yellow locker.", x = 12351, y = 3247, z = 1, city = "Louisville" },
+                [10] = { description = "In the Pizza Whirled of Louisville, in the fridge.", x = 13224, y = 2103, z = 0, city = "Louisville" },
+                -- March Ridge
+                [11] = { description = "In the Bunker of March Ridge, in a trash.", x = 9962, y = 12611, z = -4, city = "March Ridge" },
+                -- Rosewood
+                [12] = { description = "In the Prison of Rosewood, in a fridge upstairs.", x = 7695, y = 11901, z = 1, city = "Rosewood" },
+                [13] = { description = "In the Military Research Facility of Rosewood, in a morgue locker.", x = 5566, y = 12437, z = -17, city = "Rosewood" },
+                [14] = { description = "In the Military Research Facility of Rosewood, in an archive cabinet in the basement.", x = 5581, y = 12469, z = -17, city = "Rosewood" },
             }
 
+            local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\n" .. sellerName .. quest.description
+                message = message .. " " .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
+                locationQuestTown = quest.city
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -942,8 +1030,9 @@ function contractsUI:onContractId(contract)
             if self.isClosing then return end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+
             message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -957,7 +1046,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -975,169 +1064,6 @@ function contractsUI:onContractId(contract)
 
     if contract == 5 then
         self.terminalCoroutine = coroutine.create(function()
-            local randomQuest = ZombRand(1, 11)
-            local modData = getPlayer():getModData()
-
-            local globalVolume = getCore():getOptionSoundVolume() / 10
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
-            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
-
-            modData.PZLinuxOnReward = contractsCompanyReward[contract]
-            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
-            local message = ""
-
-            local sleepSFX = 1
-            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
-
-            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-
-            message = sellerName .. "We are seeking soldiers for a retrieval mission in Louisville."
-            self.loadingMessage:setName(message)
-            
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-
-            typeText(self.typingMessage, "Where is the package in Louisville ?", function()
-                message = message .. "\n" .. playerName .. "Where is the package in Louisville ?"
-                self.loadingMessage:setName(message)
-                self.typingMessage:setName("")
-            end)
-            
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-            
-            local quests = {
-                [1]  = { description = "In the repurposed building, in a box.", x = 12436, y = 1420, z = 0 },
-                [2]  = { description = "At the fire department, in a gray wardrobe.", x = 13729, y = 1784, z = 0 },
-                [3]  = { description = "At the Knox bank, on the last floor in a paper box.", x = 12653, y = 1636, z = 15 },
-                [4]  = { description = "In the hospital, in a trash.", x = 12923, y = 2060, z = 2 },
-                [5]  = { description = "At the Scarlet Oak Distillery, in a box.", x = 12021, y = 1934, z = 0 },
-                [6]  = { description = "At the Knox bank, on the third floor in a metal cabinet.", x = 12561, y = 1707, z = 2 },
-                [7]  = { description = "At the Awl Work and Sew Play, in the container somewhere below the register.", x = 12491, y = 1695, z = 0 },
-                [8]  = { description = "In the Evergreen public school, in a yellow locker.", x = 13581, y = 2782, z = 0 },
-                [9]  = { description = "In the Leafhill heights elementary school, in the yellow locker.", x = 12351, y = 3247, z = 1 },
-                [10] = { description = "In the Pizza Whirled, in the fridge.", x = 13224, y = 2103, z = 0 }
-            }
-            
-            local quest = quests[randomQuest]
-            if quest then
-                message = message .. "\n" .. sellerName .. quest.description
-                modData.PZLinuxContractLocationX = quest.x
-                modData.PZLinuxContractLocationY = quest.y
-                modData.PZLinuxContractLocationZ = quest.z
-            end
-
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            self.loadingMessage:setName(message)
-
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-            
-            typeText(self.typingMessage, "What is the reward for this mission ?", function()
-                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
-                self.loadingMessage:setName(message)
-                self.typingMessage:setName("")
-            end)
-
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-            
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
-            self.loadingMessage:setName(message)
-
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-
-            typeText(self.typingMessage, "How do I give you the package ?", function()
-                message = message .. "\n" .. playerName .. "How do I give you the package ?"
-                self.loadingMessage:setName(message)
-                self.typingMessage:setName("")
-            end)
-
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-
-            message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
-            modData.PZLinuxContractNote = message
-            self.loadingMessage:setName(message)
-
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-
-            if self.isClosing then return end
-
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
-            self.loadingMessage:setName(message)
-
-            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
-            self.yesButton.contractId = contract
-            self.yesButton:initialise()
-            self.yesButton:instantiate()
-            self.topBar:addChild(self.yesButton)
-            
-            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
-            self.noButton:initialise()
-            self.noButton:instantiate()
-            self.topBar:addChild(self.noButton)
-        end)
-    end
-
-    if contract == 6 then
-        self.terminalCoroutine = coroutine.create(function()
-            local randomQuest = ZombRand(1, 11)
             local modData = getPlayer():getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 10
@@ -1323,24 +1249,26 @@ function contractsUI:onContractId(contract)
             if self.isClosing then return end
             
             local quests = {
-                [1] = { description = "The target was last seen at Rosewood police station.", x = 8061, y = 11725, z = 0 },
-                [2] = { description = "The target was last seen at Rosewwod Auto Repair Shop.", x = 8156, y = 11321, z = 0},
-                [3] = { description = "The target was last seen at Rosewood Gas Station.", x = 8178, y = 11276, z = 0 },
-                [4] = { description = "The target was last seen at Fallas Lake near the Hardware Store.", x = 7252, y = 8227, z = 0},
-                [5] = { description = "The target was last seen near Fallas Lake at Army Quarters.", x = 7436, y = 7951, z = 0},
-                [6] = { description = "The target was supposed to go to Brandenburg at P.S. Delilah.", x = 2037, y = 5684, z = 2},
-                [7] = { description = "The target must be in Brandenburg Prison.", x = 1352, y = 5892, z = -1},
-                [8] = { description = "The target was supposed to go to the Tool Store in Brandenburg.", x = 2094, y = 5885, z = 0},
-                [9] = { description = "The target must be at the fire station in Ekron", x = 756, y = 9773, z = 0},
-                [10] = { description = "The target was supposed to go to the elementary school in Irvington.", x = 2227, y = 14328, z = 0},
+                [1] = { description = "The target was last seen at Rosewood police station.", x = 8061, y = 11725, z = 0, city = "Rosewood" },
+                [2] = { description = "The target was last seen at Rosewwod Auto Repair Shop.", x = 8156, y = 11321, z = 0, city = "Rosewood" },
+                [3] = { description = "The target was last seen at Rosewood Gas Station.", x = 8178, y = 11276, z = 0, city = "Rosewood" },
+                [4] = { description = "The target was last seen at Fallas Lake near the Hardware Store.", x = 7252, y = 8227, z = 0, city = "Fallas Lake" },
+                [5] = { description = "The target was last seen near Fallas Lake at Army Quarters.", x = 7436, y = 7951, z = 0, city = "Fallas Lake" },
+                [6] = { description = "The target was supposed to go to Brandenburg at P.S. Delilah.", x = 2037, y = 5684, z = 2, city = "Brandenburg" },
+                [7] = { description = "The target must be in Brandenburg Prison.", x = 1352, y = 5892, z = -1, city = "Brandenburg" },
+                [8] = { description = "The target was supposed to go to the Tool Store in Brandenburg.", x = 2094, y = 5885, z = 0, city = "Brandenburg" },
+                [9] = { description = "The target must be at the fire station in Ekron", x = 756, y = 9773, z = 0, city = "Ekron" },
+                [10] = { description = "The target was supposed to go to the elementary school in Irvington.", x = 2227, y = 14328, z = 0, city = "Irvington" },
             }
-            
+
+            local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
                 message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = tonumber(quest.x)
                 modData.PZLinuxContractLocationY = tonumber(quest.y)
                 modData.PZLinuxContractLocationZ = tonumber(quest.z)
+                locationQuestTown = quest.city
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -1413,7 +1341,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1429,7 +1357,7 @@ function contractsUI:onContractId(contract)
         end)
     end
 
-    if contract == 7 then
+    if contract == 6 then
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
@@ -1496,7 +1424,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1512,7 +1440,7 @@ function contractsUI:onContractId(contract)
         end)
     end
 
-    if contract == 8 then
+    if contract == 7 then
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
@@ -1563,7 +1491,6 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-
             local quests = {
                 [1] = { baseName = "Base.CarBattery3", name = "Battery: Resistant", delta = 1 },
                 [2] = { baseName = "Base.CarBattery2", name = "Battery: Sport", delta = 0.9 },
@@ -1588,7 +1515,7 @@ function contractsUI:onContractId(contract)
                 [21] = { baseName = "Base.NormalSuspension1", name = "Standard suspension: Standard", delta = 0.5 }
             }
             
-            local randomQuest = ZombRand(1, 22)
+            local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
                 message = message .. "\n" .. sellerName .. quest.name
@@ -1639,7 +1566,7 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1655,7 +1582,7 @@ function contractsUI:onContractId(contract)
         end)
     end
 
-    if contract == 9 then
+    if contract == 8 then
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
@@ -1722,7 +1649,595 @@ function contractsUI:onContractId(contract)
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            modData.PZLinuxContractNote = message
+            
+            self.loadingMessage:setName(message)
+
+            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+            self.yesButton.contractId = contract
+            self.yesButton:initialise()
+            self.yesButton:instantiate()
+            self.topBar:addChild(self.yesButton)
+            
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+            self.noButton:initialise()
+            self.noButton:instantiate()
+            self.topBar:addChild(self.noButton)
+        end)
+    end
+
+    if contract == 9 then
+        self.terminalCoroutine = coroutine.create(function()
+            local modData = getPlayer():getModData()
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
+            modData.PZLinuxOnReward = contractsCompanyReward[contract]
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message = ""
+
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            message = sellerName .. "We lost our cargo, we're looking for someone to retrieve it by helicopter."
+            self.loadingMessage:setName(message)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            typeText(self.typingMessage, "Where is the cargo ?", function()
+                message = message .. "\n" .. playerName .. "Where is the cargo ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            local quests = {
+                [1] = { description = "At the intersection of the Gas Station and Knox Bank in Muldraugh.", x = 10592, y = 9737, z = 0, city = "Muldraugh" },
+                [2] = { description = "At the Town Park of West Point.", x = 11788, y = 6912, z = 0, city = "West Point" },
+                [3] = { description = "In front of the School of West Point.", x = 11348, y = 6793, z = 0, city = "West Point" },
+                [4] = { description = "In front of the Police Station of Fallas Lake.", x = 7261, y = 8382, z = 0, city = "Fallas Lake" },
+                [5] = { description = "In front of the Laundromat of Riverside.", x = 6387, y = 5336, z = 0, city = "Riverside" },
+                [6] = { description = "In front of the Community Center of Brandenburg.", x = 1850, y = 5980, z = 0, city = "Brandenburg" },
+                [7] = { description = "At the center of the Destroyed Train yard of Brandenburg.", x = 2207, y = 6683, z = 0, city = "Brandenburg" },
+                [8] = { description = "At the intersection of Bank and Zippee Market in Rosewood.", x = 8102, y = 11581, z = 0, city = "Rosewood" },
+                [9] = { description = "In front of Post Office in March Ridge.", x = 10102, y = 12702, z = 0, city = "March Ridge" },
+                [10] = { description = "In front of Farming Supply Store in Irvington.", x = 2478, y = 14321, z = 0, city = "Irvington" },
+            }
+
+            local randomQuest = ZombRand(1, #quests + 1)
+            local quest = quests[randomQuest]
+            if quest then
+                message = message .. "\n" .. sellerName .. quest.description
+                modData.PZLinuxContractLocationX = quest.x
+                modData.PZLinuxContractLocationY = quest.y
+                modData.PZLinuxContractLocationZ = quest.z
+                locationQuestTown = quest.city
+            end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            typeText(self.typingMessage, "What is the reward for this mission ?", function()
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Prepare defenses, we will take the cargo by helicopter."
+            
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Deal ?"
+            
+            self.loadingMessage:setName(message)
+
+            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+            self.yesButton.contractId = contract
+            self.yesButton:initialise()
+            self.yesButton:instantiate()
+            self.topBar:addChild(self.yesButton)
+            
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+            self.noButton:initialise()
+            self.noButton:instantiate()
+            self.topBar:addChild(self.noButton)
+        end)
+    end
+
+    if contract == 10 then
+        self.terminalCoroutine = coroutine.create(function()
+            local modData = getPlayer():getModData()
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
+            modData.PZLinuxOnReward = contractsCompanyReward[contract]
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message = ""
+
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            message = sellerName .. "We have a building to protect against a horde of zombies."
+            self.loadingMessage:setName(message)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            typeText(self.typingMessage, "Where is the building ?", function()
+                message = message .. "\n" .. playerName .. "Where is the building ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            local quests = {
+                -- Ekron
+                [1] = { description = "It's the Ekron Restaurant.", x = 458, y = 9787, z = 0, city = "Ekron" },
+                [2] = { description = "It's the Ekron Metal Workshop.", x = 623, y = 9837, z = 0, city = "Ekron" },
+                [3] = { description = "It's the Ekron Fire Department.", x = 761, y = 9770, z = 0, city = "Ekron" },
+                -- Irvington
+                [4] = { description = "It's the Irvington Metal Workshop.", x = 2373, y = 14479, z = 0, city = "Irvington" },
+                [5] = { description = "It's the Irvington School.", x = 2259, y = 14356, z = 0, city = "Irvington" },
+                [6] = { description = "It's the Irvington Church.", x = 2433, y = 14224, z = 0, city = "Irvington" },
+                -- Brandenburg
+                [7] = { description = "It's the Brandenburg P.S. Delilah.", x = 2049, y = 5696, z = 0, city = "Brandenburg" },
+                [8] = { description = "It's the Brandenburg Bar.", x = 2425, y = 5797, z = 0, city = "Brandenburg" },
+                [9] = { description = "It's the Brandenburg Gigamart.", x = 1865, y = 6349, z = 0, city = "Brandenburg" },
+                -- Riverside
+                [10] = { description = "It's the Riverside Gigamart.", x = 6506, y = 5346, z = 0, city = "Riverside" },
+                [11] = { description = "It's the Riverside School.", x = 6445, y = 5441, z = 0, city = "Riverside" },
+                [12] = { description = "It's the Riverside Coffee Shop.", x = 6401, y = 5253, z = 0, city = "Riverside" },
+                -- Fallas Lake
+                [13] = { description = "It's the Fallas Lake Farming Supply Store.", x = 7253, y = 8323, z = 0, city = "Fallas Lake" },
+                -- Rosewood
+                [14] = { description = "It's the Rosewood Bank.", x = 8089, y = 11591, z = 0, city = "Rosewood" },
+                [15] = { description = "It's the Rosewood Police Station.", x = 8065, y = 11735, z = 0, city = "Rosewood" },
+                -- March Ridge
+                [16] = { description = "It's the March Ridge Cinema.", x = 10166, y = 12658, z = 0, city = "March Ridge" },
+                [17] = { description = "It's the March Ridge Community Center.", x = 10030, y = 12734, z = 0, city = "March Ridge" },
+                -- Muldraugh
+                [18] = { description = "It's the Muldraugh Police Station.", x = 10637, y = 10417, z = 0, city = "Muldraugh" },
+                [19] = { description = "It's the Muldraugh Cortman Medical.", x = 10879, y = 10029, z = 0, city = "Muldraugh" },
+                -- West Point
+                [20] = { description = "It's the West Point School.", x = 11344, y = 6780, z = 0, city = "West Point" },
+                [21] = { description = "It's the West Point Church.", x = 11964, y = 6999, z = 0, city = "West Point" },
+                -- Louisville
+                [22] = { description = "It's the Louisville Hospital.", x = 12940, y = 2078, z = 0, city = "Louisville" },
+                [23] = { description = "It's the Louisville Police Station & Prison.", x = 12442, y = 1586, z = 0, city = "Louisville" },
+                [24] = { description = "It's the Louisville Bowling Alley.", x = 12447, y = 2077, z = 0, city = "Louisville" },
+                [25] = { description = "It's the Louisville Court House.", x = 12483, y = 1546, z = 0, city = "Louisville" },
+            }
+
+            local randomQuest = ZombRand(1, #quests + 1)
+            local quest = quests[randomQuest]
+            if quest then
+                message = message .. "\n" .. sellerName .. quest.description
+                modData.PZLinuxContractLocationX = quest.x
+                modData.PZLinuxContractLocationY = quest.y
+                modData.PZLinuxContractLocationZ = quest.z
+                locationQuestTown = quest.city
+            end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            typeText(self.typingMessage, "What is the reward for this mission ?", function()
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Prepare defenses, there will be many zombies."
+            
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Deal ?"
+            
+            self.loadingMessage:setName(message)
+
+            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+            self.yesButton.contractId = contract
+            self.yesButton:initialise()
+            self.yesButton:instantiate()
+            self.topBar:addChild(self.yesButton)
+            
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+            self.noButton:initialise()
+            self.noButton:instantiate()
+            self.topBar:addChild(self.noButton)
+        end)
+    end
+
+    if contract == 11 then
+        self.terminalCoroutine = coroutine.create(function()
+            local modData = getPlayer():getModData()
+
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
+            modData.PZLinuxOnReward = contractsCompanyReward[contract]
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
+            local message = ""
+
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for medical equipment."
+            self.loadingMessage:setName(message)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            typeText(self.typingMessage, "What exactly are you looking for ?", function()
+                message = message .. "\n" .. playerName .. "What exactly are you looking for ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            local quests = {
+                [1] = { baseName = "Base.Bandaid", name = "Bandage: Adhesive", delta = 0.5 },
+                [2] = { baseName = "Base.Bandage", name = "Bandage", delta = 0.6 },
+                [3] = { baseName = "Base.AlcoholWipes", name = "Alcohol Wipes", delta = 0.8 },
+                [4] = { baseName = "Base.Disinfectant", name = "Bottle of Disinfectant", delta = 1.2 },
+                [5] = { baseName = "Base.AlcoholedCottonBalls", name = "Cotton Balls Doused in Alcohol", delta = 0.7 },
+                [6] = { baseName = "Base.Antibiotics", name = "Antibiotics", delta = 1.5 },
+                [7] = { baseName = "Base.PillsAntiDep", name = "Antidepressants", delta = 1.1 },
+                [8] = { baseName = "Base.PillsBeta", name = "Beta Blockers", delta = 1 },
+                [9] = { baseName = "Base.Pills", name = "Painkillers", delta = 1.3 },
+                [10] = { baseName = "Base.PillsSleepingTablets", name = "Sleeping Pills", delta = 0.8 },
+                [11] = { baseName = "Base.PillsVitamins", name = "Caffeine Pills", delta = 0.7 },
+            }
+            
+            local randomQuest = ZombRand(1, #quests + 1)
+            local countRequest = ZombRand(1, 11)
+            local quest = quests[randomQuest]
+            if quest then
+                modData.PZLinuxContractInfo = quest.baseName
+                modData.PZLinuxContractInfoCount = countRequest
+                modData.PZLinuxOnReward = math.ceil((modData.PZLinuxOnReward * quest.delta)/10)*10
+                questDetailName = quest.name
+                message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
+            end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            self.loadingMessage:setName(message)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            typeText(self.typingMessage, "What is the reward for this mission ?", function()
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Deal ?"
+            
+            self.loadingMessage:setName(message)
+
+            self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+            self.yesButton.contractId = contract
+            self.yesButton:initialise()
+            self.yesButton:instantiate()
+            self.topBar:addChild(self.yesButton)
+            
+            self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+            self.noButton:initialise()
+            self.noButton:instantiate()
+            self.topBar:addChild(self.noButton)
+        end)
+    end
+    
+    if contract == 12 then
+        self.terminalCoroutine = coroutine.create(function()
+            local modData = getPlayer():getModData()
+
+            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
+
+            modData.PZLinuxOnReward = contractsCompanyReward[contract]
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
+            local message = ""
+
+            local sleepSFX = 1
+            if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            message = sellerName .. "We are looking for weapons."
+            self.loadingMessage:setName(message)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            typeText(self.typingMessage, "What exactly are you looking for ?", function()
+                message = message .. "\n" .. playerName .. "What exactly are you looking for ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            local quests = {
+                [1] = { baseName = "Base.Pistol3", name ="D-E Pistol", delta = 0.3 },
+                [2] = { baseName = "Base.Pistol2", name ="M1911 Pistol", delta = 0.3 },
+                [3] = { baseName = "Base.Revolver_Short", name ="M36 Revolver", delta = 0.5 },
+                [4] = { baseName = "Base.Revolver", name ="M625 Revolver", delta = 0.4 },
+                [5] = { baseName = "Base.Pistol", name ="M9 Pistol", delta = 0.3 },
+                [6] = { baseName = "Base.Revolver_Long", name ="Magnum", delta = 0.5 },
+                [7] = { baseName = "Base.DoubleBarrelShotgun", name ="Double Barrel Shotgun", delta = 1.2 },
+                [8] = { baseName = "Base.Shotgun", name ="JS-2000 Shotgun", delta = 1.2 },
+                [9] = { baseName = "Base.DoubleBarrelShotgunSawnoff", name ="Sawed-off Double Barrel Shotgun", delta = 1.2 },
+                [10] = { baseName = "Base.ShotgunSawnoff", name ="Sawed-off JS-2000 Shotgun", delta = 1.2 },
+                [11] = { baseName = "Base.AssaultRifle2", name ="M14 Rifle", delta = 1.5 },
+                [12] = { baseName = "Base.AssaultRifle", name ="M16 Assault Rifle", delta = 1.5 },
+                [13] = { baseName = "Base.VarmintRifle", name ="MSR700 Rifle", delta = 1.5 },
+                [14] = { baseName = "Base.HuntingRifle", name ="MSR788 Rifle", delta = 1.5 },
+            }
+            
+            local randomQuest = ZombRand(1, #quests + 1)
+            local countRequest = ZombRand(1, 6)
+            local quest = quests[randomQuest]
+            if quest then
+                modData.PZLinuxContractInfo = quest.baseName
+                modData.PZLinuxContractInfoCount = countRequest
+                modData.PZLinuxOnReward = math.ceil((modData.PZLinuxOnReward * quest.delta)/10)*10
+                questDetailName = quest.name
+                message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
+            end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            self.loadingMessage:setName(message)
+            
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+            
+            typeText(self.typingMessage, "What is the reward for this mission ?", function()
+                message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
+                self.loadingMessage:setName(message)
+                self.typingMessage:setName("")
+            end)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            self.loadingMessage:setName(message)
+
+            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
+            while elapsed < letterDelay do
+                if self.isClosing then return end
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+            end
+
+            if self.isClosing then return end
+
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "Deal ?"
+            
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1760,23 +2275,35 @@ function contractsUI:onYesButton(button)
     modData.PZLinuxOnZombieDead = 0
     self.isClosing = true
     self:removeFromUIManager()
-    contractsMenu_ShowUI(player)
+    modData.PZLinuxUIOpenMenu = 7
     
+    modData.PZLinuxContractNote = "* [" .. contractsCompanyCodes[button.contractId] .. "] ".. contractsQuestName[button.contractId] .. " for $" .. contractsCompanyReward[button.contractId]
+    if modData.PZLinuxContractInfoCount > 0 then
+        modData.PZLinuxContractNote = modData.PZLinuxContractNote .. "\n* " .. modData.PZLinuxContractInfoCount .. " " .. questDetailName
+    end
+
     local playerObj = getPlayer()
     local inv = playerObj:getInventory()
     local notebook = inv:AddItem('Base.Notebook')
     notebook:setName("Contract")
-    notebook:addPage(1, modData.PZLinuxContractNote)
+    notebook:addPage(1, locationQuestTown .. ":\n" .. modData.PZLinuxContractNote)
+
+    if modData.PZLinuxContractLocationX > 0 then
+        contractsDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractNote)
+    end
 
     if button.contractId == 1 then modData.PZLinuxContractKillZombie = 1 end
     if button.contractId == 2 then modData.PZLinuxContractPickUp = 1 end 
-    if button.contractId == 3 then modData.PZLinuxContractPickUp = 1 end
-    if button.contractId == 4 then modData.PZLinuxContractPickUp = 1 end 
-    if button.contractId == 5 then modData.PZLinuxContractPickUp = 1 end
-    if button.contractId == 6 then modData.PZLinuxContractManhunt = 1 end
-    if button.contractId == 7 then modData.PZLinuxContractBlood = 1 end
-    if button.contractId == 8 then modData.PZLinuxContractCar = 1 end
-    if button.contractId == 9 then modData.PZLinuxContractCapture = 1 end
+    if button.contractId == 3 then modData.PZLinuxContractPickUp = 1 end 
+    if button.contractId == 4 then modData.PZLinuxContractPickUp = 1 end
+    if button.contractId == 5 then modData.PZLinuxContractManhunt = 1 end
+    if button.contractId == 6 then modData.PZLinuxContractBlood = 1 end
+    if button.contractId == 7 then modData.PZLinuxContractCar = 1 end
+    if button.contractId == 8 then modData.PZLinuxContractCapture = 1 end
+    if button.contractId == 9 then modData.PZLinuxContractCargo = 1 end
+    if button.contractId == 10 then modData.PZLinuxContractProtect = 1 end
+    if button.contractId == 11 then modData.PZLinuxContractMedical = 1 end
+    if button.contractId == 12 then modData.PZLinuxContractWeapon = 1 end
 end
 
 -- LOGOUT
