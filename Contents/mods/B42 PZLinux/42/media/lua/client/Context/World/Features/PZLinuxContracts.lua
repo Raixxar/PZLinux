@@ -223,7 +223,7 @@ function contractsUI:initialise()
         getHourTime = 168
     end
 
-    if (getHourTime - LAST_CONNECTION_TIME) > 168 then
+    if (getHourTime - LAST_CONNECTION_TIME) >= 168 then
         shuffleTable(contracts)
         selectedContracts = {}
         local randCountContracts = ZombRand(1, 9)
@@ -2278,7 +2278,7 @@ function contractsUI:onYesButton(button)
     modData.PZLinuxUIOpenMenu = 7
     
     modData.PZLinuxContractNote = "* [" .. contractsCompanyCodes[button.contractId] .. "] ".. contractsQuestName[button.contractId] .. " for $" .. contractsCompanyReward[button.contractId]
-    if modData.PZLinuxContractInfoCount > 0 then
+    if modData.PZLinuxContractInfoCount and modData.PZLinuxContractInfoCount > 0 then
         modData.PZLinuxContractNote = modData.PZLinuxContractNote .. "\n* " .. modData.PZLinuxContractInfoCount .. " " .. questDetailName
     end
 

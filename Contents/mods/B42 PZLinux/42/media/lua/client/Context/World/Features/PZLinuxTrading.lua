@@ -182,7 +182,7 @@ function tradingUI:initialise()
 end
 
 function tradingUI:startTrading()
-    self:initializePrices()
+    PZLinuxTrading_initializePrices()
     self.titleLabel:setVisible(true)
     self.closeButton:setVisible(true)
     self.minimizeButton:setVisible(true)
@@ -480,7 +480,7 @@ function PZLinuxUpdateTradingPrices()
     end
 end
 
-function tradingUI:initializePrices()
+function PZLinuxTrading_initializePrices()
     local globalData = ModData.getOrCreate("PZLinuxTrading")
     if globalData.PZLinuxTrading == 1 then
         return

@@ -7,6 +7,18 @@
 - Prevent a trade by burning a cargo.
 - New contract: drop off a vehicle in a specific area.
 - New contract: deliver drinking water.
+- Items purchased on the dark web must now be collected via a mailbox, similar to requests.
+- Add song for contract completed
+- Add status for completed contrat or pending.
+
+# Update v.0.1.10-rc2
+- Fix a bug where the annotation does not appear correctly if the player has never opened their map.
+- Fix a bug where the price was not updated correctly for stock actions if the player has never opened the trading interface.
+
+# Update v.0.1.10-rc1
+- Fixed a bug where the indicator on the map didn't appear correctly in new games.
+- Contracts are now available in the first week for new saves.
+- Fix the error message for mailboxes when sending a package.
 
 # Update v.0.1.10
 - Added multiple spawns for the quest to retrieve a package. 

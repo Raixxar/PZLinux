@@ -184,12 +184,12 @@ module Base
 			file = media/sound/race.ogg,
 		}
 	}
-	sound alarm
+	sound done
 	{
 		category = Object,
 		clip
 		{
-			file = media/sound/alarm.ogg,
+			file = media/sound/done.ogg,
 		}
 	}
 }
