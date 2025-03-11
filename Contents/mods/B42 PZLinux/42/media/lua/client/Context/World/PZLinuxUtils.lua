@@ -88,6 +88,9 @@ function bagContainsCorpse(bag)
 end
 
 function contractsDrawOnMap(x, y, message)
+    ISWorldMap.ShowWorldMap(0)
+    ISWorldMap.HideWorldMap(0)
+    WorldMapVisited.getInstance():setVisitedInCells(x, y, x + 10, y + 10)
     local mapSymbol = ISWorldMap_instance.mapAPI:getSymbolsAPI():addTexture("Circle", x, y)
     local mapText = ISWorldMap_instance.mapAPI:getSymbolsAPI():addTranslatedText(message, UIFont.SdfCaveat, x + 20, y)
     mapSymbol:setRGBA(0, 0, 0, 1.0)

@@ -38,8 +38,9 @@ function DebugtMenu_AddContext(player, context, worldobjects)
 end
 
 function DebugMenu_OnMap(x, y, message)
-    local x, y = 7251, 8378
+    local x, y = 8073, 11736
     local message = "CONTRACT Package $29038"
+    WorldMapVisited.getInstance():setKnownInCells(x, y, x + 10, y + 10)
     contractsDrawOnMap(x, y, message)
 end
 
