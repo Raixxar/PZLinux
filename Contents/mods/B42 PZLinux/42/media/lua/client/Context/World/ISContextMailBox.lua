@@ -115,17 +115,17 @@ function MailBoxUI:onSendTakePackage()
         or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractMedical == 1 and totalCountForContract)
         or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractWeapon == 1 and totalCountForContract) then
             if modData.PZLinuxContractInfoCount > 0 then
-                modData.PZLinuxActiveContract = 2
+                modData.PZLinuxActiveContract = 9
                 inventory:Remove(item)
                 modData.PZLinuxContractInfoCount = modData.PZLinuxContractInfoCount - 1
             else
-                modData.PZLinuxActiveContract = 2
+                modData.PZLinuxActiveContract = 9
                 inventory:Remove(item)
             end
         end
     end
 
-    if modData.PZLinuxActiveRequest == 1 then
+    if modData.PZLinuxActiveRequest == 1 and modData.PZLinuxOnItemRequest then
         while #modData.PZLinuxOnItemRequest > 0 do
             local inv = getPlayer():getInventory()
             local parcel = inv:AddItem('Base.Parcel_Large')
@@ -139,6 +139,22 @@ function MailBoxUI:onSendTakePackage()
             table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
         end
         modData.PZLinuxActiveRequest = 0
+    end
+
+    if modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLinuxOnItemBuyOnDarkWebStatus then
+        while #modData.PZLinuxOnItemBuyOnDarkWeb > 0 do
+            local inv = getPlayer():getInventory()
+            local parcel = inv:AddItem('Base.Parcel_Large')
+            local parcelInv = parcel:getInventory()
+            local lastBatch = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
+            if lastBatch then
+                for _, item in ipairs(lastBatch.items) do
+                    parcelInv:AddItem(item.name)
+                end
+            end
+            table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
+        end
+        modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
     end
 end
 

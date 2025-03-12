@@ -15,12 +15,14 @@ end
 
 function ISATMAction:start()
     self.ui = AtmMenu_ShowUI(self.character)
+    self.character:getModData().ATMIsPowered = 1
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")
 end
 
 function ISATMAction:stop()
+    self.character:getModData().ATMIsPowered = 0
     self.ui:removeFromUIManager()
     ISBaseTimedAction.stop(self)
 end

@@ -31,7 +31,7 @@ local contracts = {}
 for i = 1, #requests do
     local getHourTimePriceValue = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)   
     itemName = requests[i].baseName
-    itemPrice = math.ceil(ZombRand(requests[i].price, requests[i].price * getHourTimePriceValue)/10)*10
+    itemPrice = math.ceil(ZombRand(requests[i].price, requests[i].price * getHourTimePriceValue))
     contracts[i] = { id = i, name = itemName, price = itemPrice, icon = iconTex }
 end
 
@@ -723,6 +723,14 @@ function requestUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount .. " " .. produceName
             self.loadingMessage:setName(message)
+
+            local playerObj = getPlayer()
+            local inv = playerObj:getInventory()
+            local note = inv:AddItem('Base.Note')
+            note:setName("Car purchased")
+            note:setCanBeWrite(true)
+            note:addPage(1, produceName .. "\n" .. locationName)
+
         else
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount
@@ -756,12 +764,15 @@ function requestUI:onContractId(contract)
         message = message .. "\n" .. sellerName .. "Deal ?"
         self.loadingMessage:setName(message)
 
-        message = message .. "\n\nTOTAL: $" .. PZLinuxOnItemRequestCount * contracts[contract].price * ZLinuxOnItemRequestPriceDelta
+        local requestPrice = math.ceil(contracts[contract].price - ((getPlayer():getPerkLevel(Perks.PlantScavenging) + 1) * contracts[contract].price / 100))
+        requestPrice = math.ceil(requestPrice / 10)*10
+
+        message = message .. "\n\nTOTAL: $" .. PZLinuxOnItemRequestCount * requestPrice * ZLinuxOnItemRequestPriceDelta
         self.loadingMessage:setName(message)
 
         local playerBalance = loadAtmBalance()
         local noButton = "No"
-        if playerBalance < PZLinuxOnItemRequestCount * contracts[contract].price * ZLinuxOnItemRequestPriceDelta then
+        if playerBalance < PZLinuxOnItemRequestCount * requestPrice * ZLinuxOnItemRequestPriceDelta then
             noButton = "Not enough money"
         else
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -815,6 +826,7 @@ function requestUI:onYesButton(button)
     self.isClosing = true
     self:removeFromUIManager()
     modData.PZLinuxUIOpenMenu = 8
+    HaloTextHelper.addGoodText(getPlayer(), "Item available in a mailbox");
 end
 
 -- LOGOUT

@@ -34,6 +34,7 @@ function ISBloodAction:perform()
     parcel:getFluidContainer():addFluid(FluidType.Blood, 1)
     local modData = getPlayer():getModData()
     modData.PZLinuxContractBlood = 3
+    HaloTextHelper.addGoodText(getPlayer(), "Drop the blood jar in a mailbox");
 end
 
 function ISBloodAction:new(character, body)

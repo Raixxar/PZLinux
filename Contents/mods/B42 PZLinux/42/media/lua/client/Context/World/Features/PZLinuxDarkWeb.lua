@@ -6,6 +6,7 @@ darkWebUI = ISPanel:derive("darkWebUI")
 local LAST_CONNECTION_TIME = 0
 local ITEMS_MAX = ZombRand(5,50)
 local currentOffers = {}
+local PZLinuxOnItemBuyOnDarkWeb = {}
 local getItemName = nil
 
 local darkWebItems = {
@@ -161,6 +162,13 @@ local darkWebItems = {
     -- ELECTRONICS
     { id = {"Base.Generator"}, Price = 5000 },
     { id = {"Base.ElectronicsScrap"}, Price = 50 },
+    -- BAR/INGOT
+    { id = {"Base.PigIronIngot"}, Price = 100 },
+    { id = {"Base.BrassIngot"}, Price = 500 },
+    { id = {"Base.CopperIngot"}, Price = 600 },
+    { id = {"Base.SteelIngot"}, Price = 1000 },
+    { id = {"Base.SilverBar"}, Price = 5000 },
+    { id = {"Base.GoldBar"}, Price = 15000 },
     -- CLOTHING
     { id = {"Base.Socks_Heavy"}, Price = 50 },
     { id = {"Base.Socks_Long"}, Price = 50},
@@ -960,7 +968,8 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
     local transactionType = offer.transactionType
     local transactionQty = tonumber(quantityTrading)
     local inv = playerObj:getInventory()
-
+    
+    local batch = { items = {} }     
     for i = 1, transactionQty do
         local checkBalance = tonumber(loadAtmBalance())
         if i > 1 then globalVolume = 0 end
@@ -971,16 +980,26 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
             else
                 itemToAdd = offer.item.id
             end
-            inv:AddItem(itemToAdd)
+            table.insert(batch.items, { name = itemToAdd })
+            --inv:AddItem(itemToAdd)
             getSoundManager():PlayWorldSound("buy", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addGoodText(getPlayer(), "Item available in a mailbox");
 
             local newBalance = checkBalance - offer.price
             saveAtmBalance(newBalance)
             self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
         else
             getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addGoodText(getPlayer(), "I need money in my bank account");
         end
     end
+    table.insert(PZLinuxOnItemBuyOnDarkWeb, batch)
+    local modData = getPlayer():getModData()
+    if type(modData.PZLinuxOnItemBuyOnDarkWeb) ~= "table" then
+        modData.PZLinuxOnItemBuyOnDarkWeb = {}
+    end
+    modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
+    modData.PZLinuxOnItemBuyOnDarkWeb = PZLinuxOnItemBuyOnDarkWeb
 end
 
 local function removeItemOnTick()
@@ -1035,8 +1054,10 @@ function darkWebUI:onSellItem(button)
         local newBalance = price * count
         local parcel = inv:AddItem('Base.SuspiciousPackage')
         parcel:setName("$" .. tostring(newBalance))
+        HaloTextHelper.addBadText(getPlayer(), "Drop the package in a mailbox");
     else
         getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        HaloTextHelper.addBadText(getPlayer(), "The item is not in my main inventory");
     end
 end
 

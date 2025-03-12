@@ -454,6 +454,8 @@ function AtmMenu_AddContext(player, context, worldobjects)
                         local x, y, z = square:getX(), square:getY(), square:getZ()
                         context:addOption("ATM", obj, AtmMenu_OnUse, player, x, y, z, sprite:getName())
                         break
+                     else
+                        HaloTextHelper.addBadText(getPlayer(), "I need power");
                     end
                 end
             end

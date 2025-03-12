@@ -97,3 +97,118 @@ function contractsDrawOnMap(x, y, message)
     mapSymbol:setAnchor(0.5, 0.5)
     mapText:setRGBA(0, 0, 0, 1.0)
 end
+
+function contractsRemoveDrawOnMap(x, y)
+    ISWorldMap.ShowWorldMap(0)
+    ISWorldMap.HideWorldMap(0)
+    local count = ISWorldMap_instance.mapAPI:getSymbolsAPI():getSymbolCount()
+    for i = 1, count do
+        local symbol = ISWorldMap_instance.mapAPI:getSymbolsAPI():getSymbolByIndex(i)
+        if symbol then
+            local wx = math.floor(symbol:getWorldX())
+            if wx == math.floor(x) then
+                local wy = math.floor(symbol:getWorldY())
+                if wy == math.floor(y) then
+                    ISWorldMap_instance.mapAPI:getSymbolsAPI():removeSymbolByIndex(i)
+                    break
+                end
+            end
+        end
+    end
+end
+
+function getNearbyGenerator(square, consommation)
+    if not square then return nil end
+    local cell = getWorld():getCell()
+    local generator = nil
+
+    for i = 0, square:getObjects():size() - 1 do
+        local obj = square:getObjects():get(i)
+        if instanceof(obj, "IsoGenerator") and obj:isActivated() then
+            generator = obj
+            break
+        end
+    end
+
+    if not generator then
+        for z = -5, 5 do
+            for x = -20, 20 do
+                for y = -20, 20 do
+                    local checkSquare = cell:getGridSquare(square:getX() + x, square:getY() + y, square:getZ() + z)
+                    if checkSquare then
+                        for i = 0, checkSquare:getObjects():size() - 1 do
+                            local obj = checkSquare:getObjects():get(i)
+                            if instanceof(obj, "IsoGenerator") and obj:isActivated() then
+                                generator = obj
+                                break
+                            end
+                        end
+                    end
+                    if generator then break end
+                end
+                if generator then break end
+            end
+        end
+    end
+
+    if generator and consommation then
+        local fuelAmount = generator:getFuel()
+        if fuelAmount > consommation then
+            generator:setFuel(fuelAmount - consommation)
+        else
+            generator:setFuel(0)
+            generator:setActivated(false)
+        end
+    end
+
+    return generator
+end
+
+function ISGeneratorInfoWindow.getRichText(object, displayStats)
+	local square = object:getSquare()
+	if not displayStats then
+		local text = " <INDENT:10> "
+		if square and not square:isOutside() and square:getBuilding() then
+			text = text .. " <RED> " .. getText("IGUI_Generator_IsToxic")
+		end
+		return text
+	end
+	local fuel = math.ceil(object:getFuel())
+	local condition = object:getCondition()
+	local text = getText("IGUI_Generator_FuelAmount", fuel) .. " <LINE> " .. getText("IGUI_Generator_Condition", condition) .. " <LINE> "
+	if object:isActivated() then
+		text = text ..  " <LINE> " .. getText("IGUI_PowerConsumption") .. ": <LINE> ";
+		text = text .. " <INDENT:10> "
+		local items = object:getItemsPowered()
+		for i=0,items:size()-1 do
+			text = text .. "   " .. items:get(i) .. " <LINE> ";
+		end
+
+        if getPlayer():getModData().PZLinuxIsPowered and getPlayer():getModData().PZLinuxIsPowered == 1 then
+            text = text .. "Desktop Computer" .. " (0.02 L/h) <LINE> "
+        end
+
+        if getPlayer():getModData().ATMIsPowered and getPlayer():getModData().ATMIsPowered == 1 then
+            text = text .. "ATM" .. " (0.01 L/h) <LINE> "
+        end
+
+		text = text .. getText("IGUI_Generator_TypeGas") .. " (0.02 L/h) <LINE> "
+		text = text .. getText("IGUI_Total") .. ": " .. luautils.round(object:getTotalPowerUsing(), 3) .. " L/h <LINE> ";
+	end
+	if square and not square:isOutside() and square:getBuilding() then
+		text = text .. " <LINE> <RED> " .. getText("IGUI_Generator_IsToxic")
+	end
+	return text
+end
+
+function PZLinuxUseFuel()
+    local square = getPlayer():getSquare()
+    if getPlayer():getModData().PZLinuxIsPowered and getPlayer():getModData().PZLinuxIsPowered == 1 then
+        getNearbyGenerator(square, 0.0003)
+    end
+
+    if getPlayer():getModData().ATMIsPowered and getPlayer():getModData().ATMIsPowered == 1 then
+        getNearbyGenerator(square, 0.0002)
+    end
+end
+Events.EveryOneMinute.Add(PZLinuxUseFuel)

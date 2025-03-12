@@ -1,5 +1,21 @@
 module Base
 {
+	sound computerBootLow
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/computerBootLow.ogg,
+		}
+	}
+	sound computerBootMedium
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/computerBootMedium.ogg,
+		}
+	}
 	sound computerBoot
 	{
 		category = Object,
@@ -190,6 +206,14 @@ module Base
 		clip
 		{
 			file = media/sound/done.ogg,
+		}
+	}
+	sound screw
+	{
+		category = Object,
+		clip
+		{
+			file = media/sound/screw.ogg,
 		}
 	}
 }

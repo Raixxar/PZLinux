@@ -57,11 +57,17 @@ function ISPZLinuxAction:update()
         self.ui = bettingMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
     end
+
+    if modData.PZLinuxUIOpenMenu == 10 then
+        self.ui = conditionMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
 end
 
 function ISPZLinuxAction:start()
-    local modData = self.character:getModData()
-    modData.PZLinuxUIOpenMenu = 0
+    self.item:getModData().statusCondition = self.item:getModData().statusCondition - ZombRand(1,5)
+    self.character:getModData().PZLinuxUIOpenMenu = 0
+    self.character:getModData().PZLinuxIsPowered = 1
     self.ui = linuxMenu_ShowUI(self.character)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
@@ -70,6 +76,7 @@ end
 
 function ISPZLinuxAction:stop()
     self.ui:removeFromUIManager()
+    getPlayer():getModData().PZLinuxIsPowered = 0
     ISBaseTimedAction.stop(self)
 end
 

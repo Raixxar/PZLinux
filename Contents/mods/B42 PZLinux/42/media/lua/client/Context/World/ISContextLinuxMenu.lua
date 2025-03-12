@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "0.1.10-rc2"
+local PZLinuxVersion = "0.1.11"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -162,6 +162,14 @@ function linuxUI:initialise()
     self.bettingButton:setVisible(false)
     self.bettingButton:initialise()
     self.topBar:addChild(self.bettingButton)
+
+    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
+    self.conditionButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.conditionButton.textColor = {r=0, g=1, b=0, a=1}
+    self.conditionButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.conditionButton:setVisible(false)
+    self.conditionButton:initialise()
+    self.topBar:addChild(self.conditionButton)
 end
 
 -- CLOSE
@@ -178,7 +186,15 @@ end
 function linuxUI:onBoot()
     local player = getSpecificPlayer(0)
     local globalVolume = getCore():getOptionSoundVolume() / 10
-    getSoundManager():PlayWorldSound("computerBoot", false, player:getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+
+    if getPlayer():getModData().PZLinuxComputerCondition <= 25 then
+        getSoundManager():PlayWorldSound("computerBootLow", false, getPlayer():getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+    elseif getPlayer():getModData().PZLinuxComputerCondition <= 50 then
+        getSoundManager():PlayWorldSound("computerBootMedium", false, getPlayer():getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+    else
+        getSoundManager():PlayWorldSound("computerBoot", false, getPlayer():getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+    end
+
     self.bootMessages = {
         "<RGB:0,1,0>PZLinux version " .. PZLinuxVersion .. " (POSIX compliant)",
         "Copyright (c) 1991 The PZLinux Project",
@@ -271,6 +287,7 @@ function linuxUI:onPrompt()
     self.contractsButton:setVisible(true)
     self.requestButton:setVisible(true)
     self.bettingButton:setVisible(true)
+    self.conditionButton:setVisible(true)
 end
 
 function linuxUI:onInternet()
@@ -378,6 +395,15 @@ function linuxUI:onBetting()
     end
 end
 
+function linuxUI:onCondition()
+    self.promptLabel:setVisible(false)
+    self.helpLabel:setVisible(false)
+    self:onClose()
+    
+    local modData = getPlayer():getModData()
+    modData.PZLinuxUIOpenMenu = 10
+end
+
 function linuxUI:onConnect()
     self.notConnectButton:setVisible(false)
     self.connectButton:setVisible(true)
@@ -457,7 +483,15 @@ function linuxMenu_AddContext(player, context, worldobjects)
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
                         if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
-                            context:addOption("PZLinux", obj, linuxMenu_OnUse, player, x, y, z, sprite:getName())
+                            
+                            if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
+                            if obj:getModData().statusCondition < 50 then
+                                context:addOption("Fix the computer", obj, linuxMenu_OnRepare, player, x, y, z, sprite:getName())
+                            end
+
+                            if obj:getModData().statusCondition > 0 then
+                                context:addOption("PZLinux", obj, linuxMenu_OnUse, player, x, y, z, sprite:getName())
+                            end
                             break
                         end
                     end
@@ -475,7 +509,19 @@ function linuxMenu_OnUse(obj, player, x, y, z, sprite, square)
             ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISPZLinuxAction:new(getPlayer()), obj)
+    getPlayer():getModData().PZLinuxComputerCondition = obj:getModData().statusCondition
+    ISTimedActionQueue.add(ISPZLinuxAction:new(getPlayer(), obj))
+end
+
+function linuxMenu_OnRepare(obj, player, x, y, z, sprite, square)
+    local playerSquare = getPlayer():getSquare()
+    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        if freeSquare then
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+        end
+    end
+    ISTimedActionQueue.add(ISPZLinuxRepareAction:new(getPlayer(), obj))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(linuxMenu_AddContext)
