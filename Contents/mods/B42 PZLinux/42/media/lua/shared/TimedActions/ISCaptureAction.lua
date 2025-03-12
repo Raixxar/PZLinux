@@ -35,6 +35,7 @@ function ISCaptureAction:perform()
     modData.PZLinuxContractCapture = 3
     self.zombie:removeFromWorld()
     self.zombie:removeFromSquare()
+    HaloTextHelper.addGoodText(getPlayer(), "Drop the bag in a mailbox");
 end
 
 function ISCaptureAction:new(character, zombie)

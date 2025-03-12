@@ -4,30 +4,30 @@ local function OnZombieDead(zombie)
 
     if modData.PZLinuxContractKillZombie == 1 then
         if modData.PZLinuxOnZombieDead >= modData.PZLinuxOnZombieToKill then
-            modData.PZLinuxActiveContract = 2
+            modData.PZLinuxActiveContract = 9
         end
     end
     if modData.PZLinuxContractProtect == 2 then
-        if modData.PZLinuxOnZombieDead > 10 then
+        if modData.PZLinuxOnZombieDead >= 10 then
             modData.PZLinuxContractProtect = 3
         end
     end
 
-    local notebook = nil
+    local note = nil
     local inv = getPlayer():getInventory()
     for i = 0, inv:getItems():size() - 1 do
         local item = inv:getItems():get(i)
-        if item:getType() == "Notebook" and item:getName() == "Contract" then
-            notebook = item
+        if item:getType() == "Note" and item:getName() == "Contract" then
+            note = item
             break
         end
     end
 
-    if notebook then
-        local oldText = notebook:seePage(1) or ""
+    if note then
+        local oldText = note:seePage(1) or ""
         local newText = "Total zombies killed: " .. modData.PZLinuxOnZombieDead
         local cleanedText = oldText:gsub("Total zombies killed: %d+", "")
-        notebook:addPage(1, cleanedText .. newText)
+        note:addPage(1, cleanedText .. newText)
     end
 end
 Events.OnZombieDead.Add(OnZombieDead)
@@ -104,6 +104,17 @@ local function checkAndSpawnBox(player)
     end
 end
 Events.OnPlayerMove.Add(checkAndSpawnBox)
+
+local function contractCompletedPlaySound(player)
+    local modData = getPlayer():getModData()
+    if modData.PZLinuxActiveContract == 9 then
+        local globalVolume = getCore():getOptionSoundVolume() / 10
+        getSoundManager():PlayWorldSound("done", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        HaloTextHelper.addGoodText(getPlayer(), "Contract completed");
+        modData.PZLinuxActiveContract = 10
+    end
+end
+Events.OnTick.Add(contractCompletedPlaySound)
 
 Events.OnGameStart.Add(function()
     Events.OnPlayerMove.Add(checkAndSpawnZombie)

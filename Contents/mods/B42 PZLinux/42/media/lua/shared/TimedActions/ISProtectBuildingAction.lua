@@ -28,7 +28,7 @@ end
 function ISProtectBuildingAction:perform()
     local modData = getPlayer():getModData()
     modData.PZLinuxContractProtect = 3
-    modData.PZLinuxActiveContract = 2
+    modData.PZLinuxActiveContract = 9
 end
 
 function ISProtectBuildingAction:new(character, item)

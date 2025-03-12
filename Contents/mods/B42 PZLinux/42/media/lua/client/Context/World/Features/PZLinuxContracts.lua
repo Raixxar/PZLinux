@@ -6,7 +6,7 @@ contractsUI = ISPanel:derive("contractsUI")
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
 local selectedContracts = {}
-local locationQuestTown = "All around the world"
+local locationQuestTown = "All around the world:"
 local questDetailName = ""
 
 local companyCode = {
@@ -205,7 +205,7 @@ function contractsUI:initialise()
         self.cancelContractButton:initialise()
         self.topBar:addChild(self.cancelContractButton)
         return
-    elseif modData.PZLinuxActiveContract == 2 then
+    elseif modData.PZLinuxActiveContract == 10 then
         self:onContractComplete()
         return
     end
@@ -256,6 +256,31 @@ end
 
 function contractsUI:onCancelContract(button)
     local modData = getPlayer():getModData()
+
+    if modData.PZLinuxContractLocationX > 0 then
+        contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY)
+        contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
+    end
+
+    local inv = getPlayer():getInventory()
+    local note = inv:Remove('Note')
+
+    local dataName = modData.PZLinuxContractCompanyUp
+    local companyData = ModData.getOrCreate(dataName)
+    local priceHistory = companyData.dataName or {}
+    local lastIndex = #priceHistory
+    local lastPrice = priceHistory[lastIndex]
+    local newPrice = math.ceil(lastPrice - (lastPrice * ZombRand(1, 10) / 100))
+
+    table.insert(companyData.dataName, newPrice)
+    if #companyData.dataName > 48 then
+        table.remove(companyData.dataName, 1)
+    end
+
+    self.isClosing = true
+    self:removeFromUIManager()
+    modData.PZLinuxUIOpenMenu = 7
+
     modData.PZLinuxContractLocationX = 0
     modData.PZLinuxContractLocationY = 0
     modData.PZLinuxContractLocationZ = 0
@@ -274,25 +299,6 @@ function contractsUI:onCancelContract(button)
     modData.PZLinuxContractProtect = 0
     modData.PZLinuxContractMedical = 0
     modData.PZLinuxContractWeapon = 0
-
-    local inv = getPlayer():getInventory()
-    local notebook = inv:Remove('Notebook')
-
-    local dataName = modData.PZLinuxContractCompanyUp
-    local companyData = ModData.getOrCreate(dataName)
-    local priceHistory = companyData.dataName or {}
-    local lastIndex = #priceHistory
-    local lastPrice = priceHistory[lastIndex]
-    local newPrice = math.ceil(lastPrice - (lastPrice * ZombRand(1, 10) / 100))
-
-    table.insert(companyData.dataName, newPrice)
-    if #companyData.dataName > 48 then
-        table.remove(companyData.dataName, 1)
-    end
-
-    self.isClosing = true
-    self:removeFromUIManager()
-    contractsMenu_ShowUI(player)
 end
 
 function contractsUI:onSelectContract(button)
@@ -312,7 +318,7 @@ function contractsUI:onSelectContract(button)
         return
     end
 
-    if modData.PZLinuxActiveContract == 2 then
+    if modData.PZLinuxActiveContract == 10 then
         self:onContractComplete()
         return
     end
@@ -351,7 +357,12 @@ function contractsUI:onContractComplete()
 
     local playerObj = getPlayer()
     local inv = playerObj:getInventory()
-    local notebook = inv:Remove('Notebook')
+    local note = inv:Remove('Note')
+
+    if modData.PZLinuxContractLocationX > 0 then
+        contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY)
+        contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
+    end
     
     LAST_CONNECTION_TIME = 0
     modData.PZLinuxContractLocationX = 0
@@ -625,7 +636,7 @@ function contractsUI:onContractId(contract)
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
-                locationQuestTown = quest.city
+                locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -802,7 +813,7 @@ function contractsUI:onContractId(contract)
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
-                locationQuestTown = quest.city
+                locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -967,11 +978,11 @@ function contractsUI:onContractId(contract)
             local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
-                message = message .. " " .. sellerName .. quest.description
+                message = message .. "\n" .. sellerName .. quest.description
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
-                locationQuestTown = quest.city
+                locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -1268,7 +1279,7 @@ function contractsUI:onContractId(contract)
                 modData.PZLinuxContractLocationX = tonumber(quest.x)
                 modData.PZLinuxContractLocationY = tonumber(quest.y)
                 modData.PZLinuxContractLocationZ = tonumber(quest.z)
-                locationQuestTown = quest.city
+                locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -1736,7 +1747,7 @@ function contractsUI:onContractId(contract)
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
-                locationQuestTown = quest.city
+                locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -1907,7 +1918,7 @@ function contractsUI:onContractId(contract)
                 modData.PZLinuxContractLocationX = quest.x
                 modData.PZLinuxContractLocationY = quest.y
                 modData.PZLinuxContractLocationZ = quest.z
-                locationQuestTown = quest.city
+                locationQuestTown = quest.city .. ":\n* " .. quest.description .. "\n* Zombies to kill: 10"
             end
 
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
@@ -2284,9 +2295,10 @@ function contractsUI:onYesButton(button)
 
     local playerObj = getPlayer()
     local inv = playerObj:getInventory()
-    local notebook = inv:AddItem('Base.Notebook')
-    notebook:setName("Contract")
-    notebook:addPage(1, locationQuestTown .. ":\n" .. modData.PZLinuxContractNote)
+    local note = inv:AddItem('Base.Note')
+    note:setName("Contract")
+    note:setCanBeWrite(true)
+    note:addPage(1, locationQuestTown .. "\n" .. modData.PZLinuxContractNote .. "\n")
 
     if modData.PZLinuxContractLocationX > 0 then
         contractsDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractNote)

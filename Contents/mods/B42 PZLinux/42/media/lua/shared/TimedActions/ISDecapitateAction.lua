@@ -37,6 +37,7 @@ function ISDecapitateAction:perform()
     modData.PZLinuxContractManhunt = 3
     self.body:removeFromWorld()
     self.body:removeFromSquare()
+    HaloTextHelper.addGoodText(getPlayer(), "Drop the bag in a mailbox");
 end
 
 function ISDecapitateAction:new(character, body)

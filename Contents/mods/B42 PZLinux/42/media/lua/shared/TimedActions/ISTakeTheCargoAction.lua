@@ -28,7 +28,7 @@ end
 function ISTakeTheCargoAction:perform()
     local modData = getPlayer():getModData()
     modData.PZLinuxContractCargo = 3
-    modData.PZLinuxActiveContract = 2
+    modData.PZLinuxActiveContract = 9
     testHelicopter()
 end
 

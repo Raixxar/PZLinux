@@ -141,6 +141,7 @@ function completeContractMenu_OnProtect(obj, player, x, y, z)
             if randDirectionSpawn == 4 then local zombie = createZombie(x - randRadiusSpawn, y + randRadiusSpawn, z, nil, 0, IsoDirections.S) end
         end
         addSound(getPlayer(), x, y, z, 1000, 100)
+        HaloTextHelper.addGoodText(getPlayer(), "Kill 10 zombies and return here to confirm the area is secure");
     end
 end
 

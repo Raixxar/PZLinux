@@ -33,6 +33,7 @@ function ISTakeThePackageAction:perform()
     parcel:setName("Contract case")
     local modData = getPlayer():getModData()
     modData.PZLinuxContractPickUp = 3
+    HaloTextHelper.addGoodText(getPlayer(), "Drop the contract case in a mailbox");
 end
 
 function ISTakeThePackageAction:new(character, item)

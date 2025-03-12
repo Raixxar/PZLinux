@@ -1,5 +1,3 @@
-- Added multiple spawns for the quest to kill a target.
-- Contract Clean a building or area.
 - Adding skill books components to the requests.
 - Add options to the mod to make it sandbox.
 - Data retrieval via a computer triggers an alarm (chance) and spawns a horde.
@@ -7,9 +5,32 @@
 - Prevent a trade by burning a cargo.
 - New contract: drop off a vehicle in a specific area.
 - New contract: deliver drinking water.
-- Items purchased on the dark web must now be collected via a mailbox, similar to requests.
-- Add song for contract completed
-- Add status for completed contrat or pending.
+- Contracts tab should be organized and divided into city.
+- New contract: get document from doctor or other.
+- Chance to found a money with quest.
+- keep their money in a physical medium. 
+- Player can create a request basket of our own choice and wait for it to be presented to us.
+- Skill for each price items
+- Quest progression concep
+
+# Update v.0.1.11
+- The contract log is now on a piece of paper to take up less space in the player's inventory.
+- Added more information about the ongoing mission in the contract note.
+- Fixed an issue where the message could overflow off the computer screen.
+- Fix the LUA error on mailbox that could occur if a request was not initialized correctly.
+- Requesting a car now adds a note to your inventory for easily locating this vehicle.
+- Adding music when you successfully complete a contract.
+- Annotations on the map are now removed if you cancel or complete a contract.
+- The computer now consumes energy for the generators.
+- The ATM now consumes energy for the generators.
+- You can view this energy consumption in the generator info sheet.
+- Computers now have a condition like generators and require electronic parts for repairs.
+- Added a menu to track the computer's status.
+- Introduced two different startup sounds based on its condition. A computer in poor condition will have its disk click at startup.
+- Bars and ingots are now available for DW.
+- Items purchased on the dark web must now be collected from a mailbox.
+- Items in the request interface are now affected by your 'Foraging' skill. A skill reduces the price of items.
+- Added multiple halo alert messages to assist the player.
 
 # Update v.0.1.10-rc2
 - Fix a bug where the annotation does not appear correctly if the player has never opened their map.
