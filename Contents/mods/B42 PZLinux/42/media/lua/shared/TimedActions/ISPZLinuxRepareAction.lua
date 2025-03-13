@@ -45,6 +45,7 @@ function ISPZLinuxRepareAction:perform()
     end
     self.item:getModData().statusCondition = self.item:getModData().statusCondition + ZombRand(5,11) * (self.character:getPerkLevel(Perks.Electricity) + 1)
     if self.item:getModData().statusCondition > 100 then self.item:getModData().statusCondition = 100 end
+    addXp(getPlayer(), Perks.Electricity, 3)
     ISBaseTimedAction.perform(self)
 end
 

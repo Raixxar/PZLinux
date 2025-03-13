@@ -3,40 +3,6 @@
 
 walletUI = ISPanel:derive("walletUI")
 
-local walletCompanyName = {
-    { name = "Crisis Commerce Corp", code = "CCC" },
-    { name = "Umbrella Corp", code = "AC" },
-    { name = "Walker & Crawler", code = "WC" },
-    { name = "Survival Solutions Inc", code = "SSI" },
-    { name = "Reclaim Resources Ltd", code = "RRL" },
-    { name = "Brain Buffet Times", code = "BBT" },
-    { name = "Zom Bin", code = "ZB" },
-    { name = "Endurance Equipments", code = "EE" },
-    { name = "Grinning Grim Goods", code = "GGG" },
-    { name = "Couch Co-op", code = "CCO" },
-    { name = "ZomboTrade Co", code = "ZTC" },
-    { name = "COVID Pop Ltd", code = "CPL" },
-    { name = "Gorrest Fump", code = "GF" },
-    { name = "Phoenix Resupply Corp", code = "PRC" },
-    { name = "Haven Supply Co", code = "HSC" },
-    { name = "28 Ways to Stay Safe", code = "WSS" },
-    { name = "The Hunger Z", code = "THZ" },
-    { name = "Zombie of the rings", code = "ZOR" },
-    { name = "Zombie Zumba", code = "ZZ" },
-    { name = "Indoor Adventures", code = "IA" },
-    { name = "Pandemic Pills Inc", code = "PPI" },
-    { name = "Aftermath Trading Post", code = "ATP" },
-    { name = "Waste Not Industries", code = "WNI" },
-    { name = "NecroTech Innovations", code = "NTI" },
-    { name = "Z Max", code = "ZM" },
-    { name = "Vigilant Ventures", code = "VV" },
-    { name = "Flee Market", code = "FM" },
-    { name = "Raven Goods & Supply", code = "RGS" },
-    { name = "Brains & Bargains", code = "BB" },
-    { name = "Rot & Roll", code = "RR" },
-    { name = "Butcher Ltd", code = "BL" }
-}
-
 local walletBalance = 0
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
@@ -201,7 +167,7 @@ function walletUI:startWallet()
     local tokens = {}
     local totalWalletBalance = 0
     local player = getPlayer()
-    for i, company in ipairs(walletCompanyName) do
+    for i, company in ipairs(PZLinuxTradingCompanyNameTable) do
         local playerWallet = "ZLinuxPlayerWallet" .. company.code
         local totalTokenQuantity = player:getModData()[playerWallet] or 0
 
@@ -310,7 +276,7 @@ function walletUI:updateWallet()
         player:getModData().playerWallet = {}
     end
 
-    for i, company in ipairs(walletCompanyName) do
+    for i, company in ipairs(PZLinuxTradingCompanyNameTable) do
         local playerWallet = "ZLinuxPlayerWallet" .. company.code
         local totalTokenQuantity = player:getModData()[playerWallet] or 0
 

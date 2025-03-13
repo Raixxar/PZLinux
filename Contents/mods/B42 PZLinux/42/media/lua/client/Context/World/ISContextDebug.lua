@@ -1,4 +1,4 @@
-local debug = 0
+local debug = 1
 function DebugtMenu_AddContext(player, context, worldobjects)
     if debug == 1 then
         context:addOption("Debug-1", player, DebugMenu_OnDebug1)
@@ -21,8 +21,9 @@ function DebugMenu_OnDebug1(x, y, message)
 end
 
 function DebugMenu_OnDebug2()
-    --HaloTextHelper.addGoodText(getPlayer(), "Contract completed");
-    HaloTextHelper.addBadText(getPlayer(), "Contract completed");
+    getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 10))
+    getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 30))
+    getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(DebugtMenu_AddContext)

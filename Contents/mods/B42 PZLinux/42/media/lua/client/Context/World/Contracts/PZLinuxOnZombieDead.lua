@@ -112,6 +112,10 @@ local function contractCompletedPlaySound(player)
         getSoundManager():PlayWorldSound("done", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         HaloTextHelper.addGoodText(getPlayer(), "Contract completed");
         modData.PZLinuxActiveContract = 10
+
+        getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 10))
+        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
+        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
     end
 end
 Events.OnTick.Add(contractCompletedPlaySound)

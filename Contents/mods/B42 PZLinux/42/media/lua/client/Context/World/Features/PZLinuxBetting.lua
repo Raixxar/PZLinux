@@ -154,46 +154,46 @@ function bettingUI:onSelectBet(button)
     end
 
     local zombie = {
-        [1] = { name = "Gallop Zomb", rating = ZombRand(1,10) },
-        [2] = { name = "The Great Gallopino", rating = ZombRand(1,10) },
-        [3] = { name = "Zombplay", rating = ZombRand(1,15) },
-        [4] = { name = "AppleJack", rating = ZombRand(1,15) },
-        [5] = { name = "Hocus Pocus", rating = ZombRand(1,15) },
-        [6] = { name = "Mr Ed", rating = ZombRand(1,15) },
-        [7] = { name = "Whinny the Poop", rating = ZombRand(1,15) },
-        [8] = { name = "Long Drop Face", rating = ZombRand(1,15) },
-        [9] = { name = "Eyes Out", rating = ZombRand(1,15) },
-        [10] = { name = "Smell Bad", rating = ZombRand(1,15) },
-        [11] = { name = "Crawler Texas Ranger", rating = ZombRand(1,15) },
-        [12] = { name = "Walk to the Moon", rating = ZombRand(1,15) },
-        [13] = { name = "Never Sleep Again", rating = ZombRand(1,15) },
-        [14] = { name = "Tobit or not Tobit", rating = ZombRand(1,15) },
-        [15] = { name = "Toothless", rating = ZombRand(1,20) },
-        [16] = { name = "Barefoot", rating = ZombRand(1,20) },
-        [17] = { name = "Always Hungry", rating = ZombRand(1,20) },
-        [18] = { name = "Eat This", rating = ZombRand(1,20) },
-        [19] = { name = "Horde", rating = ZombRand(1,20) },
-        [20] = { name = "Toc toc toc", rating = ZombRand(1,20) },
-        [21] = { name = "I have Maggots", rating = ZombRand(1,20) },
-        [22] = { name = "Glenn", rating = ZombRand(1,20) },
-        [23] = { name = "Alpha", rating = ZombRand(1,20) },
-        [24] = { name = "A Zomb With No Name", rating = ZombRand(1,20) },
-        [25] = { name = "Nobody", rating = ZombRand(1,20) },
-        [26] = { name = "No Arms no Chocolate", rating = ZombRand(1,20) },
-        [27] = { name = "Zomby McZombyface", rating = ZombRand(1,20) },
-        [28] = { name = "Biscuit", rating = ZombRand(1,20) },
-        [29] = { name = "Zomby Jumper", rating = ZombRand(1,20) },
-        [30] = { name = "Rainbow Rider", rating = ZombRand(1,20) },
-        [31] = { name = "Fuzzy Wuzzy", rating = ZombRand(1,50) },
-        [32] = { name = "Tony Spark", rating = ZombRand(1,50) },
-        [33] = { name = "Thannos", rating = ZombRand(1,50) },
-        [34] = { name = "Worm", rating = ZombRand(1,50) },
-        [35] = { name = "Should be the wind", rating = ZombRand(1,50) },
-        [36] = { name = "Machu Pichtou", rating = ZombRand(1,50) },
-        [37] = { name = "Sponge Zomb", rating = ZombRand(1,100) },
-        [38] = { name = "Jean Cloud", rating = ZombRand(1,100) },
-        [39] = { name = "The King is dead", rating = ZombRand(1,100) },
-        [40] = { name = "Terminathour", rating = ZombRand(1,100) }
+        [1] = { name = "Gallop Zomb", rating = ZombRand(2,10) },
+        [2] = { name = "The Great Gallopino", rating = ZombRand(2,10) },
+        [3] = { name = "Zombplay", rating = ZombRand(2,15) },
+        [4] = { name = "AppleJack", rating = ZombRand(2,15) },
+        [5] = { name = "Hocus Pocus", rating = ZombRand(2,15) },
+        [6] = { name = "Mr Ed", rating = ZombRand(2,15) },
+        [7] = { name = "Whinny the Poop", rating = ZombRand(2,15) },
+        [8] = { name = "Long Drop Face", rating = ZombRand(2,15) },
+        [9] = { name = "Eyes Out", rating = ZombRand(2,15) },
+        [10] = { name = "Smell Bad", rating = ZombRand(2,15) },
+        [11] = { name = "Crawler Texas Ranger", rating = ZombRand(2,15) },
+        [12] = { name = "Walk to the Moon", rating = ZombRand(2,15) },
+        [13] = { name = "Never Sleep Again", rating = ZombRand(2,15) },
+        [14] = { name = "Tobit or not Tobit", rating = ZombRand(2,15) },
+        [15] = { name = "Toothless", rating = ZombRand(2,20) },
+        [16] = { name = "Barefoot", rating = ZombRand(2,20) },
+        [17] = { name = "Always Hungry", rating = ZombRand(2,20) },
+        [18] = { name = "Eat This", rating = ZombRand(2,20) },
+        [19] = { name = "Horde", rating = ZombRand(2,20) },
+        [20] = { name = "Toc toc toc", rating = ZombRand(2,20) },
+        [21] = { name = "I have Maggots", rating = ZombRand(2,20) },
+        [22] = { name = "Glenn", rating = ZombRand(2,20) },
+        [23] = { name = "Alpha", rating = ZombRand(2,20) },
+        [24] = { name = "A Zomb With No Name", rating = ZombRand(2,20) },
+        [25] = { name = "Nobody", rating = ZombRand(2,20) },
+        [26] = { name = "No Arms no Chocolate", rating = ZombRand(2,20) },
+        [27] = { name = "Zomby McZombyface", rating = ZombRand(2,20) },
+        [28] = { name = "Biscuit", rating = ZombRand(2,20) },
+        [29] = { name = "Zomby Jumper", rating = ZombRand(2,20) },
+        [30] = { name = "Rainbow Rider", rating = ZombRand(2,20) },
+        [31] = { name = "Fuzzy Wuzzy", rating = ZombRand(2,50) },
+        [32] = { name = "Tony Spark", rating = ZombRand(2,50) },
+        [33] = { name = "Thannos", rating = ZombRand(2,50) },
+        [34] = { name = "Worm", rating = ZombRand(2,50) },
+        [35] = { name = "Should be the wind", rating = ZombRand(2,50) },
+        [36] = { name = "Machu Pichtou", rating = ZombRand(2,50) },
+        [37] = { name = "Sponge Zomb", rating = ZombRand(2,100) },
+        [38] = { name = "Jean Cloud", rating = ZombRand(2,100) },
+        [39] = { name = "The King is dead", rating = ZombRand(2,100) },
+        [40] = { name = "Terminathour", rating = ZombRand(2,100) }
     }
 
     for i = #zombie, 2, -1 do
@@ -315,6 +315,7 @@ function bettingUI:runRace()
 
     self:updateRaceDisplay()
     self:delayFunction(function() self:runRace() end, 20)
+    getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 0.2))
 end
 
 function bettingUI:updateRaceDisplay()
@@ -370,6 +371,25 @@ function bettingUI:declareWinner(winnerId, winner)
 
         local globalVolume = getCore():getOptionSoundVolume() / 10
         getSoundManager():PlayWorldSound("sold", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+
+        if tonumber(self.amountInput:getText()) >= 5000 then
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
+            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.2))
+        elseif tonumber(self.amountInput:getText()) >= 1000 then
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
+            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+        else
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 5))
+            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.05))
+        end
+    else
+        if tonumber(self.amountInput:getText()) >= 5000 then
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.min(100, getPlayer():getBodyDamage():getUnhappynessLevel() + 20))
+            getPlayer():getStats():setStress(math.min(1, getPlayer():getStats():getStress() + 0.2))
+        elseif tonumber(self.amountInput:getText()) >= 1000 then
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.min(100, getPlayer():getBodyDamage():getUnhappynessLevel() + 10))
+            getPlayer():getStats():setStress(math.min(1, getPlayer():getStats():getStress() + 0.1))
+        end
     end
 end
 
