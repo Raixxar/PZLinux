@@ -195,7 +195,7 @@ function AtmUI:onLoginMenu()
     end
 
     self.terminalCoroutine = coroutine.create(function()
-        getSoundManager():PlayWorldSound("creditCard", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("creditCard", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.loadingMessage:setName(loginBase)
 
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
@@ -220,7 +220,7 @@ function AtmUI:onLoginMenu()
                 return
             end
             
-            getSoundManager():PlayWorldSound("atmBip", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("atmBip", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
             currentPassword = currentPassword .. "*"
             passwordIndex = passwordIndex + 1
             self.loadingMessage:setName(currentPassword)

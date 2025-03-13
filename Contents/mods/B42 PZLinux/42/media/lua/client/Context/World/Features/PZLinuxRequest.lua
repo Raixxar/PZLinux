@@ -5,12 +5,12 @@ requestUI = ISPanel:derive("requestUI")
 
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
-local PZLinuxOnItemRequest = {}
 local PZLinuxOnItemRequestName = ""
 local ZLinuxOnItemRequestPriceDelta = 1
+local PZLinuxOnItemRequest = {}
 local PZLinuxOnItemRequestCount = 0
 
-local requests = {
+local PZLinuxRequestsItemTable = {
     [1] = { baseName = "Canned food", price = 50 },
     [2] = { baseName = "Meat", price = 80 },
     [3] = { baseName = "Fish", price = 1200 },
@@ -28,10 +28,10 @@ local requests = {
 }
 
 local contracts = {}
-for i = 1, #requests do
+for i = 1, #PZLinuxRequestsItemTable do
     local getHourTimePriceValue = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)   
-    itemName = requests[i].baseName
-    itemPrice = math.ceil(ZombRand(requests[i].price, requests[i].price * getHourTimePriceValue))
+    itemName = PZLinuxRequestsItemTable[i].baseName
+    itemPrice = math.ceil(ZombRand(PZLinuxRequestsItemTable[i].price, PZLinuxRequestsItemTable[i].price * getHourTimePriceValue))
     contracts[i] = { id = i, name = itemName, price = itemPrice, icon = iconTex }
 end
 
@@ -680,6 +680,7 @@ function requestUI:onContractId(contract)
             end
         end
 
+        PZLinuxOnItemRequest = {}
         PZLinuxOnItemRequestCount = itemCount
         table.insert(PZLinuxOnItemRequest, batch)
 
@@ -821,7 +822,8 @@ function requestUI:onYesButton(button)
     if type(modData.PZLinuxOnItemRequest) ~= "table" then
         modData.PZLinuxOnItemRequest = {}
     end
-    modData.PZLinuxOnItemRequest = PZLinuxOnItemRequest
+    table.insert(modData.PZLinuxOnItemRequest, PZLinuxOnItemRequest)
+    addXp(getPlayer(), Perks.PlantScavenging, 3)
     
     self.isClosing = true
     self:removeFromUIManager()

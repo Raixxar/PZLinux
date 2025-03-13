@@ -103,7 +103,7 @@ function connectUI:startConnect()
         return
     end
 
-    local player = getSpecificPlayer(0)
+    local player = getPlayer()
     local playerUsername = ""
     if player then
         playerUsername = string.lower(player:getUsername()) .. "@hotmail.com"

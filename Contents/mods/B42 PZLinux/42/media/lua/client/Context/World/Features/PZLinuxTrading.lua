@@ -5,40 +5,6 @@ tradingUI = ISPanel:derive("tradingUI")
 
 local LAST_CONNECTION_TIME = 0
 
-local tradingCompanyName = {
-    { name = "Crisis Commerce Corp", code = "CCC", price = 1450 },
-    { name = "Umbrella Corp", code = "AC", price = 1400 },
-    { name = "Walker & Crawler", code = "WC", price = 1300 },
-    { name = "Survival Solutions Inc", code = "SSI", price = 1200 },
-    { name = "Reclaim Resources Ltd", code = "RRL", price = 1110 },
-    { name = "Brain Beers Times", code = "BBT", price = 1000 },
-    { name = "Zom Bin", code = "ZB", price = 950 },
-    { name = "Endurance Equipments", code = "EE", price = 850 },
-    { name = "Grinning Grim Goods", code = "GGG", price = 610 },
-    { name = "Country Court Outlaw", code = "CCO", price = 580 },
-    { name = "ZomboTrade Co", code = "ZTC", price = 560 },
-    { name = "COVID Pop Ltd", code = "CPL", price = 500 },
-    { name = "Gorrest Fump", code = "GF", price = 450 },
-    { name = "Phoenix Resupply Corp", code = "PRC", price = 350 },
-    { name = "Heaven Saint Christ", code = "HSC", price = 260 },
-    { name = "28 Ways to Stay Safe", code = "WSS", price = 245 },
-    { name = "The Hunger Z", code = "THZ", price = 235 },
-    { name = "Zombie of the rings", code = "ZOR", price = 220 },
-    { name = "Zombie Zumba", code = "ZZ", price = 200 },
-    { name = "Indoor Adventures", code = "IA", price = 180 },
-    { name = "Pandemic Pills Inc", code = "PPI", price = 170 },
-    { name = "Aftermath Trading Post", code = "ATP", price = 160 },
-    { name = "Waste Not Industries", code = "WNI", price = 120 },
-    { name = "NecroTech Innovations", code = "NTI", price = 80 },
-    { name = "Z Max", code = "ZM", price = 65 },
-    { name = "Vigilant Ventures", code = "VV", price = 40 },
-    { name = "Flee Market", code = "FM", price = 30 },
-    { name = "Raven Goods & Supply", code = "RGS", price = 25 },
-    { name = "Brains & Bargains", code = "BB", price = 20 },
-    { name = "Rot & Roll", code = "RR", price = 10 },
-    { name = "Butcher Ltd", code = "BL", price = 5 }
-}
-
 function tradingUI:loadModFile()
     local fileName = "PZLinux.ini"
     local file = getFileReader(fileName, false)
@@ -235,7 +201,7 @@ function tradingUI:startTrading()
     tradingMenuD1Label:initialise()
     self.topBar:addChild(tradingMenuD1Label)
 
-    for i, company in ipairs(tradingCompanyName) do
+    for i, company in ipairs(PZLinuxTradingCompanyNameTable) do
         local codeButton = ISButton:new(self.width * 0.0499, y, self.width * 0.12, self.height * 0.025, company.code .. "/USD", self, nil)
         codeButton:initialise()
 
@@ -436,6 +402,13 @@ function tradingUI:onTradingSold(code, lastPrice, quantityTrading)
         player:getModData()[playerWallet] = newQuantity
         self.tradingWalletLabel:setName("Wallet Balance " .. newQuantity .. " " .. code)
 
+        if lastPrice >= 5000 then
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
+            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.2))
+        elseif lastPrice >= 1000 then
+            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
+            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+        end
     end
 end
 
@@ -457,7 +430,7 @@ function tradingUI:onTradingBuy(code, lastPrice, quantityTrading)
 end
 
 function PZLinuxUpdateTradingPrices()
-    for _, company in ipairs(tradingCompanyName) do
+    for _, company in ipairs(PZLinuxTradingCompanyNameTable) do
         local dataName = "PZLinuxTrading" .. company.code
         local companyData = ModData.getOrCreate(dataName)
         local priceHistory = companyData.dataName or {}
@@ -487,7 +460,7 @@ function PZLinuxTrading_initializePrices()
     end
 
     globalData.PZLinuxTrading = 1
-    for _, company in ipairs(tradingCompanyName) do
+    for _, company in ipairs(PZLinuxTradingCompanyNameTable) do
         local dataName = "PZLinuxTrading" .. company.code
         local globalData = ModData.getOrCreate(dataName)
         globalData.dataName = {}
