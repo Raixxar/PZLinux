@@ -13,6 +13,21 @@
 - Skill for each price items
 - Quest progression concep
 
+# Update v.0.1.11-rc1
+- Fix an issue where the second player couldn't properly use the mod.
+- Changes to online betting: the odds are never 1/1, which offers no return on a win. The minimum odds are now 2/1.
+- Buying or selling items increases your 'Foraging' level.
+- Contracts now display the destination city when necessary.
+- Fixing the computer increases your electricity level.
+- Succeeding in hacking increases your electricity level.
+- Hacking a credit card now reduces your boredom. 
+- Successfully hacking for profit boosts your joy and lowers your stress.
+- Betting reduces your boredom. 
+- Losing an online bet, depending on the wager amount, decreases your joy and increases your stress, while winning boosts your joy and lowers your stress.
+- Selling stocks based on their value increases your happiness and reduces your stress.
+- Successfully completing a contract reduces your boredom and stress while increasing your happiness.
+- Some of the tables are now separated into a separate file, allowing you to modify them as you wish.
+
 # Update v.0.1.11
 - The contract log is now on a piece of paper to take up less space in the player's inventory.
 - Added more information about the ongoing mission in the contract note.

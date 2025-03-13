@@ -184,7 +184,7 @@ function linuxUI:onClose(button)
 end
 
 function linuxUI:onBoot()
-    local player = getSpecificPlayer(0)
+    local player = getPlayer()
     local globalVolume = getCore():getOptionSoundVolume() / 10
 
     if getPlayer():getModData().PZLinuxComputerCondition <= 25 then

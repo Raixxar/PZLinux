@@ -130,10 +130,13 @@ function MailBoxUI:onSendTakePackage()
             local inv = getPlayer():getInventory()
             local parcel = inv:AddItem('Base.Parcel_Large')
             local parcelInv = parcel:getInventory()
-            local lastBatch = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
-            if lastBatch then
-                for _, item in ipairs(lastBatch.items) do
-                    parcelInv:AddItem(item.name)
+            local lastBatchWrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
+            if lastBatchWrapper and type(lastBatchWrapper) == "table" then
+                local lastBatch = lastBatchWrapper[1]
+                if lastBatch and type(lastBatch.items) == "table" then
+                    for _, item in ipairs(lastBatch.items) do
+                        parcelInv:AddItem(item.name)
+                    end
                 end
             end
             table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
@@ -146,10 +149,13 @@ function MailBoxUI:onSendTakePackage()
             local inv = getPlayer():getInventory()
             local parcel = inv:AddItem('Base.Parcel_Large')
             local parcelInv = parcel:getInventory()
-            local lastBatch = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
-            if lastBatch then
-                for _, item in ipairs(lastBatch.items) do
-                    parcelInv:AddItem(item.name)
+            local lastBatchWrapper = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
+            if lastBatchWrapper and type(lastBatchWrapper) == "table" then
+                local lastBatch = lastBatchWrapper[1]
+                if lastBatch and type(lastBatch.items) == "table" then
+                    for _, item in ipairs(lastBatch.items) do
+                        parcelInv:AddItem(item.name)
+                    end
                 end
             end
             table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)

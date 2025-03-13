@@ -183,7 +183,7 @@ function hackingUI:onIdCard()
         self.bootOutput:initialise()
         self.topBar:addChild(self.bootOutput)
 
-        local player = getSpecificPlayer(0)
+        local player = getPlayer()
         self.bootMessages = {
             "<RGB:0,1,0>Connecting to 104.223.56.8.",
             "Connection attempt in progress.",
@@ -284,7 +284,7 @@ end
 function hackingUI:onHack()
     historyPassword = ""
     self.bootOutput:setVisible(false)
-    local player = getSpecificPlayer(0)
+    local player = getPlayer()
 
     hackingBankBalance = ZombRand(5, 1000) * (player:getPerkLevel(Perks.Electricity) + 1)
 
@@ -365,6 +365,7 @@ function hackingUI:onHack()
 end
 
 function hackingUI:onCommandEnter()
+    getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 2))
     local globalVolume = getCore():getOptionSoundVolume() / 10
     hackingUI.triesCount = 0
     hackingUI.maxTries = 7
@@ -373,7 +374,7 @@ function hackingUI:onCommandEnter()
     local passwordStr = tostring(commandText)
 
     if #commandText ~= 4 then
-        getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         return
     end
 
@@ -395,7 +396,7 @@ function hackingUI:onCommandEnter()
     self.hackLabel:setName(revealedPassword)
     if revealedPassword == commandText then
         self.hackLabelAttempts:setName("Account unlocked")
-        getSoundManager():PlayWorldSound("buy", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFER", self, self.hackTransfert)
         self.hackTransfertButton:setVisible(true)
         self.hackTransfertButton:initialise()
@@ -405,13 +406,14 @@ function hackingUI:onCommandEnter()
         self.hackNextButton:setVisible(true)
         self.hackNextButton:initialise()
         self.topBar:addChild(self.hackNextButton)
+        addXp(getPlayer(), Perks.Electricity, 3)
         return
     end
 
     self.triesCount = self.triesCount + 1
     if self.triesCount > 5 then
         self.hackLabelAttempts:setName("Account locked")
-        getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
         self.hackNextButton:setVisible(true)
         self.hackNextButton:initialise()
@@ -449,19 +451,19 @@ function hackingUI:onCommandEnter()
     local feedbackMsg = nil
     if correctCount > 0 and misplacedCount > 0 then
         feedbackMsg = correctCount .. " digit(s) are correctly placed, " .. misplacedCount .. " digit(s) are misplaced"
-        getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     elseif correctCount > 0 then
         feedbackMsg = correctCount .. " digit(s) are correctly placed"
-        getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     elseif misplacedCount > 0 then
         feedbackMsg = misplacedCount .. " digit(s) are misplaced"
-        getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     else
         feedbackMsg = "No digit is present in the code"
-        getSoundManager():PlayWorldSound("error", false, getSpecificPlayer(0):getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     end
     
@@ -480,6 +482,17 @@ function hackingUI:hackTransfert()
     self.titleLabelPlayer:setVisible(true)
     self.titleLabelPlayer:initialise()
     self.topBar:addChild(self.titleLabelPlayer)
+
+    if hackingBankBalance >= 5000 then
+        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
+        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.2))
+    elseif hackingBankBalance >= 1000 then
+        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
+        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+    else
+        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 5))
+        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.05))
+    end
 
     self.hackingCoroutine = coroutine.create(function()
         local playerBankBalance = tonumber(loadAtmBalance())
