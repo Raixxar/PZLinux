@@ -31,7 +31,8 @@ local contracts = {}
 for i = 1, #PZLinuxRequestsItemTable do
     local getHourTimePriceValue = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)   
     itemName = PZLinuxRequestsItemTable[i].baseName
-    itemPrice = math.ceil(ZombRand(PZLinuxRequestsItemTable[i].price, PZLinuxRequestsItemTable[i].price * getHourTimePriceValue))
+    local SandboxVarsPriceMultiplier = SandboxVars.PZLinux.PriceMultiplier or 1.0
+    itemPrice = math.ceil(ZombRand(PZLinuxRequestsItemTable[i].price, PZLinuxRequestsItemTable[i].price * getHourTimePriceValue)) * SandboxVarsPriceMultiplier
     contracts[i] = { id = i, name = itemName, price = itemPrice, icon = iconTex }
 end
 

@@ -6,7 +6,7 @@ contractsUI = ISPanel:derive("contractsUI")
 local LAST_CONNECTION_TIME = 0
 local STAY_CONNECTED_TIME = 0
 local selectedContracts = {}
-local locationQuestTown = "All around the world:"
+local locationQuestTown = ""
 local questDetailName = ""
 
 local companyCode = {
@@ -273,7 +273,7 @@ end
 function contractsUI:onCancelContract(button)
     local modData = getPlayer():getModData()
 
-    if modData.PZLinuxContractLocationX > 0 then
+    if modData.PZLinuxContractLocationX and modData.PZLinuxContractLocationX > 0 then
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY)
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
     end
@@ -375,7 +375,7 @@ function contractsUI:onContractComplete()
     local inv = playerObj:getInventory()
     local note = inv:Remove('Note')
 
-    if modData.PZLinuxContractLocationX > 0 then
+    if modData.PZLinuxContractLocationX and modData.PZLinuxContractLocationX > 0 then
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY)
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
     end
@@ -404,6 +404,15 @@ end
 function contractsUI:onContractId(contract)
     self.minimizeBackButton:setVisible(true)
     self.minimizeButton:setVisible(false)
+
+    local modData = getPlayer():getModData()
+    modData.PZLinuxContractInfo = ""
+    modData.PZLinuxContractInfoCount = 0
+    modData.PZLinuxContractLocationX = 0
+    modData.PZLinuxContractLocationY = 0
+    modData.PZLinuxContractLocation2 = 0
+    locationQuestTown = "All around the world:"
+    questDetailName = ""
 
     local globalVolume = getCore():getOptionSoundVolume() / 10
     local player = getPlayer()
@@ -2256,7 +2265,7 @@ function contractsUI:onYesButton(button)
     note:setCanBeWrite(true)
     note:addPage(1, locationQuestTown .. "\n" .. modData.PZLinuxContractNote .. "\n")
 
-    if modData.PZLinuxContractLocationX > 0 then
+    if modData.PZLinuxContractLocationX and modData.PZLinuxContractLocationX > 0 then
         contractsDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractNote)
     end
 

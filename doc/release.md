@@ -10,8 +10,15 @@
 - Chance to found a money with quest.
 - keep their money in a physical medium. 
 - Player can create a request basket of our own choice and wait for it to be presented to us.
-- Skill for each price items
-- Quest progression concep
+- Quest progression concept
+- Make the mod compatible with controllers.
+
+# Update v.0.1.11-rc3
+- Fixes an issue where the contract could not be properly removed in a new game.
+- Added a sandbox option to the mod to adjust the multiplier on item prices.
+
+# Update v.0.1.11-rc2
+- Resolve an issue where you might have information from an unaccepted contract.
 
 # Update v.0.1.11-rc1
 - Fix an issue where the second player couldn't properly use the mod.
