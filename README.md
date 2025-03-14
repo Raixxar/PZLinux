@@ -1,31 +1,49 @@
 # B42 PZLinux [BETA]
-
-Immerse yourself in the chilling experience of "PZLinux," a revolutionary mod for Project Zomboid that transforms the in-game economy, giving new meaning to your survival journey. The currency in Project Zomboid has long been neglected, but with this mod, money finally has value!
+Tired of finding stacks of useless cash in Project Zomboid? With PZLinux, the in-game economy finally comes to life, and money has real value!
 
 ## Key Features:
-### Revitalized Currency:
-Say goodbye to worthless cash! With PZLinux mod, you can buy and sell valuable items, giving purpose to the money you find in the world.
+### Revitalized Economy System
+Buy and sell valuable items in an underground marketplace.
+The money you find in the world now serves a real purpose!
+
 
 ### Connect via Computers
-Utilize the previously useless computers in the game to access PZLinux. To get started, ensure your computer is connected to a power source and have some cash on your bank account for your first transactions.
+Access PZLinux through in-game computers.
+Make sure you have a power source and funds in your bank account to start trading.
+
 
 ### Dark Web
-Participate in a thriving underground market where you can acquire weapons, ammunition, blueprints, clothing. PZLinux holds a treasure trove of goods, each waiting to be discovered. Dark web marketplace refreshes every day, providing players with ample opportunities to farm for items. Forgotten goods suddenly have value, and luck might just shine on you as you search for rare finds.
+A thriving underground market filled with weapons, ammo, blueprints, clothing, and more!
+The dark web marketplace refreshes daily, offering new chances to find rare and valuable items.
 
-### Trading:
-You can now engage in trading in-game by investing in fictional companies, giving you the opportunity to earn even more money. 
 
-### Hacking:
-Explore the hacking interface to try to hack bank accounts using ID cards found on zombies. Will you be able to decode the bank account codes?
+### Trading System
+Invest in fictional companies to increase your earnings.
+Grow your wealth by making smart financial decisions!
 
-### Contract:
-Accept quests to earn even more money. Will you rise to the challenge?
 
-### Request:
-Spend your money to obtain useful items for your survival to live even longer.
+### Bank Account Hacking
+Find ID cards on zombies and attempt to crack bank accounts.
+Will you be able to decipher the codes and access hidden funds?
 
-### Enhanced Gameplay:
-PZLinux not only adds depth to the economy but also enriches the gameplay experience. Explore the game's world with a new outlook, knowing that you might stumble upon hidden gems online! Don't miss out on money anymore; you can now profit from it to enhance your survival! Once found, deposit the money via an ATM into your bank account to make it available online
+
+### Contract System
+Accept quests to earn even more money.
+Will you rise to the challenge?
+
+
+### Special Requests
+Spend your money to obtain essential survival items.
+Boost your chances of living longer in the apocalypse.
+
+
+### Online Betting
+Take a break to play online and maybe win big!
+
+
+### A New Approach to Survival
+Enjoy an enhanced experience with a complete economic system.
+Deposit your money via an ATM to use it online.
 
 Embrace the dark side of survival and elevate your Project Zomboid experience with PZLinux mod. Whether you're looking to get rid of excess items or hunt for elusive treasures, this mod makes every encounter with currency count. Get ready to dive into the shadows and see what the underground market has in store for you!
 

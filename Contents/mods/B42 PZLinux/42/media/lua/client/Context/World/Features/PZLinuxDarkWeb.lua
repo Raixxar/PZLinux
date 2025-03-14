@@ -34,8 +34,9 @@ function GenerateDarkWebOffers()
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
 
+            local SandboxVarsPriceMultiplier = SandboxVars.PZLinux.PriceMultiplier or 1.0
             local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190)
-            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime
+            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime * SandboxVarsPriceMultiplier
             local transactionType = "Buy"
             local transactionQty = 1
 
