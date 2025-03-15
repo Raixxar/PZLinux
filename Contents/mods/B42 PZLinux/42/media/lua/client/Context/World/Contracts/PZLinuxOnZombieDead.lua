@@ -2,8 +2,10 @@ local function OnZombieDead(zombie)
     local modData = getPlayer():getModData()
     modData.PZLinuxOnZombieDead = (modData.PZLinuxOnZombieDead or 0) + 1
 
+    print(modData.PZLinuxOnZombieToKill)
+    print(modData.PZLinuxOnZombieDead)
     if modData.PZLinuxContractKillZombie == 1 then
-        if modData.PZLinuxOnZombieDead >= modData.PZLinuxOnZombieToKill then
+        if tonumber(modData.PZLinuxOnZombieDead) >= tonumber(modData.PZLinuxOnZombieToKill) and not modData.PZLinuxActiveContract == 10 then
             modData.PZLinuxActiveContract = 9
         end
     end

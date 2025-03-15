@@ -1,4 +1,5 @@
 Sandbox_EN = {
     Sandbox_PZLinux_Settings = "PZLinux",
-    Sandbox_PZLinux_PriceMultiplier = "Price multiplier",
+    Sandbox_PZLinux_PurchasePriceMultiplier = "Purchase Price Multiplier",
+    Sandbox_PZLinux_SalePriceMultiplier = "Sale Price Multiplier",
 }

@@ -13,6 +13,11 @@
 - Quest progression concept
 - Make the mod compatible with controllers.
 
+# Update v.0.1.11-rc4
+- Added a sandbox option as a multiplier for sale prices.
+- Fixes an issue where the quest completion menu does not display correctly for certain contracts.
+- Fixes LUA errors for the quest requiring zombie kills.
+
 # Update v.0.1.11-rc3
 - Fixes an issue where the contract could not be properly removed in a new game.
 - Added a sandbox option to the mod to adjust the multiplier on item prices.

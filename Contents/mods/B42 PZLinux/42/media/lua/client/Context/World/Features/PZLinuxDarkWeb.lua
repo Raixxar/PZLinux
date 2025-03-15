@@ -34,9 +34,9 @@ function GenerateDarkWebOffers()
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
 
-            local SandboxVarsPriceMultiplier = SandboxVars.PZLinux.PriceMultiplier or 1.0
+            local SandboxVarsPurchasePriceMultiplier = SandboxVars.PZLinux.PurchasePriceMultiplier or 1.0
             local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190)
-            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime * SandboxVarsPriceMultiplier
+            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime * SandboxVarsPurchasePriceMultiplier
             local transactionType = "Buy"
             local transactionQty = 1
 
@@ -533,7 +533,8 @@ function darkWebUI:onSell()
             local perkLevel = player:getPerkLevel(Perks.PlantScavenging)
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
-            local rawPrice = math.ceil(ZombRand(itemPrice * sellMinMultiplier, itemPrice * sellMaxMultiplier))
+            local SandboxVarsSalePriceMultiplier = SandboxVars.PZLinux.SalePriceMultiplier or 1.0
+            local rawPrice = math.ceil(ZombRand(itemPrice * sellMinMultiplier, itemPrice * sellMaxMultiplier)) * SandboxVarsSalePriceMultiplier
 
             table.insert(itemsToSell, { 
                 id = itemIds, 
