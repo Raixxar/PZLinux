@@ -2249,10 +2249,18 @@ function contractsUI:onYesButton(button)
     local modData = getPlayer():getModData()
     modData.PZLinuxActiveContract = 1
     modData.PZLinuxOnZombieDead = 0
-    self.isClosing = true
-    self:removeFromUIManager()
-    modData.PZLinuxUIOpenMenu = 7
     
+    if button.contractId == 1 then modData.PZLinuxContractKillZombie = 1 end
+    if button.contractId == 2 then modData.PZLinuxContractPickUp = 1 end 
+    if button.contractId == 3 then modData.PZLinuxContractManhunt = 1 end
+    if button.contractId == 4 then modData.PZLinuxContractBlood = 1 end
+    if button.contractId == 5 then modData.PZLinuxContractCar = 1 end
+    if button.contractId == 6 then modData.PZLinuxContractCapture = 1 end
+    if button.contractId == 7 then modData.PZLinuxContractCargo = 1 end
+    if button.contractId == 8 then modData.PZLinuxContractProtect = 1 end
+    if button.contractId == 9 then modData.PZLinuxContractMedical = 1 end
+    if button.contractId == 10 then modData.PZLinuxContractWeapon = 1 end
+
     modData.PZLinuxContractNote = "* [" .. contractsCompanyCodes[button.contractId] .. "] ".. contractsQuestName[button.contractId] .. " for $" .. contractsCompanyReward[button.contractId]
     if modData.PZLinuxContractInfoCount and modData.PZLinuxContractInfoCount > 0 then
         modData.PZLinuxContractNote = modData.PZLinuxContractNote .. "\n* " .. modData.PZLinuxContractInfoCount .. " " .. questDetailName
@@ -2269,18 +2277,13 @@ function contractsUI:onYesButton(button)
         contractsDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractNote)
     end
 
-    if button.contractId == 1 then modData.PZLinuxContractKillZombie = 1 end
-    if button.contractId == 2 then modData.PZLinuxContractPickUp = 1 end 
-    if button.contractId == 3 then modData.PZLinuxContractPickUp = 1 end 
-    if button.contractId == 4 then modData.PZLinuxContractPickUp = 1 end
-    if button.contractId == 5 then modData.PZLinuxContractManhunt = 1 end
-    if button.contractId == 6 then modData.PZLinuxContractBlood = 1 end
-    if button.contractId == 7 then modData.PZLinuxContractCar = 1 end
-    if button.contractId == 8 then modData.PZLinuxContractCapture = 1 end
-    if button.contractId == 9 then modData.PZLinuxContractCargo = 1 end
-    if button.contractId == 10 then modData.PZLinuxContractProtect = 1 end
-    if button.contractId == 11 then modData.PZLinuxContractMedical = 1 end
-    if button.contractId == 12 then modData.PZLinuxContractWeapon = 1 end
+    if modData.PZLinuxContractKillZombie and modData.PZLinuxContractKillZombie == 1 then
+        modData.PZLinuxContractNote = modData.PZLinuxContractNote .. "\n * Zombies to kill: " .. modData.PZLinuxOnZombieToKill
+    end
+
+    self.isClosing = true
+    self:removeFromUIManager()
+    modData.PZLinuxUIOpenMenu = 7
 end
 
 -- LOGOUT

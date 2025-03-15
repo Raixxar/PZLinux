@@ -1,11 +1,21 @@
 VERSION = 1,
 
-option PZLinux.PriceMultiplier
+option PZLinux.PurchasePriceMultiplier
 {
 	type = double,
 	default = 1,
 	min = 0.1,
 	max = 100,
 	page = PZLinux_Settings,
-	translation = PZLinux_PriceMultiplier,
+	translation = PZLinux_PurchasePriceMultiplier,
+}
+
+option PZLinux.SalePriceMultiplier
+{
+	type = double,
+	default = 1,
+	min = 0.1,
+	max = 100,
+	page = PZLinux_Settings,
+	translation = PZLinux_SalePriceMultiplier,
 }
