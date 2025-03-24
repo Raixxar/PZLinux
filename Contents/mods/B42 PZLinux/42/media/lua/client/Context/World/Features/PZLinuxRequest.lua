@@ -244,7 +244,7 @@ function requestUI:onSelectContract(button)
 end
 
 function requestUI:onContractId(contract)
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     local player = getPlayer()
 
     if not self.typingMessage then
@@ -269,13 +269,13 @@ function requestUI:onContractId(contract)
             if self.isClosing then return end
             
             local soundName = "typingKeyboard" .. ZombRand(1, 10)
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             
             message = message .. string.sub(text, index, index)
             index = index + 1
             label:setName(message)
             
-            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 10) / (getPlayer():getPerkLevel(Perks.Electricity) + 1)
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()
@@ -283,7 +283,7 @@ function requestUI:onContractId(contract)
             end
         end
         
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         if callback then callback() end
     end
     
@@ -307,8 +307,8 @@ function requestUI:onContractId(contract)
 
         if self.isClosing then return end
 
-        local globalVolume = getCore():getOptionSoundVolume() / 10
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         local sellerName = generateUsername()
         local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
 
@@ -326,7 +326,7 @@ function requestUI:onContractId(contract)
 
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = sellerName .. "Are you looking for " .. contracts[contract].name .. " ?"
         self.loadingMessage:setName(message)
         
@@ -722,7 +722,7 @@ function requestUI:onContractId(contract)
 
         if contract == 9 then 
             table.remove(PZLinuxOnItemRequest, #PZLinuxOnItemRequest)
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount .. " " .. produceName
             self.loadingMessage:setName(message)
 
@@ -734,7 +734,7 @@ function requestUI:onContractId(contract)
             note:addPage(1, produceName .. "\n" .. locationName)
 
         else
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount
             self.loadingMessage:setName(message)
         end
@@ -748,7 +748,7 @@ function requestUI:onContractId(contract)
 
         if contract == 9 then
             if self.isClosing then return end
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "The car is at the " .. locationName
             self.loadingMessage:setName(message)
     
@@ -762,7 +762,7 @@ function requestUI:onContractId(contract)
 
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = message .. "\n" .. sellerName .. "Deal ?"
         self.loadingMessage:setName(message)
 

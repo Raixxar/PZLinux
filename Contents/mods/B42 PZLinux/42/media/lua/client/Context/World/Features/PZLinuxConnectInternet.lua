@@ -98,7 +98,7 @@ end
 
 -- CONNECT TO INTERNET
 function connectUI:startConnect()
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     if self.isClosing or not getPlayer() then
         return
     end
@@ -161,20 +161,20 @@ function connectUI:startConnect()
 
             local randomSoundIndex = ZombRand(1, 10)
             local soundName = "typingKeyboard" .. randomSoundIndex
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             
             currentLogin = currentLogin .. string.sub(playerUsername, index, index)
             index = index + 1
             self.loadingMessage:setName(currentLogin)
 
-            local letterDelay = elapsed + ZombRand(1, 10) / (player:getPerkLevel(Perks.Electricity) + 1)
+            local letterDelay = elapsed + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()
                 elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
         while passwordIndex <= totalAsterisks do
             if self.isClosing then
@@ -183,20 +183,20 @@ function connectUI:startConnect()
 
             local randomSoundIndex = ZombRand(1, 10)
             local soundName = "typingKeyboard" .. randomSoundIndex
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
             currentPassword = currentPassword .. "*"
             passwordIndex = passwordIndex + 1
             self.loadingMessage:setName(currentPassword)
-            local passwordDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 10) / (player:getPerkLevel(Perks.Electricity) + 1)
+            local passwordDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < passwordDelay do
                 if self.isClosing then return end
                 coroutine.yield()
                 elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
-        getSoundManager():PlayWorldSound("upInternet", false, player:getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("upInternet", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
         for _, message in ipairs(messages) do
             if self.isClosing then return end
