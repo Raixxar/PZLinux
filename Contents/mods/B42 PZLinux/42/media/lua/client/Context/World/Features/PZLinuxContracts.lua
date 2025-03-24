@@ -69,7 +69,7 @@ for i = 1, 10 do
     if i == 2 then difficulty = 3; reward = 5000; questName = "Retrieve the package." end
     if i == 3 then difficulty = 3; reward = 5000; questName = "Eliminate the target." end
     if i == 4 then difficulty = 1; reward = 1000; questName = "Collect zombie blood."; cityName = "" end
-    if i == 5 then difficulty = 4; reward = 10000; questName = "Sent car parts."; cityName = "" end
+    if i == 5 then difficulty = 2; reward = 2500; questName = "Sent car parts."; cityName = "" end
     if i == 6 then difficulty = 4; reward = 10000; questName = "Capture a live zombie."; cityName = "" end
     if i == 7 then difficulty = 4; reward = 10000; questName = "Prepare the cargo." end
     if i == 8 then difficulty = 5; reward = 20000; questName = "Protect the building." end
@@ -329,8 +329,8 @@ function contractsUI:onSelectContract(button)
 
     if modData.PZLinuxActiveContract == 1 then
         local playerObj = getPlayer()
-        local globalVolume = getCore():getOptionSoundVolume() / 10
-        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         return
     end
 
@@ -368,8 +368,8 @@ function contractsUI:onContractComplete()
     end
     
     local playerObj = getPlayer()
-    local globalVolume = getCore():getOptionSoundVolume() / 10
-    getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+    local globalVolume = getCore():getOptionSoundVolume() / 50
+    getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
     local playerObj = getPlayer()
     local inv = playerObj:getInventory()
@@ -414,7 +414,7 @@ function contractsUI:onContractId(contract)
     locationQuestTown = "All around the world:"
     questDetailName = ""
 
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     local player = getPlayer()
     
     if not self.typingMessage then
@@ -438,13 +438,13 @@ function contractsUI:onContractId(contract)
             if self.isClosing then return end
             
             local soundName = "typingKeyboard" .. ZombRand(1, 10)
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             
             message = message .. string.sub(text, index, index)
             index = index + 1
             label:setName(message)
             
-            local letterDelay = elapsed + ZombRand(1, 10) / (getPlayer():getPerkLevel(Perks.Electricity) + 1)
+            local letterDelay = elapsed + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()
@@ -452,7 +452,7 @@ function contractsUI:onContractId(contract)
             end
         end
         
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         if callback then callback() end
     end
     
@@ -462,7 +462,7 @@ function contractsUI:onContractId(contract)
             local modData = getPlayer():getModData()
             modData.PZLinuxOnZombieToKill = ZtoKill
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -510,7 +510,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. modData.PZLinuxOnZombieToKill
             self.loadingMessage:setName(message)
 
@@ -538,7 +538,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -551,7 +551,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             self.loadingMessage:setName(message)
 
@@ -571,7 +571,7 @@ function contractsUI:onContractId(contract)
     if contract == 2 then
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -762,7 +762,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -789,7 +789,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -817,7 +817,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
             
             self.loadingMessage:setName(message)
@@ -831,7 +831,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -853,7 +853,7 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
             
@@ -1006,7 +1006,7 @@ function contractsUI:onContractId(contract)
                 { id = 100, first = "Katherine", last = "Foster" },
             }
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             local targetName = names[firstNameId].first .. " " .. names[lastNameId].last
             message = message .. "\n" .. sellerName .. "The target is " .. targetName
             self.loadingMessage:setName(message)
@@ -1127,7 +1127,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1154,7 +1154,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -1182,7 +1182,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Send us the corpse, or what remains of it, with a mailbox."
             self.loadingMessage:setName(message)
 
@@ -1195,7 +1195,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -1217,7 +1217,7 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -1265,7 +1265,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -1278,7 +1278,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -1300,7 +1300,7 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -1374,12 +1374,14 @@ function contractsUI:onContractId(contract)
             local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
-                message = message .. "\n" .. sellerName .. quest.name
                 modData.PZLinuxContractInfo = quest.baseName
+                modData.PZLinuxContractInfoCount = 1
                 modData.PZLinuxOnReward = math.ceil((modData.PZLinuxOnReward * quest.delta)/10)*10
+                questDetailName = quest.name
+                message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
             
 
@@ -1407,7 +1409,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -1420,7 +1422,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -1442,7 +1444,7 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -1490,7 +1492,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -1503,7 +1505,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -1524,7 +1526,7 @@ function contractsUI:onContractId(contract)
     if contract == 7 then
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -1661,7 +1663,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1688,7 +1690,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -1701,7 +1703,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Prepare defenses, we will take the cargo by helicopter."
             
             self.loadingMessage:setName(message)
@@ -1715,7 +1717,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -1736,7 +1738,7 @@ function contractsUI:onContractId(contract)
     if contract == 8 then
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -1886,7 +1888,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description .. "\n* Zombies to kill: 10"
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1913,7 +1915,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
             
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -1926,7 +1928,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Prepare defenses, there will be many zombies."
             
             self.loadingMessage:setName(message)
@@ -1940,7 +1942,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -1962,7 +1964,7 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -2034,7 +2036,7 @@ function contractsUI:onContractId(contract)
                 message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
             
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -2061,7 +2063,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -2074,7 +2076,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)
@@ -2096,7 +2098,7 @@ function contractsUI:onContractId(contract)
         self.terminalCoroutine = coroutine.create(function()
             local modData = getPlayer():getModData()
 
-            local globalVolume = getCore():getOptionSoundVolume() / 10
+            local globalVolume = getCore():getOptionSoundVolume() / 50
             local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
@@ -2171,7 +2173,7 @@ function contractsUI:onContractId(contract)
                 message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
             
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -2198,7 +2200,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
             self.loadingMessage:setName(message)
 
@@ -2211,7 +2213,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
             
             self.loadingMessage:setName(message)

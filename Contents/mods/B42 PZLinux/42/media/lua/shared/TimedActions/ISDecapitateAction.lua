@@ -16,8 +16,8 @@ function ISDecapitateAction:update()
 end
 
 function ISDecapitateAction:start()
-    local globalVolume = getCore():getOptionSoundVolume() / 10
-    getSoundManager():PlayWorldSound("decapitate", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+    local globalVolume = getCore():getOptionSoundVolume() / 50
+    getSoundManager():PlayWorldSound("decapitate", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Low")
     self.character:reportEvent("EventLootItem")

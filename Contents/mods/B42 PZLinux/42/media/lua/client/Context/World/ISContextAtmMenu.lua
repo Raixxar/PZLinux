@@ -152,7 +152,7 @@ function AtmUI:showWithdrawalMenu()
 end
 
 function AtmUI:onLoginMenu()
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     self.loginButton:setVisible(false)
     if self.isClosing or not getPlayer() then
         return
@@ -195,7 +195,7 @@ function AtmUI:onLoginMenu()
     end
 
     self.terminalCoroutine = coroutine.create(function()
-        getSoundManager():PlayWorldSound("creditCard", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("creditCard", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.loadingMessage:setName(loginBase)
 
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
@@ -220,13 +220,13 @@ function AtmUI:onLoginMenu()
                 return
             end
             
-            getSoundManager():PlayWorldSound("atmBip", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("atmBip", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             currentPassword = currentPassword .. "*"
             passwordIndex = passwordIndex + 1
             self.loadingMessage:setName(currentPassword)
             
             local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            local letterDelay = elapsed + ZombRand(1, 10) / (getPlayer():getPerkLevel(Perks.Electricity) + 1)
+            local letterDelay = elapsed + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()

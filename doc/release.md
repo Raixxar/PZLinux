@@ -12,6 +12,16 @@
 - Player can create a request basket of our own choice and wait for it to be presented to us.
 - Quest progression concept
 - Make the mod compatible with controllers.
+  
+# Update v.0.1.11-rc5
+- Change of the formula for the player's typing speed on the computer keyboard; it is now more realistic.
+- Change of the mod sound volume; the sounds are slightly decreased.
+- Fixed an issue where players could receive an empty package when purchasing a quantity of 0 in the DW.
+- Fixed an issue where players could increase their skill without making any purchases.
+- Fixed LUA errors when the player kills a zombie.
+- Information about car parts to be sent is now in the contract note.
+- Fixed an issue where car parts couldn't be sent to complete the contract.
+- Adjusted the reward for the car parts contract; the values are now more realistic with the parts' worth.
 
 # Update v.0.1.11-rc4
 - Added a sandbox option as a multiplier for sale prices.

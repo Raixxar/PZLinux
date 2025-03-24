@@ -2,8 +2,6 @@ local function OnZombieDead(zombie)
     local modData = getPlayer():getModData()
     modData.PZLinuxOnZombieDead = (modData.PZLinuxOnZombieDead or 0) + 1
 
-    print(modData.PZLinuxOnZombieToKill)
-    print(modData.PZLinuxOnZombieDead)
     if modData.PZLinuxContractKillZombie == 1 then
         if tonumber(modData.PZLinuxOnZombieDead) >= tonumber(modData.PZLinuxOnZombieToKill) and not modData.PZLinuxActiveContract == 10 then
             modData.PZLinuxActiveContract = 9
@@ -110,8 +108,8 @@ Events.OnPlayerMove.Add(checkAndSpawnBox)
 local function contractCompletedPlaySound(player)
     local modData = getPlayer():getModData()
     if modData.PZLinuxActiveContract == 9 then
-        local globalVolume = getCore():getOptionSoundVolume() / 10
-        getSoundManager():PlayWorldSound("done", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        getSoundManager():PlayWorldSound("done", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         HaloTextHelper.addGoodText(getPlayer(), "Contract completed");
         modData.PZLinuxActiveContract = 10
 

@@ -250,7 +250,7 @@ end
 function bettingUI:onSelectStart()
     self.minimizeButton:setVisible(false)
     self.minimizeBackButton:setVisible(true)
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     if not tonumber(self.amountInput:getText()) 
         or not tonumber(self.betInput:getText()) 
         or tonumber(self.amountInput:getText()) < 1 
@@ -258,7 +258,7 @@ function bettingUI:onSelectStart()
         or tonumber(self.betInput:getText()) > 8 
         or tonumber(self.amountInput:getText()) > loadAtmBalance() then
 
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         return
     end
 
@@ -266,7 +266,7 @@ function bettingUI:onSelectStart()
     saveAtmBalance(newBalance)
     self.titleLabel:setName("Account Balance $" .. tostring(newBalance))
 
-    getSoundManager():PlayWorldSound("race", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+    getSoundManager():PlayWorldSound("race", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self.betInput:setVisible(false)
     self.amountInput:setVisible(false)
     self.startButton:setVisible(false)
@@ -369,8 +369,8 @@ function bettingUI:declareWinner(winnerId, winner)
         saveAtmBalance(newBalance)
         self.titleLabel:setName("Account Balance $" .. tostring(newBalance))
 
-        local globalVolume = getCore():getOptionSoundVolume() / 10
-        getSoundManager():PlayWorldSound("sold", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        getSoundManager():PlayWorldSound("sold", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
         if tonumber(self.amountInput:getText()) >= 5000 then
             getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
