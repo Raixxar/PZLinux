@@ -366,7 +366,7 @@ end
 
 function hackingUI:onCommandEnter()
     getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 2))
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     hackingUI.triesCount = 0
     hackingUI.maxTries = 7
 
@@ -374,7 +374,7 @@ function hackingUI:onCommandEnter()
     local passwordStr = tostring(commandText)
 
     if #commandText ~= 4 then
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         return
     end
 
@@ -396,7 +396,7 @@ function hackingUI:onCommandEnter()
     self.hackLabel:setName(revealedPassword)
     if revealedPassword == commandText then
         self.hackLabelAttempts:setName("Account unlocked")
-        getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFER", self, self.hackTransfert)
         self.hackTransfertButton:setVisible(true)
         self.hackTransfertButton:initialise()
@@ -413,7 +413,7 @@ function hackingUI:onCommandEnter()
     self.triesCount = self.triesCount + 1
     if self.triesCount > 5 then
         self.hackLabelAttempts:setName("Account locked")
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
         self.hackNextButton:setVisible(true)
         self.hackNextButton:initialise()
@@ -451,19 +451,19 @@ function hackingUI:onCommandEnter()
     local feedbackMsg = nil
     if correctCount > 0 and misplacedCount > 0 then
         feedbackMsg = correctCount .. " digit(s) are correctly placed, " .. misplacedCount .. " digit(s) are misplaced"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     elseif correctCount > 0 then
         feedbackMsg = correctCount .. " digit(s) are correctly placed"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     elseif misplacedCount > 0 then
         feedbackMsg = misplacedCount .. " digit(s) are misplaced"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     else
         feedbackMsg = "No digit is present in the code"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
     end
     

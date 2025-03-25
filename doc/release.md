@@ -5,13 +5,39 @@
 - Prevent a trade by burning a cargo.
 - New contract: drop off a vehicle in a specific area.
 - New contract: deliver drinking water.
-- Contracts tab should be organized and divided into city.
 - New contract: get document from doctor or other.
 - Chance to found a money with quest.
 - keep their money in a physical medium. 
 - Player can create a request basket of our own choice and wait for it to be presented to us.
-- Skill for each price items
-- Quest progression concep
+- Quest progression concept
+- Make the mod compatible with controllers.
+
+# Update v.0.1.11-rc6
+- Fix the LUA errors in the ATM interface when the password is entered.
+- Fix an issue where the computer couldn't be repaired even if you had the electronic parts in your inventory.
+- Computer repair now only appears below 15%, whereas it was at 50% before.
+  
+# Update v.0.1.11-rc5
+- Change of the formula for the player's typing speed on the computer keyboard; it is now more realistic.
+- Change of the mod sound volume; the sounds are slightly decreased.
+- Fixed an issue where players could receive an empty package when purchasing a quantity of 0 in the DW.
+- Fixed an issue where players could increase their skill without making any purchases.
+- Fixed LUA errors when the player kills a zombie.
+- Information about car parts to be sent is now in the contract note.
+- Fixed an issue where car parts couldn't be sent to complete the contract.
+- Adjusted the reward for the car parts contract; the values are now more realistic with the parts' worth.
+
+# Update v.0.1.11-rc4
+- Added a sandbox option as a multiplier for sale prices.
+- Fixes an issue where the quest completion menu does not display correctly for certain contracts.
+- Fixes LUA errors for the quest requiring zombie kills.
+
+# Update v.0.1.11-rc3
+- Fixes an issue where the contract could not be properly removed in a new game.
+- Added a sandbox option to the mod to adjust the multiplier on item prices.
+
+# Update v.0.1.11-rc2
+- Resolve an issue where you might have information from an unaccepted contract.
 
 # Update v.0.1.11-rc1
 - Fix an issue where the second player couldn't properly use the mod.

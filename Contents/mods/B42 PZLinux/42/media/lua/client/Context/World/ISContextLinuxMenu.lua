@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "0.1.11"
+local PZLinuxVersion = "v.0.1.11-rc6"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -185,14 +185,14 @@ end
 
 function linuxUI:onBoot()
     local player = getPlayer()
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
 
     if getPlayer():getModData().PZLinuxComputerCondition <= 25 then
-        getSoundManager():PlayWorldSound("computerBootLow", false, getPlayer():getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("computerBootLow", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     elseif getPlayer():getModData().PZLinuxComputerCondition <= 50 then
-        getSoundManager():PlayWorldSound("computerBootMedium", false, getPlayer():getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("computerBootMedium", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     else
-        getSoundManager():PlayWorldSound("computerBoot", false, getPlayer():getSquare(), 0, 100, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("computerBoot", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     end
 
     self.bootMessages = {
@@ -485,7 +485,7 @@ function linuxMenu_AddContext(player, context, worldobjects)
                         if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
                             
                             if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
-                            if obj:getModData().statusCondition < 50 then
+                            if obj:getModData().statusCondition < 15 then
                                 context:addOption("Fix the computer", obj, linuxMenu_OnRepare, player, x, y, z, sprite:getName())
                             end
 

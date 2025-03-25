@@ -102,7 +102,7 @@ function contractsRemoveDrawOnMap(x, y)
     ISWorldMap.ShowWorldMap(0)
     ISWorldMap.HideWorldMap(0)
     local count = ISWorldMap_instance.mapAPI:getSymbolsAPI():getSymbolCount()
-    for i = 1, count do
+    for i = 0, count - 1 do
         local symbol = ISWorldMap_instance.mapAPI:getSymbolsAPI():getSymbolByIndex(i)
         if symbol then
             local wx = math.floor(symbol:getWorldX())

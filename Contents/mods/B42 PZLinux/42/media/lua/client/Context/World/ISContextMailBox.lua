@@ -113,6 +113,7 @@ function MailBoxUI:onSendTakePackage()
         or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
         or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3)
         or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractMedical == 1 and totalCountForContract)
+        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1 and totalCountForContract)
         or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractWeapon == 1 and totalCountForContract) then
             if modData.PZLinuxContractInfoCount > 0 then
                 modData.PZLinuxActiveContract = 9

@@ -34,8 +34,9 @@ function GenerateDarkWebOffers()
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
 
+            local SandboxVarsPurchasePriceMultiplier = SandboxVars.PZLinux.PurchasePriceMultiplier or 1.0
             local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190)
-            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime
+            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime * SandboxVarsPurchasePriceMultiplier
             local transactionType = "Buy"
             local transactionQty = 1
 
@@ -532,7 +533,8 @@ function darkWebUI:onSell()
             local perkLevel = player:getPerkLevel(Perks.PlantScavenging)
             local sellMinMultiplier = 0.5 + (0.025 * perkLevel)
             local sellMaxMultiplier = 0.75 + (0.025 * perkLevel)
-            local rawPrice = math.ceil(ZombRand(itemPrice * sellMinMultiplier, itemPrice * sellMaxMultiplier))
+            local SandboxVarsSalePriceMultiplier = SandboxVars.PZLinux.SalePriceMultiplier or 1.0
+            local rawPrice = math.ceil(ZombRand(itemPrice * sellMinMultiplier, itemPrice * sellMaxMultiplier)) * SandboxVarsSalePriceMultiplier
 
             table.insert(itemsToSell, { 
                 id = itemIds, 
@@ -668,7 +670,7 @@ end
 
 -- CLICK BUY SELL
 function darkWebUI:OnBuyItem(button, quantityTrading)
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     if self.isClosing then
         return
     end
@@ -692,18 +694,18 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
                 itemToAdd = offer.item.id
             end
             table.insert(batch.items, { name = itemToAdd })
-            --inv:AddItem(itemToAdd)
-            getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             HaloTextHelper.addGoodText(getPlayer(), "Item available in a mailbox");
 
             local newBalance = checkBalance - offer.price
             saveAtmBalance(newBalance)
             self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
         else
-            getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             HaloTextHelper.addGoodText(getPlayer(), "I need money in my bank account");
         end
     end
+
     PZLinuxOnItemBuyOnDarkWeb = {}
     table.insert(PZLinuxOnItemBuyOnDarkWeb, batch)
     local modData = getPlayer():getModData()
@@ -711,9 +713,11 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
         modData.PZLinuxOnItemBuyOnDarkWeb = {}
     end
 
-    modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-    table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, PZLinuxOnItemBuyOnDarkWeb)
-    addXp(getPlayer(), Perks.PlantScavenging, 3)
+    if transactionQty > 0 then
+        modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
+        table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, PZLinuxOnItemBuyOnDarkWeb)
+        addXp(getPlayer(), Perks.PlantScavenging, 3)
+    end
 end
 
 local function removeItemOnTick()
@@ -731,7 +735,7 @@ local function removeItemOnTick()
 end
 
 function darkWebUI:onSellItem(button)
-    local globalVolume = getCore():getOptionSoundVolume() / 10
+    local globalVolume = getCore():getOptionSoundVolume() / 50
     local itemIds = button.internal
     local price = button.price
     local count = button.count
@@ -764,14 +768,14 @@ function darkWebUI:onSellItem(button)
     end
 
     if #itemsToSell > 0 then
-        getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         local newBalance = price * count
         local parcel = inv:AddItem('Base.SuspiciousPackage')
         parcel:setName("$" .. tostring(newBalance))
         HaloTextHelper.addGoodText(getPlayer(), "Drop the package in a mailbox");
         addXp(getPlayer(), Perks.PlantScavenging, 3)
     else
-        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         HaloTextHelper.addBadText(getPlayer(), "The item is not in my main inventory");
     end
 end

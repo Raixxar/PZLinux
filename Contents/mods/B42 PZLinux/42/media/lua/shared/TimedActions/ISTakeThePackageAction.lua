@@ -16,8 +16,8 @@ function ISTakeThePackageAction:update()
 end
 
 function ISTakeThePackageAction:start()
-    local globalVolume = getCore():getOptionSoundVolume() / 10
-    getSoundManager():PlayWorldSound("openCloseCabinet", false, getPlayer():getSquare(), 0, 50, 1, true):setVolume(globalVolume)
+    local globalVolume = getCore():getOptionSoundVolume() / 50
+    getSoundManager():PlayWorldSound("openCloseCabinet", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")
