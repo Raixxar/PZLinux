@@ -6,11 +6,10 @@ function ISPZLinuxRepareAction:isValid()
         local item = items:get(j)
         if item and item:getFullType() == "Base.ElectronicsScrap" then
             return true
-        else 
-            HaloTextHelper.addBadText(getPlayer(), "I need electronic parts");
-            return false
         end
     end
+    HaloTextHelper.addBadText(getPlayer(), "I need electronic parts");
+    return false
 end
 
 function ISPZLinuxRepareAction:waitToStart()

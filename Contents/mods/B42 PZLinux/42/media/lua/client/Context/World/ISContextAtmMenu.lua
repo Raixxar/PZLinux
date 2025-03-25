@@ -226,7 +226,7 @@ function AtmUI:onLoginMenu()
             self.loadingMessage:setName(currentPassword)
             
             local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            local letterDelay = elapsed + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
+            local letterDelay = elapsed + ZombRand(2, math.ceil((-((getPlayer():getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()

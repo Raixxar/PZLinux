@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v0.1.11-rc5"
+local PZLinuxVersion = "v.0.1.11-rc6"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -485,7 +485,7 @@ function linuxMenu_AddContext(player, context, worldobjects)
                         if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
                             
                             if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
-                            if obj:getModData().statusCondition < 50 then
+                            if obj:getModData().statusCondition < 15 then
                                 context:addOption("Fix the computer", obj, linuxMenu_OnRepare, player, x, y, z, sprite:getName())
                             end
 
