@@ -5,13 +5,17 @@
 - Prevent a trade by burning a cargo.
 - New contract: drop off a vehicle in a specific area.
 - New contract: deliver drinking water.
-- Contracts tab should be organized and divided into city.
 - New contract: get document from doctor or other.
 - Chance to found a money with quest.
 - keep their money in a physical medium. 
 - Player can create a request basket of our own choice and wait for it to be presented to us.
 - Quest progression concept
 - Make the mod compatible with controllers.
+
+# Update v.0.1.11-rc6
+- Fix the LUA errors in the ATM interface when the password is entered.
+- Fix an issue where the computer couldn't be repaired even if you had the electronic parts in your inventory.
+- Computer repair now only appears below 15%, whereas it was at 50% before.
   
 # Update v.0.1.11-rc5
 - Change of the formula for the player's typing speed on the computer keyboard; it is now more realistic.
