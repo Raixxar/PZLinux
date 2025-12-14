@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v.0.1.11-rc6"
+local PZLinuxVersion = "v.0.1.12"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -107,6 +107,19 @@ function linuxUI:initialise()
     self.internetButton:initialise()
     self.topBar:addChild(self.internetButton)
 
+    self.mailLabel = ISLabel:new(self.width * 0.71, self.height * 0.155, self.height * 0.05, "[@]", 0, 1, 0, 1, UIFont.Small, true)
+    self.mailLabel:setVisible(false)
+    self.mailLabel:initialise()
+    self.topBar:addChild(self.mailLabel)
+
+    local md = getPlayer():getModData()
+    md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
+    for _, mail in ipairs(md.pzlinux.mails.inbox) do
+        if mail.read == false then
+            self.mailLabel:setVisible(true)
+        end
+    end
+
     self.darkWebButton = ISButton:new(self.width * 0.20, self.height * 0.26, self.width * 0.05, self.height * 0.025, "DARK WEB", self, self.onDarkWeb)
     self.darkWebButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.darkWebButton.textColor = {r=0, g=1, b=0, a=1}
@@ -163,7 +176,15 @@ function linuxUI:initialise()
     self.bettingButton:initialise()
     self.topBar:addChild(self.bettingButton)
 
-    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
+    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "MAIL", self, self.onMail)
+    self.mailButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.mailButton.textColor = {r=0, g=1, b=0, a=1}
+    self.mailButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.mailButton:setVisible(false)
+    self.mailButton:initialise()
+    self.topBar:addChild(self.mailButton)
+
+    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
     self.conditionButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -287,6 +308,7 @@ function linuxUI:onPrompt()
     self.contractsButton:setVisible(true)
     self.requestButton:setVisible(true)
     self.bettingButton:setVisible(true)
+    self.mailButton:setVisible(true)
     self.conditionButton:setVisible(true)
 end
 
@@ -395,13 +417,26 @@ function linuxUI:onBetting()
     end
 end
 
+function linuxUI:onMail()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+        
+        local modData = getPlayer():getModData()
+        modData.PZLinuxUIOpenMenu = 10
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
 function linuxUI:onCondition()
     self.promptLabel:setVisible(false)
     self.helpLabel:setVisible(false)
     self:onClose()
     
     local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 10
+    modData.PZLinuxUIOpenMenu = 20
 end
 
 function linuxUI:onConnect()

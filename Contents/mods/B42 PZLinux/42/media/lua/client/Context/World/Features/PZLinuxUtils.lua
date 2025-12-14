@@ -63,18 +63,6 @@ function generatePseudo(playerName)
     return "<" .. reversedName .. "> "
 end
 
-function generateUsername()
-    local prefixes = {"Xx", "Dark", "Neo", "Cyber", "Red", "Blue", "Fire", "Frost", "Shadow", "Ghost"}
-    local suffixes = {"99", "77", "Pro", "X", "V2", "Elite", "Bot", "Z", "Master", "King"}
-    local middle = {"_", ".", ""}
-
-    local name = prefixes[ZombRand(1, #prefixes + 1)] ..
-                 middle[ZombRand(1, #middle + 1)] ..
-                 suffixes[ZombRand(1, #suffixes + 1)]
-    
-    return name
-end
-
 function bagContainsCorpse(bag)
     if not bag then return false end
     local inv = bag:getInventory()
@@ -212,3 +200,22 @@ function PZLinuxUseFuel()
     end
 end
 Events.EveryOneMinute.Add(PZLinuxUseFuel)
+
+function PZLinuxUtils_waitSeconds(minS, maxS, sfxMul, selfRef)
+    local mul = sfxMul or 1
+    local start = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+    local delay = start + ZombRand(minS, maxS) * mul
+
+    local elapsed = start
+    while elapsed < delay do
+        if selfRef and selfRef.isClosing then return false end
+        coroutine.yield()
+        elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+    end
+    return true
+end
+
+function PZLinuxPrettifyName(name)
+    if not name then return "" end
+    return name:gsub("(%l)(%u)", "%1 %2")
+end

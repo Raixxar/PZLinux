@@ -315,7 +315,7 @@ function bettingUI:runRace()
 
     self:updateRaceDisplay()
     self:delayFunction(function() self:runRace() end, 20)
-    getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 0.2))
+    getPlayer():getStats():add(CharacterStat.BOREDOM, -2)
 end
 
 function bettingUI:updateRaceDisplay()
@@ -373,22 +373,22 @@ function bettingUI:declareWinner(winnerId, winner)
         getSoundManager():PlayWorldSound("sold", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
         if tonumber(self.amountInput:getText()) >= 5000 then
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
-            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.2))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -10)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.5)
         elseif tonumber(self.amountInput:getText()) >= 1000 then
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
-            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.1)
         else
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 5))
-            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.05))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -2)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.05)
         end
     else
         if tonumber(self.amountInput:getText()) >= 5000 then
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.min(100, getPlayer():getBodyDamage():getUnhappynessLevel() + 20))
-            getPlayer():getStats():setStress(math.min(1, getPlayer():getStats():getStress() + 0.2))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -10)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.5)
         elseif tonumber(self.amountInput:getText()) >= 1000 then
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.min(100, getPlayer():getBodyDamage():getUnhappynessLevel() + 10))
-            getPlayer():getStats():setStress(math.min(1, getPlayer():getStats():getStress() + 0.1))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.1)
         end
     end
 end

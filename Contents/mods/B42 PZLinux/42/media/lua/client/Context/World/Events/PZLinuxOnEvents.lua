@@ -1,9 +1,9 @@
 local function OnZombieDead(zombie)
     local modData = getPlayer():getModData()
-    modData.PZLinuxOnZombieDead = (modData.PZLinuxOnZombieDead or 0) + 1
+    modData.PZLinuxOnZombieDead = (tonumber(modData.PZLinuxOnZombieDead) or 0) + 1
 
     if modData.PZLinuxContractKillZombie == 1 then
-        if tonumber(modData.PZLinuxOnZombieDead) >= tonumber(modData.PZLinuxOnZombieToKill) and not modData.PZLinuxActiveContract == 10 then
+        if tonumber(modData.PZLinuxOnZombieDead) >= tonumber(modData.PZLinuxOnZombieToKill) and modData.PZLinuxActiveContract ~= 10 then
             modData.PZLinuxActiveContract = 9
         end
     end
@@ -113,9 +113,15 @@ local function contractCompletedPlaySound(player)
         HaloTextHelper.addGoodText(getPlayer(), "Contract completed");
         modData.PZLinuxActiveContract = 10
 
-        getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 10))
-        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
-        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+        getPlayer():getStats():add(CharacterStat.BOREDOM, -5)
+        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
+        getPlayer():getStats():add(CharacterStat.STRESS, -2)
+
+        md.pzlinux = md.pzlinux or {}
+        md.pzlinux.player = md.pzlinux.player or {}
+        md.pzlinux.player.reputation = md.pzlinux.player.reputation or 1
+        md.pzlinux.player.reputation = md.pzlinux.player.reputation + 10
+        HaloTextHelper.addGoodText(getPlayer(), "Reputation increased to +10");
     end
 end
 Events.OnTick.Add(contractCompletedPlaySound)
@@ -127,3 +133,71 @@ Events.OnGameStart.Add(function()
         modData.PZLinuxContractManhunt = 1
     end
 end)
+
+local function scheduleNextMail(player)
+    local MONTH_HOURS = 30 * 24
+    local md = player:getModData()
+    local now = getGameTime():getWorldAgeHours()
+    md.pzlinux.player.reputation = tonumber(md.pzlinux.player.reputation) or 1
+    local playerRep = math.min(md.pzlinux.player.reputation, 200)
+    local delay = ZombRand(48, MONTH_HOURS + 1 - playerRep)
+    if not md.pzlinux.mails.nextat or md.pzlinux.mails.nextat <= now then
+        md.pzlinux.mails.nextat = now + delay
+    end
+end
+
+local function formatMailDate()
+    local gt = getGameTime()
+    local y  = gt:getYear()
+    local m  = gt:getMonth() + 1
+    local d  = gt:getDay()
+    local h  = gt:getHour()
+    local mi = gt:getMinutes()
+    return string.format("%04d-%02d-%02d %02d:%02d", y, m, d, h, mi)
+end
+
+local function popRandomMail(player)
+    local md = player:getModData()
+    md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
+    md.pzlinux.mails.nextid = md.pzlinux.mails.nextid or 1
+    
+
+    local idx = ZombRand(#PZLinuxMailTable) + 1
+    local m = PZLinuxMailTable[idx]
+    table.insert(md.pzlinux.mails.inbox, 1, {id = md.pzlinux.mails.nextid, name = m.baseName, type = m.type, date = formatMailDate(), from = PZLinuxGenerateRandomName(), read = false})
+    md.pzlinux.mails.nextid = md.pzlinux.mails.nextid + 1
+end
+
+local debug = true
+local function mailTick()
+    local player = getPlayer()
+    if not player then return end
+    local md = player:getModData()
+    local now = getGameTime():getWorldAgeHours()
+
+    md.pzlinux = md.pzlinux or {}
+    md.pzlinux.player = md.pzlinux.player or {}
+    md.pzlinux.player.reputation = tonumber(md.pzlinux.player.reputation) or 1
+    md.pzlinux.player.reputation = math.max(1, md.pzlinux.player.reputation - 0.001)
+
+    md.pzlinux.mails = md.pzlinux.mails or {}
+    if not md.pzlinux.mails.nextat then
+        scheduleNextMail(player)
+        return
+    end
+
+    if now >= md.pzlinux.mails.nextat then
+        popRandomMail(player)
+        scheduleNextMail(player)
+    end
+    print("DEBUG PZLINUX - Get World Age Hours " .. now)
+    print("DEBUG PZLINUX - Next Mail in INBOX " .. md.pzlinux.mails.nextat)
+    print("DEBUG PZLINUX - Player Reputation " .. md.pzlinux.player.reputation)
+
+    if debug == true then
+        md.pzlinux.mails.nextat = 145
+        debug = false
+    end
+
+end
+Events.EveryTenMinutes.Add(mailTick)

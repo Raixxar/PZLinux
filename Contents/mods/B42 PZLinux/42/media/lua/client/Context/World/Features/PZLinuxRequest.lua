@@ -11,20 +11,20 @@ local PZLinuxOnItemRequest = {}
 local PZLinuxOnItemRequestCount = 0
 
 local PZLinuxRequestsItemTable = {
-    [1] = { baseName = "Canned food", price = 50 },
-    [2] = { baseName = "Meat", price = 80 },
+    [1] = { baseName = "Canned food", price = 500 },
+    [2] = { baseName = "Meat", price = 600 },
     [3] = { baseName = "Fish", price = 1200 },
-    [4] = { baseName = "Fruits", price = 60 },
-    [5] = { baseName = "Vegetables", price = 60 },
-    [6] = { baseName = "Pickled food", price = 70 },
-    [7] = { baseName = "Drink", price = 30 },
-    [8] = { baseName = "Book", price = 150 },
-    [9] = { baseName = "Car", price = 15000 },
-    [10] = { baseName = "Repairing", price = 40 },
-    [11] = { baseName = "Materials", price = 100 },
-    [12] = { baseName = "Paint bucket", price = 500 },
-    [13] = { baseName = "Electronics", price = 80 },
-    [14] = { baseName = "Seeds", price = 20 },
+    [4] = { baseName = "Fruits", price = 350 },
+    [5] = { baseName = "Vegetables", price = 350 },
+    [6] = { baseName = "Pickled food", price = 700 },
+    [7] = { baseName = "Drink", price = 800 },
+    [8] = { baseName = "Book", price = 200 },
+    [9] = { baseName = "Car", price = 40000 },
+    [10] = { baseName = "Repairing", price = 400 },
+    [11] = { baseName = "Materials", price = 400 },
+    [12] = { baseName = "Paint bucket", price = 300 },
+    [13] = { baseName = "Electronics", price = 400 },
+    [14] = { baseName = "Seeds", price = 150 },
 }
 
 local contracts = {}
@@ -32,7 +32,10 @@ for i = 1, #PZLinuxRequestsItemTable do
     local getHourTimePriceValue = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)   
     itemName = PZLinuxRequestsItemTable[i].baseName
     local SandboxVarsPurchasePriceMultiplier = SandboxVars.PZLinux.PurchasePriceMultiplier or 1.0
-    itemPrice = math.ceil(ZombRand(PZLinuxRequestsItemTable[i].price, PZLinuxRequestsItemTable[i].price * getHourTimePriceValue)) * SandboxVarsPurchasePriceMultiplier
+    local baseInflated = PZLinuxRequestsItemTable[i].price * getHourTimePriceValue
+    local minPrice = math.ceil(baseInflated * 0.8)   -- 80%
+    local maxPrice = math.ceil(baseInflated * 1.5)   -- 150%
+    itemPrice = math.ceil(ZombRand(minPrice, maxPrice + 1 )) * SandboxVarsPurchasePriceMultiplier
     contracts[i] = { id = i, name = itemName, price = itemPrice, icon = iconTex }
 end
 
@@ -293,19 +296,20 @@ function requestUI:onContractId(contract)
 
         local sleepSFX = 1
         if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
-
-        message = "You are alone in this IRC channel."
-        self.loadingMessage:setName(message)
-
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-        while elapsed < letterDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
 
+        message = "You are alone in this IRC channel. Wait for participants..."
+        self.loadingMessage:setName(message)
+        if not PZLinuxUtils_waitSeconds(200, 1000, sleepSFX, self) then return end
         if self.isClosing then return end
+
+        local waitUser = ZombRand(1, 4)
+        if waitUser == 1 then      
+            message = "Nobody has joined the channel"
+            self.loadingMessage:setName(message)
+            return
+        end
 
         local globalVolume = getCore():getOptionSoundVolume() / 50
         getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
@@ -667,10 +671,11 @@ function requestUI:onContractId(contract)
         local deltaWeight = 10
         local locationName = ""
         local weightPackage = 0
+        local maxItems = ZombRand(4,7)
         local itemCount = 0
         local batch = { items = {} }
 
-        while weightPackage <= 9.5 do
+        while weightPackage <= 9.5 and itemCount < maxItems do
             local itemIdRand = ZombRand(1, #quests + 1)
             local quest = quests[itemIdRand]
             if quest then
@@ -725,14 +730,6 @@ function requestUI:onContractId(contract)
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount .. " " .. produceName
             self.loadingMessage:setName(message)
-
-            local playerObj = getPlayer()
-            local inv = playerObj:getInventory()
-            local note = inv:AddItem('Base.Note')
-            note:setName("Car purchased")
-            note:setCanBeWrite(true)
-            note:addPage(1, produceName .. "\n" .. locationName)
-
         else
             getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Yes, I can sell you ".. PZLinuxOnItemRequestCount
@@ -791,7 +788,13 @@ function requestUI:onContractId(contract)
     
     self.updateCoroutineFunc = function()
         if self.terminalCoroutine and coroutine.status(self.terminalCoroutine) ~= "dead" then
-            coroutine.resume(self.terminalCoroutine)
+            local ok, err = coroutine.resume(self.terminalCoroutine)
+            if not ok then
+                print("PZLinux coroutine error:", tostring(err))
+                Events.OnTick.Remove(self.updateCoroutineFunc)
+                self.updateCoroutineFunc = nil
+                self.terminalCoroutine = nil
+            end
         else
             Events.OnTick.Remove(self.updateCoroutineFunc)
             self.updateCoroutineFunc = nil

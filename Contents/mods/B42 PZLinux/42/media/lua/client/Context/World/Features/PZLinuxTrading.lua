@@ -403,11 +403,11 @@ function tradingUI:onTradingSold(code, lastPrice, quantityTrading)
         self.tradingWalletLabel:setName("Wallet Balance " .. newQuantity .. " " .. code)
 
         if lastPrice >= 5000 then
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
-            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.2))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -10)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.5)
         elseif lastPrice >= 1000 then
-            getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
-            getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
+            getPlayer():getStats():add(CharacterStat.STRESS, -0.1)
         end
     end
 end

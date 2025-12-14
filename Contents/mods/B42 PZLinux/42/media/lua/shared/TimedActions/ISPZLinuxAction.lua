@@ -59,13 +59,18 @@ function ISPZLinuxAction:update()
     end
 
     if modData.PZLinuxUIOpenMenu == 10 then
+        self.ui = mailMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
+
+    if modData.PZLinuxUIOpenMenu == 20 then
         self.ui = conditionMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
     end
 end
 
 function ISPZLinuxAction:start()
-    self.item:getModData().statusCondition = self.item:getModData().statusCondition - ZombRand(1,5)
+    self.item:getModData().statusCondition = self.item:getModData().statusCondition - (ZombRand(1,5)/2)
     self.character:getModData().PZLinuxUIOpenMenu = 0
     self.character:getModData().PZLinuxIsPowered = 1
     self.ui = linuxMenu_ShowUI(self.character)
