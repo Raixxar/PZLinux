@@ -108,7 +108,63 @@ function MailBoxUI:onSendTakePackage()
             end
         end
 
+        local isComputerMoveable = false
+        if item and instanceof(item, "Moveable") then
+            local ws = item:getWorldSprite()
+            if ws == "appliances_com_01_72"
+            or ws == "appliances_com_01_73"
+            or ws == "appliances_com_01_74"
+            or ws == "appliances_com_01_75" then
+                isComputerMoveable = true
+            end
+        end
+
+        local isFridgeMoveable = false
+        if item and instanceof(item, "Moveable") then
+            local ws = item:getWorldSprite()
+            if ws == "appliances_refrigeration_01_0"
+            or ws == "appliances_refrigeration_01_1"
+            or ws == "appliances_refrigeration_01_2"
+            or ws == "appliances_refrigeration_01_3"
+            or ws == "appliances_refrigeration_01_4"
+            or ws == "appliances_refrigeration_01_5"
+            or ws == "appliances_refrigeration_01_6"
+            or ws == "appliances_refrigeration_01_7"
+            or ws == "appliances_refrigeration_01_8"
+            or ws == "appliances_refrigeration_01_9"
+            or ws == "appliances_refrigeration_01_10"
+            or ws == "appliances_refrigeration_01_11"
+            or ws == "appliances_refrigeration_01_12"
+            or ws == "appliances_refrigeration_01_13"
+            or ws == "appliances_refrigeration_01_14"
+            or ws == "appliances_refrigeration_01_15"
+            or ws == "appliances_refrigeration_01_22"
+            or ws == "appliances_refrigeration_01_23"
+            or ws == "appliances_refrigeration_01_24"
+            or ws == "appliances_refrigeration_01_25"
+            or ws == "appliances_refrigeration_01_26"
+            or ws == "appliances_refrigeration_01_27"
+            or ws == "appliances_refrigeration_01_28"
+            or ws == "appliances_refrigeration_01_29"
+            or ws == "appliances_refrigeration_01_30"
+            or ws == "appliances_refrigeration_01_31"
+            or ws == "appliances_refrigeration_01_32"
+            or ws == "appliances_refrigeration_01_33"
+            or ws == "appliances_refrigeration_01_34"
+            or ws == "appliances_refrigeration_01_35"
+            or ws == "appliances_refrigeration_01_36"
+            or ws == "appliances_refrigeration_01_37"
+            or ws == "appliances_refrigeration_01_40"
+            or ws == "appliances_refrigeration_01_41"
+            or ws == "appliances_refrigeration_01_42"
+            or ws == "appliances_refrigeration_01_43" then
+                isFridgeMoveable = true
+            end
+        end
+
         if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
+        or (isComputerMoveable and modData.PZLinuxContractSendComputer == 1)
+        or (isFridgeMoveable and modData.PZLinuxContractSendFridge == 1)
         or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractManhunt == 3)
         or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
         or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3)
@@ -127,6 +183,13 @@ function MailBoxUI:onSendTakePackage()
     end
 
     if modData.PZLinuxActiveRequest == 1 and modData.PZLinuxOnItemRequest then
+        local chanceLostOrder = ZombRand(1, 101)
+        if chanceLostOrder <= 10 then
+            modData.PZLinuxActiveRequest = 0
+            modData.PZLinuxOnItemRequest = {}
+            HaloTextHelper.addBadText(getPlayer(), "Your order has been stolen during delivery!");
+            return
+        end
         while #modData.PZLinuxOnItemRequest > 0 do
             local inv = getPlayer():getInventory()
             local parcel = inv:AddItem('Base.Parcel_Large')
@@ -146,6 +209,13 @@ function MailBoxUI:onSendTakePackage()
     end
 
     if modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLinuxOnItemBuyOnDarkWebStatus then
+        local chanceLostOrder = ZombRand(1, 101)
+        if chanceLostOrder <= 10 then
+            modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
+            modData.PZLinuxOnItemBuyOnDarkWeb = {}
+            HaloTextHelper.addBadText(getPlayer(), "Your order has been stolen during delivery!");
+            return
+        end
         while #modData.PZLinuxOnItemBuyOnDarkWeb > 0 do
             local inv = getPlayer():getInventory()
             local parcel = inv:AddItem('Base.Parcel_Large')

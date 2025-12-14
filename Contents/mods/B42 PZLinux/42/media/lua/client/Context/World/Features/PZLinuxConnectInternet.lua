@@ -106,7 +106,7 @@ function connectUI:startConnect()
     local player = getPlayer()
     local playerUsername = ""
     if player then
-        playerUsername = string.lower(player:getUsername()) .. "@hotmail.com"
+        playerUsername = string.lower(player:getUsername()) .. "@aol.com"
     end
     local loginBase = "login: "
     local currentLogin = loginBase

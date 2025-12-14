@@ -361,11 +361,22 @@ function hackingUI:onHack()
             entry:setText(text:sub(1, 4))
         end
     end
+
     self.topBar:addChild(self.promptCommand)
+
+    self.hackAutoButton = ISButton:new(self.width * 0.20, self.height * 0.46, self.width * 0.05, self.height * 0.025, "AUTO", self, self.hackAuto)
+    self.hackAutoButton:setVisible(true)
+    self.hackAutoButton:initialise()
+    self.topBar:addChild(self.hackAutoButton)
 end
 
 function hackingUI:onCommandEnter()
-    getPlayer():getBodyDamage():setBoredomLevel(math.max(0, getPlayer():getBodyDamage():getBoredomLevel() - 2))
+    -- local p = getSpecificPlayer(0) or getPlayer()
+    -- local s = p and p.getStats and p:getStats() or nil
+    -- print("DBG stats=", s, "getBoredom=", s and s.getBoredom, "setBoredom=", s and s.setBoredom,
+    --     "getBoredomLevel=", s and s.getBoredomLevel, "setBoredomLevel=", s and s.setBoredomLevel)
+    
+    getPlayer():getStats():add(CharacterStat.BOREDOM, -2)
     local globalVolume = getCore():getOptionSoundVolume() / 50
     hackingUI.triesCount = 0
     hackingUI.maxTries = 7
@@ -477,6 +488,7 @@ end
 function hackingUI:hackTransfert()
     hackZombieName = nil
     self.hackTransfertButton:setVisible(false)
+    self.titleLabelAuto:setVisible(false)
     self.titleLabelPlayer = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Bank balance: $" .. tostring(loadAtmBalance()) .. " < $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
     self.titleLabelPlayer.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabelPlayer:setVisible(true)
@@ -484,14 +496,14 @@ function hackingUI:hackTransfert()
     self.topBar:addChild(self.titleLabelPlayer)
 
     if hackingBankBalance >= 5000 then
-        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 20))
-        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.2))
+        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -10)
+        getPlayer():getStats():add(CharacterStat.STRESS, -0.5)
     elseif hackingBankBalance >= 1000 then
-        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 10))
-        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.1))
+        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
+        getPlayer():getStats():add(CharacterStat.STRESS, -0.1)
     else
-        getPlayer():getBodyDamage():setUnhappynessLevel(math.max(0, getPlayer():getBodyDamage():getUnhappynessLevel() - 5))
-        getPlayer():getStats():setStress(math.max(0, getPlayer():getStats():getStress() - 0.05))
+        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -2)
+        getPlayer():getStats():add(CharacterStat.STRESS, -0.05)
     end
 
     self.hackingCoroutine = coroutine.create(function()
@@ -540,6 +552,47 @@ function hackingUI:hackTransfert()
     end
 
     Events.OnTick.Add(self.updateCoroutineFunc)
+end
+
+function hackingUI:hackAuto()
+    local player = getPlayer()
+    if not player then return end
+
+    local inventory = player:getInventory()
+    local items = inventory:getItems()
+    local removedCount = 0
+
+    for i = items:size() - 1, 0, -1 do
+        local item = items:get(i)
+        if item then
+            local fullType = item:getFullType()
+            if fullType == "Base.IDcard"
+            or fullType == "Base.IDcard_Stolen"
+            or fullType == "Base.IDcard_Female"
+            or fullType == "Base.IDcard_Male"
+            or fullType == "Base.CreditCard"
+            or fullType == "Base.CreditCard_Stolen" then
+                inventory:Remove(item)
+                removedCount = removedCount + 1
+            end
+        end
+    end
+    if removedCount == 0 then
+        print("hackAuto: no cards found")
+        return
+    end
+    local valuePerCard = ZombRand(300, 501) * (player:getPerkLevel(Perks.Electricity) + 1)
+    local hackingBankBalance = valuePerCard * removedCount
+    self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFERT", self, self.hackTransfert)
+    self.hackTransfertButton:setVisible(true)
+    self.hackTransfertButton:initialise()
+    self.topBar:addChild(self.hackTransfertButton)
+
+    self.titleLabelAuto = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Total money hacked. $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
+    self.titleLabelAuto.backgroundColor = {r=0, g=0, b=0, a=0}
+    self.titleLabelAuto:setVisible(true)
+    self.titleLabelAuto:initialise()
+    self.topBar:addChild(self.titleLabelAuto)
 end
 
 function hackingUI:hackNext()

@@ -1,16 +1,56 @@
-- Adding skill books components to the requests.
 - Add options to the mod to make it sandbox.
-- Data retrieval via a computer triggers an alarm (chance) and spawns a horde.
-- Radio station activates a message that attracts zombies to the area.
 - Prevent a trade by burning a cargo.
-- New contract: drop off a vehicle in a specific area.
-- New contract: deliver drinking water.
-- New contract: get document from doctor or other.
-- Chance to found a money with quest.
-- keep their money in a physical medium. 
 - Player can create a request basket of our own choice and wait for it to be presented to us.
-- Quest progression concept
 - Make the mod compatible with controllers.
+- Add a place where players can drop resources freely, with the quantity determining the amount of money.
+- write the lore
+- trading: add raw items for trading, price depending month
+- chance credit card hack, only with atm with 3 chances.
+- new contract: Radio station activates a message that attracts zombies to the area.
+- new contract: add contract with timer for items
+- new contract: retrieval via a computer triggers an alarm (chance) and spawns a horde.
+- new contract: Delivering 200L of fuel / Water..
+- new contract: Add money to ATM
+- New contract: drop off a vehicle in a specific area. 
+- Quest: Obtainaing rare item, Big Spiffo or gas mask
+- Quest: get document from doctor or other.
+- Quest: search courier died, keep the package.
+- Quest: deliver drinking water.
+- Quest: Delivering Animals
+- Change limit for ATM to $50k
+- add radio connection for PZlinux.
+- Add message for first connexion after PZLinux.
+- Add a satellite to get internet on the computer.
+- Add contract with extra stress (spawn hord) but also loot that can temporarily boost survival
+- Add Reputation for each contract with lvl (rep = difficulty lvl * 2)
+
+# Update v.0.1.12
+- In contracts where you need to find a briefcase, you now have a chance to find money and a weapon inside.
+- Reduced resale prices for all items on the dark web.
+- Added all skill magazines to the dark web.
+- Added all skill books to the dark web.
+- Reduced computer wear by half, meaning it will need to be repaired less often.
+- Fixed a bug where the contract requiring zombie kills was not counting kills toward contract completion.
+- Reduced the reward for the contract requiring a live zombie capture.
+- Removed the note from the inventory when the player requests a car.
+- Add Random sold for new player.
+- Increased prices for requests to adjust the mod’s balance.
+- The reward for the contract requiring zombie kills is now based on the number of zombies to eliminate. A higher kill requirement will now grant more money.
+- Added a chance that no one connects to the room for the player’s requests.
+- Increased the waiting time for player requests.
+- Your parcels now have a 10% chance of being stolen when you try to retrieve them from the mailbox.
+- You can now find electronic equipment on the dark web.
+- It is now possible to hack multiple cards at the same time using the auto function. However, this feature provides lower rewards.
+- Due to major changes in the Lua API, the mod is no longer compatible with versions prior to B42.13.
+- New contract: To complete it, you must send a computer.
+- New contract: To complete it, you must send a fridge.
+- Added a reputation system to the game. The more contracts you successfully complete, the higher your reputation, unlocking various advantages.
+- Added a mail interface: other survivors can now contact you for special missions.
+- Added missions requiring ammunition delivery in mail UI
+- Added missions requiring medical supply delivery in mail UI
+- Changed the email domain from Hotmail to AOL, which is more consistent with the 1994 time period.
+- Added ads and spam emails.
+- Added a notification for new emails on the PZLinux desktop.
 
 # Update v.0.1.11-rc6
 - Fix the LUA errors in the ATM interface when the password is entered.

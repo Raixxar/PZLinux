@@ -33,7 +33,9 @@ function loadAtmBalance()
     if bankBalance then
         return bankBalance
     else
-        return 0
+        bankBalance = ZombRand(500, 4000)
+        player:getModData().PZLinuxBank = bankBalance
+        return bankBalance
     end
 end
 
