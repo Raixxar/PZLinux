@@ -364,7 +364,7 @@ function hackingUI:onHack()
 
     self.topBar:addChild(self.promptCommand)
 
-    self.hackAutoButton = ISButton:new(self.width * 0.20, self.height * 0.46, self.width * 0.05, self.height * 0.025, "AUTO", self, self.hackAuto)
+    self.hackAutoButton = ISButton:new(self.width * 0.41, self.height * 0.419, self.width * 0.05, self.height * 0.025, "AUTO", self, self.hackAuto)
     self.hackAutoButton:setVisible(true)
     self.hackAutoButton:initialise()
     self.topBar:addChild(self.hackAutoButton)
@@ -413,6 +413,7 @@ function hackingUI:onCommandEnter()
         self.hackTransfertButton:initialise()
         self.topBar:addChild(self.hackTransfertButton)
 
+        self.hackAutoButton:setVisible(false)
         self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
         self.hackNextButton:setVisible(true)
         self.hackNextButton:initialise()
@@ -424,6 +425,7 @@ function hackingUI:onCommandEnter()
     self.triesCount = self.triesCount + 1
     if self.triesCount > 5 then
         self.hackLabelAttempts:setName("Account locked")
+        self.hackAutoButton:setVisible(false)
         getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
         self.hackNextButton:setVisible(true)
@@ -488,7 +490,6 @@ end
 function hackingUI:hackTransfert()
     hackZombieName = nil
     self.hackTransfertButton:setVisible(false)
-    self.titleLabelAuto:setVisible(false)
     self.titleLabelPlayer = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Bank balance: $" .. tostring(loadAtmBalance()) .. " < $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
     self.titleLabelPlayer.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabelPlayer:setVisible(true)
@@ -581,14 +582,18 @@ function hackingUI:hackAuto()
         print("hackAuto: no cards found")
         return
     end
-    local valuePerCard = ZombRand(300, 501) * (player:getPerkLevel(Perks.Electricity) + 1)
-    local hackingBankBalance = valuePerCard * removedCount
+
+    if removedCount > 1 then
+        local valuePerCard = ZombRand(300, 501) * (player:getPerkLevel(Perks.Electricity) + 1)
+        hackingBankBalance = valuePerCard * removedCount
+    end
+
     self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFERT", self, self.hackTransfert)
     self.hackTransfertButton:setVisible(true)
     self.hackTransfertButton:initialise()
     self.topBar:addChild(self.hackTransfertButton)
 
-    self.titleLabelAuto = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Total money hacked. $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
+    self.titleLabelAuto = ISLabel:new(self.width * 0.20, self.height * 0.45, self.height * 0.025,"Total money hacked. $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
     self.titleLabelAuto.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabelAuto:setVisible(true)
     self.titleLabelAuto:initialise()

@@ -265,7 +265,7 @@ function contractsUI:initialise()
 
         -- DEBUG LINE CONTRACT ID
         -- contractButton.contractId = contract.id
-        contractButton.contractId = 12
+        contractButton.contractId = contract.id
 
         contractButton.contractPosition = i
         contractButton:setVisible(true)
