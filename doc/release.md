@@ -24,6 +24,10 @@
 - Add contract with extra stress (spawn hord) but also loot that can temporarily boost survival
 - Add Reputation for each contract with lvl (rep = difficulty lvl * 2)
 
+# Update v.0.1.12-rc1
+- Fixes an issue where the contract interface was offering only a single contract type.
+- 
+
 # Update v.0.1.12
 - In contracts where you need to find a briefcase, you now have a chance to find money and a weapon inside.
 - Reduced resale prices for all items on the dark web.
