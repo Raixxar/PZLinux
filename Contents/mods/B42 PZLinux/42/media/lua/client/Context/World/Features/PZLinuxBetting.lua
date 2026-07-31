@@ -92,6 +92,13 @@ local function PZLinuxBettingTextWidth(text)
     return math.max(8, string.len(tostring(text or "")) * 7)
 end
 
+local function PZLinuxBettingShortText(text, maxLength)
+    text = tostring(text or "")
+    maxLength = tonumber(maxLength) or 34
+    if string.len(text) <= maxLength then return text end
+    return string.sub(text, 1, maxLength - 3) .. "..."
+end
+
 local function PZLinuxBettingAddDisplayControl(ui, controls, control)
     control:initialise()
     ui.topBar:addChild(control)
@@ -483,10 +490,15 @@ function PZLinuxBettingUI:showPokerState(result)
     self.pokerSession = result
     self:updateBalanceLabel(result.balance)
 
-    local title = string.format("%s $%d/$%d - %s", PZLinuxGetText("IGUI_PZLinux_Betting_PokerTable"), result.smallBlind or 0, result.bigBlind or 0, tostring(result.phase or ""))
-    self:addPokerControl(ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.023, title, 0, 1, 0, 1, UIFont.Small, true))
+    local leftX = self.width * 0.20
+    local cardX = self.width * 0.22
+    local rightX = self.width * 0.55
+    local rowStep = self.height * 0.022
 
-    PZLinuxBettingAddCardLine(self, self.pokerControls, self.width * 0.20, self.height * 0.255, PZLinuxGetText("IGUI_PZLinux_Betting_PokerBoard") .. " ", result.community)
+    local title = string.format("%s $%d/$%d - %s", PZLinuxGetText("IGUI_PZLinux_Betting_PokerTable"), result.smallBlind or 0, result.bigBlind or 0, tostring(result.phase or ""))
+    self:addPokerControl(ISLabel:new(leftX, self.height * 0.22, self.height * 0.023, title, 0, 1, 0, 1, UIFont.Small, true))
+
+    PZLinuxBettingAddCardLine(self, self.pokerControls, leftX, self.height * 0.255, PZLinuxGetText("IGUI_PZLinux_Betting_PokerBoard") .. " ", result.community)
 
     local yOffset = self.height * 0.30
     for _, seat in ipairs(result.seats or {}) do
@@ -495,25 +507,26 @@ function PZLinuxBettingUI:showPokerState(result)
         local cards = PZLinuxBettingPokerCards(seat.cards)
         if not seat.isHuman and not result.showdown then cards = "?? | ??" end
         local text = string.format("%d %s %-14s %-5s $%d / bet $%d  %s", seat.index, flags, seat.name, PZLinuxBettingPokerStateLabel(seat), seat.stack or 0, seat.bet or 0, stars)
-        self:addPokerControl(ISLabel:new(self.width * 0.20, yOffset, self.height * 0.019, text, 0, 1, 0, 1, UIFont.Small, true))
-        yOffset = yOffset + self.height * 0.023
+        self:addPokerControl(ISLabel:new(leftX, yOffset, self.height * 0.018, PZLinuxBettingShortText(text, 46), 0, 1, 0, 1, UIFont.Small, true))
+        yOffset = yOffset + rowStep
         if seat.isHuman or seat.hand then
             if seat.isHuman or result.showdown then
-                PZLinuxBettingAddCardLine(self, self.pokerControls, self.width * 0.22, yOffset, "   ", seat.cards, seat.hand and (" - " .. seat.hand) or "")
+                PZLinuxBettingAddCardLine(self, self.pokerControls, cardX, yOffset, "   ", seat.cards, seat.hand and (" - " .. seat.hand) or "")
             else
                 local cardText = "   " .. cards .. (seat.hand and (" - " .. seat.hand) or "")
-                self:addPokerControl(ISLabel:new(self.width * 0.22, yOffset, self.height * 0.019, cardText, 1, 1, 0, 1, UIFont.Small, true))
+                self:addPokerControl(ISLabel:new(cardX, yOffset, self.height * 0.018, cardText, 1, 1, 0, 1, UIFont.Small, true))
             end
-            yOffset = yOffset + self.height * 0.023
+            yOffset = yOffset + rowStep
         end
     end
 
-    local recent = {}
-    for index = 1, math.min(4, #(result.history or {})) do
-        table.insert(recent, result.history[index])
+    self:addPokerControl(ISLabel:new(rightX, self.height * 0.22, self.height * 0.023, "LOG", 1, 1, 0, 1, UIFont.Small, true))
+    local historyY = self.height * 0.255
+    for index = 1, math.min(8, #(result.history or {})) do
+        local historyText = PZLinuxBettingShortText(result.history[index], 31)
+        self:addPokerControl(ISLabel:new(rightX, historyY, self.height * 0.018, historyText, 0.8, 1, 0.8, 1, UIFont.Small, true))
+        historyY = historyY + rowStep
     end
-    local historyText = table.concat(recent, "\n")
-    self:addPokerControl(ISLabel:new(self.width * 0.20, self.height * 0.520, self.height * 0.018, historyText, 0.8, 1, 0.8, 1, UIFont.Small, true))
 
     local actions = result.legalActions or {}
     self.pokerActionY = self.height * 0.642
