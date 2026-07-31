@@ -23,11 +23,17 @@ PZLinuxTestAssert(applyBlock:find('eventName == "zombieKilled".-server_event_onl
 PZLinuxTestAssert(applyBlock:find('eventName == "clearCargo".-server_event_only'),
     "cargo cleanup must not be client-triggerable")
 
-for _, eventName in ipairs({ "startProtect", "finishProtect", "pickupPackage", "takeCargo", "decapitate", "blood", "capture" }) do
+for _, eventName in ipairs({ "startProtect", "finishProtect", "takeCargo", "decapitate", "blood", "capture" }) do
     local branch = applyBlock:match('eventName == "' .. eventName .. '"(.-)elseif')
         or applyBlock:match('eventName == "' .. eventName .. '"(.-)else')
     PZLinuxTestAssert(branch and branch:find("args%.target"), eventName .. " must resolve a real world target")
 end
+
+local pickupBranch = applyBlock:match('eventName == "pickupPackage"(.-)elseif')
+PZLinuxTestAssert(pickupBranch and pickupBranch:find("PZLinuxIsPlayerNearPosition"),
+    "package pickup must validate the server-side player position")
+PZLinuxTestAssert(not pickupBranch:find("args%.target"),
+    "package pickup must not depend on an arbitrary client-selected world object")
 
 local requestBlock = variables:match("function PZLinuxRequestContractWorldEvent.-\nend\n\nfunction PZLinuxRequestContractsBoard")
 PZLinuxTestAssert(requestBlock ~= nil, "could not inspect world-event request")

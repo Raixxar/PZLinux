@@ -7,12 +7,12 @@ function ISTakeThePackageAction:isValid()
 end
 
 function ISTakeThePackageAction:waitToStart()
-    self.character:faceThisObject(self.item)
-	return self.character:shouldBeTurning()
+    if not self.character then return false end
+    return false
 end
 
 function ISTakeThePackageAction:update()
-    self.character:faceThisObject(self.item)
+    if not self.character then return end
 end
 
 function ISTakeThePackageAction:start()
@@ -28,9 +28,7 @@ function ISTakeThePackageAction:stop()
 end
 
 function ISTakeThePackageAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "pickupPackage", {
-        target = PZLinuxGetWorldObjectReference(self.item),
-    }, function(result)
+    PZLinuxRequestContractWorldEvent(self.character, "pickupPackage", {}, function(result)
         if result and result.ok then
             HaloTextHelper.addGoodText(self.character, "Drop the contract case in a mailbox")
         else
@@ -41,12 +39,11 @@ function ISTakeThePackageAction:perform()
     ISBaseTimedAction.perform(self)
 end
 
-function ISTakeThePackageAction:new(character, item)
+function ISTakeThePackageAction:new(character)
     local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
-    o.item = item
     o.stopOnWalk = true
     o.maxTime = 250
     return o

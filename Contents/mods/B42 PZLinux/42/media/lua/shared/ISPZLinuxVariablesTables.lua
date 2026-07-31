@@ -2626,8 +2626,9 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     elseif eventName == "pickupPackage" then
         local record, recordError = usePlayerRecord(2, "accepted", "in_progress")
         if recordError then return reject(recordError) end
-        local _, targetError = PZLinuxContractsValidateCanonicalInteraction(playerObj, record, args.target, 2)
-        if targetError then return reject(targetError) end
+        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 5) then
+            return reject("too_far_from_contract")
+        end
         if not PZLinuxContractsGiveContractCase(playerObj, record.id) then return reject("item_creation_failed") end
         record.status = "objective_taken"
     elseif eventName == "takeCargo" then

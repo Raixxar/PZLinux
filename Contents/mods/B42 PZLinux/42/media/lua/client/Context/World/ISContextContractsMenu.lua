@@ -15,8 +15,13 @@ function completeContractMenu_AddContext(player, context, worldobjects)
             and tonumber(worldRecord.contractId) == 2
             and PZLinuxContractsIsRecordStatus(worldRecord, "accepted", "in_progress"))
 
-    if packageReady
-    or modData.PZLinuxContractCargo == 2
+    local playerSquare = playerObj:getSquare()
+    if packageReady and playerSquare and targetX and targetY and targetZ
+    and isNearTarget(playerSquare:getX(), playerSquare:getY(), playerSquare:getZ(), targetX, targetY, targetZ) then
+        context:addOption("Take the package of the contract", nil, completeContractMenu_OnUse, player)
+    end
+
+    if modData.PZLinuxContractCargo == 2
     or modData.PZLinuxContractProtect == 1
     or modData.PZLinuxContractProtect == 3 then
         for _, obj in ipairs(worldobjects) do
@@ -31,7 +36,6 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                         break
                     end
                     if targetX and targetY and targetZ and isNearTarget(x, y, z, targetX, targetY, targetZ) then
-                        if packageReady then context:addOption("Take the package of the contract", obj, completeContractMenu_OnUse, player, x, y, z); break end
                         if modData.PZLinuxContractCargo == 2 then context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z); break end
                         if modData.PZLinuxContractProtect == 1 then context:addOption("Protect the building", obj, completeContractMenu_OnProtect, player, x, y, z); break end
                         if modData.PZLinuxContractProtect == 3 then context:addOption("Tag the sector as clear", obj, completeContractMenu_OnProtect, player, x, y, z); break end
@@ -88,18 +92,10 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function completeContractMenu_OnUse(obj, player,  x, y, z)
+function completeContractMenu_OnUse(_obj, player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return end
-
-    local playerSquare = playerObj:getSquare()
-    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
-        local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z)
-        if freeSquare then
-            ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
-        end
-    end
-    ISTimedActionQueue.add(ISTakeThePackageAction:new(playerObj, obj))
+    ISTimedActionQueue.add(ISTakeThePackageAction:new(playerObj))
 end
 
 function completeContractMenu_OnCut(body, player, x, y, z)
