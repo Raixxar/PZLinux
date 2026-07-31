@@ -264,6 +264,16 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
         sessions.blackjack = nil
     end
 
+    local race = sessions.race
+    if race and not PZLinux.raceSessions[playerKey] then
+        local amount = PZLinuxNormalizeMoney(race.amount)
+        if amount > 0 then
+            local credit = PZLinuxApplyBankCredit(playerObj, amount, "rollback-zombie-race", race.requestId)
+            applied.race = credit.amount or amount
+        end
+        sessions.race = nil
+    end
+
     local hacking = sessions.hacking
     if hacking and not PZLinux.hackingSessions[playerKey] then
         local inventory = playerObj:getInventory()
@@ -290,7 +300,7 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
         sessions.poker = nil
     end
 
-    if applied.blackjack or applied.hackingCards or applied.poker then
+    if applied.blackjack or applied.race or applied.hackingCards or applied.poker then
         PZLinuxTransmitPlayerModData(playerObj)
     end
 
@@ -854,6 +864,12 @@ function PZLinuxRequestBlackjackStand(player, callback)
 end
 
 function PZLinuxRaceCreateCard(player, requestId)
+    local playerKey = PZLinuxGetPlayerKey(player)
+    local activeSession = PZLinux.raceSessions[playerKey]
+    if activeSession and activeSession.status == "running" then
+        return { ok = false, error = "race_in_progress", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
     local pool = {}
     for _, runner in ipairs(PZLinuxRaceRunnerPool) do
         table.insert(pool, { name = runner.name, rating = ZombRand(runner.rating, runner.maxRating + 1) })
@@ -870,7 +886,7 @@ function PZLinuxRaceCreateCard(player, requestId)
     end
 
     local session = { requestId = requestId, runners = runners }
-    PZLinux.raceSessions[PZLinuxGetPlayerKey(player)] = session
+    PZLinux.raceSessions[playerKey] = session
 
     return { ok = true, requestId = requestId, runners = runners, balance = PZLinuxLoadBankBalance(player) }
 end
@@ -930,22 +946,65 @@ function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
     local payout = 0
     if winnerId == selectedRunner then
         payout = amount * (tonumber(winner.rating) or 2)
-        PZLinuxApplyBankCredit(player, payout, "zombie-race", requestId)
     end
 
-    PZLinux.raceSessions[PZLinuxGetPlayerKey(player)] = nil
+    session.raceId = tostring(requestId or PZLinuxNextRequestId("race"))
+    session.requestId = requestId
+    session.selectedRunner = selectedRunner
+    session.amount = amount
+    session.previousBalance = debit.previousBalance
+    session.winnerId = winnerId
+    session.payout = payout
+    session.outcome = payout > 0 and "win" or "lose"
+    session.status = "running"
+    PZLinuxRegisterInterruptedSession(player, "race", {
+        amount = amount,
+        requestId = requestId,
+    })
 
     return {
         ok = true,
         requestId = requestId,
+        raceId = session.raceId,
         selectedRunner = selectedRunner,
         amount = amount,
         previousBalance = debit.previousBalance,
-        balance = PZLinuxLoadBankBalance(player),
+        balance = debit.balance,
         runners = session.runners,
         winnerId = winnerId,
-        payout = payout,
-        outcome = payout > 0 and "win" or "lose",
+        status = session.status,
+    }
+end
+
+function PZLinuxRaceFinish(player, raceId, requestId)
+    local playerKey = PZLinuxGetPlayerKey(player)
+    local session = PZLinux.raceSessions[playerKey]
+    if not session or session.status ~= "running" then
+        return { ok = false, error = "no_race_in_progress", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+    if tostring(session.raceId) ~= tostring(raceId or "") then
+        return { ok = false, error = "invalid_race", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    session.status = "settled"
+    if session.payout > 0 then
+        PZLinuxApplyBankCredit(player, session.payout, "zombie-race", requestId)
+    end
+
+    PZLinuxClearInterruptedSession(player, "race")
+    PZLinux.raceSessions[playerKey] = nil
+    return {
+        ok = true,
+        requestId = requestId,
+        raceId = session.raceId,
+        selectedRunner = session.selectedRunner,
+        amount = session.amount,
+        previousBalance = session.previousBalance,
+        balance = PZLinuxLoadBankBalance(player),
+        winnerId = session.winnerId,
+        payout = session.payout,
+        outcome = session.outcome,
+        status = session.status,
     }
 end
 
@@ -966,6 +1025,16 @@ function PZLinuxRequestRaceStart(player, selectedRunner, amount, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxRaceStart(player, selectedRunner, amount, requestId))
+    return requestId
+end
+
+function PZLinuxRequestRaceFinish(player, raceId, callback)
+    local requestId = PZLinuxNextRequestId("race-finish")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxRaceFinish", { requestId = requestId, raceId = raceId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRaceFinish(player, raceId, requestId))
     return requestId
 end
 
@@ -1009,6 +1078,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxBlackjackState"
         or command == "PZLinuxRaceCardResult"
         or command == "PZLinuxRaceStartResult"
+        or command == "PZLinuxRaceFinishResult"
         or command == "PZLinuxPokerState"
         or command == "PZLinuxDarkWebOffersResult"
         or command == "PZLinuxDarkWebBuyResult"

@@ -145,6 +145,12 @@ local function PZLinuxServerRaceStart(player, args)
     end)
 end
 
+local function PZLinuxServerRaceFinish(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxRaceFinish", args, "PZLinuxRaceFinishResult", function()
+        return PZLinuxRaceFinish(player, args and args.raceId, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerPokerStart(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxPokerStart", args, "PZLinuxPokerState", function()
         return PZLinuxPokerCreateSession(player, args and args.lobbyId, args and args.buyIn, args and args.requestId)
@@ -342,6 +348,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxBlackjackStand = PZLinuxServerBlackjackStand,
     PZLinuxRaceCard = PZLinuxServerRaceCard,
     PZLinuxRaceStart = PZLinuxServerRaceStart,
+    PZLinuxRaceFinish = PZLinuxServerRaceFinish,
     PZLinuxPokerStart = PZLinuxServerPokerStart,
     PZLinuxPokerAction = PZLinuxServerPokerAction,
     PZLinuxPokerCashOut = PZLinuxServerPokerCashOut,

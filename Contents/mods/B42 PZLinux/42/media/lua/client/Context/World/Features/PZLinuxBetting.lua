@@ -238,6 +238,7 @@ function PZLinuxBettingUI:new(x, y, width, height, player)
     o.gameButtons = {}
     o.raceControls = {}
     o.zombieIcons = {}
+    o.raceSettlementCallbacks = {}
     o.blackjackControls = {}
     o.blackjackCardControls = {}
     o.pokerControls = {}
@@ -624,6 +625,10 @@ function PZLinuxBettingUI:showRaceCard(result)
         return
     end
 
+    self.raceResult = nil
+    self.raceSettlement = nil
+    self.raceSettlementInProgress = false
+    self.raceSettlementCallbacks = {}
     self.selectedZombies = result.runners or {}
     self:updateBalanceLabel(result.balance)
 
@@ -631,7 +636,7 @@ function PZLinuxBettingUI:showRaceCard(result)
     self.zombieIcons = {}
     local yOffset = self.height * 0.25
     local zombieTexture = getTexture(PZLINUX_BETTING_ZOMBIE_TEXTURE)
-    local iconSize = math.max(12, math.floor(self.height * 0.022))
+    local iconSize = math.max(18, math.floor(self.height * 0.028))
     for index, zomb in ipairs(self.selectedZombies) do
         local labelText = string.format("%d. %s - %d/1", index, zomb.name, zomb.rating)
         if zombieTexture then
@@ -808,14 +813,49 @@ function PZLinuxBettingUI:declareWinner(_winnerId, winner)
     self.topBar:addChild(self.winnerLabel)
     table.insert(self.raceControls, self.winnerLabel)
 
-    self:updateBalanceLabel(self.raceResult.balance)
+    self:requestRaceSettlement(function(result)
+        if not result or not result.ok or self.isClosing then return end
+        self:updateBalanceLabel(result.balance)
 
-    local playerObj = PZLinuxBettingGetPlayer(self)
-    PZLinuxBettingApplyOutcomeMood(playerObj, self.raceResult.amount, self.raceResult.previousBalance, self.raceResult.payout, self.raceResult.outcome)
+        local playerObj = PZLinuxBettingGetPlayer(self)
+        PZLinuxBettingApplyOutcomeMood(playerObj, result.amount, result.previousBalance, result.payout, result.outcome)
+        if result.outcome == "win" then
+            PZLinuxBettingPlaySound(self, "sold")
+        end
+    end)
+end
 
-    if self.raceResult.outcome == "win" then
-        PZLinuxBettingPlaySound(self, "sold")
+function PZLinuxBettingUI:requestRaceSettlement(callback)
+    callback = callback or function() end
+    if self.raceSettlement then
+        callback(self.raceSettlement)
+        return
     end
+    if not self.raceResult or not self.raceResult.raceId then
+        callback(nil)
+        return
+    end
+
+    table.insert(self.raceSettlementCallbacks, callback)
+    if self.raceSettlementInProgress then return end
+    self.raceSettlementInProgress = true
+
+    PZLinuxRequestRaceFinish(self.player, self.raceResult.raceId, function(result)
+        self.raceSettlementInProgress = false
+        if result and result.ok then
+            self.raceSettlement = result
+            self.raceResult.balance = result.balance
+            self.raceResult.payout = result.payout
+            self.raceResult.outcome = result.outcome
+            self.raceResult.status = result.status
+        end
+
+        local callbacks = self.raceSettlementCallbacks
+        self.raceSettlementCallbacks = {}
+        for _, settlementCallback in ipairs(callbacks) do
+            settlementCallback(result)
+        end
+    end)
 end
 
 function PZLinuxBettingUI:showBlackjackMenu()
@@ -1036,8 +1076,20 @@ function PZLinuxBettingUI:cashOutPokerBeforeClose(afterCashOut)
     end)
 end
 
+function PZLinuxBettingUI:settleRaceBeforeClose(afterSettlement)
+    self:requestRaceSettlement(function()
+        afterSettlement()
+    end)
+end
+
+function PZLinuxBettingUI:settleGamesBeforeClose(afterSettlement)
+    self:settleRaceBeforeClose(function()
+        self:cashOutPokerBeforeClose(afterSettlement)
+    end)
+end
+
 function PZLinuxBettingUI:onMinimize(_button)
-    self:cashOutPokerBeforeClose(function()
+    self:settleGamesBeforeClose(function()
         self.isClosing = true
         self:removeFromUIManager()
         local modData = PZLinuxBettingGetModData(self)
@@ -1048,7 +1100,7 @@ function PZLinuxBettingUI:onMinimize(_button)
 end
 
 function PZLinuxBettingUI:onMinimizeBack(_button)
-    self:cashOutPokerBeforeClose(function()
+    self:settleGamesBeforeClose(function()
         self.isClosing = true
         self:removeFromUIManager()
         local modData = PZLinuxBettingGetModData(self)
@@ -1059,7 +1111,7 @@ function PZLinuxBettingUI:onMinimizeBack(_button)
 end
 
 function PZLinuxBettingUI:onClose(_button)
-    self:cashOutPokerBeforeClose(function()
+    self:settleGamesBeforeClose(function()
         self.isClosing = true
         self:removeFromUIManager()
         local modData = PZLinuxBettingGetModData(self)
@@ -1070,7 +1122,7 @@ function PZLinuxBettingUI:onClose(_button)
 end
 
 function PZLinuxBettingUI:onCloseX(_button)
-    self:cashOutPokerBeforeClose(function()
+    self:settleGamesBeforeClose(function()
         self.isClosing = true
         local playerObj = PZLinuxBettingGetPlayer(self)
         if playerObj then
