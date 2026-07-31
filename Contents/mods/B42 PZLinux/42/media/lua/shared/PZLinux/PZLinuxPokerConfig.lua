@@ -4,7 +4,7 @@ PZLinux.Poker = PZLinux.Poker or {}
 PZLinux.Poker.SaveVersion = 1
 
 PZLinux.Poker.Config = PZLinux.Poker.Config or {
-    opponentCount = 6,
+    opponentCount = 5,
     minBuyInBigBlinds = 50,
     maxBuyInBigBlinds = 100,
     aiStackMinBigBlinds = 50,
