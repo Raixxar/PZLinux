@@ -7,7 +7,7 @@ PZLinux.Config.ATM = PZLinux.Config.ATM or {
 }
 
 PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
-    packageInteractionRadius = 10,
+    packageInteractionRadius = 5,
 }
 
 PZLinux.Config.UI = PZLinux.Config.UI or {

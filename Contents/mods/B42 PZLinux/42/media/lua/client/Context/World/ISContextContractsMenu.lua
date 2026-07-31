@@ -37,18 +37,45 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     local targetY = tonumber(modData.PZLinuxContractLocationY)
     local targetZ = tonumber(modData.PZLinuxContractLocationZ)
     local worldRecord = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
+    local hasOtherLocationObjective = tonumber(modData.PZLinuxContractManhunt) == 1
+        or tonumber(modData.PZLinuxContractManhunt) == 2
+        or tonumber(modData.PZLinuxContractCargo) == 1
+        or tonumber(modData.PZLinuxContractCargo) == 2
+        or tonumber(modData.PZLinuxContractProtect) == 1
+        or tonumber(modData.PZLinuxContractProtect) == 2
+        or tonumber(modData.PZLinuxContractProtect) == 3
+    local legacyPackageFallback = tonumber(modData.PZLinuxActiveContract) == 1
+        and targetX and targetX > 0 and targetY and targetY > 0
+        and not hasOtherLocationObjective
     local packageReady = modData.PZLinuxContractPickUp == 1
         or tonumber(modData.PZLinuxContractTypeId) == 2
+        or legacyPackageFallback
         or (worldRecord
             and tonumber(worldRecord.contractId) == 2
             and PZLinuxContractsIsRecordStatus(worldRecord, "accepted", "in_progress"))
 
     local playerSquare = playerObj:getSquare()
-    if packageReady and playerSquare and targetX and targetY and targetZ
-    and math.max(math.abs(playerSquare:getX() - targetX), math.abs(playerSquare:getY() - targetY))
-        <= (tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 10)
-    and playerSquare:getZ() == targetZ then
+    local packageRadius = tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 5
+    local packageDistance = playerSquare and targetX and targetY and math.max(
+        math.abs(playerSquare:getX() - targetX),
+        math.abs(playerSquare:getY() - targetY)
+    ) or math.huge
+    local packageSameZ = playerSquare and targetZ and playerSquare:getZ() == targetZ
+    if packageReady and packageDistance <= packageRadius and packageSameZ then
         context:addOption("Take the package of the contract", nil, completeContractMenu_OnUse, player)
+    elseif tonumber(modData.PZLinuxActiveContract) == 1 and packageDistance <= 100 then
+        print("[PZLinux Contracts Context] option missing"
+            .. " active=" .. tostring(modData.PZLinuxActiveContract)
+            .. " type=" .. tostring(modData.PZLinuxContractTypeId)
+            .. " pickup=" .. tostring(modData.PZLinuxContractPickUp)
+            .. " worldId=" .. tostring(modData.PZLinuxContractId)
+            .. " worldType=" .. tostring(worldRecord and worldRecord.contractId)
+            .. " worldStatus=" .. tostring(worldRecord and worldRecord.status)
+            .. " player=" .. tostring(playerSquare and playerSquare:getX()) .. "," .. tostring(playerSquare and playerSquare:getY()) .. "," .. tostring(playerSquare and playerSquare:getZ())
+            .. " target=" .. tostring(targetX) .. "," .. tostring(targetY) .. "," .. tostring(targetZ)
+            .. " distance=" .. tostring(packageDistance)
+            .. " radius=" .. tostring(packageRadius)
+            .. " sameZ=" .. tostring(packageSameZ))
     end
 
     if modData.PZLinuxContractCargo == 2

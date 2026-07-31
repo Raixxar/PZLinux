@@ -63,6 +63,9 @@ local PZLinuxBettingSuitTextures = {
     S = "media/ui/PZLinux/cards/suit_spade.png",
 }
 
+local PZLINUX_BETTING_ZOMBIE_TEXTURE = "media/ui/PZLinux/betting/zombie_runner.png"
+local PZLINUX_BETTING_RACE_DISTANCE = 130
+
 local function PZLinuxBettingParseCard(card)
     if not card or card.hidden then
         return "??", nil, true
@@ -234,6 +237,7 @@ function PZLinuxBettingUI:new(x, y, width, height, player)
     o.isDragging = false
     o.gameButtons = {}
     o.raceControls = {}
+    o.zombieIcons = {}
     o.blackjackControls = {}
     o.blackjackCardControls = {}
     o.pokerControls = {}
@@ -624,10 +628,21 @@ function PZLinuxBettingUI:showRaceCard(result)
     self:updateBalanceLabel(result.balance)
 
     self.zombieLabels = {}
+    self.zombieIcons = {}
     local yOffset = self.height * 0.25
+    local zombieTexture = getTexture(PZLINUX_BETTING_ZOMBIE_TEXTURE)
+    local iconSize = math.max(12, math.floor(self.height * 0.022))
     for index, zomb in ipairs(self.selectedZombies) do
         local labelText = string.format("%d. %s - %d/1", index, zomb.name, zomb.rating)
-        local label = ISLabel:new(self.width * 0.20, yOffset, self.height * 0.025, labelText, 0, 1, 0, 1, UIFont.Small, true)
+        if zombieTexture then
+            local icon = ISImage:new(self.width * 0.20, yOffset + 1, iconSize, iconSize, zombieTexture)
+            icon:initialise()
+            self.topBar:addChild(icon)
+            self.zombieIcons[index] = icon
+            table.insert(self.raceControls, icon)
+        end
+
+        local label = ISLabel:new(self.width * 0.235, yOffset, self.height * 0.025, labelText, 0, 1, 0, 1, UIFont.Small, true)
         label:initialise()
         self.topBar:addChild(label)
         table.insert(self.zombieLabels, label)
@@ -702,6 +717,9 @@ function PZLinuxBettingUI:startRaceFromResult(result)
     self.raceFinished = false
     for index, zomb in ipairs(self.selectedZombies) do
         self.raceProgress[index] = { zombie = zomb, position = -15 }
+        if self.zombieLabels[index] then
+            self.zombieLabels[index]:setName(string.format("%d. %s", index, zomb.name))
+        end
     end
 
     self:runRace()
@@ -729,7 +747,7 @@ function PZLinuxBettingUI:runRace()
 
     self:updateRaceDisplay()
 
-    if bestPosition >= 130 then
+    if bestPosition >= PZLINUX_BETTING_RACE_DISTANCE then
         self.raceFinished = true
         self:declareWinner(self.raceResult.winnerId, self.selectedZombies[self.raceResult.winnerId])
         return
@@ -758,8 +776,13 @@ function PZLinuxBettingUI:updateRaceDisplay()
         .. tostring(self.raceResult.selectedRunner)
 
     for rank, data in ipairs(sortedRunners) do
-        local progressText = string.format("%d. %s@C", data.id, string.rep(".", math.max(0, data.runner.position)))
-        self.zombieLabels[data.id]:setName(progressText)
+        local progress = math.max(0, math.min(PZLINUX_BETTING_RACE_DISTANCE, data.runner.position))
+        local icon = self.zombieIcons and self.zombieIcons[data.id]
+        if icon then
+            local trackStart = self.width * 0.42
+            local trackWidth = self.width * 0.30
+            icon:setX(trackStart + trackWidth * progress / PZLINUX_BETTING_RACE_DISTANCE)
+        end
         if rank <= 6 then
             labelText = labelText .. "\n[" .. rank .. "] -> " .. data.id .. ": " .. data.runner.zombie.name .. " odds: " .. data.runner.zombie.rating .. "/1"
         end

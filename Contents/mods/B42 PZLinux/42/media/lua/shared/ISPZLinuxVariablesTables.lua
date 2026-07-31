@@ -155,6 +155,19 @@ function PZLinuxSyncAddedInventoryItem(player, item)
     return true
 end
 
+function PZLinuxRemoveInventoryItem(player, item)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj or not item then return false end
+
+    local inventory = playerObj:getInventory()
+    if not inventory then return false end
+    if isServer and isServer() and sendRemoveItemFromContainer then
+        sendRemoveItemFromContainer(inventory, item)
+    end
+    inventory:Remove(item)
+    return true
+end
+
 function PZLinuxLoadBankBalance(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end
@@ -1673,6 +1686,40 @@ function PZLinuxContractsShuffle(list)
     end
 end
 
+local function PZLinuxContractsRecordBelongsToBoard(record, generatedHour)
+    local recordGeneratedHour = tonumber(record and record.boardGeneratedHour)
+    generatedHour = tonumber(generatedHour)
+    if not generatedHour then return false end
+    if recordGeneratedHour then return recordGeneratedHour == generatedHour end
+
+    local acceptedHour = tonumber(record and record.acceptedHour)
+    if not acceptedHour then return false end
+    if generatedHour == 168 and acceptedHour < 168 then return true end
+    return acceptedHour >= generatedHour - 1 and acceptedHour < generatedHour + 168
+end
+
+local function PZLinuxContractsPruneConsumedBoardContracts(boardData)
+    if type(boardData.contracts) ~= "table" or not boardData.generatedHour then return false end
+
+    local consumed = {}
+    local worldData = PZLinuxContractsGetWorldData()
+    for _, record in pairs(worldData.active or {}) do
+        if record.boardContractId and PZLinuxContractsRecordBelongsToBoard(record, boardData.generatedHour) then
+            consumed[tonumber(record.boardContractId)] = true
+        end
+    end
+
+    local changed = false
+    for index = #boardData.contracts, 1, -1 do
+        if consumed[tonumber(boardData.contracts[index].id)] then
+            table.remove(boardData.contracts, index)
+            changed = true
+        end
+    end
+    if changed then PZLinux.contractPreviews = {} end
+    return changed
+end
+
 function PZLinuxContractsGetBoardData()
     local boardData = ModData.getOrCreate("PZLinuxContractsBoard")
     local worldHour = getGameTime and math.ceil(getGameTime():getWorldAgeHours()) or 168
@@ -1702,6 +1749,11 @@ function PZLinuxContractsGetBoardData()
         end
     end
 
+    if PZLinuxContractsPruneConsumedBoardContracts(boardData)
+    and isServer and isServer() and ModData and ModData.transmit then
+        ModData.transmit("PZLinuxContractsBoard")
+    end
+
     return boardData
 end
 
@@ -1725,6 +1777,24 @@ function PZLinuxContractsFindBoardContract(contractId)
         end
     end
     return nil, boardData
+end
+
+local function PZLinuxContractsRemoveBoardContract(contractId, generatedHour)
+    contractId = tonumber(contractId)
+    local boardData = ModData.getOrCreate("PZLinuxContractsBoard")
+    if not contractId or tonumber(boardData.generatedHour) ~= tonumber(generatedHour) then return false end
+
+    for index = #(boardData.contracts or {}), 1, -1 do
+        if tonumber(boardData.contracts[index].id) == contractId then
+            table.remove(boardData.contracts, index)
+            PZLinux.contractPreviews = {}
+            if isServer and isServer() and ModData and ModData.transmit then
+                ModData.transmit("PZLinuxContractsBoard")
+            end
+            return true
+        end
+    end
+    return false
 end
 
 function PZLinuxContractsCopyPreview(preview, requestId, player)
@@ -1804,6 +1874,7 @@ function PZLinuxContractsCreateWorldContract(player, selectedContract, contractI
         id = worldId,
         contractId = tonumber(contractId),
         boardContractId = tonumber(selectedContract and selectedContract.id) or tonumber(contractId),
+        boardGeneratedHour = tonumber(mission.boardGeneratedHour) or 0,
         status = "accepted",
         acceptedBy = playerKey,
         owner = playerKey,
@@ -1892,6 +1963,17 @@ function PZLinuxContractsGetActiveState(player, requestId)
         worldContractId = worldData.byPlayer[playerKey]
         record = worldContractId and worldData.active[tostring(worldContractId)] or nil
     end
+    if record and (record.status == "completed" or record.status == "cancelled") then
+        if worldData.byPlayer[playerKey] == record.id then
+            worldData.byPlayer[playerKey] = nil
+            PZLinuxContractsTransmitWorldData()
+        end
+        if modData.PZLinuxContractId == record.id then
+            PZLinuxContractsClearState(modData)
+            PZLinuxTransmitPlayerModData(playerObj)
+        end
+        record = nil
+    end
     if record then PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record) end
 
     return {
@@ -1940,6 +2022,7 @@ function PZLinuxContractsMarkWorldContract(contractWorldId, status, player)
     local record = PZLinuxContractsGetWorldContract(contractWorldId)
     if not record then return nil end
 
+    local worldData = PZLinuxContractsGetWorldData()
     record.status = status or record.status
     if player then
         local playerKey = PZLinuxGetPlayerKey(player)
@@ -1952,6 +2035,9 @@ function PZLinuxContractsMarkWorldContract(contractWorldId, status, player)
             record.owner = playerKey
         end
         if status == "cancelled" then record.cancelledBy = playerKey end
+        if (status == "completed" or status == "cancelled") and worldData.byPlayer[playerKey] == record.id then
+            worldData.byPlayer[playerKey] = nil
+        end
     end
     record.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or record.updatedHour
     PZLinuxContractsTransmitWorldData()
@@ -2054,7 +2140,7 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
         return { ok = false, error = "contract_already_active", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local selectedContract = PZLinuxContractsFindBoardContract(contractId)
+    local selectedContract, boardData = PZLinuxContractsFindBoardContract(contractId)
     if not selectedContract then
         return { ok = false, error = "contract_not_available", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
@@ -2080,9 +2166,12 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
     PZLinuxContractsSetTypeFlags(modData, contractId)
 
     local worldRecord = PZLinuxContractsCreateWorldContract(playerObj, selectedContract, contractId, previewResult)
-    if worldRecord then
-        modData.PZLinuxContractId = worldRecord.id
+    if not worldRecord then
+        PZLinuxContractsClearState(modData)
+        return { ok = false, error = "contract_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
+    modData.PZLinuxContractId = worldRecord.id
+    PZLinuxContractsRemoveBoardContract(contractId, boardData.generatedHour)
 
     local cacheKey = PZLinuxGetPlayerKey(playerObj) .. ":" .. tostring(contractId)
     PZLinux.contractPreviews[cacheKey] = nil
@@ -2281,10 +2370,11 @@ function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
         local itemContractId = PZLinuxContractsGetEntityContractId(item)
         local sameWorldContract = not modData.PZLinuxContractId or modData.PZLinuxContractId == "" or not itemContractId or itemContractId == modData.PZLinuxContractId
         if sameWorldContract and PZLinuxContractsItemMatchesDelivery(item, modData, totalCountForContract) then
-            inventory:Remove(item)
-            removed = removed + 1
-            if tonumber(modData.PZLinuxContractInfoCount) and tonumber(modData.PZLinuxContractInfoCount) > 0 then
-                modData.PZLinuxContractInfoCount = math.max(0, tonumber(modData.PZLinuxContractInfoCount) - 1)
+            if PZLinuxRemoveInventoryItem(playerObj, item) then
+                removed = removed + 1
+                if tonumber(modData.PZLinuxContractInfoCount) and tonumber(modData.PZLinuxContractInfoCount) > 0 then
+                    modData.PZLinuxContractInfoCount = math.max(0, tonumber(modData.PZLinuxContractInfoCount) - 1)
+                end
             end
         end
     end
@@ -2679,7 +2769,7 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     elseif eventName == "pickupPackage" then
         local record, recordError = usePlayerRecord(2, "accepted", "in_progress")
         if recordError then return reject(recordError) end
-        local packageRadius = tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 10
+        local packageRadius = tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 5
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, packageRadius) then
             return reject("too_far_from_contract")
         end

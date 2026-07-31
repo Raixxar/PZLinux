@@ -86,6 +86,12 @@ PZLinuxTestAssert(requestBlock:find("local state = { requestId = requestId, cont
     "accept request must contain only requestId and contractId")
 PZLinuxTestAssert(acceptBlock:find("contractPickUp = modData%.PZLinuxContractPickUp"),
     "accept response must synchronize the package objective flag")
+PZLinuxTestAssert(acceptBlock:find("PZLinuxContractsRemoveBoardContract%(contractId, boardData%.generatedHour%)"),
+    "accepting a contract must consume its offer from the current server board")
+PZLinuxTestAssert(variables:find("boardGeneratedHour = tonumber%(mission%.boardGeneratedHour%) or 0"),
+    "world contracts must retain the board generation they came from")
+PZLinuxTestAssert(variables:find("PZLinuxContractsPruneConsumedBoardContracts%(boardData%)"),
+    "the board must prune offers already consumed during its current generation")
 
 local contextMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextContractsMenu.lua")
 PZLinuxTestAssert(contextMenu:find('tonumber%(worldRecord%.contractId%) == 2'),
@@ -94,6 +100,11 @@ PZLinuxTestAssert(contextMenu:find('PZLinuxContractsIsRecordStatus%(worldRecord,
     "package context menu must only recover an actionable persistent objective")
 PZLinuxTestAssert(variables:find('function PZLinuxContractsGetActiveState'),
     "server-authoritative active contract synchronization must exist")
+local syncBlock = variables:match("function PZLinuxContractsGetActiveState.-\nend\n\nfunction PZLinuxContractsSetTypeFlags")
+PZLinuxTestAssert(syncBlock and syncBlock:find('record.status == "completed"'),
+    "completed world-contract history must not be restored as an active player contract")
+PZLinuxTestAssert(syncBlock and syncBlock:find('record.status == "cancelled"'),
+    "cancelled world-contract history must not be restored as an active player contract")
 local linuxMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextLinuxMenu.lua")
 local closeBlock = linuxMenu:match("function linuxUI:onCloseX.-\nend")
 PZLinuxTestAssert(closeBlock and closeBlock:find("PZLinuxRequestContractSync"),
@@ -102,6 +113,10 @@ PZLinuxTestAssert(not contextMenu:find("Synchronize active contract"),
     "contract synchronization must not leak into the player context menu")
 PZLinuxTestAssert(contextMenu:find("PZLinuxContractsMaybeSyncContext"),
     "opening the contract context menu must perform a throttled silent resynchronization")
+PZLinuxTestAssert(contextMenu:find("legacyPackageFallback"),
+    "legacy package contracts must remain actionable when their client type flag is missing")
+PZLinuxTestAssert(contextMenu:find("%[PZLinux Contracts Context%] option missing"),
+    "missing package actions must emit actionable diagnostics")
 PZLinuxTestAssert(variables:find('command == "PZLinuxContractDepositResult"'),
     "mailbox deposit results must synchronize the next contract stage")
 
@@ -114,5 +129,13 @@ for _, helperName in ipairs({
     PZLinuxTestAssert(helperBlock and helperBlock:find("PZLinuxSyncAddedInventoryItem"),
         helperName .. " must synchronize server-created inventory items")
 end
+
+local depositBlock = variables:match("function PZLinuxContractsApplyDeposit.-\nend")
+PZLinuxTestAssert(depositBlock and depositBlock:find("PZLinuxRemoveInventoryItem"),
+    "mailbox deposits must synchronize removal of delivered contract items")
+PZLinuxTestAssert(variables:find("sendRemoveItemFromContainer%(inventory, item%)"),
+    "server inventory removals must be sent to the owning client")
+PZLinuxTestAssert(contextMenu:find("packageInteractionRadius%) or 5"),
+    "package context interactions must keep the five-tile fallback radius")
 
 print("PZLinux contract authority tests OK")
