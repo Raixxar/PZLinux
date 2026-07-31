@@ -26,7 +26,7 @@ function connectUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -34,7 +34,7 @@ function connectUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -45,9 +45,9 @@ function connectUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetPlayer(self.parent.player):getModData()
         modData.PZLinuxUIX = self.parent:getX()
         modData.PZLinuxUIY = self.parent:getY()
     end
@@ -60,7 +60,7 @@ function connectUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     if modData.PZLinuxUISFX == 0 then
         self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
         self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
@@ -99,11 +99,11 @@ end
 -- CONNECT TO INTERNET
 function connectUI:startConnect()
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    if self.isClosing or not getPlayer() then
+    if self.isClosing or not PZLinuxGetPlayer(self.player) then
         return
     end
 
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
     local playerUsername = ""
     if player then
         playerUsername = string.lower(player:getUsername()) .. "@aol.com"
@@ -162,7 +162,7 @@ function connectUI:startConnect()
             local randomSoundIndex = ZombRand(1, 10)
             local soundName = "typingKeyboard" .. randomSoundIndex
             getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            
+
             currentLogin = currentLogin .. string.sub(playerUsername, index, index)
             index = index + 1
             self.loadingMessage:setName(currentLogin)
@@ -226,29 +226,29 @@ function connectUI:startConnect()
 end
 
 -- LOGOUT
-function connectUI:onMinimize(button)
+function connectUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
-function connectUI:onClose(button)
+function connectUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
-function connectUI:onCloseX(button)
+function connectUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 
-function connectUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
+function connectUI:onSFXOn(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 0
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
@@ -260,8 +260,8 @@ function connectUI:onSFXOn(button)
     self.topBar:addChild(self.skipAnimationButton)
 end
 
-function connectUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
+function connectUI:onSFXOff(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 1
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
@@ -288,8 +288,8 @@ function connectMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
-    local modData = getPlayer():getModData()
+
+    local modData = PZLinuxGetPlayer(player):getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 

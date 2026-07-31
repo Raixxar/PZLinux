@@ -1,8 +1,13 @@
-function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
+function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, contractsCityId, typeText)
     return coroutine.create(function()
-        local modData = getPlayer():getModData()
+        if type(contractsCityId) == "function" and not typeText then
+            typeText = contractsCityId
+            contractsCityId = nil
+        end
+
+        local modData = PZLinuxGetPlayer(self.player):getModData()
         local globalVolume = getCore():getOptionSoundVolume() / 50
-        local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+        local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
         local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
         modData.PZLinuxOnReward = contractsCompanyReward[contract]
@@ -11,7 +16,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
 
         local sleepSFX = 1
         if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
-        print(contractsCityId[contract])
+        local contractCityId = type(contractsCityId) == "table" and contractsCityId[contract] or 1
 
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -25,7 +30,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
 
         message = sellerName .. "We are looking for a courier to retrieve a package."
         self.loadingMessage:setName(message)
-        
+
         letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
         while elapsed < letterDelay do
             if self.isClosing then return end
@@ -40,7 +45,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             self.loadingMessage:setName(message)
             self.typingMessage:setName("")
         end)
-        
+
         letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
         while elapsed < letterDelay do
             if self.isClosing then return end
@@ -51,7 +56,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
         if self.isClosing then return end
 
         local quests = {}
-        if contractsCityId[contract] == 1 then
+        if contractCityId == 1 then
             quests = {
                 [1] = { description = "In a house of Irvington, in a gray cabinet.", x = 2650, y = 13407, z = 0, city = "Irvington" },
                 [2] = { description = "At the Liquor Store of Irvington, in a green crate.", x = 2542, y = 14468, z = 0, city = "Irvington" },
@@ -63,7 +68,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 2 then
+        if contractCityId == 2 then
             quests = {
                 [1] = { description = "In the Metal Workshop of Ekron, in the trash outside.", x = 622, y = 9854, z = 0, city = "Ekron" },
                 [2] = { description = "In the Book Store of Ekron, in a library.", x = 451, y = 9794, z = 0, city = "Ekron" },
@@ -73,7 +78,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 3 then
+        if contractCityId == 3 then
             quests = {
                 [1] = { description = "In a house of Brandenburg, in the fridge.", x = 2471, y = 6390, z = 0, city = "Brandenburg" },
                 [2] = { description = "At the Police Station of Brandenburg, in the bathroom.", x = 2037 , y = 5975, z = 0, city = "Brandenburg" },
@@ -84,7 +89,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 4 then
+        if contractCityId == 4 then
             quests = {
                 [1] = { description = "In the Auto Repair Shop of Echo Creek, on the table inside.", x = 3676, y = 10893, z = 0, city = "Echo Creek" },
                 [2] = { description = "In the Church of Echo Creek, on the piano.", x = 3534, y = 11203, z = 0, city = "Echo Creek" },
@@ -92,13 +97,13 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 5 then
+        if contractCityId == 5 then
             quests = {
                 [1] = { description = "In a house, in the box.", x = 6575, y = 5533, z = 0, city = "Riverside" },
             }
         end
 
-        if contractsCityId[contract] == 6 then
+        if contractCityId == 6 then
             quests = {
                 [1] = { description = "In the Police Station of Fallas Lake, in an archive cabinet.", x = 7251, y = 8378, z = 0, city = "Fallas Lake" },
                 [2] = { description = "In the Bar of Fallas Lake, in a jukebox.", x = 7248, y = 8521, z = 0, city = "Fallas Lake" },
@@ -107,7 +112,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 7 then
+        if contractCityId == 7 then
             quests = {
                 [1] = { description = "In the police station of Rosewood, in a paper cabinet.", x = 8073, y = 11736, z = 0, city = "Rosewood" },
                 [2] = { description = "In the elementary school of Rosewood, in a school locker.", x = 8333, y = 11616, z = 0, city = "Rosewood" },
@@ -120,7 +125,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 8 then
+        if contractCityId == 8 then
             quests = {
                 [1] = { description = "At the church of March Ridge, in a library.", x = 10322, y = 12800, z = 0, city = "March Ridge" },
                 [2] = { description = "In the insurance office of March Ridge, in a paper box.", x = 10070, y = 12778, z = 0, city = "March Ridge" },
@@ -131,7 +136,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 9 then
+        if contractCityId == 9 then
             quests = {
                 [1] = { description = "At the Electrical Substation, in a gray cabinet.", x = 10380, y = 10061, z = 0, city = "Muldraugh" },
                 [2] = { description = "At Jays Chicken of Muldraugh, in a big trash outside.", x = 10627, y = 9564, z = 0, city = "Muldraugh" },
@@ -142,7 +147,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 10 then
+        if contractCityId == 10 then
             quests = {
                 [1] = { description = "At a house, in a fridge.", x = 11366, y = 7024, z = 0, city = "West Point" },
                 [2] = { description = "At the Mini Hotel of West Point, In the trash outside.", x = 12020, y = 6932, z = 0, city = "West Point" },
@@ -153,7 +158,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 11 then
+        if contractCityId == 11 then
             quests = {
                 [1] = { description = "In the Yummers of Valley Station, in a fridge.", x = 13581, y = 5744, z = 0, city = "Valley Station" },
                 [2] = { description = "In the Knox Bank of Valley Station, in a flower pot.", x = 13656, y = 5734, z = 0, city = "Valley Station" },
@@ -162,7 +167,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             }
         end
 
-        if contractsCityId[contract] == 12 then
+        if contractCityId == 12 then
             quests = {
                 [1] = { description = "In a house, in a box.", x = 12264, y = 3355, z = 0, city = "Louisville" },
                 [2] = { description = "In the repurposed building of Louisville, in a box.", x = 12436, y = 1420, z = 0, city = "Louisville" },
@@ -192,7 +197,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
             locationQuestTown = quest.city .. ":\n* " .. quest.description
         end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.loadingMessage:setName(message)
 
         letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -203,7 +208,7 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
         end
 
         if self.isClosing then return end
-        
+
         typeText(self.typingMessage, "What is the reward for this mission ?", function()
             message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
             self.loadingMessage:setName(message)
@@ -218,9 +223,9 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
         end
 
         if self.isClosing then return end
-        
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
         self.loadingMessage:setName(message)
 
         letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -247,9 +252,9 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
 
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
-        
+
         self.loadingMessage:setName(message)
 
         letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -261,9 +266,9 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
 
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = message .. "\n" .. sellerName .. "Deal ?"
-        
+
         self.loadingMessage:setName(message)
 
         self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -271,10 +276,10 @@ function PZLinux_Contract_RetrievePackage_CreateCoroutine(self, contract, contra
         self.yesButton:initialise()
         self.yesButton:instantiate()
         self.topBar:addChild(self.yesButton)
-        
+
         self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
         self.noButton:initialise()
         self.noButton:instantiate()
         self.topBar:addChild(self.noButton)
     end)
-end    
+end

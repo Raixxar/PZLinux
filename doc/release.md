@@ -1,32 +1,82 @@
-- Add options to the mod to make it sandbox.
-- Prevent a trade by burning a cargo.
-- Player can create a request basket of our own choice and wait for it to be presented to us.
-- Make the mod compatible with controllers.
-- Add a place where players can drop resources freely, with the quantity determining the amount of money.
-- write the lore
-- trading: add raw items for trading, price depending month
-- chance credit card hack, only with atm with 3 chances.
-- new contract: Radio station activates a message that attracts zombies to the area.
-- new contract: add contract with timer for items
-- new contract: retrieval via a computer triggers an alarm (chance) and spawns a horde.
-- new contract: Delivering 200L of fuel / Water..
-- new contract: Add money to ATM
-- New contract: drop off a vehicle in a specific area. 
-- Quest: Obtainaing rare item, Big Spiffo or gas mask
-- Quest: get document from doctor or other.
-- Quest: search courier died, keep the package.
-- Quest: deliver drinking water.
-- Quest: Delivering Animals
-- Change limit for ATM to $50k
-- add radio connection for PZlinux.
-- Add message for first connexion after PZLinux.
-- Add a satellite to get internet on the computer.
-- Add contract with extra stress (spawn hord) but also loot that can temporarily boost survival
-- Add Reputation for each contract with lvl (rep = difficulty lvl * 2)
+# Update v.1.0.0
+- Added a first B42.20.0 stable hardening pass for the 1.0.0 release.
+- Fixed ATM, mailbox and street mailbox timed actions receiving a missing world object.
+- Fixed timed actions and several UI paths using the wrong player object in local split-screen or MP contexts.
+- Added shared PZLinux player/modData helpers to reduce nil modData errors.
+- Fixed contract completion reputation update when the active contract reaches the completed state.
+- Fixed cargo cleanup state handling.
+- Removed forced mail debug timing and duplicate zombie spawn event registration.
+- Fixed dark web data issues caused by missing `Price` fields and invalid item ids.
+- Fixed dark web purchases creating empty mailbox parcels or awarding XP without a real purchase.
+- Fixed dark web quantity inputs staying hidden after search/filter refresh.
+- Fixed hacking manual input visibility, password debug logging, auto-hack single-card reward and attempt counter handling.
+- Fixed request UI debiting the displayed discounted total instead of the raw item price.
+- Fixed contract company price updates using the wrong hard-coded company index.
+- Fixed trading and wallet chart edge cases when all values are identical.
+- Added centralized mission location scaffolding in `ISPZLinuxVariablesTables.lua`.
+- Added finite ATM cash reserves stored on the ATM object. Each ATM starts with $10k-$50k on first use, displays its available cash and refuses withdrawals above its local reserve.
+- Added the first dedicated UI translation file and migrated ATM labels/messages to `IGUI_PZLinux_*` keys.
+- Added MP/economy, price balance and variables/translations/prefixes audit documents for the 1.0.0 migration.
+- Added local validation tools under `tools/` for static audit, Lua syntax/LuaCheck, PNG/OGG metadata checks and Project Zomboid console tailing.
+- Added local tools to list unprefixed global functions and hardcoded UI text candidates.
+- Added shared bank helpers and server commands for bank sync/debit, used by the new betting flow in MP while preserving local solo behavior.
+- Made ATM deposits and withdrawals server-authoritative in MP through prefixed `PZLinuxAtm*` commands: the server syncs the ATM state on open, validates the player balance, physical cash and ATM reserve, then applies inventory/bank/object mutations atomically before syncing the result back to the client.
+- Reworked online betting into a hub with Zombie Race and Blackjack.
+- Added Blackjack with a real 52-card deck, no duplicate cards, dealer draw rules, debit on deal and server-side payout resolution in MP.
+- Moved Zombie Race card generation, winner selection, debit and payout through PZLinux server commands in MP.
+- Added betting mood effects: boredom reduction while playing, stress from risky stakes and happiness/stress relief on meaningful wins.
+- Centralized ATM bank balance load/save through the shared PZLinux bank helpers.
+- Rebalanced the Dark Web economy with higher minimum prices for firearms, ammunition, explosives, books, rare magazines, generators, armor and strong melee weapons.
+- Increased Request base prices and capped the PlantScavenging request discount at 15%.
+- Reduced easy contract rewards while keeping dangerous high-tier contracts profitable.
+- Reduced Luacheck noise from 933 to 569 warnings, removing the W121/W113 risk class through safer helper naming and a Project Zomboid aware lint configuration.
+- Centralized direct `getPlayer()` usage behind the shared PZLinux player helpers; client UI/contract flows now use the player passed by PZ (`player` or `self.player`) instead of implicitly resolving player 0.
+- Reduced Luacheck noise to 328 warnings / 0 errors after the getPlayer MP compatibility pass.
+- Made Dark Web buy/sell flows server-authoritative in MP while preserving the solo fallback: the server now generates and validates buy offers, debits purchases, records pending deliveries, scans/removes sold inventory items, creates suspicious sale packages, delivers purchased parcels through mailboxes and credits completed sales.
+- Reduced Luacheck noise to 317 warnings / 0 errors after the Dark Web server-authoritative pass.
+- Made Trading server-authoritative in MP while preserving the solo fallback: the server initializes and ticks shared market prices, clients request a snapshot, and buy/sell orders are validated with server-side price, bank balance and wallet quantity before mutation.
+- Updated the Wallet UI to use the same Trading snapshot so portfolio values are based on the server market state.
+- Reduced Luacheck noise to 315 warnings / 0 errors after the Trading server-authoritative pass.
+- Added a server-backed Contracts board shared through `PZLinuxContractsBoard`, so clients receive the same weekly contract list in MP.
+- Moved contract accept, cancel, mailbox deposit and final payout/reputation through prefixed server commands while preserving solo fallback behavior.
+- Removed client-side contract payment, local company price mutation and local mailbox item-removal authority from the main contract flow.
+- Reduced Luacheck noise to 307 warnings / 0 errors after the Contracts server-authoritative pass.
+- Moved contract world events through `PZLinuxContractWorldEvent`: zombie kill progress, manhunt zombie spawn, cargo object spawn/removal, protect horde spawn, contract pickup/cargo/cut/blood/capture/protect timed-action outcomes now ask the server in MP while preserving solo fallback behavior.
+- Added server-side reputation helpers and server-side reputation decay for online MP players; contract completion reputation is now applied through the same shared helper.
+- Stopped MP clients from granting mail reputation locally; mail rewards still need a dedicated server-authoritative pass.
+- Reduced Luacheck noise to 280 warnings / 0 errors after the Contracts spawns/reputation server-authoritative pass.
+- Added a global Contracts world registry in `PZLinuxContractsWorld`: accepted contracts now receive a persistent `PZLinuxContractId`, track owner/deliveredBy/completedBy/status, and transmit their state through global ModData.
+- Tagged spawned cargo objects, manhunt/protect zombies when possible, and generated contract delivery items with `PZLinuxContractId`/objective metadata.
+- Made tagged delivery items claimable by any player at mailbox deposit, allowing stolen contract objectives to be completed by the player who actually delivers them.
+- Made tagged cargo objects expose the cargo context action to other players through the global contract record.
+- Made Request orders server-authoritative in MP while preserving solo fallback: the server validates requested items/vehicles, validates vehicle delivery locations, applies survival-time and SandboxVars pricing, debits the bank, stores pending deliveries and spawns requested vehicles.
+- Moved Request mailbox delivery and requested vehicle spawn out of direct client mutation and through prefixed `PZLinuxRequest*` server commands.
+- Fixed requested vehicle price delta display so expensive vehicles no longer appear cheaper than the server-side debit.
+- Reduced Luacheck status remains 280 warnings / 0 errors after the Request server-authoritative pass.
+- Made Mails server-authoritative in MP while preserving solo fallback: mail generation, accept, delete, delivery validation, requested item removal, reward gift creation and reputation reward now pass through prefixed `PZLinuxMail*` commands/helpers.
+- Mail missions now initialize item, quantity and location through shared mail helpers so the displayed email, map marker and server validation use the same data.
+- Removed direct client authority from mail completion rewards; the timed action now asks the server and only plays local feedback after confirmation.
+- Reduced Luacheck status to 279 warnings / 0 errors after the Mail server-authoritative pass.
+- Made Hacking server-authoritative in MP while preserving solo fallback: card consumption, hacked account generation, password attempts, account lock and bank transfer now pass through prefixed `PZLinuxHacking*` commands/helpers.
+- Removed direct client authority from hacking rewards/transfers; the client now only displays the terminal UI and applies local feedback after server confirmation.
+- Reduced Luacheck status to 263 warnings / 0 errors after the Hacking server-authoritative pass.
+- Split the first editable/static data blocks out of `ISPZLinuxVariablesTables.lua` into dedicated shared modules under `shared/PZLinux/`: config, mission locations, gambling data, request definitions, contract definitions and mail definitions.
+- Kept the MP-compatible runtime helpers in place while preparing the next extraction pass for Dark Web, Trading and economy formulas.
+- Moved the Dark Web item/price catalog into `shared/PZLinux/PZLinuxDarkWebData.lua` while keeping the existing `PZLinuxDarkWebItemsTable` API for compatibility.
+- Moved Dark Web runtime and MP/solo callback wrappers into `shared/PZLinux/PZLinuxDarkWeb.lua` while keeping the existing global helper API for UI/server compatibility.
+- Moved the Trading company catalog into `shared/PZLinux/PZLinuxTradingData.lua` while keeping the existing `PZLinuxTradingCompanyNameTable` API for compatibility.
+- Moved economy formulas into `shared/PZLinux/PZLinuxEconomy.lua`: money normalization, Dark Web prices, Request prices, Trading price movement, reputation delta and mail delay calculation.
+- Renamed the remaining unprefixed bank, Blackjack and race network commands/results to `PZLinuxBank*`, `PZLinuxBlackjack*` and `PZLinuxRace*`.
+- Capped the rare mail reward cash bonus from a possible `$1-$1999` roll to `$100-$300`.
+- Removed the W212 Luacheck category by marking intentionally unused Project Zomboid callback arguments with `_` names; full Luacheck is now 128 warnings / 0 errors.
+- Added generic server idempotency by player, command and `requestId`; duplicate network retries now return the cached result instead of replaying economic/world mutations.
+- Added restart rollback for temporary sessions: interrupted Blackjack sessions refund the stored bet, and interrupted Hacking sessions restore consumed cards when the player next reaches the server.
+- Added Texas Hold'em Poker to Online Betting: configurable lobbies, isolated solo/MP sessions per player, server-authoritative buy-in/actions/cashout, masked AI cards before showdown, AI opponents, side pots, hand evaluation tests and restart rollback of the current player stack.
+- Added `PZLinuxPokerStart`, `PZLinuxPokerAction` and `PZLinuxPokerCashOut` network commands with `PZLinuxPokerState` responses.
+- Added Poker configuration under `PZLinux.Poker.Config` for blinds, buy-in limits, AI stacks, opponent count, AI difficulty weights, bluff rates, decision delay and economic limits.
 
 # Update v.0.1.12-rc1
 - Fixes an issue where the contract interface was offering only a single contract type.
-- 
 
 # Update v.0.1.12
 - In contracts where you need to find a briefcase, you now have a chance to find money and a weapon inside.
@@ -60,7 +110,7 @@
 - Fix the LUA errors in the ATM interface when the password is entered.
 - Fix an issue where the computer couldn't be repaired even if you had the electronic parts in your inventory.
 - Computer repair now only appears below 15%, whereas it was at 50% before.
-  
+
 # Update v.0.1.11-rc5
 - Change of the formula for the player's typing speed on the computer keyboard; it is now more realistic.
 - Change of the mod sound volume; the sounds are slightly decreased.
@@ -90,9 +140,9 @@
 - Contracts now display the destination city when necessary.
 - Fixing the computer increases your electricity level.
 - Succeeding in hacking increases your electricity level.
-- Hacking a credit card now reduces your boredom. 
+- Hacking a credit card now reduces your boredom.
 - Successfully hacking for profit boosts your joy and lowers your stress.
-- Betting reduces your boredom. 
+- Betting reduces your boredom.
 - Losing an online bet, depending on the wager amount, decreases your joy and increases your stress, while winning boosts your joy and lowers your stress.
 - Selling stocks based on their value increases your happiness and reduces your stress.
 - Successfully completing a contract reduces your boredom and stress while increasing your happiness.
@@ -127,7 +177,7 @@
 - Fix the error message for mailboxes when sending a package.
 
 # Update v.0.1.10
-- Added multiple spawns for the quest to retrieve a package. 
+- Added multiple spawns for the quest to retrieve a package.
 - In a mission, each zombie killed = $5 bonus.
 - Fix a bug where the pagination did not disappear properly after selecting a query.
 - Fix a bug where the capture quest was not correctly reset upon completion.
@@ -164,7 +214,7 @@
 - PZLinux actions can now be accelerated over time.
 
 # Update v.0.1.8-rc2
-- Correct a variable error in contracts due to the v0.1.8-rc1 update. Sorry! 
+- Correct a variable error in contracts due to the v0.1.8-rc1 update. Sorry!
 
 # Update v.0.1.8-rc1
 - Added an SFX button to shorten the duration of mod animation messages.
@@ -225,7 +275,7 @@
 - The value of prices is now linked to your search skill. A higher skill results in lower purchase prices and higher selling prices.
 - You can now press enter in the search field to initiate your search.
 - Article updates on the dark web are now done every 24 hours, game time. You can find new articles every day in the game.
-- Add a trading interface, allows for trading in Project Zomboid. 
+- Add a trading interface, allows for trading in Project Zomboid.
 - A wallet interface has also been added to track your assets.
 - Code cleanup that should resolve button overlap issues.
 - For clarity, the mode name will switch to a new name: PZLinux.

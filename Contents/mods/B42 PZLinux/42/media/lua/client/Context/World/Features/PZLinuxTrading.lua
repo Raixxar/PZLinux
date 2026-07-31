@@ -1,11 +1,34 @@
--- Dark Web UI - by Raixxar 
+-- Dark Web UI - by Raixxar
 -- Updated : 25/01/25
 
 tradingUI = ISPanel:derive("tradingUI")
 
-local LAST_CONNECTION_TIME = 0
+local function PZLinuxTradingUIFindCompany(snapshot, code)
+    if not snapshot or type(snapshot.companies) ~= "table" then return nil end
+    for _, company in ipairs(snapshot.companies) do
+        if company.code == code then
+            return company
+        end
+    end
+    return nil
+end
 
-function tradingUI:loadModFile()
+local function PZLinuxTradingUIGetCompanyData(self, company)
+    local snapshotCompany = PZLinuxTradingUIFindCompany(self.tradingSnapshot, company.code)
+    if snapshotCompany then
+        return snapshotCompany.history or {}, snapshotCompany
+    end
+
+    local dataName = "PZLinuxTrading" .. company.code
+    local companyData = ModData.getOrCreate(dataName)
+    return companyData.dataName or {}, nil
+end
+
+local function PZLinuxTradingUIFormatChange(value)
+    return string.format("%.2f", tonumber(value) or 0)
+end
+
+function tradingUI.loadModFile(_self)
     local fileName = "PZLinux.ini"
     local file = getFileReader(fileName, false)
 
@@ -63,7 +86,7 @@ function tradingUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -71,7 +94,7 @@ function tradingUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -82,9 +105,9 @@ function tradingUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetPlayer(self.parent.player):getModData()
         modData.PZLinuxUIX = self.parent:getX()
         modData.PZLinuxUIY = self.parent:getY()
     end
@@ -103,7 +126,7 @@ function tradingUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     if modData.PZLinuxUISFX == 0 then
         self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
         self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
@@ -148,10 +171,23 @@ function tradingUI:initialise()
 end
 
 function tradingUI:startTrading()
-    PZLinuxTrading_initializePrices()
     self.titleLabel:setVisible(true)
     self.closeButton:setVisible(true)
     self.minimizeButton:setVisible(true)
+
+    if not self.tradingSnapshotReady then
+        PZLinuxRequestTradingSnapshot(self.player, function(result)
+            if not result or not result.ok then return end
+            if result.balance then
+                saveAtmBalance(result.balance, self.player)
+                self.titleLabel:setName("Bank Balance: $" .. tostring(result.balance))
+            end
+            self.tradingSnapshot = result.tradingSnapshot
+            self.tradingSnapshotReady = true
+            self:startTrading()
+        end)
+        return
+    end
 
     local y = 0
     self.tradingButtons = {}
@@ -161,7 +197,7 @@ function tradingUI:startTrading()
     scrollPanel.borderColor = {r=0, g=0, b=0, a=0}
     scrollPanel:initialise()
     scrollPanel:instantiate()
-    
+
     function scrollPanel:prerender()
         ISPanel.prerender(self)
         self:setStencilRect(0, 0, self.width, self.height)
@@ -170,7 +206,7 @@ function tradingUI:startTrading()
         self:clearStencilRect()
         ISPanel.postrender(self)
     end
-    
+
     scrollPanel:setScrollChildren(true)
     self:addChild(scrollPanel)
 
@@ -184,7 +220,7 @@ function tradingUI:startTrading()
         end
         return false
     end
-    
+
     local tradingMenuCodeLabel = ISButton:new(self.width * 0.20, self.height * 0.22, self.width * 0.12, self.height * 0.025, "CODE", self, self.onFilter)
     tradingMenuCodeLabel:initialise()
     self.topBar:addChild(tradingMenuCodeLabel)
@@ -221,21 +257,14 @@ function tradingUI:startTrading()
 
         -- % PRICE
 
-        local dataName = "PZLinuxTrading" .. company.code
-
-        if isServer() then
-            ModData.transmit(dataName)
-        end
-        
-        local companyData = ModData.getOrCreate(dataName)
-        local priceHistory = companyData.dataName or {}
-        local firstPrice = priceHistory[24]
+        local priceHistory, snapshotCompany = PZLinuxTradingUIGetCompanyData(self, company)
+        local firstPrice = priceHistory[24] or priceHistory[1] or company.price
         local lastIndex = #priceHistory
-        local lastPrice = priceHistory[lastIndex]
-        local secondLastPrice = priceHistory[47]
+        local lastPrice = priceHistory[lastIndex] or company.price
+        local secondLastPrice = priceHistory[lastIndex - 1] or lastPrice
 
         -- H1
-        local h1 = string.format("%.2f",((lastPrice - secondLastPrice) / secondLastPrice) * 100)
+        local h1 = PZLinuxTradingUIFormatChange(snapshotCompany and snapshotCompany.h1 or ((lastPrice - secondLastPrice) / math.max(1, secondLastPrice)) * 100)
         local h1Color = tonumber(math.ceil(h1))
         local priceH1Button = ISButton:new(self.width * 0.394, y, self.width * 0.116, self.height * 0.025, h1 .. "%", self, nil)
         if h1Color > 0 then
@@ -246,7 +275,7 @@ function tradingUI:startTrading()
         priceH1Button:initialise()
 
         -- D1
-        local d1 = string.format("%.2f",((lastPrice - firstPrice) / firstPrice) * 100)
+        local d1 = PZLinuxTradingUIFormatChange(snapshotCompany and snapshotCompany.d1 or ((lastPrice - firstPrice) / math.max(1, firstPrice)) * 100)
         local d1Color = tonumber(math.ceil(d1))
         local priceD1Button = ISButton:new(self.width * 0.508, y, self.width * 0.12, self.height * 0.025, d1 .. "%", self, nil)
         if d1Color > 0 then
@@ -255,7 +284,7 @@ function tradingUI:startTrading()
             priceD1Button.backgroundColor = {r=1, g=0, b=0, a=0.5}
         end
         priceD1Button:initialise()
-        
+
         table.insert(self.tradingButtons, {codeButton, nameButton, infoButton, priceH1Button, priceD1Button})
 
         scrollPanel:addChild(codeButton)
@@ -269,16 +298,10 @@ function tradingUI:startTrading()
 end
 
 function tradingUI:showCompanyInfo(code, name)
-    local dataName = "PZLinuxTrading" .. code
-
-    if isServer() then
-        ModData.transmit(dataName)
-    end
-    
-    local companyData = ModData.getOrCreate(dataName)
-    local priceHistory = companyData.dataName or {}
+    local baseCompany = PZLinuxTradingGetCompanyByCode(code) or { code = code, name = name, price = 1 }
+    local priceHistory, snapshotCompany = PZLinuxTradingUIGetCompanyData(self, baseCompany)
     local lastIndex = #priceHistory
-    local lastPrice = priceHistory[lastIndex]
+    local lastPrice = priceHistory[lastIndex] or baseCompany.price
 
     self.closeButton:setVisible(true)
     self.minimizeTradingButton:setVisible(true)
@@ -310,6 +333,7 @@ function tradingUI:showCompanyInfo(code, name)
 
         local maxPrice = math.max(unpack(priceHistory))
         local minPrice = math.min(unpack(priceHistory))
+        if maxPrice == minPrice then return end
 
         local candleWidth = chartWidth / numCandles
         for i = 2, numCandles do
@@ -339,11 +363,10 @@ function tradingUI:showCompanyInfo(code, name)
     end
     self.topBar:addChild(candlestickChart)
 
-    local player = getPlayer()
-    local playerWallet = "ZLinuxPlayerWallet" .. code
-    local totalTokenQuantity = player:getModData()[playerWallet] or 0
+    local player = PZLinuxGetPlayer(self.player)
+    local totalTokenQuantity = snapshotCompany and snapshotCompany.quantity or player:getModData()[PZLinuxTradingGetWalletKey(code)] or 0
 
-    self.tradingBalanceLabel = ISLabel:new(self.width * 0.20, self.height * 0.21, self.height * 0.025, "Account Balance $"  .. tostring(loadAtmBalance()), 0, 1, 0, 1, UIFont.Small, true)
+    self.tradingBalanceLabel = ISLabel:new(self.width * 0.20, self.height * 0.21, self.height * 0.025, "Account Balance $"  .. tostring(loadAtmBalance(self.player)), 0, 1, 0, 1, UIFont.Small, true)
     self.tradingBalanceLabel.backgroundColor = {r=0, g=0, b=0, a=0}
     self.tradingBalanceLabel:initialise()
     self.topBar:addChild(self.tradingBalanceLabel)
@@ -386,130 +409,104 @@ function tradingUI:showCompanyInfo(code, name)
     self.topBar:addChild(self.tradingBuyButton)
 end
 
-function tradingUI:onTradingSold(code, lastPrice, quantityTrading)
-    local player = getPlayer()
-    local playerWallet = "ZLinuxPlayerWallet" .. code
-    local totalTokenQuantity = player:getModData()[playerWallet] or 0
-    local newQuantity = tonumber(totalTokenQuantity) - tonumber(quantityTrading)
-
-    if newQuantity >= 0 then
-        local balance = tonumber(loadAtmBalance())
-        lastPrice = tonumber(lastPrice) * tonumber(quantityTrading)
-        local newBalance = balance + lastPrice
-        saveAtmBalance(newBalance)
-        self.tradingBalanceLabel:setName("Account Balance $" .. tostring(newBalance))
-
-        player:getModData()[playerWallet] = newQuantity
-        self.tradingWalletLabel:setName("Wallet Balance " .. newQuantity .. " " .. code)
-
-        if lastPrice >= 5000 then
-            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -10)
-            getPlayer():getStats():add(CharacterStat.STRESS, -0.5)
-        elseif lastPrice >= 1000 then
-            getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
-            getPlayer():getStats():add(CharacterStat.STRESS, -0.1)
-        end
-    end
+function tradingUI.onFilter(_self, _button)
 end
 
-function tradingUI:onTradingBuy(code, lastPrice, quantityTrading)
-    local balance = tonumber(loadAtmBalance())
-    lastPrice = tonumber(lastPrice) * tonumber(quantityTrading)
-    if balance < lastPrice then
+function tradingUI:onTradingSold(code, _lastPrice, quantityTrading)
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
+
+    PZLinuxRequestTradingSell(self.player, code, quantityTrading, function(result)
+        if not result or not result.ok then return end
+
+        if result.balance then
+            saveAtmBalance(result.balance, player)
+            self.tradingBalanceLabel:setName("Account Balance $" .. tostring(result.balance))
+        end
+        if result.walletQuantity and self.tradingWalletLabel then
+            self.tradingWalletLabel:setName("Wallet Balance " .. tostring(result.walletQuantity) .. " " .. code)
+        end
+        if result.tradingSnapshot then
+            self.tradingSnapshot = result.tradingSnapshot
+        end
+
+        local amount = tonumber(result.amount) or 0
+        if amount >= 5000 then
+            player:getStats():add(CharacterStat.UNHAPPINESS, -10)
+            player:getStats():add(CharacterStat.STRESS, -0.5)
+        elseif amount >= 1000 then
+            player:getStats():add(CharacterStat.UNHAPPINESS, -5)
+            player:getStats():add(CharacterStat.STRESS, -0.1)
+        end
+    end)
+end
+
+function tradingUI:onTradingBuy(code, _lastPrice, quantityTrading)
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
+
+    PZLinuxRequestTradingBuy(self.player, code, quantityTrading, function(result)
+        if not result or not result.ok then return end
+
+        if result.balance then
+            saveAtmBalance(result.balance, player)
+            self.tradingBalanceLabel:setName("Account Balance $" .. tostring(result.balance))
+        end
+        if result.walletQuantity and self.tradingWalletLabel then
+            self.tradingWalletLabel:setName("Wallet Balance " .. tostring(result.walletQuantity) .. " " .. code)
+        end
+        if result.tradingSnapshot then
+            self.tradingSnapshot = result.tradingSnapshot
+        end
+    end)
+end
+
+function PZLinuxUpdateTradingPrices(player)
+    if isClient and isClient() then
+        PZLinuxRequestTradingSnapshot(player or PZLinuxGetPlayer(), nil)
         return
     end
-    local newBalance = balance - lastPrice
-    saveAtmBalance(newBalance)
-    self.tradingBalanceLabel:setName("Account Balance $" .. tostring(newBalance))
-
-    local player = getPlayer()
-    local playerWallet = "ZLinuxPlayerWallet" .. code
-    local totalTokenQuantity = tonumber(player:getModData()[playerWallet] or 0)
-    local quantity = tonumber(quantityTrading)
-    player:getModData()[playerWallet] = totalTokenQuantity + quantity
+    PZLinuxTradingUpdatePrices()
 end
 
-function PZLinuxUpdateTradingPrices()
-    for _, company in ipairs(PZLinuxTradingCompanyNameTable) do
-        local dataName = "PZLinuxTrading" .. company.code
-        local companyData = ModData.getOrCreate(dataName)
-        local priceHistory = companyData.dataName or {}
-        local lastIndex = #priceHistory
-        local lastPrice = priceHistory[lastIndex]
-
-        local direction = ZombRand(1, 4)
-        if direction == 1 then
-            lastPrice = ZombRand(math.max(1, lastPrice - lastPrice * 5 / 100), lastPrice + 2)
-        elseif direction == 3 then
-            lastPrice = ZombRand(lastPrice, lastPrice + lastPrice * 5 / 100)
-        end
-
-        local dataName = "PZLinuxTrading" .. company.code
-        local globalData = ModData.getOrCreate(dataName)
-        table.insert(globalData.dataName, lastPrice)
-        if #globalData.dataName > 48 then
-            table.remove(globalData.dataName, 1)
-        end
-    end
-end
-
-function PZLinuxTrading_initializePrices()
-    local globalData = ModData.getOrCreate("PZLinuxTrading")
-    if globalData.PZLinuxTrading == 1 then
+function PZLinuxTrading_initializePrices(player)
+    if isClient and isClient() then
+        PZLinuxRequestTradingSnapshot(player or PZLinuxGetPlayer(), nil)
         return
     end
-
-    globalData.PZLinuxTrading = 1
-    for _, company in ipairs(PZLinuxTradingCompanyNameTable) do
-        local dataName = "PZLinuxTrading" .. company.code
-        local globalData = ModData.getOrCreate(dataName)
-        globalData.dataName = {}
-        local tempPrice = company.price
-        for i = 1, 48 do
-            local direction = ZombRand(1, 4)
-            if direction == 1 then
-                tempPrice = ZombRand(math.max(1, tempPrice - tempPrice * ZombRand(5, 25) / 100), tempPrice + 2)
-            elseif direction == 3 then
-                tempPrice = ZombRand(tempPrice, tempPrice + tempPrice * ZombRand(5, 25) / 100)
-            end
-            table.insert(globalData.dataName, tempPrice)
-            if #globalData.dataName > 48 then
-                table.remove(globalData.dataName, 1)
-            end
-        end
-    end
+    PZLinuxTradingInitializePrices()
 end
 
 -- LOGOUT
-function tradingUI:onMinimizeTrading(button)
+function tradingUI:onMinimizeTrading(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 4
 end
 
-function tradingUI:onMinimize(button)
+function tradingUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
-function tradingUI:onClose(button)
+function tradingUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
-function tradingUI:onCloseX(button)
+function tradingUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 
-function tradingUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
+function tradingUI:onSFXOn(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 0
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
@@ -521,8 +518,8 @@ function tradingUI:onSFXOn(button)
     self.topBar:addChild(self.skipAnimationButton)
 end
 
-function tradingUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
+function tradingUI:onSFXOff(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 1
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
@@ -550,8 +547,8 @@ function tradingMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
-    local modData = getPlayer():getModData()
+
+    local modData = PZLinuxGetPlayer(player):getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
@@ -567,17 +564,6 @@ function tradingMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
 
-    local getHourTime = math.ceil(getGameTime():getWorldAgeHours())
-    if getHourTime + 1 > LAST_CONNECTION_TIME then
-        if LAST_CONNECTION_TIME == 0 then LAST_CONNECTION_TIME = getHourTime end
-        if LAST_CONNECTION_TIME > 0 then 
-            local deltaTrading = getHourTime - LAST_CONNECTION_TIME
-            for i = 1, deltaTrading do
-                PZLinuxUpdateTradingPrices()
-            end
-            LAST_CONNECTION_TIME = getHourTime
-        end
-    end
     ui:startTrading()
 
     return ui

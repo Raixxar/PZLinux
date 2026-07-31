@@ -3,7 +3,7 @@ require "TimedActions/ISBaseTimedAction"
 ISTakeTheCargoAction = ISBaseTimedAction:derive("ISTakeTheCargoAction")
 
 function ISTakeTheCargoAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISTakeTheCargoAction:waitToStart()
@@ -26,18 +26,23 @@ function ISTakeTheCargoAction:stop()
 end
 
 function ISTakeTheCargoAction:perform()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractCargo = 3
-    modData.PZLinuxActiveContract = 9
-    testHelicopter()
+    PZLinuxRequestContractWorldEvent(self.character, "takeCargo", { contractId = self.contractId })
+    local helicopterHandler = rawget(_G, "testHelicopter")
+    if type(helicopterHandler) == "function" then
+        helicopterHandler()
+    else
+        print("PZLinux warning: testHelicopter handler is missing")
+    end
+    ISBaseTimedAction.perform(self)
 end
 
-function ISTakeTheCargoAction:new(character, item)
+function ISTakeTheCargoAction:new(character, item, contractId)
     local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
     o.item = item
+    o.contractId = contractId
     o.stopOnWalk = true
     o.maxTime = 1000
     return o

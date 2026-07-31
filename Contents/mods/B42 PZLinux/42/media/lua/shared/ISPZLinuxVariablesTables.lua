@@ -1,525 +1,2465 @@
-PZLinuxDarkWebItemsTable = {
-    -- HUNDGUNS 
-    { id = {"Base.Revolver_Short"}, Price = 375 }, 
-    { id = {"Base.Pistol"}, Price = 450 },
-    { id = {"Base.Pistol2"}, Price = 675 },
-    { id = {"Base.Revolver"}, Price = 787 },
-    { id = {"Base.Pistol3"}, Price = 750 },
-    { id = {"Base.Revolver_Long"}, Price = 1000 },
-    --SHOTGUNS
-    { id = {"Base.DoubleBarrelShotgun"}, Price = 1500 },
-    { id = {"Base.Shotgun"}, Price = 1500 },
-    { id = {"Base.DoubleBarrelShotgunSawnoff"}, Price = 2100 },
-    { id = {"Base.ShotgunSawnoff"}, Price = 2275 },
-    -- RIFLES
-    { id = {"Base.AssaultRifle"}, Price = 2000 },
-    { id = {"Base.VarmintRifle"}, Price = 2000 },
-    { id = {"Base.AssaultRifle2"}, Price = 2400 },
-    { id = {"Base.HuntingRifle"}, Price = 2400 },
-    -- AMMOS
-    { id = {"Base.Bullets9mmBox"}, Price = 100},
-    { id = {"Base.Bullets38Box"}, Price = 175},
-    { id = {"Base.Bullets44Box"}, Price = 190},
-    { id = {"Base.223Box"}, Price = 300 },
-    { id = {"Base.308Box"}, Price = 300 },
-    { id = {"Base.ShotgunShellsBox"}, Price = 450 },
-    { id = {"Base.Bullets45Box"}, Price = 500 },
-    { id = {"Base.556Box"}, Price = 600 },
-    { id = {"Base.9mmClip"}, Price = 500 },
-    { id = {"Base.45Clip"}, Price = 500 },
-    { id = {"Base.44Clip"}, Price = 500 },
-    { id = {"Base.223Clip"}, Price = 700 },
-    { id = {"Base.308Clip"}, Price = 700 },
-    { id = {"Base.556Clip"}, Price = 1000 },
-    { id = {"Base.M14Clip"}, Price = 1000 },
-    { id = {"Base.223BulletsMold"}, Price = 800 },
-    { id = {"Base.308BulletsMold"}, Price = 800 },
-    { id = {"Base.9mmBulletsMold"}, Price = 800 },
-    { id = {"Base.ShotgunShellsMold"}, Price = 800 },
-    --SCOPE
-    { id = {"Base.IronSight"}, Price = 500 },
-    { id = {"Base.RedDot"}, Price = 1000 },
-    { id = {"Base.x8Scope"}, Price = 4000 },
-    { id = {"Base.x2Scope"}, Price = 1500 },
-    { id = {"Base.x4Scope"}, Price = 2000 },
-    -- SLING
-    { id = {"Base.AmmoStraps"}, Price = 2500 },
-    -- HACKING
-    { id = {"Base.IDcard_Stolen"}, Price = 1000 },
-    { id = {"Base.CreditCard_Stolen"}, Price = 1000 },
-    -- EXPLOSIVES
-    { id = {"Base.SmokeBomb"}, Price = 100 },
-    { id = {"Base.Molotov"}, Price = 150 },
-    { id = {"Base.Aerosolbomb"}, Price = 150 },
-    { id = {"Base.FlameTrap"}, Price = 150 },
-    { id = {"Base.PipeBomb"}, Price = 150 },
-    { id = {"Base.AerosolbombTriggered"}, Price = 300 },
-    { id = {"Base.AerosolbombRemote"}, Price = 300 },
-    -- AXES
-    { id = {"Base.BaseballBat_RailSpike"}, Price = 800 },
-    { id = {"Base.BaseballBat_Sawblade"}, Price = 800 },
-    { id = {"Base.ScrapWeapon_Brake"}, Price = 400 },
-    { id = {"Base.EntrenchingTool"}, Price = 250 },
-    { id = {"Base.FieldHockeyStick_Sawblade"}, Price = 933 },
-    { id = {"Base.Axe"}, Price = 533 },
-    { id = {"Base.ScrapWeaponGardenFork"}, Price = 400 },
-    { id = {"Base.HandScythe"}, Price = 600 },
-    { id = {"Base.HandScytheForged"}, Price = 600 },
-    { id = {"Base.HandAxeForged"}, Price = 350 },
-    { id = {"Base.IceAxe"}, Price = 350 },
-    { id = {"Base.MetalPipe_Railspike"}, Price = 400 },
-    { id = {"Base.JawboneBovide_Axe"}, Price = 600 },
-    { id = {"Base.LongHandle_Railspike"}, Price = 700 },
-    { id = {"Base.LongHandle_Sawblade"}, Price = 700 },
-    { id = {"Base.StoneAxeLarge"}, Price = 867 },
-    { id = {"Base.MeatCleaverForged"}, Price = 400 },
-    { id = {"Base.BaseballBat_Metal_Sawblade"}, Price = 800 },
-    { id = {"Base.PickAxeForged"}, Price = 667 },
-    { id = {"Base.Axe_Sawblade"}, Price = 457 },
-    { id = {"Base.Axe_Sawblade_Hatchet"}, Price = 280 },
-    { id = {"Base.Axe_ScrapCleaver"}, Price = 867 },
-    { id = {"Base.ShortBat_RailSpike"}, Price = 533 },
-    { id = {"Base.WoodAxeForged"}, Price = 867 },
-    -- LONG BLUNTS
-    { id = {"Base.BaseballBat_Can"}, Price = 900 },
-    { id = {"Base.BaseballBat_Spiked"}, Price = 800 },
-    { id = {"Base.BlockMaul"}, Price = 1000 },
-    { id = {"Base.CrowbarForged"}, Price = 600 },
-    { id = {"Base.BaseballBat_Metal_Bolts"}, Price = 917 },
-    { id = {"Base.BaseballBat_Metal"}, Price = 800 },
-    { id = {"Base.Sledgehammer"}, Price = 667 },
-    --- SHORT BLUNTS
-    { id = {"Base.Mace"}, Price = 280 },
-    { id = {"Base.SpikedShortBat"}, Price = 300 },
-    -- LONG BLADES
-    { id = {"Base.CrudeShortSword"}, Price = 667 },
-    { id = {"Base.CrudeSword"}, Price = 1500 },
-    { id = {"Base.Katana"}, Price = 8000 },
-    { id = {"Base.Machete"}, Price = 1000 },
-    { id = {"Base.Machete_Crude"}, Price = 1000 },
-    { id = {"Base.MacheteForged"}, Price = 1000 },
-    { id = {"Base.ShortSword"}, Price = 1000 },
-    { id = {"Base.Sword"}, Price = 2000 },
-    -- SHORT BLADES
-    { id = {"Base.FightingKnife"}, Price = 600 },
-    { id = {"Base.HandguardDagger"}, Price = 600 },
-    { id = {"Base.LargeKnife"}, Price = 600 },
-    { id = {"Base.KnifeParing"}, Price = 600 },
-    { id = {"Base.HuntingKnife"}, Price = 600 },
-    { id = {"Base.KitchenKnife"}, Price = 600 },
-    { id = {"Base.KitchenKnifeForged"}, Price = 600 },
-    { id = {"Base.HuntingKnifeForged"}, Price = 600 },
-    { id = {"Base.KnifePocket"}, Price = 800 },
-    -- SPEARS
-    { id = {"Base.SpearLong"}, Price = 444 },
-    { id = {"Base.SpearShort"}, Price = 417 },
-    -- RECIPES
-    { id = {"Base.TailoringMag9"}, Price = 500 },
-    { id = {"Base.SmithingMag8"}, Price = 500 },
-    { id = {"Base.FarmingMag5"}, Price = 500 },
-    { id = {"Base.TailoringMag1"}, Price = 500 },
-    { id = {"Base.FishingMag1"}, Price = 500 },
-    { id = {"Base.FishingMag2"}, Price = 500 },
-    { id = {"Base.ArmorMag5"}, Price = 1000 },
-    { id = {"Base.WeaponMag4"}, Price = 2000 },
-    { id = {"Base.FarmingMag3"}, Price = 500 },
-    { id = {"Base.SmithingMag5"}, Price = 500 },
-    { id = {"Base.GlassmakingMag3"}, Price = 500 },
-    { id = {"Base.GlassmakingMag2"}, Price = 500 },
-    { id = {"Base.TailoringMag5"}, Price = 500 },
-    { id = {"Base.FarmingMag6"}, Price = 500 },
-    { id = {"Base.PrimitiveToolMag2"}, Price = 500 },
-    { id = {"Base.CookingMag6"}, Price = 500 },
-    { id = {"Base.ArmorMag2"}, Price = 1000 },
-    { id = {"Base.ArmorMag4"}, Price = 1000 },
-    { id = {"Base.SmithingMag3"}, Price = 500 },
-    { id = {"Base.SmithingMag1"}, Price = 500 },
-    { id = {"Base.SmithingMag2"}, Price = 500 },
-    { id = {"Base.ArmorMag7"}, Price = 1000 },
-    { id = {"Base.TailoringMag7"}, Price = 500 },
-    { id = {"Base.HuntingMag4"}, Price = 500 },
-    { id = {"Base.CookingMag1"}, Price = 500 },
-    { id = {"Base.CookingMag2"}, Price = 500 },
-    { id = {"Base.CookingMag4"}, Price = 500 },
-    { id = {"Base.FarmingMag7"}, Price = 500 },
-    { id = {"Base.RadioMag1"}, Price = 500 },
-    { id = {"Base.RadioMag3"}, Price = 500 },
-    { id = {"Base.FarmingMag9"}, Price = 500 },
-    { id = {"Base.ElectronicsMag3"}, Price = 500 },
-    { id = {"Base.TailoringMag10"}, Price = 500 },
-    { id = {"Base.ElectronicsMag4"}, Price = 5000 },
-    { id = {"Base.SmithingMag9"}, Price = 500 },
-    { id = {"Base.CookingMag3"}, Price = 500 },
-    { id = {"Base.FarmingMag1"}, Price = 500 },
-    { id = {"Base.FarmingMag2"}, Price = 500 },
-    { id = {"Base.MechanicMag2"}, Price = 2000 },
-    { id = {"Base.MechanicMag3"}, Price = 2000 },
-    { id = {"Base.MechanicMag1"}, Price = 2000 },
-    { id = {"Base.TailoringMag4"}, Price = 500 },
-    { id = {"Base.HempMag1"}, Price = 500 },
-    { id = {"Base.ElectronicsMag2"}, Price = 500 },
-    { id = {"Base.SmithingMag7"}, Price = 500 },
-    { id = {"Base.SmithingMag11"}, Price = 500 },
-    { id = {"Base.SmithingMag10"}, Price = 500 },
-    { id = {"Base.TailoringMag3"}, Price = 500 },
-    { id = {"Base.SmithingMag6"}, Price = 500 },
-    { id = {"Base.GlassmakingMag1"}, Price = 500 },
-    { id = {"Base.WeaponMag2"}, Price = 2000 },
-    { id = {"Base.TailoringMag8"}, Price = 500 },
-    { id = {"Base.ArmorMag1"}, Price = 1000 },
-    { id = {"Base.PrimitiveToolMag3"}, Price = 500 },
-    { id = {"Base.TailoringMag2"}, Price = 500 },
-    { id = {"Base.TailoringMag6"}, Price = 500 },
-    { id = {"Base.EngineerMagazine1"}, Price = 500 },
-    { id = {"Base.TrickMag1"}, Price = 500 },
-    { id = {"Base.WeaponMag6"}, Price = 2000 },
-    { id = {"Base.ArmorMag3"}, Price = 1000 },
-    { id = {"Base.HuntingMag1"}, Price = 500 },
-    { id = {"Base.SmithingMag4"}, Price = 500 },
-    { id = {"Base.ElectronicsMag5"}, Price = 500 },
-    { id = {"Base.RadioMag2"}, Price = 500 },
-    { id = {"Base.ArmorMag6"}, Price = 1000 },
-    { id = {"Base.EngineerMagazine2"}, Price = 500 },
-    { id = {"Base.KeyMag1"}, Price = 500 },
-    { id = {"Base.TrickMag2"}, Price = 500 },
-    { id = {"Base.EngineerMagazine3"}, Price = 500 },
-    { id = {"Base.WeaponMag3"}, Price = 2000 },
-    { id = {"Base.WeaponMag5"}, Price = 2000 },
-    { id = {"Base.FarmingMag4"}, Price = 500 },
-    { id = {"Base.WeaponMag1"}, Price = 2000 },
-    { id = {"Base.HuntingMag2"}, Price = 500 },
-    { id = {"Base.WeaponMag7"}, Price = 2000 },
-    { id = {"Base.FarmingMag8"}, Price = 500 },
-    { id = {"Base.PrimitiveToolMag1"}, Price = 500 },
-    { id = {"Base.MetalworkMag3"}, Price = 500 },
-    { id = {"Base.MetalworkMag1"}, Price = 500 },
-    { id = {"Base.MetalworkMag4"}, Price = 500 },
-    { id = {"Base.MetalworkMag2"}, Price = 500 },
-    { id = {"Base.HerbalistMag"}, Price = 500 },
-    { id = {"Base.HuntingMag3"}, Price = 500 },
-    { id = {"Base.KnittingMag1"}, Price = 500 },
-    { id = {"Base.KnittingMag2"}, Price = 500 },
-    { id = {"Base.CookingMag5"}, Price = 500 },
-    { id = {"Base.ElectronicsMag1"}, Price = 500 },
-    -- BOOK
-    { id = {"Base.BookFarming1"}, Price = 100 },
-    { id = {"Base.BookFarming2"}, Price = 200 },
-    { id = {"Base.BookFarming3"}, Price = 300 },
-    { id = {"Base.BookFarming4"}, Price = 400 },
-    { id = {"Base.BookFarming5"}, Price = 500 },
-    { id = {"Base.BookAiming1"}, Price = 100 },
-    { id = {"Base.BookAiming2"}, Price = 200 },
-    { id = {"Base.BookAiming3"}, Price = 300 },
-    { id = {"Base.BookAiming4"}, Price = 400 },
-    { id = {"Base.BookAiming5"}, Price = 500 },
-    { id = {"Base.BookHusbandry1"}, Price = 100 },
-    { id = {"Base.BookHusbandry2"}, Price = 200 },
-    { id = {"Base.BookHusbandry3"}, Price = 300 },
-    { id = {"Base.BookHusbandry4"}, Price = 400 },
-    { id = {"Base.BookHusbandry5"}, Price = 500 },
-    { id = {"Base.BookBlacksmith1"}, Price = 100 },
-    { id = {"Base.BookBlacksmith2"}, Price = 200 },
-    { id = {"Base.BookBlacksmith3"}, Price = 300 },
-    { id = {"Base.BookBlacksmith4"}, Price = 400 },
-    { id = {"Base.BookBlacksmith5"}, Price = 500 },
-    { id = {"Base.BookButchering1"}, Price = 100 },
-    { id = {"Base.BookButchering2"}, Price = 200 },
-    { id = {"Base.BookButchering3"}, Price = 300 },
-    { id = {"Base.BookButchering4"}, Price = 400 },
-    { id = {"Base.BookButchering5"}, Price = 500 },
-    { id = {"Base.BookCarpentry1"}, Price = 100 },
-    { id = {"Base.BookCarpentry2"}, Price = 200 },
-    { id = {"Base.BookCarpentry3"}, Price = 300 },
-    { id = {"Base.BookCarpentry4"}, Price = 400 },
-    { id = {"Base.BookCarpentry5"}, Price = 500 },
-    { id = {"Base.BookCarving1"}, Price = 100 },
-    { id = {"Base.BookCarving2"}, Price = 200 },
-    { id = {"Base.BookCarving3"}, Price = 300 },
-    { id = {"Base.BookCarving4"}, Price = 400 },
-    { id = {"Base.BookCarving5"}, Price = 500 },
-    { id = {"Base.BookCooking1"}, Price = 100 },
-    { id = {"Base.BookCooking2"}, Price = 200 },
-    { id = {"Base.BookCooking3"}, Price = 300 },
-    { id = {"Base.BookCooking4"}, Price = 400 },
-    { id = {"Base.BookCooking5"}, Price = 500 },
-    { id = {"Base.BookElectrician1"}, Price = 100 },
-    { id = {"Base.BookElectrician2"}, Price = 200 },
-    { id = {"Base.BookElectrician3"}, Price = 300 },
-    { id = {"Base.BookElectrician4"}, Price = 400 },
-    { id = {"Base.BookElectrician5"}, Price = 500 },
-    { id = {"Base.BookFirstAid1"}, Price = 100 },
-    { id = {"Base.BookFirstAid2"}, Price = 200 },
-    { id = {"Base.BookFirstAid3"}, Price = 300 },
-    { id = {"Base.BookFirstAid4"}, Price = 400 },
-    { id = {"Base.BookFirstAid5"}, Price = 500 },
-    { id = {"Base.BookFishing1"}, Price = 100 },
-    { id = {"Base.BookFishing2"}, Price = 200 },
-    { id = {"Base.BookFishing3"}, Price = 300 },
-    { id = {"Base.BookFishing4"}, Price = 400 },
-    { id = {"Base.BookFishing5"}, Price = 500 },
-    { id = {"Base.BookForaging1"}, Price = 100 },
-    { id = {"Base.BookForaging2"}, Price = 200 },
-    { id = {"Base.BookForaging3"}, Price = 300 },
-    { id = {"Base.BookForaging4"}, Price = 400 },
-    { id = {"Base.BookForaging5"}, Price = 500 },
-    { id = {"Base.BookGlassmaking1"}, Price = 100 },
-    { id = {"Base.BookGlassmaking2"}, Price = 200 },
-    { id = {"Base.BookGlassmaking3"}, Price = 300 },
-    { id = {"Base.BookGlassmaking4"}, Price = 400 },
-    { id = {"Base.BookGlassmaking5"}, Price = 500 },
-    { id = {"Base.BookFlintKnapping1"}, Price = 100 },
-    { id = {"Base.BookFlintKnapping2"}, Price = 200 },
-    { id = {"Base.BookFlintKnapping3"}, Price = 300 },
-    { id = {"Base.BookFlintKnapping4"}, Price = 400 },
-    { id = {"Base.BookFlintKnapping5"}, Pric2 = 500 },
-    { id = {"Base.BookLongBlade1"}, Price = 100 },
-    { id = {"Base.BookLongBlade2"}, Price = 200 },
-    { id = {"Base.BookLongBlade3"}, Price = 300 },
-    { id = {"Base.BookLongBlade4"}, Price = 400 },
-    { id = {"Base.BookLongBlade5"}, Price = 500 },
-    { id = {"Base.BookMaintenance1"}, Price = 100 },
-    { id = {"Base.BookMaintenance2"}, Price = 200 },
-    { id = {"Base.BookMaintenance3"}, Price = 300 },
-    { id = {"Base.BookMaintenance4"}, Price = 400 },
-    { id = {"Base.BookMaintenance5"}, Pric2 = 500 },
-    { id = {"Base.BookMasonry1"}, Price = 100 },
-    { id = {"Base.BookMasonry2"}, Price = 200 },
-    { id = {"Base.BookMasonry3"}, Price = 300 },
-    { id = {"Base.BookMasonry4"}, Price = 400 },
-    { id = {"Base.BookMasonry5"}, Price = 500 },
-    { id = {"Base.BookMechanic1"}, Price = 100 },
-    { id = {"Base.BookMechanic2"}, Price = 200 },
-    { id = {"Base.BookMechanic3"}, Price = 300 },
-    { id = {"Base.BookMechanic4"}, Price = 400 },
-    { id = {"Base.BookMechanic5"}, Price = 500 },
-    { id = {"Base.BookPottery1"}, Price = 100 },
-    { id = {"Base.BookPottery2"}, Price = 200 },
-    { id = {"Base.BookPottery3"}, Price = 300 },
-    { id = {"Base.BookPottery4"}, Price = 400 },
-    { id = {"Base.BookPottery5"}, Price = 500 },
-    { id = {"Base.BookReloading1"}, Price = 100 },
-    { id = {"Base.BookReloading2"}, Price = 200 },
-    { id = {"Base.BookReloading3"}, Price = 300 },
-    { id = {"Base.BookReloading4"}, Price = 400 },
-    { id = {"Base.BookReloading5"}, Price = 500 },
-    { id = {"Base.BookTailoring1"}, Price = 100 },
-    { id = {"Base.BookTailoring2"}, Price = 200 },
-    { id = {"Base.BookTailoring3"}, Price = 300 },
-    { id = {"Base.BookTailoring4"}, Price = 400 },
-    { id = {"Base.BookTailoring5"}, Price = 500 },
-    { id = {"Base.BookTracking1"}, Price = 100 },
-    { id = {"Base.BookTracking2"}, Price = 200 },
-    { id = {"Base.BookTracking3"}, Price = 300 },
-    { id = {"Base.BookTracking4"}, Price = 400 },
-    { id = {"Base.BookTracking5"}, Price = 500 },
-    { id = {"Base.BookTrapping1"}, Price = 100 },
-    { id = {"Base.BookTrapping2"}, Price = 200 },
-    { id = {"Base.BookTrapping3"}, Price = 300 },
-    { id = {"Base.BookTrapping4"}, Price = 400 },
-    { id = {"Base.BookTrapping5"}, Price = 500 },
-    { id = {"Base.BookMetalWelding1"}, Price = 100 },
-    { id = {"Base.BookMetalWelding2"}, Price = 200 },
-    { id = {"Base.BookMetalWelding3"}, Price = 300 },
-    { id = {"Base.BookMetalWelding4"}, Price = 400 },
-    { id = {"Base.BookMetalWelding5"}, Price = 500 },
-    -- MEDICAL
-    { id = {"Base.Antibiotics"}, Price = 1500 },
-    { id = {"Base.PillsAntiDep"}, Price = 500 },
-    { id = {"Base.PillsBeta"}, Price = 500 },
-    { id = {"Base.Pills"}, Price = 100 },
-    { id = {"Base.PillsSleepingTablets"}, Price = 200 },
-    { id = {"Base.PillsVitamins"}, Price = 100 },
-    { id = {"Base.CigaretteSingle"}, Price = 10 },
-    { id = {"Base.CigarettePack"}, Price = 200 },
-    { id = {"Base.CigaretteCarton"}, Price = 2000 },
-    { id = {"Base.Cigar"}, Price = 200 },
-    -- EQUIPMENT
-    { id = {"Base.Bag_ALICEpack_Army"}, Price = 2000 },
-    -- VEHICLE
-    { id = {"Base.PetrolCan"}, Price = 3000 },
-    -- ELECTRONICS
-    { id = {"Base.Generator_Yellow"}, Price = 6000 },
-    { id = {"Base.Generator"}, Price = 5000 },
-    { id = {"Base.Generator_Blue"}, Price = 4000 },
-    { id = {"Base.Generator_Old"}, Price = 3500 },
-    { id = {"Base.RemoteCraftedV3"}, Price = 400 },
-    { id = {"Base.RemoteCraftedV2"}, Price = 300 },
-    { id = {"Base.RemoteCraftedV1"}, Price = 200 },
-    { id = {"Base.ScannerModule"}, Price = 100 },
-    { id = {"Base.ElectronicsScrap"}, Price = 50 },
-    { id = {"Base.Amplifier"}, Price = 50 },
-    { id = {"Base.RadioReceiver"}, Price = 50 },
-    { id = {"Base.RadioTransmitter"}, Price = 50 },
-    { id = {"Base.Receiver"}, Price = 50 },
-    -- BAR/INGOT
-    { id = {"Base.PigIronIngot"}, Price = 100 },
-    { id = {"Base.BrassIngot"}, Price = 500 },
-    { id = {"Base.CopperIngot"}, Price = 600 },
-    { id = {"Base.SteelIngot"}, Price = 1000 },
-    { id = {"Base.SilverBar"}, Price = 5000 },
-    { id = {"Base.GoldBar"}, Price = 15000 },
-    -- CLOTHING
-    { id = {"Base.Socks_Heavy"}, Price = 50 },
-    { id = {"Base.Socks_Long"}, Price = 50},
-    { id = {"Base.Socks_Long_White"}, Price = 50 },
-    { id = {"Base.Socks_Long_Black"}, Price = 50 },
-    { id = {"Base.Socks_Ankle"}, Price = 50 }, 
-    { id = {"Base.Socks_Ankle_White"}, Price = 50 },
-    { id = {"Base.Socks_Ankle_Black"}, Price = 50 },
-    { id = {"Base.Bra_Straps_AnimalPrint"}, Price = 100 },
-    { id = {"Base.Bra_Straps_FrillyBlack"}, Price = 100 },
-    { id = {"Base.Bra_Straps_Black"}, Price = 100 },
-    { id = {"Base.Bra_Straps_FrillyPink"}, Price = 100 },
-    { id = {"Base.Bra_Straps_FrillyRed"}, Price = 100 },
-    { id = {"Base.Bra_Straps_Hide"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_AnimalPrint"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_FrillyBlack"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_Black"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_FrillyPink"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_FrillyRed"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_RedSpots"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_Hide"}, Price = 100 },
-    { id = {"Base.Bra_Strapless_White"}, Price = 100 },
-    { id = {"Base.Bra_Straps_White"}, Price = 100 },
-    { id = {"Base.Bikini_Pattern01"}, Price = 150 },
-    { id = {"Base.Briefs_SmallTrunks_Black"}, Price = 200 },
-    { id = {"Base.Briefs_SmallTrunks_Blue"}, Price = 200 },
-    { id = {"Base.Briefs_SmallTrunks_Red"}, Price = 200 },
-    { id = {"Base.Underpants_AnimalPrint"}, Price = 200 },
-    { id = {"Base.FrillyUnderpants_Black"}, Price = 200 },
-    { id = {"Base.Underpants_Black"}, Price = 200 },
-    { id = {"Base.FrillyUnderpants_Pink"}, Price = 200 },
-    { id = {"Base.FrillyUnderpants_Red"}, Price = 200 },
-    { id = {"Base.Underpants_RedSpots"}, Price = 200 },
-    { id = {"Base.Underpants_Hide"}, Price = 200 },
-    { id = {"Base.Underpants_White"}, Price = 200 },
-    -- ARMOR
-    { id = {"Base.Hat_Beret"}, Price = 500 },
-    { id = {"Base.Hat_BalaclavaFull"}, Price = 500 },
-    { id = {"Base.Hat_Police"}, Price = 500 },
-    { id = {"Base.Hat_Army"}, Price = 1000 },
-    { id = {"Base.Hat_ArmyDesertNew"}, Price = 1000 },
-    { id = {"Base.Hat_ArmyDesert"}, Price = 1000 },
-    { id = {"Base.Hat_CrashHelmet_Police"}, Price = 1000 },
-    { id = {"Base.Hat_RiotHelmet"}, Price = 1000 },
-    { id = {"Base.Hat_ArmyWWII"}, Price = 1000 },
-    { id = {"Base.Hat_SPHhelmet"}, Price = 1000 },
-    { id = {"Base.ShinKneeGuard_L_Metal", "Base.ShinKneeGuard_R_Metal"}, Price = 1000 },
-    { id = {"Base.Shoulderpad_Articulated_L_Metal", "Base.Shoulderpad_Articulated_R_Metal"}, Price = 1000 }, 
-    { id = {"Base.Thigh_ArticMetal_R", "Base.Thigh_ArticMetal_L"}, Price = 1000 }, 
-    { id = {"Base.ElbowPad_Right_Tactical"}, Price = 1000 },
-    { id = {"Base.Vambrace_BodyArmour_Left_Army"}, Price = 1000 },
-    { id = {"Base.GreaveBodyArmour_Right_Army"}, Price = 1000 },
-    { id = {"Base.Shoes_ArmyBoots"}, Price = 1000 },
-    { id = {"Base.Shoes_ArmyBootsDesert"}, Price = 1000 },
-    { id = {"Base.Shoulderpad_MetalScrap_L", "Base.Shoulderpad_MetalScrap_R"}, Price = 1500 },
-    { id = {"Base.Hat_GasMask_nofilter"}, Price = 1500 },
-    { id = {"Base.Chainmail_SleeveFull_L", "Base.Chainmail_SleeveFull_R"}, Price = 2000 }, 
-    { id = {"Base.Hat_GasMask"}, Price = 2000 },
-    { id = {"Base.Vest_BulletArmy"}, Price = 5000 }, 
-    { id = {"Base.Vest_BulletPolice"}, Price = 5000 }, 
-    { id = {"Base.Vest_BulletSWAT"}, Price = 5000 },
-    -- GOLD
-    { id = {"Base.Medal_Bronze"}, Price = 100 },
-    { id = {"Base.Medal_Gold"}, Price = 500 },
-    { id = {"Base.Medal_Silver"}, Price = 250 },
-    { id = {"Base.Necklace_Gold"}, Price = 600 },
-    { id = {"Base.Necklace_GoldDiamond"}, Price = 800 },
-    { id = {"Base.Necklace_GoldRuby"}, Price = 650 },
-    { id = {"Base.Necklace_Silver"}, Price = 300 },
-    { id = {"Base.Necklace_SilverCrucifix"}, Price = 250 },
-    { id = {"Base.Necklace_SilverDiamond"}, Price = 150 },
-    { id = {"Base.Necklace_SilverSapphire"}, Price = 200 },
-    { id = {"Base.Necklace_YingYang"}, Price = 10 },
-    { id = {"Base.NecklaceLong_Amber"}, Price = 50 },
-    { id = {"Base.NecklaceLong_GoldDiamond"}, Price = 1000, },
-    { id = {"Base.NecklaceLong_Gold"}, Price = 850, },
-    { id = {"Base.NecklaceLong_SilverDiamond"}, Price = 450 },
-    { id = {"Base.NecklaceLong_SilverEmerald"}, Price = 450 },
-    { id = {"Base.NecklaceLong_SilverSapphire"}, Price = 450 },
-    { id = {"Base.NecklaceLong_Silver"}, Price = 250 },
-    { id = {"Base.NoseRing_Gold"}, Price = 100, },
-    { id = {"Base.NoseRing_Silver"}, Price = 50 },
-    { id = {"Base.NoseStud_Gold"}, Price = 80, },
-    { id = {"Base.NoseStud_Silver"}, Price = 40 },
-    { id = {"Base.Earring_Dangly_Diamond"}, Price = 100, },
-    { id = {"Base.Earring_Dangly_Emerald"}, Price = 100, },
-    { id = {"Base.Earring_Dangly_Pearl"}, Price = 100, },
-    { id = {"Base.Earring_Dangly_Ruby"}, Price = 100, },
-    { id = {"Base.Earring_Dangly_Sapphire"}, Price = 100, },
-    { id = {"Base.Earring_Stone_Emerald"}, Price = 100, },
-    { id = {"Base.Earring_Stud_Gold"}, Price = 250, },
-    { id = {"Base.Earring_LoopLrg_Gold"}, Price = 250, },
-    { id = {"Base.Earring_LoopLrg_Silver"}, Price = 80 },
-    { id = {"Base.Earring_LoopMed_Gold"}, Price = 100, },
-    { id = {"Base.Earring_LoopMed_Silver"}, Price = 80 },
-    { id = {"Base.Earring_Pearl"}, Price = 60, },
-    { id = {"Base.Earring_Stone_Ruby"}, Price = 60, },
-    { id = {"Base.Earring_Stone_Sapphire"}, Price = 60, },
-    { id = {"Base.Earring_Stud_Silver"}, Price = 50 },
-    { id = {"Base.Earring_LoopSmall_Gold_Both", "Base.Earring_LoopSmall_Gold_Top"}, Price = 50, },
-    { id = {"Base.Earring_LoopSmall_Silver_Both", "Base.Earring_LoopSmall_Silver_Top"}, Price = 50, },
-    { id = {"Base.Bracelet_BangleRightGold", "Base.Bracelet_BangleLeftGold"}, Price = 300 },
-    { id = {"Base.Bracelet_BangleRightSilver", "Base.Bracelet_BangleLeftSilver"}, Price = 250 },
-    { id = {"Base.Bracelet_ChainRightGold", "Base.Bracelet_ChainLeftGold"}, Price = 250 },
-    { id = {"Base.Bracelet_ChainRightSilver", "Base.Bracelet_ChainLeftSilver"}, Price = 150 },
-    { id = {"Base.WristWatch_Right_ClassicGold", "Base.WristWatch_Left_ClassicGold"}, Price = 1500 },
-    { id = {"WristWatch_Right_Expensive", "Base.WristWatch_Left_Expensive"}, Price = 1500 },
-    { id = {"Base.Ring_Right_MiddleFinger_GoldDiamond", "Base.Ring_Left_MiddleFinger_GoldDiamond", "Base.Ring_Right_RingFinger_GoldDiamond", "Base.Ring_Left_RingFinger_GoldDiamond"}, Price = 500 },
-    { id = {"Base.Ring_Right_MiddleFinger_GoldRuby", "Base.Ring_Left_MiddleFinger_GoldRuby", "Base.Ring_Right_RingFinger_GoldRuby", "Base.Ring_Left_RingFinger_GoldRuby"}, Price = 500 },
-    { id = {"Base.Ring_Right_MiddleFinger_Gold", "Base.Ring_Left_MiddleFinger_Gold", "Base.Ring_Right_RingFinger_Gold","Base.Ring_Left_RingFinger_Gold"}, Price = 500 },
-    { id = {"Base.Ring_Right_MiddleFinger_SilverDiamond", "Base.Ring_Left_MiddleFinger_SilverDiamond", "Base.Ring_Right_RingFinger_SilverDiamond", "Base.Ring_Left_RingFinger_SilverDiamond"}, Price = 300 },
-    { id = {"Base.Ring_Right_MiddleFinger_Silver", "Base.Ring_Left_MiddleFinger_Silver", "Base.Ring_Right_RingFinger_Silver", "Base.Ring_Left_RingFinger_Silver"}, Price = 300 },
-    { id = {"Base.BellyButton_DangleGoldRuby"}, Price = 150 },
-    { id = {"Base.BellyButton_DangleGold"}, Price = 250 },
-    { id = {"Base.BellyButton_DangleSilverDiamond"}, Price = 150 },
-    { id = {"Base.BellyButton_DangleSilver"}, Price = 50 },
-    { id = {"Base.BellyButton_RingGoldDiamond"}, Price = 150 },
-    { id = {"Base.BellyButton_RingGoldRuby"}, Price = 150 },
-    { id = {"Base.BellyButton_RingGold"}, Price = 250 },
-    { id = {"Base.BellyButton_RingSilverAmethyst"}, Price = 75 },
-    { id = {"Base.BellyButton_RingSilverDiamond"}, Price = 75 },
-    { id = {"Base.BellyButton_RingSilverRuby"}, Price = 75 },
-    { id = {"Base.BellyButton_RingSilver"}, Price = 50 },
-    { id = {"Base.BellyButton_StudGoldDiamond"}, Price = 150 },
-    { id = {"Base.BellyButton_StudGold"}, Price = 150 },
-    { id = {"Base.BellyButton_StudSilverDiamond"}, Price = 75 },
-    { id = {"Base.BellyButton_StudSilver"}, Price = 50 }
-}
+PZLinux = PZLinux or {}
 
-PZLinuxTradingCompanyNameTable = {
-    { name = "Crisis Commerce Corp", code = "CCC", price = 1450 },
-    { name = "Umbrella Corp", code = "AC", price = 1400 },
-    { name = "Walker & Crawler", code = "WC", price = 1300 },
-    { name = "Survival Solutions Inc", code = "SSI", price = 1200 },
-    { name = "Reclaim Resources Ltd", code = "RRL", price = 1110 },
-    { name = "Brain Beers Times", code = "BBT", price = 1000 },
-    { name = "Zom Bin", code = "ZB", price = 950 },
-    { name = "Endurance Equipments", code = "EE", price = 850 },
-    { name = "Grinning Grim Goods", code = "GGG", price = 610 },
-    { name = "Country Court Outlaw", code = "CCO", price = 580 },
-    { name = "ZomboTrade Co", code = "ZTC", price = 560 },
-    { name = "COVID Pop Ltd", code = "CPL", price = 500 },
-    { name = "Gorrest Fump", code = "GF", price = 450 },
-    { name = "Phoenix Resupply Corp", code = "PRC", price = 350 },
-    { name = "Heaven Saint Christ", code = "HSC", price = 260 },
-    { name = "28 Ways to Stay Safe", code = "WSS", price = 245 },
-    { name = "The Hunger Z", code = "THZ", price = 235 },
-    { name = "Zombie of the rings", code = "ZOR", price = 220 },
-    { name = "Zombie Zumba", code = "ZZ", price = 200 },
-    { name = "Indoor Adventures", code = "IA", price = 180 },
-    { name = "Pandemic Pills Inc", code = "PPI", price = 170 },
-    { name = "Aftermath Trading Post", code = "ATP", price = 160 },
-    { name = "Waste Not Industries", code = "WNI", price = 120 },
-    { name = "NecroTech Innovations", code = "NTI", price = 80 },
-    { name = "Z Max", code = "ZM", price = 65 },
-    { name = "Vigilant Ventures", code = "VV", price = 40 },
-    { name = "Flee Market", code = "FM", price = 30 },
-    { name = "Raven Goods & Supply", code = "RGS", price = 25 },
-    { name = "Brains & Bargains", code = "BB", price = 20 },
-    { name = "Rot & Roll", code = "RR", price = 10 },
-    { name = "Butcher Ltd", code = "BL", price = 5 }
-}
+require "PZLinux/PZLinuxConfig"
+require "PZLinux/PZLinuxMissionLocations"
+require "PZLinux/PZLinuxGamblingData"
+require "PZLinux/PZLinuxRequestsData"
+require "PZLinux/PZLinuxContractsData"
+require "PZLinux/PZLinuxMailData"
+require "PZLinux/PZLinuxDarkWebData"
+require "PZLinux/PZLinuxTradingData"
+require "PZLinux/PZLinuxEconomy"
+require "PZLinux/PZLinuxPokerConfig"
+require "PZLinux/PZLinuxPokerEngine"
+
+function PZLinux.getPlayer(player)
+    if player and type(player) == "number" and getSpecificPlayer then
+        return getSpecificPlayer(player)
+    end
+
+    if player and type(player) ~= "number" then
+        return player
+    end
+
+    if getPlayer then
+        return getPlayer()
+    end
+
+    return nil
+end
+
+function PZLinux.getModData(player)
+    local playerObj = PZLinux.getPlayer(player)
+    if not playerObj then return nil, nil, nil end
+
+    local md = playerObj:getModData()
+    md.pzlinux = md.pzlinux or {}
+    md.pzlinux.player = md.pzlinux.player or {}
+    md.pzlinux.mails = md.pzlinux.mails or {}
+    md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
+    md.pzlinux.mails.nextid = md.pzlinux.mails.nextid or 1
+    md.pzlinux.player.reputation = tonumber(md.pzlinux.player.reputation) or 1
+
+    return md, md.pzlinux, playerObj
+end
+
+function PZLinux.getMailData(player, id)
+    local md, pzlinux = PZLinux.getModData(player)
+    if not pzlinux then return nil, md end
+
+    if id then
+        pzlinux.mails[id] = pzlinux.mails[id] or {}
+        return pzlinux.mails[id], md
+    end
+
+    return pzlinux.mails, md
+end
+
+function PZLinuxGetPlayer(player)
+    return PZLinux.getPlayer(player)
+end
+
+function PZLinuxGetModData(player)
+    return PZLinux.getModData(player)
+end
+
+function PZLinuxGetMailData(player, id)
+    return PZLinux.getMailData(player, id)
+end
+
+function PZLinuxGetRandomMissionLocation(group, key)
+    local groupLocations = PZLinuxMissionLocations and PZLinuxMissionLocations[group]
+    local locations = groupLocations and groupLocations[key]
+    if not locations or #locations == 0 then return nil end
+
+    return locations[ZombRand(#locations) + 1]
+end
+
+function PZLinuxGetText(key)
+    if getText then
+        return getText(key)
+    end
+    return key
+end
+
+PZLinux.callbacks = PZLinux.callbacks or {}
+PZLinux.blackjackSessions = PZLinux.blackjackSessions or {}
+PZLinux.raceSessions = PZLinux.raceSessions or {}
+PZLinux.darkWebBuySessions = PZLinux.darkWebBuySessions or {}
+PZLinux.darkWebSellSessions = PZLinux.darkWebSellSessions or {}
+PZLinux.hackingSessions = PZLinux.hackingSessions or {}
+
+function PZLinuxGetPlayerKey(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return "unknown" end
+    if playerObj.getUsername then
+        return tostring(playerObj:getUsername())
+    end
+    return tostring(playerObj)
+end
+
+function PZLinuxTransmitPlayerModData(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if playerObj and playerObj.transmitModData then
+        playerObj:transmitModData()
+    end
+end
+
+function PZLinuxLoadBankBalance(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+
+    local modData = playerObj:getModData()
+    local balance = tonumber(modData.PZLinuxBank)
+    if balance == nil then
+        balance = ZombRand(500, 4000)
+        modData.PZLinuxBank = balance
+        PZLinuxTransmitPlayerModData(playerObj)
+    end
+
+    balance = math.max(0, math.floor(balance))
+    modData.PZLinuxBank = balance
+    return balance
+end
+
+function PZLinuxSetBankBalance(player, balance)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+
+    balance = PZLinuxNormalizeMoney(balance)
+    playerObj:getModData().PZLinuxBank = balance
+    PZLinuxTransmitPlayerModData(playerObj)
+    return balance
+end
+
+function PZLinuxApplyBankDebit(player, amount, reason, requestId)
+    amount = PZLinuxNormalizeMoney(amount)
+    local previousBalance = PZLinuxLoadBankBalance(player)
+
+    if amount <= 0 then
+        return { ok = false, error = "invalid_amount", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+    end
+
+    if previousBalance < amount then
+        return { ok = false, error = "not_enough_money", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+    end
+
+    local balance = PZLinuxSetBankBalance(player, previousBalance - amount)
+    return { ok = true, amount = amount, balance = balance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+end
+
+function PZLinuxApplyBankCredit(player, amount, reason, requestId)
+    amount = PZLinuxNormalizeMoney(amount)
+    local previousBalance = PZLinuxLoadBankBalance(player)
+
+    if amount <= 0 then
+        return { ok = false, error = "invalid_amount", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+    end
+
+    local balance = PZLinuxSetBankBalance(player, previousBalance + amount)
+    return { ok = true, amount = amount, balance = balance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+end
+
+function PZLinuxGetInterruptedSessions(player)
+    local _, pzlinux = PZLinuxGetModData(player)
+    if not pzlinux then return nil end
+    pzlinux.interruptedSessions = pzlinux.interruptedSessions or {}
+    return pzlinux.interruptedSessions
+end
+
+function PZLinuxRegisterInterruptedSession(player, key, data)
+    local playerObj = PZLinuxGetPlayer(player)
+    local sessions = PZLinuxGetInterruptedSessions(playerObj)
+    if not sessions or not key then return end
+    sessions[key] = data
+    PZLinuxTransmitPlayerModData(playerObj)
+end
+
+function PZLinuxClearInterruptedSession(player, key)
+    local playerObj = PZLinuxGetPlayer(player)
+    local sessions = PZLinuxGetInterruptedSessions(playerObj)
+    if not sessions or not key or not sessions[key] then return end
+    sessions[key] = nil
+    PZLinuxTransmitPlayerModData(playerObj)
+end
+
+function PZLinuxApplyInterruptedSessionRollbacks(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    local sessions = PZLinuxGetInterruptedSessions(playerObj)
+    if not playerObj or not sessions then return { ok = false, error = "no_player" } end
+
+    local playerKey = PZLinuxGetPlayerKey(playerObj)
+    local applied = {}
+
+    local blackjack = sessions.blackjack
+    if blackjack and not PZLinux.blackjackSessions[playerKey] then
+        local amount = PZLinuxNormalizeMoney(blackjack.amount)
+        if amount > 0 then
+            local credit = PZLinuxApplyBankCredit(playerObj, amount, "rollback-blackjack", blackjack.requestId)
+            applied.blackjack = credit.amount or amount
+        end
+        sessions.blackjack = nil
+    end
+
+    local hacking = sessions.hacking
+    if hacking and not PZLinux.hackingSessions[playerKey] then
+        local inventory = playerObj:getInventory()
+        local restored = 0
+        if inventory then
+            for _, fullType in ipairs(hacking.cardTypes or {}) do
+                if fullType then
+                    inventory:AddItem(fullType)
+                    restored = restored + 1
+                end
+            end
+        end
+        applied.hackingCards = restored
+        sessions.hacking = nil
+    end
+
+    local poker = sessions.poker
+    if poker and (not PZLinux.Poker or not PZLinux.Poker.Sessions or not PZLinux.Poker.Sessions[playerKey]) then
+        local refund = PZLinuxNormalizeMoney(poker.stack)
+        if refund > 0 then
+            local credit = PZLinuxApplyBankCredit(playerObj, refund, "rollback-poker", poker.requestId)
+            applied.poker = credit.amount or refund
+        end
+        sessions.poker = nil
+    end
+
+    if applied.blackjack or applied.hackingCards or applied.poker then
+        PZLinuxTransmitPlayerModData(playerObj)
+    end
+
+    return { ok = true, applied = applied, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+local PZLINUX_ATM_MIN_CASH = PZLinux.Config.ATM.minCash
+local PZLINUX_ATM_MAX_CASH = PZLinux.Config.ATM.maxCash
+
+function PZLinuxAtmTransmitModData(atmObject)
+    if atmObject and atmObject.transmitModData then
+        atmObject:transmitModData()
+    end
+end
+
+function PZLinuxAtmLoadCash(atmObject)
+    if not atmObject then return 0 end
+
+    local modData = atmObject:getModData()
+    local atmCash = tonumber(modData.PZLinuxAtmCash)
+    if atmCash == nil then
+        if isClient and isClient() then
+            return 0
+        end
+        atmCash = ZombRand(PZLINUX_ATM_MIN_CASH, PZLINUX_ATM_MAX_CASH + 1)
+        modData.PZLinuxAtmCash = atmCash
+        PZLinuxAtmTransmitModData(atmObject)
+    end
+
+    atmCash = math.max(0, math.floor(atmCash))
+    modData.PZLinuxAtmCash = atmCash
+    return atmCash
+end
+
+function PZLinuxAtmSaveCash(atmObject, atmCash)
+    if not atmObject then return 0 end
+
+    local modData = atmObject:getModData()
+    modData.PZLinuxAtmCash = math.max(0, math.floor(tonumber(atmCash) or 0))
+    PZLinuxAtmTransmitModData(atmObject)
+    return modData.PZLinuxAtmCash
+end
+
+function PZLinuxGetAtmReference(atmObject)
+    if not atmObject or not atmObject.getSquare then return nil end
+
+    local square = atmObject:getSquare()
+    if not square then return nil end
+
+    local spriteName = nil
+    local sprite = atmObject:getSprite()
+    if sprite and sprite.getName then
+        spriteName = sprite:getName()
+    end
+
+    return {
+        x = square:getX(),
+        y = square:getY(),
+        z = square:getZ(),
+        sprite = spriteName,
+    }
+end
+
+function PZLinuxFindAtmObject(atmRef)
+    if not atmRef or not getCell then return nil end
+
+    local x = tonumber(atmRef.x)
+    local y = tonumber(atmRef.y)
+    local z = tonumber(atmRef.z)
+    if not x or not y or not z then return nil end
+
+    local square = getCell():getGridSquare(x, y, z)
+    if not square then return nil end
+
+    local objects = square:getObjects()
+    for i = 0, objects:size() - 1 do
+        local obj = objects:get(i)
+        local sprite = obj and obj:getSprite()
+        local spriteName = sprite and sprite:getName()
+        if spriteName and (not atmRef.sprite or spriteName == atmRef.sprite) then
+            if string.find(spriteName, "location_business_bank_01_67")
+            or string.find(spriteName, "location_business_bank_01_66")
+            or string.find(spriteName, "location_business_bank_01_65")
+            or string.find(spriteName, "location_business_bank_01_64") then
+                return obj
+            end
+        end
+    end
+
+    return nil
+end
+
+function PZLinuxCountInventoryCash(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+
+    local inv = playerObj:getInventory()
+    if not inv then return 0 end
+
+    local total = 0
+    for i = 0, inv:getItems():size() - 1 do
+        local item = inv:getItems():get(i)
+        if item then
+            if item:getFullType() == "Base.MoneyBundle" then
+                total = total + 100
+            elseif item:getFullType() == "Base.Money" or item:getType() == "Money" then
+                total = total + (tonumber(item:getCount()) or 1)
+            end
+        end
+    end
+
+    return total
+end
+
+function PZLinuxAddInventoryCash(player, amount)
+    local playerObj = PZLinuxGetPlayer(player)
+    amount = PZLinuxNormalizeMoney(amount)
+    if not playerObj or amount <= 0 then return 0 end
+
+    local inv = playerObj:getInventory()
+    local added = 0
+    while amount >= 100 do
+        inv:AddItem("Base.MoneyBundle")
+        amount = amount - 100
+        added = added + 100
+    end
+    for _ = 1, amount do
+        inv:AddItem("Base.Money")
+        added = added + 1
+    end
+
+    return added
+end
+
+function PZLinuxRemoveInventoryCash(player, amount)
+    local playerObj = PZLinuxGetPlayer(player)
+    amount = PZLinuxNormalizeMoney(amount)
+    if not playerObj or amount <= 0 then return 0 end
+
+    local inv = playerObj:getInventory()
+    local totalCash = PZLinuxCountInventoryCash(playerObj)
+    if totalCash < amount then return 0 end
+
+    local remaining = amount
+    while remaining >= 100 do
+        local bundle = inv:FindAndReturn("Base.MoneyBundle")
+        if not bundle then break end
+        inv:Remove(bundle)
+        remaining = remaining - 100
+    end
+
+    if remaining > 0 and PZLinuxCountInventoryCash(playerObj) < remaining then
+        local bundle = inv:FindAndReturn("Base.MoneyBundle")
+        if bundle then
+            inv:Remove(bundle)
+            for _ = 1, 100 do
+                inv:AddItem("Base.Money")
+            end
+        end
+    end
+
+    for _ = 1, remaining do
+        local money = inv:FindAndReturn("Base.Money")
+        if not money then return amount - remaining end
+        inv:Remove(money)
+    end
+
+    return amount
+end
+
+function PZLinuxApplyAtmWithdrawal(player, atmRef, amount, requestId)
+    amount = PZLinuxNormalizeMoney(amount)
+    local atmObject = PZLinuxFindAtmObject(atmRef)
+    local previousBalance = PZLinuxLoadBankBalance(player)
+    local atmCash = PZLinuxAtmLoadCash(atmObject)
+
+    if amount <= 0 then
+        return { ok = false, error = "invalid_amount", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash }
+    end
+    if not atmObject then
+        return { ok = false, error = "atm_not_found", requestId = requestId, amount = amount, balance = previousBalance, atmCash = 0 }
+    end
+    if previousBalance < amount then
+        return { ok = false, error = "not_enough_bank", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash }
+    end
+    if atmCash < amount then
+        return { ok = false, error = "not_enough_atm_cash", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash }
+    end
+
+    local balance = PZLinuxSetBankBalance(player, previousBalance - amount)
+    atmCash = PZLinuxAtmSaveCash(atmObject, atmCash - amount)
+    PZLinuxAddInventoryCash(player, amount)
+
+    return { ok = true, type = "withdrawal", requestId = requestId, amount = amount, balance = balance, previousBalance = previousBalance, atmCash = atmCash }
+end
+
+function PZLinuxGetAtmState(player, atmRef, requestId)
+    local atmObject = PZLinuxFindAtmObject(atmRef)
+    local balance = PZLinuxLoadBankBalance(player)
+    if not atmObject then
+        return { ok = false, error = "atm_not_found", requestId = requestId, balance = balance, atmCash = 0 }
+    end
+
+    return { ok = true, type = "sync", requestId = requestId, balance = balance, atmCash = PZLinuxAtmLoadCash(atmObject) }
+end
+
+function PZLinuxApplyAtmDeposit(player, atmRef, amount, requestId)
+    amount = PZLinuxNormalizeMoney(amount)
+    local atmObject = PZLinuxFindAtmObject(atmRef)
+    local previousBalance = PZLinuxLoadBankBalance(player)
+    local atmCash = PZLinuxAtmLoadCash(atmObject)
+    local inventoryCash = PZLinuxCountInventoryCash(player)
+
+    if amount <= 0 then
+        return { ok = false, error = "invalid_amount", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash, inventoryCash = inventoryCash }
+    end
+    if not atmObject then
+        return { ok = false, error = "atm_not_found", requestId = requestId, amount = amount, balance = previousBalance, atmCash = 0, inventoryCash = inventoryCash }
+    end
+    if inventoryCash < amount then
+        return { ok = false, error = "not_enough_inventory_cash", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash, inventoryCash = inventoryCash }
+    end
+
+    local removed = PZLinuxRemoveInventoryCash(player, amount)
+    if removed ~= amount then
+        return { ok = false, error = "cash_remove_failed", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash, inventoryCash = PZLinuxCountInventoryCash(player) }
+    end
+
+    local balance = PZLinuxSetBankBalance(player, previousBalance + amount)
+    atmCash = PZLinuxAtmSaveCash(atmObject, atmCash + amount)
+
+    return { ok = true, type = "deposit", requestId = requestId, amount = amount, balance = balance, previousBalance = previousBalance, atmCash = atmCash, inventoryCash = PZLinuxCountInventoryCash(player) }
+end
+
+function PZLinuxNextRequestId(prefix)
+    PZLinux.nextRequestId = (PZLinux.nextRequestId or 0) + 1
+    local tick = 0
+    if getGameTime then
+        tick = math.floor(getGameTime():getWorldAgeHours() * 3600)
+    end
+    return tostring(prefix or "pzlinux") .. "-" .. tostring(tick) .. "-" .. tostring(PZLinux.nextRequestId)
+end
+
+function PZLinuxRegisterCallback(requestId, callback)
+    if requestId and type(callback) == "function" then
+        PZLinux.callbacks[requestId] = callback
+    end
+end
+
+function PZLinuxDispatchCallback(args)
+    if not args or not args.requestId then return end
+
+    local callback = PZLinux.callbacks[args.requestId]
+    if callback then
+        PZLinux.callbacks[args.requestId] = nil
+        callback(args)
+    end
+end
+
+function PZLinuxSendClientCommand(command, args)
+    if isClient and isClient() and sendClientCommand then
+        sendClientCommand("PZLinux", command, args or {})
+        return true
+    end
+    return false
+end
+
+function PZLinuxRequestBankSync(player, callback)
+    local requestId = PZLinuxNextRequestId("bank-sync")
+    PZLinuxRegisterCallback(requestId, callback)
+
+    if PZLinuxSendClientCommand("PZLinuxBankRequestSync", { requestId = requestId }) then
+        return requestId
+    end
+
+    PZLinuxDispatchCallback({ ok = true, requestId = requestId, balance = PZLinuxLoadBankBalance(player), reason = "sync" })
+    return requestId
+end
+
+function PZLinuxRequestBankDebit(player, amount, reason, callback)
+    local requestId = PZLinuxNextRequestId("bank-debit")
+    PZLinuxRegisterCallback(requestId, callback)
+
+    if PZLinuxSendClientCommand("PZLinuxBankDebit", { requestId = requestId, amount = amount, reason = reason }) then
+        return requestId
+    end
+
+    PZLinuxDispatchCallback(PZLinuxApplyBankDebit(player, amount, reason, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAtmSync(player, atmObject, callback)
+    local requestId = PZLinuxNextRequestId("atm-sync")
+    local atmRef = PZLinuxGetAtmReference(atmObject)
+    PZLinuxRegisterCallback(requestId, callback)
+
+    if PZLinuxSendClientCommand("PZLinuxAtmRequestSync", { requestId = requestId, atm = atmRef }) then
+        return requestId
+    end
+
+    PZLinuxDispatchCallback(PZLinuxGetAtmState(player, atmRef, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAtmWithdrawal(player, atmObject, amount, callback)
+    local requestId = PZLinuxNextRequestId("atm-withdrawal")
+    local atmRef = PZLinuxGetAtmReference(atmObject)
+    PZLinuxRegisterCallback(requestId, callback)
+
+    if PZLinuxSendClientCommand("PZLinuxAtmWithdrawal", { requestId = requestId, atm = atmRef, amount = amount }) then
+        return requestId
+    end
+
+    PZLinuxDispatchCallback(PZLinuxApplyAtmWithdrawal(player, atmRef, amount, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAtmDeposit(player, atmObject, amount, callback)
+    local requestId = PZLinuxNextRequestId("atm-deposit")
+    local atmRef = PZLinuxGetAtmReference(atmObject)
+    PZLinuxRegisterCallback(requestId, callback)
+
+    if PZLinuxSendClientCommand("PZLinuxAtmDeposit", { requestId = requestId, atm = atmRef, amount = amount }) then
+        return requestId
+    end
+
+    PZLinuxDispatchCallback(PZLinuxApplyAtmDeposit(player, atmRef, amount, requestId))
+    return requestId
+end
+
+require "PZLinux/PZLinuxDarkWeb"
+
+local PZLINUX_BLACKJACK_RANKS = PZLinux.Config.Blackjack.ranks
+local PZLINUX_BLACKJACK_SUITS = PZLinux.Config.Blackjack.suits
+
+function PZLinuxBlackjackCreateDeck()
+    local deck = {}
+    for _, suit in ipairs(PZLINUX_BLACKJACK_SUITS) do
+        for _, rank in ipairs(PZLINUX_BLACKJACK_RANKS) do
+            table.insert(deck, { rank = rank, suit = suit, label = rank .. suit })
+        end
+    end
+
+    for i = #deck, 2, -1 do
+        local j = ZombRand(1, i + 1)
+        deck[i], deck[j] = deck[j], deck[i]
+    end
+
+    return deck
+end
+
+function PZLinuxBlackjackDraw(deck)
+    if not deck or #deck == 0 then return nil end
+    return table.remove(deck, #deck)
+end
+
+function PZLinuxBlackjackCardValue(card)
+    if not card then return 0 end
+    if card.rank == "A" then return 11 end
+    if card.rank == "K" or card.rank == "Q" or card.rank == "J" then return 10 end
+    return tonumber(card.rank) or 0
+end
+
+function PZLinuxBlackjackHandValue(hand)
+    local value = 0
+    local aces = 0
+
+    for _, card in ipairs(hand or {}) do
+        value = value + PZLinuxBlackjackCardValue(card)
+        if card.rank == "A" then
+            aces = aces + 1
+        end
+    end
+
+    while value > 21 and aces > 0 do
+        value = value - 10
+        aces = aces - 1
+    end
+
+    return value
+end
+
+function PZLinuxBlackjackIsNatural(hand)
+    return hand and #hand == 2 and PZLinuxBlackjackHandValue(hand) == 21
+end
+
+function PZLinuxBlackjackCopyHand(hand, hideHole)
+    local copy = {}
+    for index, card in ipairs(hand or {}) do
+        if hideHole and index > 1 then
+            table.insert(copy, { rank = "?", suit = "?", label = "??" })
+        else
+            table.insert(copy, { rank = card.rank, suit = card.suit, label = card.label })
+        end
+    end
+    return copy
+end
+
+function PZLinuxBlackjackOutcomeMessage(outcome)
+    if outcome == "blackjack" then return "BLACKJACK!" end
+    if outcome == "win" then return "You win!" end
+    if outcome == "push" then return "Push." end
+    if outcome == "lose" then return "You lose." end
+    return "Playing..."
+end
+
+function PZLinuxBlackjackBuildState(player, session)
+    local hideDealerHole = not session.finished
+    return {
+        ok = true,
+        requestId = session.requestId,
+        bet = session.bet,
+        balance = PZLinuxLoadBankBalance(player),
+        previousBalance = session.previousBalance,
+        payout = session.payout or 0,
+        outcome = session.outcome,
+        message = PZLinuxBlackjackOutcomeMessage(session.outcome),
+        finished = session.finished == true,
+        playerHand = PZLinuxBlackjackCopyHand(session.playerHand, false),
+        dealerHand = PZLinuxBlackjackCopyHand(session.dealerHand, hideDealerHole),
+        playerValue = PZLinuxBlackjackHandValue(session.playerHand),
+        dealerValue = hideDealerHole and PZLinuxBlackjackCardValue(session.dealerHand[1]) or PZLinuxBlackjackHandValue(session.dealerHand),
+        dealerHidden = hideDealerHole,
+    }
+end
+
+function PZLinuxBlackjackFinish(player, session, outcome)
+    session.finished = true
+    session.outcome = outcome
+    session.payout = 0
+
+    if outcome == "blackjack" then
+        session.payout = math.floor(session.bet * 2.5)
+    elseif outcome == "win" then
+        session.payout = session.bet * 2
+    elseif outcome == "push" then
+        session.payout = session.bet
+    end
+
+    if session.payout > 0 then
+        PZLinuxApplyBankCredit(player, session.payout, "blackjack", session.requestId)
+    end
+
+    PZLinuxClearInterruptedSession(player, "blackjack")
+    local state = PZLinuxBlackjackBuildState(player, session)
+    PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)] = nil
+    return state
+end
+
+function PZLinuxBlackjackStart(player, amount, requestId)
+    amount = PZLinuxNormalizeMoney(amount)
+    local debit = PZLinuxApplyBankDebit(player, amount, "blackjack", requestId)
+    if not debit.ok then
+        debit.game = "blackjack"
+        return debit
+    end
+
+    PZLinuxRegisterInterruptedSession(player, "blackjack", {
+        amount = amount,
+        requestId = requestId,
+    })
+
+    local deck = PZLinuxBlackjackCreateDeck()
+    local session = {
+        requestId = requestId,
+        bet = amount,
+        previousBalance = debit.previousBalance,
+        deck = deck,
+        playerHand = { PZLinuxBlackjackDraw(deck), PZLinuxBlackjackDraw(deck) },
+        dealerHand = { PZLinuxBlackjackDraw(deck), PZLinuxBlackjackDraw(deck) },
+        finished = false,
+    }
+
+    PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)] = session
+
+    local playerNatural = PZLinuxBlackjackIsNatural(session.playerHand)
+    local dealerNatural = PZLinuxBlackjackIsNatural(session.dealerHand)
+    if playerNatural and dealerNatural then
+        return PZLinuxBlackjackFinish(player, session, "push")
+    elseif playerNatural then
+        return PZLinuxBlackjackFinish(player, session, "blackjack")
+    elseif dealerNatural then
+        return PZLinuxBlackjackFinish(player, session, "lose")
+    end
+
+    return PZLinuxBlackjackBuildState(player, session)
+end
+
+function PZLinuxBlackjackHit(player, requestId)
+    local session = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
+    if not session then
+        return { ok = false, error = "no_blackjack_session", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    session.requestId = requestId or session.requestId
+    table.insert(session.playerHand, PZLinuxBlackjackDraw(session.deck))
+    if PZLinuxBlackjackHandValue(session.playerHand) > 21 then
+        return PZLinuxBlackjackFinish(player, session, "lose")
+    end
+
+    return PZLinuxBlackjackBuildState(player, session)
+end
+
+function PZLinuxBlackjackStand(player, requestId)
+    local session = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
+    if not session then
+        return { ok = false, error = "no_blackjack_session", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    session.requestId = requestId or session.requestId
+    while PZLinuxBlackjackHandValue(session.dealerHand) < 17 do
+        table.insert(session.dealerHand, PZLinuxBlackjackDraw(session.deck))
+    end
+
+    local playerValue = PZLinuxBlackjackHandValue(session.playerHand)
+    local dealerValue = PZLinuxBlackjackHandValue(session.dealerHand)
+
+    if dealerValue > 21 or playerValue > dealerValue then
+        return PZLinuxBlackjackFinish(player, session, "win")
+    elseif playerValue == dealerValue then
+        return PZLinuxBlackjackFinish(player, session, "push")
+    end
+
+    return PZLinuxBlackjackFinish(player, session, "lose")
+end
+
+function PZLinuxRequestBlackjackStart(player, amount, callback)
+    local requestId = PZLinuxNextRequestId("blackjack-start")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxBlackjackStart", { requestId = requestId, amount = amount }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxBlackjackStart(player, amount, requestId))
+    return requestId
+end
+
+function PZLinuxRequestBlackjackHit(player, callback)
+    local requestId = PZLinuxNextRequestId("blackjack-hit")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxBlackjackHit", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxBlackjackHit(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestBlackjackStand(player, callback)
+    local requestId = PZLinuxNextRequestId("blackjack-stand")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxBlackjackStand", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxBlackjackStand(player, requestId))
+    return requestId
+end
+
+function PZLinuxRaceCreateCard(player, requestId)
+    local pool = {}
+    for _, runner in ipairs(PZLinuxRaceRunnerPool) do
+        table.insert(pool, { name = runner.name, rating = ZombRand(runner.rating, runner.maxRating + 1) })
+    end
+
+    for i = #pool, 2, -1 do
+        local j = ZombRand(1, i + 1)
+        pool[i], pool[j] = pool[j], pool[i]
+    end
+
+    local runners = {}
+    for i = 1, 8 do
+        table.insert(runners, pool[i])
+    end
+
+    local session = { requestId = requestId, runners = runners }
+    PZLinux.raceSessions[PZLinuxGetPlayerKey(player)] = session
+
+    return { ok = true, requestId = requestId, runners = runners, balance = PZLinuxLoadBankBalance(player) }
+end
+
+function PZLinuxRaceSimulateWinner(runners)
+    local progress = {}
+    for i, runner in ipairs(runners or {}) do
+        progress[i] = { runner = runner, position = -15 }
+    end
+
+    for _ = 1, 120 do
+        for _, data in ipairs(progress) do
+            local rating = tonumber(data.runner.rating) or 2
+            local bonus = math.max(1, math.floor((100 - rating) / 25))
+            data.position = data.position + 5 + ZombRand(0, bonus + 1)
+        end
+
+        local bestPosition = -math.huge
+        local winnerId = 1
+        for index, data in ipairs(progress) do
+            if data.position > bestPosition then
+                bestPosition = data.position
+                winnerId = index
+            end
+        end
+
+        if bestPosition >= 130 then
+            return winnerId
+        end
+    end
+
+    return 1
+end
+
+function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
+    selectedRunner = tonumber(selectedRunner)
+    amount = PZLinuxNormalizeMoney(amount)
+
+    local session = PZLinux.raceSessions[PZLinuxGetPlayerKey(player)]
+    if not session or type(session.runners) ~= "table" then
+        return { ok = false, error = "no_race_card", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    if not selectedRunner or selectedRunner < 1 or selectedRunner > #session.runners then
+        return { ok = false, error = "invalid_runner", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    local debit = PZLinuxApplyBankDebit(player, amount, "zombie-race", requestId)
+    if not debit.ok then
+        debit.game = "zombie-race"
+        debit.runners = session.runners
+        return debit
+    end
+
+    local winnerId = PZLinuxRaceSimulateWinner(session.runners)
+    local winner = session.runners[winnerId]
+    local payout = 0
+    if winnerId == selectedRunner then
+        payout = amount * (tonumber(winner.rating) or 2)
+        PZLinuxApplyBankCredit(player, payout, "zombie-race", requestId)
+    end
+
+    PZLinux.raceSessions[PZLinuxGetPlayerKey(player)] = nil
+
+    return {
+        ok = true,
+        requestId = requestId,
+        selectedRunner = selectedRunner,
+        amount = amount,
+        previousBalance = debit.previousBalance,
+        balance = PZLinuxLoadBankBalance(player),
+        runners = session.runners,
+        winnerId = winnerId,
+        payout = payout,
+        outcome = payout > 0 and "win" or "lose",
+    }
+end
+
+function PZLinuxRequestRaceCard(player, callback)
+    local requestId = PZLinuxNextRequestId("race-card")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxRaceCard", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRaceCreateCard(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestRaceStart(player, selectedRunner, amount, callback)
+    local requestId = PZLinuxNextRequestId("race-start")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxRaceStart", { requestId = requestId, selectedRunner = selectedRunner, amount = amount }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRaceStart(player, selectedRunner, amount, requestId))
+    return requestId
+end
+
+function PZLinuxRequestPokerStart(player, lobbyId, buyIn, callback)
+    local requestId = PZLinuxNextRequestId("poker-start")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxPokerStart", { requestId = requestId, lobbyId = lobbyId, buyIn = buyIn }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxPokerCreateSession(player, lobbyId, buyIn, requestId))
+    return requestId
+end
+
+function PZLinuxRequestPokerAction(player, sessionId, action, amount, callback)
+    local requestId = PZLinuxNextRequestId("poker-action")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxPokerAction", { requestId = requestId, sessionId = sessionId, action = action, amount = amount }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxPokerAction(player, action, amount, sessionId, requestId))
+    return requestId
+end
+
+function PZLinuxRequestPokerCashOut(player, sessionId, callback)
+    local requestId = PZLinuxNextRequestId("poker-cashout")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxPokerCashOut", { requestId = requestId, sessionId = sessionId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxPokerCashOut(player, sessionId, requestId))
+    return requestId
+end
+
+if Events and Events.OnServerCommand then
+    Events.OnServerCommand.Add(function(module, command, args)
+        if module ~= "PZLinux" then return end
+        if command == "PZLinuxBankSync"
+        or command == "PZLinuxBankDebitResult"
+        or command == "PZLinuxAtmSyncResult"
+        or command == "PZLinuxAtmTransactionResult"
+        or command == "PZLinuxBlackjackState"
+        or command == "PZLinuxRaceCardResult"
+        or command == "PZLinuxRaceStartResult"
+        or command == "PZLinuxPokerState"
+        or command == "PZLinuxDarkWebOffersResult"
+        or command == "PZLinuxDarkWebBuyResult"
+        or command == "PZLinuxDarkWebSellOffersResult"
+        or command == "PZLinuxDarkWebSellResult"
+        or command == "PZLinuxDarkWebRedeemSalesResult"
+        or command == "PZLinuxDarkWebDeliverOrdersResult"
+        or command == "PZLinuxTradingSnapshotResult"
+        or command == "PZLinuxTradingBuyResult"
+        or command == "PZLinuxTradingSellResult"
+        or command == "PZLinuxContractsBoardResult"
+        or command == "PZLinuxContractAcceptResult"
+        or command == "PZLinuxContractCancelResult"
+        or command == "PZLinuxContractDepositResult"
+        or command == "PZLinuxContractCompleteResult"
+        or command == "PZLinuxContractWorldEventResult"
+        or command == "PZLinuxRequestOrderResult"
+        or command == "PZLinuxRequestDeliverResult"
+        or command == "PZLinuxRequestSpawnVehicleResult"
+        or command == "PZLinuxMailAcceptResult"
+        or command == "PZLinuxMailDeleteResult"
+        or command == "PZLinuxMailCompleteResult"
+        or command == "PZLinuxMailGenerateResult"
+        or command == "PZLinuxHackingStartResult"
+        or command == "PZLinuxHackingAutoResult"
+        or command == "PZLinuxHackingGuessResult"
+        or command == "PZLinuxHackingTransferResult" then
+            if args and args.balance then
+                PZLinuxSetBankBalance(PZLinuxGetPlayer(), args.balance)
+            end
+            if args and args.tradingSnapshot then
+                PZLinuxTradingStoreSnapshot(args.tradingSnapshot)
+            end
+            if args and args.worldContractId then
+                local playerObj = PZLinuxGetPlayer()
+                local modData = playerObj and playerObj:getModData()
+                if modData then modData.PZLinuxContractId = args.worldContractId end
+            end
+            if command == "PZLinuxContractWorldEventResult" and args then
+                local playerObj = PZLinuxGetPlayer()
+                local modData = playerObj and playerObj:getModData()
+                if modData then
+                    if args.worldContractId ~= nil then modData.PZLinuxContractId = args.worldContractId end
+                    if args.activeContract ~= nil then modData.PZLinuxActiveContract = args.activeContract end
+                    if args.zombieCount ~= nil then modData.PZLinuxOnZombieDead = args.zombieCount end
+                    if args.contractManhunt ~= nil then modData.PZLinuxContractManhunt = args.contractManhunt end
+                    if args.contractCargo ~= nil then modData.PZLinuxContractCargo = args.contractCargo end
+                    if args.contractProtect ~= nil then modData.PZLinuxContractProtect = args.contractProtect end
+                    if args.contractPickUp ~= nil then modData.PZLinuxContractPickUp = args.contractPickUp end
+                    if args.contractBlood ~= nil then modData.PZLinuxContractBlood = args.contractBlood end
+                    if args.contractCapture ~= nil then modData.PZLinuxContractCapture = args.contractCapture end
+                end
+            end
+            PZLinuxDispatchCallback(args)
+        end
+    end)
+end
+
+function PZLinuxRequestsGetDefinition(contractId)
+    return PZLinuxRequestDefinitions[tonumber(contractId)]
+end
+
+function PZLinuxRequestsContains(entries, baseName)
+    for _, entry in ipairs(entries or {}) do
+        local value = type(entry) == "table" and entry.baseName or entry
+        if value == baseName then return entry end
+    end
+    return nil
+end
+
+function PZLinuxRequestsFindVehicleLocation(x, y, z)
+    x = tonumber(x)
+    y = tonumber(y)
+    z = tonumber(z) or 0
+    if not x or not y then return nil end
+
+    for _, location in ipairs(PZLinuxRequestVehicleLocations or {}) do
+        if tonumber(location.x) == x and tonumber(location.y) == y and tonumber(location.z or 0) == z then
+            return location
+        end
+    end
+    return nil
+end
+
+function PZLinuxRequestsSanitizeItems(definition, items)
+    local clean = {}
+    for _, item in ipairs(items or {}) do
+        local itemName = type(item) == "table" and item.name or item
+        if PZLinuxRequestsContains(definition.items, itemName) then
+            table.insert(clean, { name = itemName })
+        end
+        if #clean >= 6 then break end
+    end
+    return clean
+end
+
+function PZLinuxRequestsBuildOrder(player, state, requestId)
+    state = state or {}
+    local contractId = tonumber(state.contractId)
+    local definition = PZLinuxRequestsGetDefinition(contractId)
+    if not definition then
+        return { ok = false, error = "invalid_request", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    local unitPrice = PZLinuxRequestsCalculateUnitPrice(player, definition)
+    if contractId == 9 then
+        local vehicleName = state.vehicleName
+        local vehicle = PZLinuxRequestsContains(definition.vehicles, vehicleName)
+        if not vehicle then
+            return { ok = false, error = "invalid_vehicle", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+        end
+        local location = PZLinuxRequestsFindVehicleLocation(state.locationX, state.locationY, state.locationZ)
+        if not location then
+            return { ok = false, error = "invalid_vehicle_location", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+        end
+        local amount = math.ceil(unitPrice * (tonumber(vehicle.delta) or 1))
+        return {
+            ok = true,
+            requestId = requestId,
+            contractId = contractId,
+            amount = amount,
+            vehicleName = vehicleName,
+            locationX = location.x,
+            locationY = location.y,
+            locationZ = location.z or 0,
+            locationName = location.name or "",
+            balance = PZLinuxLoadBankBalance(player),
+        }
+    end
+
+    local cleanItems = PZLinuxRequestsSanitizeItems(definition, state.items)
+    if #cleanItems == 0 then
+        return { ok = false, error = "invalid_request_items", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    return {
+        ok = true,
+        requestId = requestId,
+        contractId = contractId,
+        amount = #cleanItems * unitPrice,
+        items = cleanItems,
+        balance = PZLinuxLoadBankBalance(player),
+    }
+end
+
+function PZLinuxRequestsApplyOrder(player, state, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local order = PZLinuxRequestsBuildOrder(playerObj, state, requestId)
+    if not order.ok then return order end
+
+    local debit = PZLinuxApplyBankDebit(playerObj, order.amount, "request-order", requestId)
+    if not debit.ok then
+        debit.contractId = order.contractId
+        return debit
+    end
+
+    local modData = playerObj:getModData()
+    modData.PZLinuxActiveRequest = 1
+    if order.contractId == 9 then
+        modData.PZLinuxOnItemRequestCar = 1
+        modData.PZLinuxOnItemRequestCarName = order.vehicleName
+        modData.PZLinuxRequestLocationX = order.locationX
+        modData.PZLinuxRequestLocationY = order.locationY
+        modData.PZLinuxRequestLocationZ = order.locationZ
+        modData.PZLinuxOnItemRequest = {}
+    else
+        modData.PZLinuxOnItemRequestCar = 0
+        modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest or {}
+        table.insert(modData.PZLinuxOnItemRequest, { { items = order.items } })
+        if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
+    end
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    order.balance = PZLinuxLoadBankBalance(playerObj)
+    return order
+end
+
+function PZLinuxRequestsApplyDelivery(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local modData = playerObj:getModData()
+    if modData.PZLinuxActiveRequest ~= 1 or type(modData.PZLinuxOnItemRequest) ~= "table" or #modData.PZLinuxOnItemRequest == 0 then
+        return { ok = true, requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    if ZombRand(1, 101) <= 10 then
+        modData.PZLinuxActiveRequest = 0
+        modData.PZLinuxOnItemRequest = {}
+        PZLinuxTransmitPlayerModData(playerObj)
+        return { ok = true, requestId = requestId, lost = true, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local delivered = 0
+    local inventory = playerObj:getInventory()
+    while #modData.PZLinuxOnItemRequest > 0 do
+        local parcel = inventory:AddItem("Base.Parcel_Large")
+        if parcel then
+            local parcelInv = parcel:getInventory()
+            local wrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
+            local batch = wrapper and wrapper[1]
+            if batch and type(batch.items) == "table" then
+                for _, item in ipairs(batch.items) do
+                    if item and item.name then
+                        parcelInv:AddItem(item.name)
+                        delivered = delivered + 1
+                    end
+                end
+            end
+        end
+        table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
+    end
+    modData.PZLinuxActiveRequest = 0
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+function PZLinuxRequestsApplySpawnVehicle(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local modData = playerObj:getModData()
+    if modData.PZLinuxOnItemRequestCar ~= 1 then
+        return { ok = true, requestId = requestId, spawned = false, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
+    if not x or not y or not z then
+        return { ok = false, error = "missing_vehicle_location", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    local dist = math.sqrt((playerObj:getX() - x)^2 + (playerObj:getY() - y)^2)
+    if dist >= 50 then
+        return { ok = true, requestId = requestId, spawned = false, tooFar = true, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    local square = getCell():getGridSquare(x, y, z)
+    if not square then
+        return { ok = false, error = "missing_square", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    local vehicle = addVehicle(modData.PZLinuxOnItemRequestCarName, x, y, z)
+    if not vehicle then
+        return { ok = false, error = "vehicle_spawn_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local key = instanceItem("Base.Key_Blank")
+    local uniqueKeyId = ZombRand(1, 10000)
+    key:setKeyId(uniqueKeyId)
+    key:setName("Pirated Key #" .. uniqueKeyId)
+    vehicle:setKeyId(uniqueKeyId)
+    vehicle:repair()
+    playerObj:getInventory():AddItem(key)
+    modData.PZLinuxOnItemRequestCar = 0
+    modData.PZLinuxActiveRequest = 0
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, spawned = true, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+function PZLinuxRequestOrder(player, state, callback)
+    local requestId = PZLinuxNextRequestId("request-order")
+    PZLinuxRegisterCallback(requestId, callback)
+    state = state or {}
+    state.requestId = requestId
+    if PZLinuxSendClientCommand("PZLinuxRequestOrder", state) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRequestsApplyOrder(player, state, requestId))
+    return requestId
+end
+
+function PZLinuxRequestDeliver(player, callback)
+    local requestId = PZLinuxNextRequestId("request-deliver")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxRequestDeliver", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRequestsApplyDelivery(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestSpawnVehicle(player, callback)
+    local requestId = PZLinuxNextRequestId("request-vehicle")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxRequestSpawnVehicle", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRequestsApplySpawnVehicle(player, requestId))
+    return requestId
+end
+
+function PZLinuxTradingGetCompanyByCode(code)
+    if not code then return nil end
+    for _, company in ipairs(PZLinuxTradingCompanyNameTable or {}) do
+        if company.code == code then
+            return company
+        end
+    end
+    return nil
+end
+
+function PZLinuxTradingGetDataName(code)
+    return "PZLinuxTrading" .. tostring(code or "")
+end
+
+function PZLinuxTradingCopyHistory(history)
+    local copy = {}
+    for _, price in ipairs(history or {}) do
+        table.insert(copy, tonumber(price) or 0)
+    end
+    return copy
+end
+
+function PZLinuxTradingTransmitCompany(code)
+    local dataName = PZLinuxTradingGetDataName(code)
+    if isServer and isServer() and ModData and ModData.transmit then
+        ModData.transmit(dataName)
+    end
+end
+
+function PZLinuxTradingGetCompanyHistory(code)
+    local company = PZLinuxTradingGetCompanyByCode(code)
+    if not company then return nil end
+
+    local dataName = PZLinuxTradingGetDataName(code)
+    local companyData = ModData.getOrCreate(dataName)
+    companyData.dataName = companyData.dataName or {}
+
+    if #companyData.dataName == 0 then
+        local tempPrice = company.price
+        for _ = 1, 48 do
+            tempPrice = PZLinuxTradingGenerateNextPrice(tempPrice, 5, 25)
+            table.insert(companyData.dataName, tempPrice)
+        end
+        PZLinuxTradingTransmitCompany(code)
+    end
+
+    while #companyData.dataName < 48 do
+        table.insert(companyData.dataName, PZLinuxTradingGenerateNextPrice(companyData.dataName[#companyData.dataName] or company.price, 5, 25))
+    end
+    while #companyData.dataName > 48 do
+        table.remove(companyData.dataName, 1)
+    end
+
+    return companyData.dataName
+end
+
+function PZLinuxTradingInitializePrices()
+    local tradingData = ModData.getOrCreate("PZLinuxTrading")
+    if not tradingData.PZLinuxTrading then
+        tradingData.PZLinuxTrading = 1
+    end
+
+    for _, company in ipairs(PZLinuxTradingCompanyNameTable or {}) do
+        PZLinuxTradingGetCompanyHistory(company.code)
+    end
+
+    if isServer and isServer() and ModData and ModData.transmit then
+        ModData.transmit("PZLinuxTrading")
+    end
+end
+
+function PZLinuxTradingUpdatePrices()
+    PZLinuxTradingInitializePrices()
+    for _, company in ipairs(PZLinuxTradingCompanyNameTable or {}) do
+        local history = PZLinuxTradingGetCompanyHistory(company.code)
+        local lastPrice = history[#history] or company.price
+        table.insert(history, PZLinuxTradingGenerateNextPrice(lastPrice, 5, 5))
+        if #history > 48 then
+            table.remove(history, 1)
+        end
+        PZLinuxTradingTransmitCompany(company.code)
+    end
+end
+
+function PZLinuxTradingSyncToWorldHour()
+    local tradingData = ModData.getOrCreate("PZLinuxTrading")
+    PZLinuxTradingInitializePrices()
+
+    local worldHour = getGameTime and math.ceil(getGameTime():getWorldAgeHours()) or 0
+    if not tradingData.PZLinuxLastPriceHour then
+        tradingData.PZLinuxLastPriceHour = worldHour
+    end
+
+    local delta = math.max(0, worldHour - tonumber(tradingData.PZLinuxLastPriceHour))
+    delta = math.min(delta, 48)
+    for _ = 1, delta do
+        PZLinuxTradingUpdatePrices()
+    end
+
+    tradingData.PZLinuxLastPriceHour = worldHour
+    if isServer and isServer() and ModData and ModData.transmit then
+        ModData.transmit("PZLinuxTrading")
+    end
+end
+
+function PZLinuxTradingBuildSnapshot(player)
+    PZLinuxTradingSyncToWorldHour()
+
+    local playerObj = PZLinuxGetPlayer(player)
+    local playerModData = playerObj and playerObj:getModData() or {}
+    local companies = {}
+
+    for _, company in ipairs(PZLinuxTradingCompanyNameTable or {}) do
+        local history = PZLinuxTradingGetCompanyHistory(company.code)
+        local firstPrice = tonumber(history[24] or history[1] or company.price) or company.price
+        local lastPrice = tonumber(history[#history] or company.price) or company.price
+        local secondLastPrice = tonumber(history[#history - 1] or lastPrice) or lastPrice
+        local h1 = 0
+        local d1 = 0
+        if secondLastPrice > 0 then
+            h1 = ((lastPrice - secondLastPrice) / secondLastPrice) * 100
+        end
+        if firstPrice > 0 then
+            d1 = ((lastPrice - firstPrice) / firstPrice) * 100
+        end
+
+        table.insert(companies, {
+            name = company.name,
+            code = company.code,
+            price = lastPrice,
+            firstPrice = firstPrice,
+            secondLastPrice = secondLastPrice,
+            h1 = h1,
+            d1 = d1,
+            history = PZLinuxTradingCopyHistory(history),
+            quantity = tonumber(playerModData["ZLinuxPlayerWallet" .. company.code]) or 0,
+        })
+    end
+
+    return { companies = companies }
+end
+
+function PZLinuxTradingStoreSnapshot(snapshot)
+    if not snapshot or type(snapshot.companies) ~= "table" or not ModData then return end
+
+    for _, company in ipairs(snapshot.companies) do
+        if company.code and type(company.history) == "table" then
+            local globalData = ModData.getOrCreate(PZLinuxTradingGetDataName(company.code))
+            globalData.dataName = PZLinuxTradingCopyHistory(company.history)
+        end
+    end
+end
+
+function PZLinuxTradingGetSnapshot(player, requestId)
+    local snapshot = PZLinuxTradingBuildSnapshot(player)
+    return {
+        ok = true,
+        requestId = requestId,
+        balance = PZLinuxLoadBankBalance(player),
+        tradingSnapshot = snapshot,
+    }
+end
+
+function PZLinuxTradingGetWalletKey(code)
+    return "ZLinuxPlayerWallet" .. tostring(code or "")
+end
+
+function PZLinuxTradingApplyBuy(player, code, quantity, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local company = PZLinuxTradingGetCompanyByCode(code)
+    quantity = PZLinuxNormalizeMoney(quantity)
+    if not company or quantity <= 0 then
+        return { ok = false, error = "invalid_trading_order", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    PZLinuxTradingSyncToWorldHour()
+    local history = PZLinuxTradingGetCompanyHistory(company.code)
+    local price = PZLinuxTradingNormalizePrice(history[#history] or company.price)
+    local amount = PZLinuxNormalizeMoney(price * quantity)
+    local debit = PZLinuxApplyBankDebit(playerObj, amount, "trading-buy", requestId)
+    if not debit.ok then
+        debit.code = company.code
+        debit.quantity = quantity
+        debit.price = price
+        debit.tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj)
+        return debit
+    end
+
+    local modData = playerObj:getModData()
+    local walletKey = PZLinuxTradingGetWalletKey(company.code)
+    modData[walletKey] = PZLinuxNormalizeMoney(modData[walletKey]) + quantity
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return {
+        ok = true,
+        requestId = requestId,
+        type = "buy",
+        code = company.code,
+        quantity = quantity,
+        price = price,
+        amount = amount,
+        balance = PZLinuxLoadBankBalance(playerObj),
+        previousBalance = debit.previousBalance,
+        walletQuantity = modData[walletKey],
+        tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj),
+    }
+end
+
+function PZLinuxTradingApplySell(player, code, quantity, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local company = PZLinuxTradingGetCompanyByCode(code)
+    quantity = PZLinuxNormalizeMoney(quantity)
+    if not company or quantity <= 0 then
+        return { ok = false, error = "invalid_trading_order", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    PZLinuxTradingSyncToWorldHour()
+    local modData = playerObj:getModData()
+    local walletKey = PZLinuxTradingGetWalletKey(company.code)
+    local currentQuantity = PZLinuxNormalizeMoney(modData[walletKey])
+    if currentQuantity < quantity then
+        return {
+            ok = false,
+            error = "not_enough_tokens",
+            requestId = requestId,
+            code = company.code,
+            quantity = quantity,
+            walletQuantity = currentQuantity,
+            balance = PZLinuxLoadBankBalance(playerObj),
+            tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj),
+        }
+    end
+
+    local history = PZLinuxTradingGetCompanyHistory(company.code)
+    local price = PZLinuxTradingNormalizePrice(history[#history] or company.price)
+    local amount = PZLinuxNormalizeMoney(price * quantity)
+    local credit = PZLinuxApplyBankCredit(playerObj, amount, "trading-sell", requestId)
+    if not credit.ok then
+        credit.code = company.code
+        credit.quantity = quantity
+        credit.price = price
+        credit.tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj)
+        return credit
+    end
+
+    modData[walletKey] = currentQuantity - quantity
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return {
+        ok = true,
+        requestId = requestId,
+        type = "sell",
+        code = company.code,
+        quantity = quantity,
+        price = price,
+        amount = amount,
+        balance = PZLinuxLoadBankBalance(playerObj),
+        previousBalance = credit.previousBalance,
+        walletQuantity = modData[walletKey],
+        tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj),
+    }
+end
+
+function PZLinuxRequestTradingSnapshot(player, callback)
+    local requestId = PZLinuxNextRequestId("trading-snapshot")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxTradingSnapshot", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxTradingGetSnapshot(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestTradingBuy(player, code, quantity, callback)
+    local requestId = PZLinuxNextRequestId("trading-buy")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxTradingBuy", { requestId = requestId, code = code, quantity = quantity }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxTradingApplyBuy(player, code, quantity, requestId))
+    return requestId
+end
+
+function PZLinuxRequestTradingSell(player, code, quantity, callback)
+    local requestId = PZLinuxNextRequestId("trading-sell")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxTradingSell", { requestId = requestId, code = code, quantity = quantity }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxTradingApplySell(player, code, quantity, requestId))
+    return requestId
+end
+
+function PZLinuxUpdateTradingPrices()
+    PZLinuxTradingUpdatePrices()
+end
+
+function PZLinuxTrading_initializePrices()
+    PZLinuxTradingInitializePrices()
+end
+
+function PZLinuxContractsGetDefinition(contractId)
+    contractId = tonumber(contractId)
+    for _, definition in ipairs(PZLinuxContractDefinitions or {}) do
+        if definition.id == contractId then
+            return definition
+        end
+    end
+    return nil
+end
+
+function PZLinuxContractsGetCompanyCode(index)
+    local company = PZLinuxTradingCompanyNameTable and PZLinuxTradingCompanyNameTable[index]
+    if company and company.code then return company.code end
+    return "CCC"
+end
+
+function PZLinuxContractsBuildContract(definition)
+    local randomId = ZombRand(1, #(PZLinuxTradingCompanyNameTable or {}) + 1)
+    local randomCityId = ZombRand(1, 13)
+    local companyCode = PZLinuxContractsGetCompanyCode(randomId)
+    local cityName = ""
+    if definition.city and PZLinuxContractCities[randomCityId] then
+        cityName = " - " .. PZLinuxContractCities[randomCityId]
+    end
+
+    PZLinuxTradingSyncToWorldHour()
+    local history = PZLinuxTradingGetCompanyHistory(companyCode) or {}
+    local lastPrice = tonumber(history[#history]) or 1
+    local hourMultiplier = getGameTime and math.ceil(getGameTime():getWorldAgeHours() / 2190 + 1) or 1
+    local maxRewardBase = math.max(lastPrice + 1, math.ceil(lastPrice * hourMultiplier))
+    local reward = math.ceil((ZombRand(lastPrice, maxRewardBase) + definition.reward) / 10) * 10
+
+    return {
+        id = definition.id,
+        name = "Execute a contract for " .. companyCode .. " - Difficulty: " .. definition.difficulty .. "/5" .. cityName,
+        code = companyCode,
+        reward = reward,
+        questName = definition.questName,
+        cityId = randomCityId,
+        difficulty = definition.difficulty,
+    }
+end
+
+function PZLinuxContractsShuffle(list)
+    for index = #list, 2, -1 do
+        local randomIndex = ZombRand(1, index + 1)
+        list[index], list[randomIndex] = list[randomIndex], list[index]
+    end
+end
+
+function PZLinuxContractsGetBoardData()
+    local boardData = ModData.getOrCreate("PZLinuxContractsBoard")
+    local worldHour = getGameTime and math.ceil(getGameTime():getWorldAgeHours()) or 168
+    if worldHour < 168 then worldHour = 168 end
+
+    if type(boardData.contracts) ~= "table" or not boardData.generatedHour or (worldHour - tonumber(boardData.generatedHour)) >= 168 then
+        local pool = {}
+        for _, definition in ipairs(PZLinuxContractDefinitions or {}) do
+            table.insert(pool, PZLinuxContractsBuildContract(definition))
+        end
+        PZLinuxContractsShuffle(pool)
+
+        local selected = {}
+        local count = ZombRand(1, 9)
+        while #selected < count do
+            for _, contract in ipairs(pool) do
+                table.insert(selected, contract)
+                if #selected >= count then break end
+            end
+        end
+
+        boardData.contracts = selected
+        boardData.generatedHour = worldHour
+        if isServer and isServer() and ModData and ModData.transmit then
+            ModData.transmit("PZLinuxContractsBoard")
+        end
+    end
+
+    return boardData
+end
+
+function PZLinuxContractsGetBoard(player, requestId)
+    local boardData = PZLinuxContractsGetBoardData()
+    return {
+        ok = true,
+        requestId = requestId,
+        balance = PZLinuxLoadBankBalance(player),
+        contracts = boardData.contracts or {},
+        generatedHour = boardData.generatedHour,
+    }
+end
+
+function PZLinuxContractsGetWorldData()
+    local worldData = ModData.getOrCreate("PZLinuxContractsWorld")
+    worldData.nextId = tonumber(worldData.nextId) or 1
+    worldData.active = worldData.active or {}
+    worldData.byPlayer = worldData.byPlayer or {}
+    return worldData
+end
+
+function PZLinuxContractsTransmitWorldData()
+    if isServer and isServer() and ModData and ModData.transmit then
+        ModData.transmit("PZLinuxContractsWorld")
+    end
+end
+
+function PZLinuxContractsGetWorldContract(contractWorldId)
+    if not contractWorldId or contractWorldId == "" then return nil end
+    local worldData = PZLinuxContractsGetWorldData()
+    return worldData.active[tostring(contractWorldId)]
+end
+
+function PZLinuxContractsCreateWorldContract(player, selectedContract, contractId, state)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return nil end
+
+    state = state or {}
+    local worldData = PZLinuxContractsGetWorldData()
+    local worldId = "PZLinuxContract-" .. tostring(worldData.nextId)
+    worldData.nextId = worldData.nextId + 1
+
+    local playerKey = PZLinuxGetPlayerKey(playerObj)
+    local record = {
+        id = worldId,
+        contractId = tonumber(contractId),
+        boardContractId = tonumber(selectedContract and selectedContract.id) or tonumber(contractId),
+        status = "accepted",
+        acceptedBy = playerKey,
+        owner = playerKey,
+        claimableBy = "any",
+        acceptedHour = getGameTime and getGameTime():getWorldAgeHours() or 0,
+        reward = PZLinuxNormalizeMoney(selectedContract and selectedContract.reward),
+        code = selectedContract and selectedContract.code or "",
+        questName = selectedContract and selectedContract.questName or "",
+        cityId = selectedContract and selectedContract.cityId or 0,
+        locationX = tonumber(state.locationX) or 0,
+        locationY = tonumber(state.locationY) or 0,
+        locationZ = tonumber(state.locationZ) or 0,
+        info = state.info or "",
+        infoCount = PZLinuxNormalizeMoney(state.infoCount),
+        zombieToKill = PZLinuxNormalizeMoney(state.zombieToKill),
+        zombieCount = 0,
+        spawned = false,
+        deliveredBy = "",
+        completedBy = "",
+    }
+
+    worldData.active[worldId] = record
+    worldData.byPlayer[playerKey] = worldId
+    PZLinuxContractsTransmitWorldData()
+    return record
+end
+
+function PZLinuxContractsSyncWorldRecordToPlayer(player, record, activeState)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj or not record then return end
+
+    local modData = playerObj:getModData()
+    modData.PZLinuxContractId = record.id
+    modData.PZLinuxActiveContract = activeState or modData.PZLinuxActiveContract or 1
+    modData.PZLinuxOnReward = PZLinuxNormalizeMoney(record.reward)
+    modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. tostring(record.code or "")
+    modData.PZLinuxContractLocationX = tonumber(record.locationX) or 0
+    modData.PZLinuxContractLocationY = tonumber(record.locationY) or 0
+    modData.PZLinuxContractLocationZ = tonumber(record.locationZ) or 0
+    modData.PZLinuxContractInfo = record.info or ""
+    modData.PZLinuxContractInfoCount = PZLinuxNormalizeMoney(record.infoCount)
+    modData.PZLinuxOnZombieToKill = PZLinuxNormalizeMoney(record.zombieToKill)
+    modData.PZLinuxOnZombieDead = PZLinuxNormalizeMoney(record.zombieCount)
+    PZLinuxContractsSetTypeFlags(modData, record.contractId)
+    if record.status == "spawned" then
+        if tonumber(record.contractId) == 3 then modData.PZLinuxContractManhunt = 2 end
+        if tonumber(record.contractId) == 7 then modData.PZLinuxContractCargo = 2 end
+    elseif record.status == "protect_started" then
+        modData.PZLinuxContractProtect = 2
+    elseif record.status == "protect_clear" then
+        modData.PZLinuxContractProtect = 3
+    elseif record.status == "objective_taken" then
+        if tonumber(record.contractId) == 2 then modData.PZLinuxContractPickUp = 3 end
+        if tonumber(record.contractId) == 3 then modData.PZLinuxContractManhunt = 3 end
+        if tonumber(record.contractId) == 4 then modData.PZLinuxContractBlood = 3 end
+        if tonumber(record.contractId) == 6 then modData.PZLinuxContractCapture = 3 end
+    elseif record.status == "ready_to_complete" or record.status == "deposited" then
+        modData.PZLinuxActiveContract = 9
+        if tonumber(record.contractId) == 7 then modData.PZLinuxContractCargo = 3 end
+        if tonumber(record.contractId) == 8 then modData.PZLinuxContractProtect = 3 end
+    end
+    PZLinuxTransmitPlayerModData(playerObj)
+end
+
+function PZLinuxContractsSetTypeFlags(modData, contractId)
+    if not modData then return end
+    contractId = tonumber(contractId)
+    if contractId == 1 then modData.PZLinuxContractKillZombie = 1 end
+    if contractId == 2 then modData.PZLinuxContractPickUp = 1 end
+    if contractId == 3 then modData.PZLinuxContractManhunt = 1 end
+    if contractId == 4 then modData.PZLinuxContractBlood = 1 end
+    if contractId == 5 then modData.PZLinuxContractCar = 1 end
+    if contractId == 6 then modData.PZLinuxContractCapture = 1 end
+    if contractId == 7 then modData.PZLinuxContractCargo = 1 end
+    if contractId == 8 then modData.PZLinuxContractProtect = 1 end
+    if contractId == 9 then modData.PZLinuxContractMedical = 1 end
+    if contractId == 10 then modData.PZLinuxContractWeapon = 1 end
+    if contractId == 11 then modData.PZLinuxContractSendComputer = 1 end
+    if contractId == 12 then modData.PZLinuxContractSendFridge = 1 end
+end
+
+function PZLinuxContractsMarkWorldContract(contractWorldId, status, player)
+    local record = PZLinuxContractsGetWorldContract(contractWorldId)
+    if not record then return nil end
+
+    record.status = status or record.status
+    if player then
+        local playerKey = PZLinuxGetPlayerKey(player)
+        if status == "deposited" then
+            record.deliveredBy = playerKey
+            record.owner = playerKey
+        end
+        if status == "completed" then
+            record.completedBy = playerKey
+            record.owner = playerKey
+        end
+        if status == "cancelled" then record.cancelledBy = playerKey end
+    end
+    record.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or record.updatedHour
+    PZLinuxContractsTransmitWorldData()
+    return record
+end
+
+function PZLinuxContractsTagEntity(entity, contractWorldId, objectiveType)
+    if not entity or not contractWorldId then return end
+    if entity.getModData then
+        local data = entity:getModData()
+        data.PZLinuxContractId = contractWorldId
+        data.PZLinuxContractObjective = objectiveType or ""
+    end
+    if entity.transmitModData then
+        entity:transmitModData()
+    end
+end
+
+function PZLinuxContractsGetEntityContractId(entity)
+    if not entity or not entity.getModData then return nil end
+    local data = entity:getModData()
+    return data and data.PZLinuxContractId
+end
+
+function PZLinuxContractsClearState(modData)
+    if not modData then return end
+    modData.PZLinuxContractLocationX = 0
+    modData.PZLinuxContractLocationY = 0
+    modData.PZLinuxContractLocationZ = 0
+    modData.PZLinuxContractId = ""
+    modData.PZLinuxOnZombieDead = 0
+    modData.PZLinuxActiveContract = 0
+    modData.PZLinuxContractNote = ""
+    modData.PZLinuxContractInfo = ""
+    modData.PZLinuxContractInfoCount = 0
+    modData.PZLinuxContractKillZombie = 0
+    modData.PZLinuxContractPickUp = 0
+    modData.PZLinuxContractManhunt = 0
+    modData.PZLinuxContractBlood = 0
+    modData.PZLinuxContractCar = 0
+    modData.PZLinuxContractCapture = 0
+    modData.PZLinuxContractCargo = 0
+    modData.PZLinuxContractProtect = 0
+    modData.PZLinuxContractMedical = 0
+    modData.PZLinuxContractWeapon = 0
+    modData.PZLinuxContractSendComputer = 0
+    modData.PZLinuxContractSendFridge = 0
+end
+
+function PZLinuxContractsRemoveContractNote(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return false end
+    local inventory = playerObj:getInventory()
+    if not inventory then return false end
+
+    local items = inventory:getItems()
+    for index = items:size() - 1, 0, -1 do
+        local item = items:get(index)
+        if item and item:getType() == "Note" and item:getName() == "Contract" then
+            inventory:Remove(item)
+            return true
+        end
+    end
+    return false
+end
+
+function PZLinuxContractsUpdateCompanyPrice(dataName, direction)
+    if not dataName then return end
+
+    local code = tostring(dataName):gsub("^PZLinuxTrading", "")
+    local history = PZLinuxTradingGetCompanyHistory(code)
+    if not history then return end
+
+    local lastPrice = tonumber(history[#history]) or 1
+    local newPrice = PZLinux.Economy.contractCompanyNextPrice(lastPrice, direction)
+
+    table.insert(history, newPrice)
+    if #history > 48 then
+        table.remove(history, 1)
+    end
+    PZLinuxTradingTransmitCompany(code)
+end
+
+function PZLinuxContractsApplyAccept(player, state, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    state = state or {}
+    local contractId = tonumber(state.contractId)
+    local definition = PZLinuxContractsGetDefinition(contractId)
+    if not definition then
+        return { ok = false, error = "invalid_contract", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local modData = playerObj:getModData()
+    if tonumber(modData.PZLinuxActiveContract) == 1 then
+        return { ok = false, error = "contract_already_active", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local selectedContract = nil
+    local boardData = PZLinuxContractsGetBoardData()
+    for _, boardContract in ipairs(boardData.contracts or {}) do
+        if tonumber(boardContract.id) == contractId then
+            selectedContract = boardContract
+            break
+        end
+    end
+    if not selectedContract then
+        return { ok = false, error = "contract_not_available", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    PZLinuxContractsClearState(modData)
+    modData.PZLinuxActiveContract = 1
+    modData.PZLinuxOnZombieDead = 0
+    modData.PZLinuxOnReward = PZLinuxNormalizeMoney(selectedContract.reward)
+    modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. tostring(selectedContract.code or "")
+    modData.PZLinuxContractLocationX = tonumber(state.locationX) or 0
+    modData.PZLinuxContractLocationY = tonumber(state.locationY) or 0
+    modData.PZLinuxContractLocationZ = tonumber(state.locationZ) or 0
+    modData.PZLinuxContractInfo = state.info or ""
+    modData.PZLinuxContractInfoCount = PZLinuxNormalizeMoney(state.infoCount)
+    modData.PZLinuxContractNote = state.note or ""
+    modData.PZLinuxOnZombieToKill = PZLinuxNormalizeMoney(state.zombieToKill)
+
+    if contractId == 1 then modData.PZLinuxContractKillZombie = 1 end
+    if contractId == 2 then modData.PZLinuxContractPickUp = 1 end
+    if contractId == 3 then modData.PZLinuxContractManhunt = 1 end
+    if contractId == 4 then modData.PZLinuxContractBlood = 1 end
+    if contractId == 5 then modData.PZLinuxContractCar = 1 end
+    if contractId == 6 then modData.PZLinuxContractCapture = 1 end
+    if contractId == 7 then modData.PZLinuxContractCargo = 1 end
+    if contractId == 8 then modData.PZLinuxContractProtect = 1 end
+    if contractId == 9 then modData.PZLinuxContractMedical = 1 end
+    if contractId == 10 then modData.PZLinuxContractWeapon = 1 end
+    if contractId == 11 then modData.PZLinuxContractSendComputer = 1 end
+    if contractId == 12 then modData.PZLinuxContractSendFridge = 1 end
+
+    local worldRecord = PZLinuxContractsCreateWorldContract(playerObj, selectedContract, contractId, state)
+    if worldRecord then
+        modData.PZLinuxContractId = worldRecord.id
+    end
+
+    PZLinuxTransmitPlayerModData(playerObj)
+    return {
+        ok = true,
+        requestId = requestId,
+        contractId = contractId,
+        code = selectedContract.code,
+        reward = selectedContract.reward,
+        questName = selectedContract.questName,
+        cityId = selectedContract.cityId,
+        worldContractId = modData.PZLinuxContractId,
+        balance = PZLinuxLoadBankBalance(playerObj),
+        activeContract = modData.PZLinuxActiveContract,
+    }
+end
+
+function PZLinuxContractsApplyCancel(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local modData = playerObj:getModData()
+    local dataName = modData.PZLinuxContractCompanyUp
+    PZLinuxContractsUpdateCompanyPrice(dataName, "down")
+    PZLinuxContractsMarkWorldContract(modData.PZLinuxContractId, "cancelled", playerObj)
+    PZLinuxContractsRemoveContractNote(playerObj)
+    PZLinuxContractsClearState(modData)
+    modData.PZLinuxUIOpenMenu = 7
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return { ok = true, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+function PZLinuxContractsBagContainsCorpse(bag)
+    if not bag or not bag.getInventory then return false end
+    local inventory = bag:getInventory()
+    if not inventory then return false end
+    local items = inventory:getItems()
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and (item:getFullType() == "Base.CorpseMale" or item:getFullType() == "Base.CorpseFemale") then
+            return true
+        end
+    end
+    return false
+end
+
+function PZLinuxContractsIsMoveableSprite(item, sprites)
+    if not item or not instanceof or not instanceof(item, "Moveable") then return false end
+    local worldSprite = item:getWorldSprite()
+    for _, sprite in ipairs(sprites or {}) do
+        if worldSprite == sprite then return true end
+    end
+    return false
+end
+
+function PZLinuxContractsIsComputerMoveable(item)
+    return PZLinuxContractsIsMoveableSprite(item, {
+        "appliances_com_01_72",
+        "appliances_com_01_73",
+        "appliances_com_01_74",
+        "appliances_com_01_75",
+    })
+end
+
+function PZLinuxContractsIsFridgeMoveable(item)
+    return PZLinuxContractsIsMoveableSprite(item, {
+        "appliances_refrigeration_01_0",
+        "appliances_refrigeration_01_1",
+        "appliances_refrigeration_01_2",
+        "appliances_refrigeration_01_3",
+        "appliances_refrigeration_01_4",
+        "appliances_refrigeration_01_5",
+        "appliances_refrigeration_01_6",
+        "appliances_refrigeration_01_7",
+        "appliances_refrigeration_01_8",
+        "appliances_refrigeration_01_9",
+        "appliances_refrigeration_01_10",
+        "appliances_refrigeration_01_11",
+        "appliances_refrigeration_01_12",
+        "appliances_refrigeration_01_13",
+        "appliances_refrigeration_01_14",
+        "appliances_refrigeration_01_15",
+        "appliances_refrigeration_01_22",
+        "appliances_refrigeration_01_23",
+        "appliances_refrigeration_01_24",
+        "appliances_refrigeration_01_25",
+        "appliances_refrigeration_01_26",
+        "appliances_refrigeration_01_27",
+        "appliances_refrigeration_01_28",
+        "appliances_refrigeration_01_29",
+        "appliances_refrigeration_01_30",
+        "appliances_refrigeration_01_31",
+        "appliances_refrigeration_01_32",
+        "appliances_refrigeration_01_33",
+        "appliances_refrigeration_01_34",
+        "appliances_refrigeration_01_35",
+        "appliances_refrigeration_01_36",
+        "appliances_refrigeration_01_37",
+        "appliances_refrigeration_01_40",
+        "appliances_refrigeration_01_41",
+        "appliances_refrigeration_01_42",
+        "appliances_refrigeration_01_43",
+    })
+end
+
+function PZLinuxContractsItemMatchesDelivery(item, modData, totalCountForContract)
+    if not item or not modData then return false end
+    local fullType = item:getFullType()
+    local itemContractId = PZLinuxContractsGetEntityContractId(item)
+    if itemContractId and itemContractId == modData.PZLinuxContractId then
+        return fullType == "Base.Bag_ProtectiveCaseSmall"
+            or fullType == "Base.Bag_Mail"
+            or fullType == "Base.EmptyJar"
+    end
+    if fullType == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3 then return true end
+    if PZLinuxContractsIsComputerMoveable(item) and modData.PZLinuxContractSendComputer == 1 then return true end
+    if PZLinuxContractsIsFridgeMoveable(item) and modData.PZLinuxContractSendFridge == 1 then return true end
+    if fullType == "Base.Bag_Mail" and PZLinuxContractsBagContainsCorpse(item) and modData.PZLinuxContractManhunt == 3 then return true end
+    if fullType == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3 then return true end
+    if fullType == "Base.Bag_Mail" and PZLinuxContractsBagContainsCorpse(item) and modData.PZLinuxContractCapture == 3 then return true end
+    if fullType == modData.PZLinuxContractInfo and modData.PZLinuxContractMedical == 1 and totalCountForContract then return true end
+    if fullType == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1 and totalCountForContract then return true end
+    if fullType == modData.PZLinuxContractInfo and modData.PZLinuxContractWeapon == 1 and totalCountForContract then return true end
+    return false
+end
+
+function PZLinuxContractsApplyDeposit(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local inventory = playerObj:getInventory()
+    local modData = playerObj:getModData()
+    local items = inventory:getItems()
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        local itemContractId = PZLinuxContractsGetEntityContractId(item)
+        local taggedRecord = PZLinuxContractsGetWorldContract(itemContractId)
+        if taggedRecord and taggedRecord.status ~= "completed" and taggedRecord.status ~= "cancelled" then
+            PZLinuxContractsSyncWorldRecordToPlayer(playerObj, taggedRecord, 1)
+            modData = playerObj:getModData()
+            break
+        end
+    end
+
+    local itemCount = 0
+    local requiredType = modData.PZLinuxContractInfo
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and requiredType and item:getFullType() == requiredType then
+            itemCount = itemCount + 1
+        end
+    end
+
+    local totalCountForContract = false
+    if modData.PZLinuxContractInfoCount and itemCount >= modData.PZLinuxContractInfoCount then
+        totalCountForContract = tonumber(modData.PZLinuxContractInfoCount) > 0
+    end
+
+    local removed = 0
+    for index = items:size() - 1, 0, -1 do
+        local item = items:get(index)
+        local itemContractId = PZLinuxContractsGetEntityContractId(item)
+        local sameWorldContract = not modData.PZLinuxContractId or modData.PZLinuxContractId == "" or not itemContractId or itemContractId == modData.PZLinuxContractId
+        if sameWorldContract and PZLinuxContractsItemMatchesDelivery(item, modData, totalCountForContract) then
+            inventory:Remove(item)
+            removed = removed + 1
+            if tonumber(modData.PZLinuxContractInfoCount) and tonumber(modData.PZLinuxContractInfoCount) > 0 then
+                modData.PZLinuxContractInfoCount = math.max(0, tonumber(modData.PZLinuxContractInfoCount) - 1)
+            end
+        end
+    end
+
+    if removed > 0 and (not modData.PZLinuxContractInfoCount or tonumber(modData.PZLinuxContractInfoCount) <= 0) then
+        modData.PZLinuxActiveContract = 9
+        PZLinuxContractsMarkWorldContract(modData.PZLinuxContractId, "deposited", playerObj)
+    end
+
+    PZLinuxTransmitPlayerModData(playerObj)
+    return {
+        ok = true,
+        requestId = requestId,
+        removed = removed,
+        worldContractId = modData.PZLinuxContractId,
+        activeContract = modData.PZLinuxActiveContract,
+        balance = PZLinuxLoadBankBalance(playerObj),
+    }
+end
+
+function PZLinuxContractsApplyComplete(player, _state, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local modData, pzlinux = PZLinuxGetModData(playerObj)
+    local activeContract = tonumber(modData and modData.PZLinuxActiveContract)
+    if not modData or (activeContract ~= 9 and activeContract ~= 10) then
+        return { ok = false, error = "contract_not_completed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local zombieCount = PZLinuxNormalizeMoney(modData.PZLinuxOnZombieDead)
+    local reward = PZLinuxNormalizeMoney(modData.PZLinuxOnReward)
+    local moneyEarned = reward + zombieCount * 5
+    local credit = PZLinuxApplyBankCredit(playerObj, moneyEarned, "contract-complete", requestId)
+    if not credit.ok then return credit end
+
+    local completedWorldContractId = modData.PZLinuxContractId
+    PZLinuxContractsUpdateCompanyPrice(modData.PZLinuxContractCompanyUp, "up")
+    PZLinuxContractsMarkWorldContract(completedWorldContractId, "completed", playerObj)
+    PZLinuxContractsRemoveContractNote(playerObj)
+    PZLinuxContractsClearState(modData)
+    modData.PZLinuxUIOpenMenu = 7
+    PZLinuxApplyReputationDelta(playerObj, 10)
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return {
+        ok = true,
+        requestId = requestId,
+        amount = moneyEarned,
+        zombieCount = zombieCount,
+        balance = PZLinuxLoadBankBalance(playerObj),
+        reputation = pzlinux.player.reputation,
+        worldContractId = completedWorldContractId,
+        tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj),
+    }
+end
+
+function PZLinuxApplyReputationDelta(player, amount)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 1 end
+
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    if not pzlinux then return 1 end
+
+    pzlinux.player.reputation = PZLinux.Economy.applyReputationDelta(pzlinux.player.reputation, amount)
+    PZLinuxTransmitPlayerModData(playerObj)
+    return pzlinux.player.reputation
+end
+
+function PZLinuxApplyReputationDecay(player, amount)
+    return PZLinuxApplyReputationDelta(player, -(tonumber(amount) or 0.001))
+end
+
+function PZLinuxContractsTransmitSquareObject(square, obj)
+    if obj and obj.transmitCompleteItemToClients then
+        obj:transmitCompleteItemToClients()
+    end
+    if square and square.transmitAddObjectToSquare then
+        square:transmitAddObjectToSquare(obj, -1)
+    end
+end
+
+function PZLinuxContractsRemoveCargoObject(x, y, z, contractWorldId)
+    if not getCell then return false end
+    local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
+    if not square then return false end
+
+    for index = square:getObjects():size() - 1, 0, -1 do
+        local obj = square:getObjects():get(index)
+        local objectContractId = PZLinuxContractsGetEntityContractId(obj)
+        local matchesContract = not contractWorldId or not objectContractId or objectContractId == contractWorldId
+        if matchesContract and obj and obj:getSprite() and obj:getSprite():getName() == "carpentry_01_19" then
+            square:removeTileObject(obj)
+            if square.transmitRemoveItemFromSquare then
+                square:transmitRemoveItemFromSquare(obj)
+            end
+            return true
+        end
+    end
+    return false
+end
+
+function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
+    if not getCell or not IsoObject then return false end
+    local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
+    if not square then return false end
+
+    local obj = IsoObject.new(square, "carpentry_01_19")
+    PZLinuxContractsTagEntity(obj, contractWorldId, "cargo")
+    square:AddTileObject(obj)
+    PZLinuxContractsTransmitSquareObject(square, obj)
+    return true
+end
+
+function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
+    if not createZombie then return false end
+    local zombie = createZombie(tonumber(x), tonumber(y), tonumber(z), nil, 0, IsoDirections.S)
+    PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie")
+    if zombie and zombie.transmitCompleteItemToClients then
+        zombie:transmitCompleteItemToClients()
+    end
+    return zombie ~= nil
+end
+
+function PZLinuxContractsSpawnProtectHorde(x, y, z, contractWorldId)
+    local count = ZombRand(50, 200)
+    for _ = 1, count do
+        local radius = ZombRand(20, 50)
+        local direction = ZombRand(1, 5)
+        local spawnX = tonumber(x) or 0
+        local spawnY = tonumber(y) or 0
+        if direction == 1 then spawnX, spawnY = spawnX + radius, spawnY + radius end
+        if direction == 2 then spawnX, spawnY = spawnX - radius, spawnY - radius end
+        if direction == 3 then spawnX, spawnY = spawnX + radius, spawnY - radius end
+        if direction == 4 then spawnX, spawnY = spawnX - radius, spawnY + radius end
+        PZLinuxContractsSpawnZombieAt(spawnX, spawnY, z, contractWorldId, "protect")
+    end
+    return count
+end
+
+function PZLinuxContractsGiveContractCase(playerObj, contractWorldId)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory then return false end
+
+    local parcel = inventory:AddItem("Base.Bag_ProtectiveCaseSmall")
+    if not parcel then return false end
+    parcel:setName("Contract case")
+    PZLinuxContractsTagEntity(parcel, contractWorldId, "package")
+    local parcelInv = parcel:getInventory()
+    local bonusRand = ZombRand(1, 6)
+    parcelInv:AddItem("Base.Note")
+    if bonusRand == 1 then
+        parcelInv:AddItem("Base.Revolver")
+        for _ = 1, ZombRand(1, 2000) do
+            parcelInv:AddItem("Base.Money")
+        end
+    elseif bonusRand == 2 then
+        parcelInv:AddItem("Base.Revolver")
+    end
+    return true
+end
+
+function PZLinuxContractsGiveMailCorpseBag(playerObj, bagName, contractWorldId)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory then return false end
+
+    local parcel = inventory:AddItem("Base.Bag_Mail")
+    if not parcel then return false end
+    parcel:setName(bagName or "Contract target")
+    PZLinuxContractsTagEntity(parcel, contractWorldId, "corpse")
+    local corpse = parcel:getInventory():AddItem("Base.CorpseMale")
+    PZLinuxContractsTagEntity(corpse, contractWorldId, "corpse")
+    return true
+end
+
+function PZLinuxContractsGiveBloodJar(playerObj, contractWorldId)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory then return false end
+
+    local jar = inventory:AddItem("Base.EmptyJar")
+    if not jar then return false end
+    jar:setName("Blood for contract")
+    PZLinuxContractsTagEntity(jar, contractWorldId, "blood")
+    if jar.getFluidContainer and jar:getFluidContainer() then
+        jar:getFluidContainer():addFluid(FluidType.Blood, 1)
+    end
+    return true
+end
+
+function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local modData = playerObj:getModData()
+    args = args or {}
+    local contractWorldId = args.contractId or modData.PZLinuxContractId
+    local worldRecord = PZLinuxContractsGetWorldContract(contractWorldId)
+    if worldRecord and (worldRecord.status == "completed" or worldRecord.status == "cancelled") then
+        return { ok = false, error = "contract_closed", requestId = requestId, event = eventName, worldContractId = contractWorldId }
+    end
+    if worldRecord then
+        PZLinuxContractsSyncWorldRecordToPlayer(playerObj, worldRecord)
+        modData = playerObj:getModData()
+        contractWorldId = worldRecord.id
+    end
+
+    local ok = true
+    local spawned = 0
+
+    if eventName == "zombieKilled" then
+        modData.PZLinuxOnZombieDead = (tonumber(modData.PZLinuxOnZombieDead) or 0) + 1
+        if worldRecord then
+            worldRecord.zombieCount = modData.PZLinuxOnZombieDead
+            worldRecord.status = "in_progress"
+        end
+        if modData.PZLinuxContractKillZombie == 1 and tonumber(modData.PZLinuxOnZombieDead) >= tonumber(modData.PZLinuxOnZombieToKill) and modData.PZLinuxActiveContract ~= 10 then
+            modData.PZLinuxActiveContract = 9
+            if worldRecord then worldRecord.status = "ready_to_complete" end
+        end
+        if modData.PZLinuxContractProtect == 2 and tonumber(modData.PZLinuxOnZombieDead) >= 10 then
+            modData.PZLinuxContractProtect = 3
+            if worldRecord then worldRecord.status = "protect_clear" end
+        end
+    elseif eventName == "spawnManhunt" then
+        if modData.PZLinuxActiveContract == 1 and modData.PZLinuxContractManhunt == 1 then
+            ok = PZLinuxContractsSpawnZombieAt(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ, contractWorldId, "manhunt")
+            if ok then
+                modData.PZLinuxContractManhunt = 2
+                if worldRecord then
+                    worldRecord.spawned = true
+                    worldRecord.status = "spawned"
+                end
+            end
+        end
+    elseif eventName == "spawnCargo" then
+        if modData.PZLinuxContractCargo == 1 then
+            ok = PZLinuxContractsSpawnCargoObject(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ, contractWorldId)
+            if ok then
+                modData.PZLinuxContractCargo = 2
+                if worldRecord then
+                    worldRecord.spawned = true
+                    worldRecord.status = "spawned"
+                end
+            end
+        end
+    elseif eventName == "clearCargo" then
+        if modData.PZLinuxContractCargo == 3 then
+            ok = PZLinuxContractsRemoveCargoObject(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ, contractWorldId)
+            if ok then
+                modData.PZLinuxContractCargo = 4
+                if worldRecord then worldRecord.status = "cargo_removed" end
+            end
+        end
+    elseif eventName == "startProtect" then
+        if modData.PZLinuxContractProtect == 1 then
+            modData.PZLinuxContractProtect = 2
+            spawned = PZLinuxContractsSpawnProtectHorde(args.x or modData.PZLinuxContractLocationX, args.y or modData.PZLinuxContractLocationY, args.z or modData.PZLinuxContractLocationZ, contractWorldId)
+            if worldRecord then
+                worldRecord.spawned = true
+                worldRecord.status = "protect_started"
+                worldRecord.spawnedCount = spawned
+            end
+        end
+    elseif eventName == "finishProtect" then
+        if modData.PZLinuxContractProtect == 3 then
+            modData.PZLinuxActiveContract = 9
+            if worldRecord then worldRecord.status = "ready_to_complete" end
+        end
+    elseif eventName == "pickupPackage" then
+        ok = PZLinuxContractsGiveContractCase(playerObj, contractWorldId)
+        if ok then
+            modData.PZLinuxContractPickUp = 3
+            if worldRecord then worldRecord.status = "objective_taken" end
+        end
+    elseif eventName == "takeCargo" then
+        modData.PZLinuxContractCargo = 3
+        modData.PZLinuxActiveContract = 9
+        if worldRecord then worldRecord.status = "ready_to_complete" end
+    elseif eventName == "decapitate" then
+        ok = PZLinuxContractsGiveMailCorpseBag(playerObj, "Cut target", contractWorldId)
+        if ok then
+            modData.PZLinuxContractManhunt = 3
+            if worldRecord then worldRecord.status = "objective_taken" end
+        end
+    elseif eventName == "blood" then
+        ok = PZLinuxContractsGiveBloodJar(playerObj, contractWorldId)
+        if ok then
+            modData.PZLinuxContractBlood = 3
+            if worldRecord then worldRecord.status = "objective_taken" end
+        end
+    elseif eventName == "capture" then
+        ok = PZLinuxContractsGiveMailCorpseBag(playerObj, "Zombie captured alive", contractWorldId)
+        if ok then
+            modData.PZLinuxContractCapture = 3
+            if worldRecord then worldRecord.status = "objective_taken" end
+        end
+    else
+        return { ok = false, error = "invalid_event", requestId = requestId, event = eventName }
+    end
+
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    if worldRecord then
+        worldRecord.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or worldRecord.updatedHour
+        PZLinuxContractsTransmitWorldData()
+    end
+    PZLinuxTransmitPlayerModData(playerObj)
+    return {
+        ok = ok,
+        requestId = requestId,
+        event = eventName,
+        worldContractId = contractWorldId,
+        worldStatus = worldRecord and worldRecord.status or "",
+        spawned = spawned,
+        activeContract = modData.PZLinuxActiveContract,
+        zombieCount = modData.PZLinuxOnZombieDead,
+        contractManhunt = modData.PZLinuxContractManhunt,
+        contractCargo = modData.PZLinuxContractCargo,
+        contractProtect = modData.PZLinuxContractProtect,
+        contractPickUp = modData.PZLinuxContractPickUp,
+        contractBlood = modData.PZLinuxContractBlood,
+        contractCapture = modData.PZLinuxContractCapture,
+        reputation = pzlinux and pzlinux.player and pzlinux.player.reputation or 1,
+    }
+end
+
+function PZLinuxRequestContractWorldEvent(player, eventName, args, callback)
+    local requestId = PZLinuxNextRequestId("contract-world")
+    PZLinuxRegisterCallback(requestId, callback)
+    args = args or {}
+    args.requestId = requestId
+    args.event = eventName
+    if not args.contractId then
+        local playerObj = PZLinuxGetPlayer(player)
+        local modData = playerObj and playerObj:getModData()
+        args.contractId = modData and modData.PZLinuxContractId or nil
+    end
+    if PZLinuxSendClientCommand("PZLinuxContractWorldEvent", args) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractsBoard(player, callback)
+    local requestId = PZLinuxNextRequestId("contracts-board")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxContractsBoard", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsGetBoard(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractAccept(player, state, callback)
+    local requestId = PZLinuxNextRequestId("contract-accept")
+    PZLinuxRegisterCallback(requestId, callback)
+    state = state or {}
+    state.requestId = requestId
+    if PZLinuxSendClientCommand("PZLinuxContractAccept", state) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsApplyAccept(player, state, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractCancel(player, callback)
+    local requestId = PZLinuxNextRequestId("contract-cancel")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxContractCancel", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsApplyCancel(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractDeposit(player, callback)
+    local requestId = PZLinuxNextRequestId("contract-deposit")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxContractDeposit", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsApplyDeposit(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractComplete(player, callback)
+    local requestId = PZLinuxNextRequestId("contract-complete")
+    PZLinuxRegisterCallback(requestId, callback)
+    local state = { requestId = requestId }
+    if PZLinuxSendClientCommand("PZLinuxContractComplete", state) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsApplyComplete(player, state, requestId))
+    return requestId
+end
 
 function generateUsername()
     local prefixes = {"Xx", "Dark", "Neo", "Cyber", "Red", "Blue", "Fire", "Frost", "Shadow", "Ghost"}
@@ -529,7 +2469,7 @@ function generateUsername()
     local name = prefixes[ZombRand(1, #prefixes + 1)] ..
                  middle[ZombRand(1, #middle + 1)] ..
                  suffixes[ZombRand(1, #suffixes + 1)]
-    
+
     return name
 end
 
@@ -642,10 +2582,610 @@ function PZLinuxGenerateRandomName()
     return targetName
 end
 
-PZLinuxMailTable = {
-    { baseName = "CONGRATULATIONS!", type = "ads"},
-    { baseName = "THE WINNER IS", type = "ads"},
-    { baseName = "HOLIDAY FOR FREE", type = "ads"},
-    { baseName = "Need Ammo", type = "ammo"},
-    { baseName = "Medical supplies", type = "medical"},
+function PZLinuxMailFormatDate()
+    local gt = getGameTime()
+    if not gt then return "1993-07-09 09:00" end
+    return string.format("%04d-%02d-%02d %02d:%02d", gt:getYear(), gt:getMonth() + 1, gt:getDay(), gt:getHour(), gt:getMinutes())
+end
+
+function PZLinuxMailFindInboxItem(mails, mailId)
+    mailId = tonumber(mailId)
+    if not mails or not mails.inbox or not mailId then return nil, nil end
+    for index = 1, #mails.inbox do
+        if tonumber(mails.inbox[index].id) == mailId then
+            return mails.inbox[index], index
+        end
+    end
+    return nil, nil
+end
+
+function PZLinuxMailRandomDeliveryItem(mailType)
+    local items = PZLinuxMailDeliveryItems[mailType]
+    if not items or #items == 0 then return nil end
+    return items[ZombRand(#items) + 1]
+end
+
+function PZLinuxMailNormalizeRecord(player, mailId)
+    local md, pzlinux = PZLinuxGetModData(player)
+    if not pzlinux then return nil, nil, nil end
+
+    mailId = tonumber(mailId)
+    local inboxMail = PZLinuxMailFindInboxItem(pzlinux.mails, mailId)
+    local mail = pzlinux.mails[mailId]
+    if not mail and inboxMail then
+        mail = {}
+        pzlinux.mails[mailId] = mail
+    end
+    if not mail then return nil, md, pzlinux end
+
+    if inboxMail then
+        mail.id = mail.id or inboxMail.id
+        mail.name = mail.name or inboxMail.name
+        mail.type = mail.type or inboxMail.type
+        mail.date = mail.date or inboxMail.date
+        mail.from = mail.from or inboxMail.from
+        mail.read = inboxMail.read
+    end
+
+    mail.id = mail.id or mailId
+    mail.status = mail.status or 1
+    mail.sender = mail.sender or mail.from or PZLinuxGenerateRandomName()
+    mail.seed = mail.seed or ZombRand(1, mail.type == "ads" and 21 or 4)
+
+    if mail.type == "ammo" or mail.type == "medical" then
+        local loc = nil
+        if not mail.x or not mail.y or not mail.z or not mail.city then
+            loc = PZLinuxGetRandomMissionLocation("mails", mail.type)
+        end
+        if loc then
+            mail.city = mail.city or loc.name
+            mail.x = mail.x or loc.x
+            mail.y = mail.y or loc.y
+            mail.z = mail.z or loc.z
+        end
+        mail.quantity = tonumber(mail.quantity) or ZombRand(1, 6)
+        mail.object = mail.object or PZLinuxMailRandomDeliveryItem(mail.type)
+    end
+
+    return mail, md, pzlinux
+end
+
+function PZLinuxMailCreateRandom(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    if not pzlinux then return { ok = false, error = "no_player", requestId = requestId } end
+
+    pzlinux.mails.inbox = pzlinux.mails.inbox or {}
+    pzlinux.mails.nextid = tonumber(pzlinux.mails.nextid) or 1
+
+    local mailDefinition = PZLinuxMailTable[ZombRand(#PZLinuxMailTable) + 1]
+    if not mailDefinition then return { ok = false, error = "missing_mail_definition", requestId = requestId } end
+
+    local mailId = pzlinux.mails.nextid
+    local mail = {
+        id = mailId,
+        name = mailDefinition.baseName,
+        type = mailDefinition.type,
+        date = PZLinuxMailFormatDate(),
+        from = PZLinuxGenerateRandomName(),
+        read = false,
+        status = 1,
+    }
+    pzlinux.mails[mailId] = mail
+    PZLinuxMailNormalizeRecord(playerObj, mailId)
+    table.insert(pzlinux.mails.inbox, 1, mail)
+    pzlinux.mails.nextid = mailId + 1
+
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, mailId = mailId, mailType = mail.type, inboxCount = #pzlinux.mails.inbox }
+end
+
+function PZLinuxMailScheduleNext(player)
+    local md, pzlinux = PZLinuxGetModData(player)
+    if not pzlinux or not getGameTime then return nil end
+
+    local now = getGameTime():getWorldAgeHours()
+    pzlinux.player.reputation = tonumber(pzlinux.player.reputation) or 1
+    local delayMax = PZLinux.Economy.mailDelayMax(pzlinux.player.reputation)
+    local delay = ZombRand(48, delayMax)
+    if not pzlinux.mails.nextat or pzlinux.mails.nextat <= now then
+        pzlinux.mails.nextat = now + delay
+        PZLinuxTransmitPlayerModData(player)
+    end
+    return pzlinux.mails.nextat, md
+end
+
+function PZLinuxMailTickPlayer(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player" } end
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    if not pzlinux or not getGameTime then return { ok = false, error = "no_player" } end
+
+    local now = getGameTime():getWorldAgeHours()
+    if not pzlinux.mails.nextat then
+        PZLinuxMailScheduleNext(playerObj)
+        return { ok = true, generated = false, nextat = pzlinux.mails.nextat }
+    end
+
+    if now >= pzlinux.mails.nextat then
+        local result = PZLinuxMailCreateRandom(playerObj)
+        PZLinuxMailScheduleNext(playerObj)
+        result.nextat = pzlinux.mails.nextat
+        return result
+    end
+    return { ok = true, generated = false, nextat = pzlinux.mails.nextat }
+end
+
+function PZLinuxMailApplyAccept(player, mailId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local mail = PZLinuxMailNormalizeRecord(playerObj, mailId)
+    if not mail then return { ok = false, error = "missing_mail", requestId = requestId, mailId = mailId } end
+    if mail.type == "ads" then return { ok = false, error = "ads_cannot_be_accepted", requestId = requestId, mailId = mailId } end
+    if mail.status == 10 then return { ok = false, error = "mail_already_completed", requestId = requestId, mailId = mailId } end
+
+    mail.status = 2
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = mail.status, object = mail.object, quantity = mail.quantity, x = mail.x, y = mail.y, z = mail.z, city = mail.city }
+end
+
+function PZLinuxMailApplyDelete(player, mailId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    local md, pzlinux = PZLinuxGetModData(playerObj)
+    if not playerObj or not pzlinux then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local mail = pzlinux.mails[tonumber(mailId)]
+    local inboxMail, inboxIndex = PZLinuxMailFindInboxItem(pzlinux.mails, mailId)
+    local x = mail and mail.x or inboxMail and inboxMail.x
+    local y = mail and mail.y or inboxMail and inboxMail.y
+    pzlinux.mails[tonumber(mailId)] = nil
+    if inboxIndex then table.remove(pzlinux.mails.inbox, inboxIndex) end
+
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, mailId = tonumber(mailId), x = x, y = y, inboxCount = #(pzlinux.mails.inbox or {}), md = md and true or false }
+end
+
+function PZLinuxMailInventoryItemMatches(item, fullType)
+    if not item or not fullType then return false end
+    if item.getFullType and item:getFullType() == fullType then return true end
+    if item.getType and item:getType() == fullType then return true end
+    return false
+end
+
+function PZLinuxMailCountInventoryItems(player, fullType)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+    local inventory = playerObj:getInventory()
+    if not inventory then return 0 end
+    local count = 0
+    for index = 0, inventory:getItems():size() - 1 do
+        if PZLinuxMailInventoryItemMatches(inventory:getItems():get(index), fullType) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+function PZLinuxMailRemoveInventoryItems(player, fullType, quantity)
+    local playerObj = PZLinuxGetPlayer(player)
+    quantity = math.max(0, tonumber(quantity) or 0)
+    if not playerObj or quantity <= 0 then return 0 end
+    local inventory = playerObj:getInventory()
+    if not inventory then return 0 end
+
+    local removed = 0
+    for index = inventory:getItems():size() - 1, 0, -1 do
+        local item = inventory:getItems():get(index)
+        if PZLinuxMailInventoryItemMatches(item, fullType) then
+            inventory:Remove(item)
+            removed = removed + 1
+            if removed >= quantity then break end
+        end
+    end
+    return removed
+end
+
+function PZLinuxMailGiveReward(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+    local inventory = playerObj:getInventory()
+    local parcel = inventory and inventory:AddItem("Base.Present_ExtraLarge")
+    if not parcel then return 0 end
+
+    parcel:setName("A gift to thank you")
+    local parcelInv = parcel:getInventory()
+    local bonusRand = ZombRand(1, 6)
+    local added = 0
+    for _ = 1, bonusRand do
+        local entry = PZLinuxDarkWebItemsTable[ZombRand(#PZLinuxDarkWebItemsTable) + 1]
+        if entry and entry.id and #entry.id > 0 then
+            local one = entry.id[ZombRand(#entry.id) + 1]
+            parcelInv:AddItem(one)
+            added = added + 1
+        end
+    end
+
+    if bonusRand == 1 then
+        parcelInv:AddItem("Base.Revolver")
+        added = added + 1
+        for _ = 1, ZombRand(100, 301) do
+            parcelInv:AddItem("Base.Money")
+            added = added + 1
+        end
+    elseif bonusRand == 2 then
+        parcelInv:AddItem("Base.Revolver")
+        added = added + 1
+    end
+
+    return added
+end
+
+function PZLinuxMailApplyComplete(player, mailId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local mail, _, pzlinux = PZLinuxMailNormalizeRecord(playerObj, mailId)
+    if not mail then return { ok = false, error = "missing_mail", requestId = requestId, mailId = mailId } end
+    if mail.status ~= 2 then return { ok = false, error = "mail_not_accepted", requestId = requestId, mailId = mailId, status = mail.status } end
+
+    local playerSquare = playerObj:getSquare()
+    if playerSquare and mail.x and mail.y then
+        local distance = math.abs(playerSquare:getX() - tonumber(mail.x)) + math.abs(playerSquare:getY() - tonumber(mail.y))
+        if distance > 3 then
+            return { ok = false, error = "too_far", requestId = requestId, mailId = mailId, distance = distance }
+        end
+    end
+
+    local quantity = math.max(1, tonumber(mail.quantity) or 1)
+    local available = PZLinuxMailCountInventoryItems(playerObj, mail.object)
+    if available < quantity then
+        return { ok = false, error = "missing_items", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, available = available }
+    end
+
+    local removed = PZLinuxMailRemoveInventoryItems(playerObj, mail.object, quantity)
+    if removed < quantity then
+        return { ok = false, error = "remove_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, removed = removed }
+    end
+
+    local rewardItems = PZLinuxMailGiveReward(playerObj)
+    local reputation = PZLinuxApplyReputationDelta(playerObj, 10)
+    mail.status = 10
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardItems = rewardItems, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }
+end
+
+function PZLinuxRequestMailAccept(player, mailId, callback)
+    local requestId = PZLinuxNextRequestId("mail-accept")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxMailAccept", { requestId = requestId, mailId = mailId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxMailApplyAccept(player, mailId, requestId))
+    return requestId
+end
+
+function PZLinuxRequestMailDelete(player, mailId, callback)
+    local requestId = PZLinuxNextRequestId("mail-delete")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxMailDelete", { requestId = requestId, mailId = mailId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxMailApplyDelete(player, mailId, requestId))
+    return requestId
+end
+
+function PZLinuxRequestMailComplete(player, mailId, callback)
+    local requestId = PZLinuxNextRequestId("mail-complete")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxMailComplete", { requestId = requestId, mailId = mailId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxMailApplyComplete(player, mailId, requestId))
+    return requestId
+end
+
+function PZLinuxRequestMailGenerate(player, callback)
+    local requestId = PZLinuxNextRequestId("mail-generate")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxMailGenerate", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxMailCreateRandom(player, requestId))
+    return requestId
+end
+
+PZLinuxHackingCardTypes = PZLinuxHackingCardTypes or {
+    ["Base.IDcard"] = true,
+    ["Base.IDcard_Stolen"] = true,
+    ["Base.IDcard_Female"] = true,
+    ["Base.IDcard_Male"] = true,
+    ["Base.CreditCard"] = true,
+    ["Base.CreditCard_Stolen"] = true,
 }
+
+function PZLinuxHackingIsCard(item)
+    return item and item.getFullType and PZLinuxHackingCardTypes[item:getFullType()] == true
+end
+
+function PZLinuxHackingCountCards(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+    local inventory = playerObj:getInventory()
+    if not inventory then return 0 end
+    local count = 0
+    for index = 0, inventory:getItems():size() - 1 do
+        if PZLinuxHackingIsCard(inventory:getItems():get(index)) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+function PZLinuxHackingRemoveCards(player, maxCount)
+    local playerObj = PZLinuxGetPlayer(player)
+    maxCount = tonumber(maxCount) or 1
+    if not playerObj or maxCount <= 0 then return 0, nil end
+    local inventory = playerObj:getInventory()
+    if not inventory then return 0, nil end
+
+    local removed = 0
+    local firstName = nil
+    local cardTypes = {}
+    for index = inventory:getItems():size() - 1, 0, -1 do
+        local item = inventory:getItems():get(index)
+        if PZLinuxHackingIsCard(item) then
+            firstName = firstName or item:getName()
+            table.insert(cardTypes, item:getFullType())
+            inventory:Remove(item)
+            removed = removed + 1
+            if removed >= maxCount then break end
+        end
+    end
+    return removed, firstName, cardTypes
+end
+
+function PZLinuxHackingGeneratePassword()
+    local passwordNumbers = {}
+    while #passwordNumbers < 4 do
+        local num = ZombRand(0, 10)
+        local exists = false
+        for _, value in ipairs(passwordNumbers) do
+            if value == num then
+                exists = true
+                break
+            end
+        end
+        if not exists then table.insert(passwordNumbers, num) end
+    end
+    return passwordNumbers
+end
+
+function PZLinuxHackingGetSession(player)
+    return PZLinux.hackingSessions[PZLinuxGetPlayerKey(player)]
+end
+
+function PZLinuxHackingSetSession(player, session)
+    PZLinux.hackingSessions[PZLinuxGetPlayerKey(player)] = session
+end
+
+function PZLinuxHackingClearSession(player)
+    PZLinux.hackingSessions[PZLinuxGetPlayerKey(player)] = nil
+end
+
+function PZLinuxHackingBuildGuessFeedback(session, guess)
+    local passwordStr = tostring(guess or "")
+    if #passwordStr ~= 4 then return { ok = false, error = "invalid_guess" } end
+
+    local realDigits = { session.password[1], session.password[2], session.password[3], session.password[4] }
+    local guessDigits = {
+        tonumber(passwordStr:sub(1, 1)),
+        tonumber(passwordStr:sub(2, 2)),
+        tonumber(passwordStr:sub(3, 3)),
+        tonumber(passwordStr:sub(4, 4)),
+    }
+    local revealedPassword = ""
+    for index = 1, 4 do
+        revealedPassword = revealedPassword .. (guessDigits[index] == session.password[index] and tostring(guessDigits[index]) or "*")
+    end
+
+    local correctCount = 0
+    local misplacedCount = 0
+    for index = 1, 4 do
+        if guessDigits[index] and guessDigits[index] == realDigits[index] then
+            correctCount = correctCount + 1
+            realDigits[index] = nil
+            guessDigits[index] = nil
+        end
+    end
+
+    for index = 1, 4 do
+        local guessDigit = guessDigits[index]
+        if guessDigit then
+            for realIndex = 1, 4 do
+                if realDigits[realIndex] and realDigits[realIndex] == guessDigit then
+                    misplacedCount = misplacedCount + 1
+                    realDigits[realIndex] = nil
+                    break
+                end
+            end
+        end
+    end
+
+    return {
+        ok = true,
+        unlocked = revealedPassword == passwordStr,
+        revealedPassword = revealedPassword,
+        correctCount = correctCount,
+        misplacedCount = misplacedCount,
+    }
+end
+
+function PZLinuxHackingStartManual(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local removed, cardName, cardTypes = PZLinuxHackingRemoveCards(playerObj, 1)
+    if removed <= 0 then
+        return { ok = false, error = "no_card", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    PZLinuxRegisterInterruptedSession(playerObj, "hacking", {
+        mode = "manual",
+        requestId = requestId,
+        cardTypes = cardTypes,
+    })
+
+    local skillLevel = playerObj:getPerkLevel(Perks.Electricity) or 0
+    local amount = PZLinuxNormalizeMoney(ZombRand(5, 1000) * (skillLevel + 1))
+    local password = PZLinuxHackingGeneratePassword()
+    local session = {
+        mode = "manual",
+        amount = amount,
+        remaining = amount,
+        password = password,
+        tries = 0,
+        maxTries = 6,
+        unlocked = false,
+        transferred = false,
+        cardName = cardName,
+    }
+    PZLinuxHackingSetSession(playerObj, session)
+    if addXp then addXp(playerObj, Perks.Electricity, 1) end
+
+    return { ok = true, requestId = requestId, amount = amount, cardName = cardName, password = password, maxTries = session.maxTries, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+function PZLinuxHackingAuto(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local available = PZLinuxHackingCountCards(playerObj)
+    if available <= 0 then
+        return { ok = false, error = "no_card", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local removed, _, cardTypes = PZLinuxHackingRemoveCards(playerObj, available)
+    PZLinuxRegisterInterruptedSession(playerObj, "hacking", {
+        mode = "auto",
+        requestId = requestId,
+        cardTypes = cardTypes,
+    })
+    local skillLevel = playerObj:getPerkLevel(Perks.Electricity) or 0
+    local valuePerCard = PZLinuxNormalizeMoney(ZombRand(300, 501) * (skillLevel + 1))
+    local amount = PZLinuxNormalizeMoney(valuePerCard * removed)
+    local session = {
+        mode = "auto",
+        amount = amount,
+        remaining = amount,
+        unlocked = true,
+        transferred = false,
+        cardCount = removed,
+    }
+    PZLinuxHackingSetSession(playerObj, session)
+    if addXp then addXp(playerObj, Perks.Electricity, math.max(1, removed)) end
+
+    return { ok = true, requestId = requestId, amount = amount, cardCount = removed, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+function PZLinuxHackingGuess(player, guess, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local session = PZLinuxHackingGetSession(playerObj)
+    if not session or session.mode ~= "manual" or session.transferred then
+        return { ok = false, error = "missing_session", requestId = requestId }
+    end
+    if session.locked then
+        return { ok = false, error = "account_locked", requestId = requestId, tries = session.tries, maxTries = session.maxTries }
+    end
+
+    local feedback = PZLinuxHackingBuildGuessFeedback(session, guess)
+    if not feedback.ok then
+        feedback.requestId = requestId
+        return feedback
+    end
+
+    if feedback.unlocked then
+        session.unlocked = true
+        if addXp then addXp(playerObj, Perks.Electricity, 3) end
+    else
+        session.tries = (tonumber(session.tries) or 0) + 1
+        if session.tries >= session.maxTries then
+            session.locked = true
+            PZLinuxClearInterruptedSession(playerObj, "hacking")
+        end
+    end
+
+    feedback.requestId = requestId
+    feedback.amount = session.amount
+    feedback.tries = session.tries
+    feedback.maxTries = session.maxTries
+    feedback.locked = session.locked == true
+    feedback.balance = PZLinuxLoadBankBalance(playerObj)
+    return feedback
+end
+
+function PZLinuxHackingTransfer(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local session = PZLinuxHackingGetSession(playerObj)
+    if not session then return { ok = false, error = "missing_session", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) } end
+    if session.locked or not session.unlocked then return { ok = false, error = "account_locked", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) } end
+    if session.transferred then return { ok = false, error = "already_transferred", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) } end
+
+    local amount = PZLinuxNormalizeMoney(session.remaining or session.amount)
+    if amount <= 0 then
+        PZLinuxHackingClearSession(playerObj)
+        PZLinuxClearInterruptedSession(playerObj, "hacking")
+        return { ok = false, error = "empty_account", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local credit = PZLinuxApplyBankCredit(playerObj, amount, "hacking-transfer", requestId)
+    if not credit.ok then return credit end
+    session.transferred = true
+    session.remaining = 0
+    PZLinuxHackingClearSession(playerObj)
+    PZLinuxClearInterruptedSession(playerObj, "hacking")
+
+    credit.mode = session.mode
+    credit.hackedAmount = amount
+    return credit
+end
+
+function PZLinuxRequestHackingStart(player, callback)
+    local requestId = PZLinuxNextRequestId("hacking-start")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxHackingStart", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxHackingStartManual(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestHackingAuto(player, callback)
+    local requestId = PZLinuxNextRequestId("hacking-auto")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxHackingAuto", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxHackingAuto(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestHackingGuess(player, guess, callback)
+    local requestId = PZLinuxNextRequestId("hacking-guess")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxHackingGuess", { requestId = requestId, guess = guess }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxHackingGuess(player, guess, requestId))
+    return requestId
+end
+
+function PZLinuxRequestHackingTransfer(player, callback)
+    local requestId = PZLinuxNextRequestId("hacking-transfer")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxHackingTransfer", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxHackingTransfer(player, requestId))
+    return requestId
+end

@@ -3,7 +3,7 @@ require "TimedActions/ISBaseTimedAction"
 ISProtectBuildingAction = ISBaseTimedAction:derive("ISProtectBuildingAction")
 
 function ISProtectBuildingAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISProtectBuildingAction:waitToStart()
@@ -26,9 +26,8 @@ function ISProtectBuildingAction:stop()
 end
 
 function ISProtectBuildingAction:perform()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractProtect = 3
-    modData.PZLinuxActiveContract = 9
+    PZLinuxRequestContractWorldEvent(self.character, "finishProtect")
+    ISBaseTimedAction.perform(self)
 end
 
 function ISProtectBuildingAction:new(character, item)

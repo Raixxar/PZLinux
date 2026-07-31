@@ -1,10 +1,10 @@
 function completeMailAmmo_AddContext(player, context, worldobjects)
-    local playerObj = getSpecificPlayer(player)
+    local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return end
-    
-    local md = getPlayer():getModData()
+
+    local md = playerObj:getModData()
     if not (md.pzlinux and md.pzlinux.mails) then return end
-        
+
     for _, obj in ipairs(worldobjects) do
         local square = obj.getSquare and obj:getSquare() or nil
         if square then
@@ -24,19 +24,22 @@ function completeMailAmmo_AddContext(player, context, worldobjects)
 end
 
 function completeMailMenu_OnUse(obj, player, id, x, y, z)
-    local md = getPlayer():getModData()
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
+    local md = playerObj:getModData()
     if not (md.pzlinux and md.pzlinux.mails and md.pzlinux.mails[id]) then return end
     local mail = md.pzlinux.mails[id]
     if mail.status ~= 2 then return end
-    
-    local playerSquare = getPlayer():getSquare()
+
+    local playerSquare = playerObj:getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
-        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z)
         if freeSquare then
-            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISDropTheMailAction:new(getPlayer(), obj, id))
+    ISTimedActionQueue.add(ISDropTheMailAction:new(playerObj, obj, id))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(completeMailAmmo_AddContext)

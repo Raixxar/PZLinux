@@ -1,6 +1,6 @@
 ISPZLinuxAction = ISBaseTimedAction:derive("ISPZLinuxAction")
 
-function ISPZLinuxAction:isValid()
+function ISPZLinuxAction.isValid(_self)
     return true
 end
 
@@ -80,8 +80,10 @@ function ISPZLinuxAction:start()
 end
 
 function ISPZLinuxAction:stop()
-    self.ui:removeFromUIManager()
-    getPlayer():getModData().PZLinuxIsPowered = 0
+    if self.ui then
+        self.ui:removeFromUIManager()
+    end
+    self.character:getModData().PZLinuxIsPowered = 0
     ISBaseTimedAction.stop(self)
 end
 

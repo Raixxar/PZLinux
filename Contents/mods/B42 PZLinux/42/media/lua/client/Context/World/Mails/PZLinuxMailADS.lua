@@ -1,17 +1,11 @@
 function PZLinuxMailGenerateBodyADS(sender, id)
-    local name = PZLinuxPrettifyName(getPlayer():getUsername())
-    local seed = ZombRand(1, 21)
+    local player = PZLinuxGetPlayer()
+    if not player then return "" end
 
-    local player = getPlayer()
-    local md = player:getModData()
-
-    md.pzlinux = md.pzlinux or {}
-    md.pzlinux.mails = md.pzlinux.mails or {}
-    md.pzlinux.mails[id] = md.pzlinux.mails[id] or {}
-    local mail = md.pzlinux.mails[id]
-    if not mail.status then mail.status = 1 end
-    if not mail.sender then mail.sender = sender end
-    if not mail.seed then mail.seed = seed end
+    local name = PZLinuxPrettifyName(player:getUsername())
+    local mail = PZLinuxMailNormalizeRecord(player, id)
+    if not mail then return "" end
+    mail.sender = mail.sender or sender
 
     local message = ""
 

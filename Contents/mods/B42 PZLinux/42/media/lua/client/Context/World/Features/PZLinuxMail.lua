@@ -37,7 +37,7 @@ function mailUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -45,7 +45,7 @@ function mailUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -56,11 +56,13 @@ function mailUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
-        modData.PZLinuxUIX = self.parent:getX()
-        modData.PZLinuxUIY = self.parent:getY()
+        local modData = PZLinuxGetModData(self.parent.player)
+        if modData then
+            modData.PZLinuxUIX = self.parent:getX()
+            modData.PZLinuxUIY = self.parent:getY()
+        end
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
@@ -71,7 +73,8 @@ function mailUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
+    local playerUsername = "unknown@aol.com"
     if player then
         playerUsername = string.lower(player:getUsername()) .. "@aol.com"
     end
@@ -82,7 +85,8 @@ function mailUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetModData(self.player)
+    if not modData then return end
     if modData.PZLinuxUISFX == 0 then
         self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
         self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
@@ -172,7 +176,8 @@ function mailUI:initialise()
     end
 
     self.topBar:addChild(self.mailList)
-    local md = getPlayer():getModData()
+    local md = PZLinuxGetModData(self.player)
+    if not md then return end
     md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
 
     self.readWidgets = {}
@@ -237,7 +242,8 @@ function mailUI:refreshInbox()
         self.mailList.selected = 0
     end
 
-    local md = getPlayer():getModData()
+    local md = PZLinuxGetModData(self.player)
+    if not md then return end
     md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
 
     for i = 1, #md.pzlinux.mails.inbox do
@@ -273,8 +279,10 @@ function mailUI:onMailClicked()
 
     local mail = item.item
     mail.read = true
+    PZLinuxMailNormalizeRecord(self.player, mail.id)
 
     self.selectedMailId = mail.id
+    local body = ""
     if mail.type == "ads" then body = PZLinuxMailGenerateBodyADS(mail.from, mail.id)
     elseif mail.type == "ammo" then body = PZLinuxMailGenerateBodyAmmo(mail.from, mail.id)
     elseif mail.type == "medical" then body = PZLinuxMailGenerateBodyMedical(mail.from, mail.id)
@@ -296,67 +304,83 @@ function mailUI:onBackToInbox()
 end
 
 function mailUI:onAcceptMail()
-    local md = getPlayer():getModData()
+    local md = PZLinuxGetModData(self.player)
+    if not md then return end
     local id = self.selectedMailId
-    local mail = md.pzlinux.mails[id] 
+    local mail = md.pzlinux.mails[id]
     if not mail or mail.status == 10 or mail.status == 2 or mail.type == "ads" then return end
 
-    mail.status = 2
-    self:onBackToInbox()
-    local scriptItem = getScriptManager():FindItem(mail.object)
-    local displayName = scriptItem and scriptItem:getDisplayName() or mail.object
-    local mapText = mail.quantity .. "* " .. displayName
-    contractsDrawOnMap(mail.x, mail.y, mapText)
+    PZLinuxRequestMailAccept(self.player, id, function(result)
+        if not result or not result.ok then
+            local playerObj = PZLinuxGetPlayer(self.player)
+            if playerObj then HaloTextHelper.addBadText(playerObj, "Mail request rejected") end
+            return
+        end
+
+        self:onBackToInbox()
+        local scriptItem = getScriptManager():FindItem(result.object)
+        local displayName = scriptItem and scriptItem:getDisplayName() or result.object
+        local mapText = tostring(result.quantity) .. "* " .. tostring(displayName)
+        contractsDrawOnMap(result.x, result.y, mapText)
+    end)
 end
 
 function mailUI:onDeleteMail()
-    local md = getPlayer():getModData()
+    local md = PZLinuxGetModData(self.player)
+    if not md then return end
     md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
 
     local id = self.selectedMailId
-    md.pzlinux.mails[id] = nil
-
-    for i = #md.pzlinux.mails.inbox, 1, -1 do
-        if md.pzlinux.mails.inbox[i].id == self.selectedMailId then
-            table.remove(md.pzlinux.mails.inbox, i)
-            break
+    PZLinuxRequestMailDelete(self.player, id, function(result)
+        if not result or not result.ok then
+            local playerObj = PZLinuxGetPlayer(self.player)
+            if playerObj then HaloTextHelper.addBadText(playerObj, "Mail delete rejected") end
+            return
         end
-    end
 
-    self:onBackToInbox()
+        if result.x and result.y and contractsRemoveDrawOnMap then
+            contractsRemoveDrawOnMap(result.x, result.y)
+            contractsRemoveDrawOnMap(result.x + 20, result.y)
+        end
+
+        self:onBackToInbox()
+    end)
 end
 
 -- LOGOUT
-function mailUI:onMinimize(button)
+function mailUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 1
+    local modData = PZLinuxGetModData(self.player)
+    if modData then modData.PZLinuxUIOpenMenu = 1 end
 end
 
-function mailUI:onMinimizeBack(button)
+function mailUI:onMinimizeBack(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 8
+    local modData = PZLinuxGetModData(self.player)
+    if modData then modData.PZLinuxUIOpenMenu = 8 end
 end
 
 -- CLOSE
-function mailUI:onClose(button)
+function mailUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 1
+    local modData = PZLinuxGetModData(self.player)
+    if modData then modData.PZLinuxUIOpenMenu = 1 end
 end
 
-function mailUI:onCloseX(button)
+function mailUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
-
+    local player = PZLinuxGetPlayer(self.player)
+    if player then
+        player:StopAllActionQueue()
+    end
 end
 
-function mailUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
+function mailUI:onSFXOn(_button)
+    local modData = PZLinuxGetModData(self.player)
+    if not modData then return end
     modData.PZLinuxUISFX = 0
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
@@ -368,8 +392,9 @@ function mailUI:onSFXOn(button)
     self.topBar:addChild(self.skipAnimationButton)
 end
 
-function mailUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
+function mailUI:onSFXOff(_button)
+    local modData = PZLinuxGetModData(self.player)
+    if not modData then return end
     modData.PZLinuxUISFX = 1
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
@@ -397,7 +422,8 @@ function mailMenu_ShowUI(player)
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
     
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetModData(player)
+    if not modData then return end
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 

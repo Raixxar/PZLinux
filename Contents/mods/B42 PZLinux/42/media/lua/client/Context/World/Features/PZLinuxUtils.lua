@@ -6,7 +6,7 @@ function isNearTargetCapture(x, y, z, targetX, targetY, targetZ)
     return math.max(math.abs(x - targetX), math.abs(y - targetY)) <= 2 and z == targetZ
 end
 
-function getAdjacentFreeSquare(x, y, z, sprite)
+function PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
     local square = getCell():getGridSquare(x, y, z)
     if not square then return nil end
 
@@ -17,11 +17,7 @@ function getAdjacentFreeSquare(x, y, z, sprite)
         {x, y + 1, z}
     }
 
-    if sprite == "location_business_bank_01_67" then directions = { {x, y + 1, z} } end
-    if sprite == "location_business_bank_01_66" then directions = { {x + 1, y, z} } end
-    if sprite == "location_business_bank_01_65" then directions = { {x, y - 1, z} } end
-    if sprite == "location_business_bank_01_64" then directions = { {x - 1, y, z} } end
-    if sprite == "appliances_com_01_75" then directions = { {x - 1, y, z} } end 
+    if sprite == "appliances_com_01_75" then directions = { {x - 1, y, z} } end
     if sprite == "appliances_com_01_74" then directions = { {x, y - 1, z} } end
     if sprite == "appliances_com_01_73" then directions = { {x + 1, y, z} } end
     if sprite == "appliances_com_01_72" then directions = { {x, y + 1, z} } end
@@ -172,11 +168,14 @@ function ISGeneratorInfoWindow.getRichText(object, displayStats)
 			text = text .. "   " .. items:get(i) .. " <LINE> ";
 		end
 
-        if getPlayer():getModData().PZLinuxIsPowered and getPlayer():getModData().PZLinuxIsPowered == 1 then
+        local player = PZLinuxGetPlayer()
+        local modData = player and player:getModData() or {}
+
+        if modData.PZLinuxIsPowered and modData.PZLinuxIsPowered == 1 then
             text = text .. "Desktop Computer" .. " (0.02 L/h) <LINE> "
         end
 
-        if getPlayer():getModData().ATMIsPowered and getPlayer():getModData().ATMIsPowered == 1 then
+        if modData.ATMIsPowered and modData.ATMIsPowered == 1 then
             text = text .. "ATM" .. " (0.01 L/h) <LINE> "
         end
 
@@ -190,12 +189,16 @@ function ISGeneratorInfoWindow.getRichText(object, displayStats)
 end
 
 function PZLinuxUseFuel()
-    local square = getPlayer():getSquare()
-    if getPlayer():getModData().PZLinuxIsPowered and getPlayer():getModData().PZLinuxIsPowered == 1 then
+    local player = PZLinuxGetPlayer()
+    if not player then return end
+
+    local square = player:getSquare()
+    local modData = player:getModData()
+    if modData.PZLinuxIsPowered and modData.PZLinuxIsPowered == 1 then
         getNearbyGenerator(square, 0.0003)
     end
 
-    if getPlayer():getModData().ATMIsPowered and getPlayer():getModData().ATMIsPowered == 1 then
+    if modData.ATMIsPowered and modData.ATMIsPowered == 1 then
         getNearbyGenerator(square, 0.0002)
     end
 end
@@ -203,6 +206,9 @@ Events.EveryOneMinute.Add(PZLinuxUseFuel)
 
 function PZLinuxUtils_waitSeconds(minS, maxS, sfxMul, selfRef)
     local mul = sfxMul or 1
+    if minS > maxS then
+        minS, maxS = maxS, minS
+    end
     local start = math.ceil(getGameTime():getWorldAgeHours() * 3600)
     local delay = start + ZombRand(minS, maxS) * mul
 

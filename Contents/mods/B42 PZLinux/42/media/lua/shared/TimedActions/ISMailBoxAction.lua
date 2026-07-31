@@ -1,6 +1,6 @@
 ISMailBoxAction = ISBaseTimedAction:derive("ISMailBoxAction")
 
-function ISMailBoxAction:isValid()
+function ISMailBoxAction.isValid(_self)
     return true
 end
 
@@ -21,7 +21,9 @@ function ISMailBoxAction:start()
 end
 
 function ISMailBoxAction:stop()
-    self.ui:removeFromUIManager()
+    if self.ui then
+        self.ui:removeFromUIManager()
+    end
     ISBaseTimedAction.stop(self)
 end
 

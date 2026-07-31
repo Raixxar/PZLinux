@@ -1,11 +1,19 @@
--- Dark Web UI - by Raixxar 
+-- Dark Web UI - by Raixxar
 -- Updated : 25/01/25
 
 walletUI = ISPanel:derive("walletUI")
 
 local walletBalance = 0
-local LAST_CONNECTION_TIME = 0
-local STAY_CONNECTED_TIME = 0
+
+local function PZLinuxWalletUIFindCompany(snapshot, code)
+    if not snapshot or type(snapshot.companies) ~= "table" then return nil end
+    for _, company in ipairs(snapshot.companies) do
+        if company.code == code then
+            return company
+        end
+    end
+    return nil
+end
 
 -- CONSTRUCTOR
 function walletUI:new(x, y, width, height, player)
@@ -33,7 +41,7 @@ function walletUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -41,7 +49,7 @@ function walletUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -52,9 +60,9 @@ function walletUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetPlayer(self.parent.player):getModData()
         modData.PZLinuxUIX = self.parent:getX()
         modData.PZLinuxUIY = self.parent:getY()
     end
@@ -73,7 +81,7 @@ function walletUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     if modData.PZLinuxUISFX == 0 then
         self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
         self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
@@ -115,12 +123,26 @@ function walletUI:startWallet()
     self.minimizeButton:setVisible(true)
     self.closeButton:setVisible(true)
 
+    if not self.tradingSnapshotReady then
+        PZLinuxRequestTradingSnapshot(self.player, function(result)
+            if not result or not result.ok then return end
+            if result.balance then
+                saveAtmBalance(result.balance, self.player)
+                self.titleLabel:setName("Bank Balance: $" .. tostring(result.balance))
+            end
+            self.tradingSnapshot = result.tradingSnapshot
+            self.tradingSnapshotReady = true
+            self:startWallet()
+        end)
+        return
+    end
+
     local scrollPanel = ISScrollingListBox:new(self.width * 0.15, self.height * 0.25, self.width * 0.65, self.height * 0.20)
     scrollPanel.backgroundColor = {r=0, g=0, b=0, a=1}
     scrollPanel.borderColor = {r=0, g=0, b=0, a=0}
     scrollPanel:initialise()
     scrollPanel:instantiate()
-    
+
     function scrollPanel:prerender()
         ISPanel.prerender(self)
         self:setStencilRect(0, 0, self.width, self.height)
@@ -129,7 +151,7 @@ function walletUI:startWallet()
         self:clearStencilRect()
         ISPanel.postrender(self)
     end
-    
+
     scrollPanel:setScrollChildren(true)
     self:addChild(scrollPanel)
 
@@ -166,17 +188,15 @@ function walletUI:startWallet()
 
     local tokens = {}
     local totalWalletBalance = 0
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
     for i, company in ipairs(PZLinuxTradingCompanyNameTable) do
-        local playerWallet = "ZLinuxPlayerWallet" .. company.code
-        local totalTokenQuantity = player:getModData()[playerWallet] or 0
-
-        local dataName = "PZLinuxTrading" .. company.code
-        local globalData = ModData.getOrCreate(dataName)
-        local priceHistory = globalData.dataName or {}
-        local firstPrice = priceHistory[24] or 0
-        local lastPrice = priceHistory[48] or 0
-        local secondLastPrice = priceHistory[47] or 0
+        local snapshotCompany = PZLinuxWalletUIFindCompany(self.tradingSnapshot, company.code)
+        local playerWallet = PZLinuxTradingGetWalletKey(company.code)
+        local totalTokenQuantity = snapshotCompany and snapshotCompany.quantity or player:getModData()[playerWallet] or 0
+        local priceHistory = snapshotCompany and snapshotCompany.history or ModData.getOrCreate("PZLinuxTrading" .. company.code).dataName or {}
+        local firstPrice = snapshotCompany and snapshotCompany.firstPrice or priceHistory[24] or priceHistory[1] or 0
+        local lastPrice = snapshotCompany and snapshotCompany.price or priceHistory[#priceHistory] or 0
+        local secondLastPrice = snapshotCompany and snapshotCompany.secondLastPrice or priceHistory[#priceHistory - 1] or lastPrice
 
         if totalTokenQuantity > 0 then
             table.insert(tokens, {c = company.code, q = tostring(totalTokenQuantity), fp = firstPrice, lp = lastPrice, slp = secondLastPrice})
@@ -184,14 +204,14 @@ function walletUI:startWallet()
             walletBalance = totalWalletBalance
         end
     end
-    
+
     local y = 0
     for i, token in ipairs(tokens) do
         local codeButton = ISButton:new(self.width * 0.050, y, self.width * 0.12, self.height * 0.025, tostring(token.c) .. "/USD", self, nil)
         codeButton:initialise()
         self:addChild(codeButton)
         scrollPanel:addChild(codeButton)
-    
+
         local quantityButton = ISButton:new(self.width * 0.161, y, self.width * 0.12, self.height * 0.025, token.q, self, nil)
         quantityButton:initialise()
         self:addChild(quantityButton)
@@ -201,8 +221,8 @@ function walletUI:startWallet()
         tokenPriceButton:initialise()
         self:addChild(tokenPriceButton)
         scrollPanel:addChild(tokenPriceButton)
-        
-        local h1 = string.format("%.2f",((token.lp - token.slp) / token.slp) * 100)
+
+        local h1 = string.format("%.2f",((token.lp - token.slp) / math.max(1, token.slp)) * 100)
         local h1Color = tonumber(math.ceil(h1))
         local priceH1Button = ISButton:new(self.width * 0.389, y, self.width * 0.12, self.height * 0.025, h1 .. "%", self, nil)
         if h1Color > 0 then
@@ -213,7 +233,7 @@ function walletUI:startWallet()
         priceH1Button:initialise()
         scrollPanel:addChild(priceH1Button)
 
-        local d1 = string.format("%.2f",((token.lp - token.fp) / token.fp) * 100)
+        local d1 = string.format("%.2f",((token.lp - token.fp) / math.max(1, token.fp)) * 100)
         local d1Color = tonumber(math.ceil(d1))
         local priceD1Button = ISButton:new(self.width * 0.508, y, self.width * 0.12, self.height * 0.025, d1 .. "%", self, nil)
         if d1Color > 0 then
@@ -223,7 +243,7 @@ function walletUI:startWallet()
         end
         priceD1Button:initialise()
         scrollPanel:addChild(priceD1Button)
-        
+
         y = y + self.height * 0.025
     end
 
@@ -231,8 +251,8 @@ function walletUI:startWallet()
     self.walletTitleLabel.backgroundColor = {r=0, g=0, b=0, a=0}
     self.walletTitleLabel:setVisible(true)
     self.walletTitleLabel:initialise()
-    self.topBar:addChild(self.walletTitleLabel) 
-    
+    self.topBar:addChild(self.walletTitleLabel)
+
     local chartWidth = self.width * 0.589
     local chartHeight = self.height * 0.20
     local chartX = self.width * 0.195
@@ -245,17 +265,19 @@ function walletUI:startWallet()
     self.walletChart:initialise()
 
     function  self.walletChart:render()
-        local player = getPlayer()
-        local values = player:getModData().playerWallet
+        local player = PZLinuxGetPlayer()
+        if not player then return end
+
+        local values = player:getModData().playerWallet or {}
         local numPoints = #values
         if numPoints < 2 then return end
-    
+
         local maxValue = math.max(unpack(values))
         local minValue = math.min(unpack(values))
         if maxValue == minValue then return end
-    
+
         local barWidth = 7
-    
+
         for i = 2, numPoints do
             local closePrice = values[i]
             local barX = (i - 1) * barWidth
@@ -270,54 +292,56 @@ end
 
 function walletUI:updateWallet()
     local totalWalletBalance = 0
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
 
     if not player:getModData().playerWallet then
         player:getModData().playerWallet = {}
     end
 
     for i, company in ipairs(PZLinuxTradingCompanyNameTable) do
-        local playerWallet = "ZLinuxPlayerWallet" .. company.code
-        local totalTokenQuantity = player:getModData()[playerWallet] or 0
-
-        local dataName = "PZLinuxTrading" .. company.code
-        local globalData = ModData.getOrCreate(dataName)
-        local priceHistory = globalData.dataName or {}
-        local lastPrice = tonumber(priceHistory[48]) or 0
+        local snapshotCompany = PZLinuxWalletUIFindCompany(self.tradingSnapshot, company.code)
+        local playerWallet = PZLinuxTradingGetWalletKey(company.code)
+        local totalTokenQuantity = snapshotCompany and snapshotCompany.quantity or player:getModData()[playerWallet] or 0
+        local priceHistory = snapshotCompany and snapshotCompany.history or ModData.getOrCreate("PZLinuxTrading" .. company.code).dataName or {}
+        local lastPrice = tonumber(snapshotCompany and snapshotCompany.price or priceHistory[#priceHistory]) or 0
 
         totalWalletBalance = totalWalletBalance + lastPrice * totalTokenQuantity
-        walletBalance = totalWalletBalance + walletBalance
     end
+    walletBalance = totalWalletBalance
     table.insert(player:getModData().playerWallet, walletBalance)
     if #player:getModData().playerWallet > 48 then
         table.remove(player:getModData().playerWallet, 1)
     end
 end
 
+function walletUI.onFilter(_self, _button)
+end
+
 -- LOGOUT
-function walletUI:onMinimize(button)
+function walletUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
-function walletUI:onClose(button)
+function walletUI:onClose(_button)
     self.isClosing = true
     lastConnectionTimestamp = 0
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
-function walletUI:onCloseX(button)
+function walletUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 
-function walletUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
+function walletUI:onSFXOn(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 0
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
@@ -329,8 +353,8 @@ function walletUI:onSFXOn(button)
     self.topBar:addChild(self.skipAnimationButton)
 end
 
-function walletUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
+function walletUI:onSFXOff(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 1
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
@@ -357,14 +381,14 @@ function walletMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
-    local modData = getPlayer():getModData()
+
+    local modData = PZLinuxGetPlayer(player):getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = walletUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
-    
+
     centeredImage.scaled = true
     centeredImage.scaledWidth = finalW
     centeredImage.scaledHeight = finalH
@@ -374,18 +398,6 @@ function walletMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
 
-    local getHourTime = math.ceil(getGameTime():getWorldAgeHours())
-    if getHourTime + 1 > LAST_CONNECTION_TIME then
-        if LAST_CONNECTION_TIME == 0 then LAST_CONNECTION_TIME = getHourTime end
-        if LAST_CONNECTION_TIME > 0 then 
-            local deltaTrading = getHourTime - LAST_CONNECTION_TIME
-            for i = 1, deltaTrading do
-                PZLinuxUpdateTradingPrices()
-            end
-            ui:updateWallet()
-            LAST_CONNECTION_TIME = getHourTime
-        end
-    end
     ui:startWallet()
 
     return ui

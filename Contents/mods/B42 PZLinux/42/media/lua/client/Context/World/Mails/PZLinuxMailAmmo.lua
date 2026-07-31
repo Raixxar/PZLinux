@@ -1,25 +1,11 @@
 function PZLinuxMailGenerateBodyAmmo(sender, id)
-    local name = PZLinuxPrettifyName(getPlayer():getUsername())
-    local seed = ZombRand(1, 4)
+    local player = PZLinuxGetPlayer()
+    if not player then return "" end
 
-    local player = getPlayer()
-    local md = player:getModData()
-
-    local loc = PZLinuxMailLocation()
-
-    md.pzlinux = md.pzlinux or {}
-    md.pzlinux.mails = md.pzlinux.mails or {}
-    md.pzlinux.mails[id] = md.pzlinux.mails[id] or {}
-    local mail = md.pzlinux.mails[id]
-    if not mail.status then mail.status = 1 end
-    if not mail.city then mail.city = loc.name end
-    if not mail.x then mail.x = loc.x end
-    if not mail.y then mail.y = loc.y end
-    if not mail.z then mail.z = loc.z end
-    if not mail.quantity then mail.quantity = PZLinuxMailAmmoAmount() end
-    if not mail.object then mail.object = PZLinuxMailAmmoType() end
-    if not mail.sender then mail.sender = sender end
-    if not mail.seed then mail.seed = seed end
+    local name = PZLinuxPrettifyName(player:getUsername())
+    local mail = PZLinuxMailNormalizeRecord(player, id)
+    if not mail then return "" end
+    mail.sender = mail.sender or sender
 
     local scriptItem = getScriptManager():FindItem(mail.object)
     local displayName = scriptItem and scriptItem:getDisplayName() or mail.object
@@ -82,18 +68,4 @@ end
 function PZLinuxMailAmmoAmount()
     local idx = ZombRand(1, 6)
     return idx
-end
-
-function PZLinuxMailLocation()
-    local locations = {
-        { name = "In a trash can in Ekron", x = 683, y = 9920, z = 0 },
-        { name = "In a trash can in March Ridge", x = 10178, y = 12668, z = 0 },
-        { name = "In a trash can in March Ridge", x = 10048, y = 12776, z = 0 },
-        { name = "In a trash can in Irvington", x = 2579, y = 14473, z = 0 },
-        { name = "In a trash can in Irvington", x = 3100, y = 14489, z = 0 },
-        { name = "In a trash can in Muldraugh", x = 10635, y = 10041, z = 0 },
-        { name = "In a trash can in Muldraugh", x = 10644, y = 9767, z = 0 },
-    }
-    local idx = ZombRand(#locations) + 1
-    return locations[idx]
 end

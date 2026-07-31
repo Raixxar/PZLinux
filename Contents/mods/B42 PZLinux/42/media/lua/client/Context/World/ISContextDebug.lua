@@ -1,12 +1,12 @@
 local debug = 0
-function DebugtMenu_AddContext(player, context, worldobjects)
+function DebugtMenu_AddContext(player, context, _worldobjects)
     if debug == 1 then
         context:addOption("Debug-1", player, DebugMenu_OnDebug1)
         context:addOption("Debug-2", player, DebugMenu_OnDebug2)
     end
 end
 
-function DebugMenu_OnDebug1(x, y, message)
+function DebugMenu_OnDebug1()
     local x = 450
     local y = 9792
     local message = "test"

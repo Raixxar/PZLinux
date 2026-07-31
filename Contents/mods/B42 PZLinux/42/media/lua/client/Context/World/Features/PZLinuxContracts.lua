@@ -1,10 +1,8 @@
--- Contracts UI - by Raixxar 
+-- Contracts UI - by Raixxar
 -- Updated : 25/02/25
 
 contractsUI = ISPanel:derive("contractsUI")
 
-local LAST_CONNECTION_TIME = 0
-local STAY_CONNECTED_TIME = 0
 local selectedContracts = {}
 local locationQuestTown = ""
 local questDetailName = ""
@@ -64,19 +62,19 @@ for i = 1, 12 do
     local difficulty = 0
     local reward = 20
     local questName = ""
-    -- 1 reward * 1000, 2 reward * 2500, 3 reward * 5000, 4 reward * 10000, 5 reward * 20000
-    if i == 1 then difficulty = 1; reward = 1000; questName = "Kill zombies"; cityName = "" end
-    if i == 2 then difficulty = 3; reward = 5000; questName = "Retrieve the package" end
-    if i == 3 then difficulty = 3; reward = 5000; questName = "Eliminate the target" end
-    if i == 4 then difficulty = 1; reward = 1000; questName = "Collect zombie blood"; cityName = "" end
-    if i == 5 then difficulty = 2; reward = 2500; questName = "Send automobile parts"; cityName = "" end
-    if i == 6 then difficulty = 3; reward = 5000; questName = "Capture a live zombie"; cityName = "" end
-    if i == 7 then difficulty = 4; reward = 10000; questName = "Prepare the cargo" end
-    if i == 8 then difficulty = 5; reward = 20000; questName = "Protect the building" end
-    if i == 9 then difficulty = 2; reward = 2500; questName = "Send medical equipment"; cityName = "" end
-    if i == 10 then difficulty = 3; reward = 5000; questName = "Send weapons"; cityName = "" end
-    if i == 11 then difficulty = 2; reward = 2500; questName = "Send a computer"; cityName = "" end
-    if i == 12 then difficulty = 1; reward = 1000; questName = "Send a fridge"; cityName = "" end
+    -- v1.0 balance: easy contracts should not immediately buy top-tier Dark Web items.
+    if i == 1 then difficulty = 1; reward = 750; questName = "Kill zombies"; cityName = "" end
+    if i == 2 then difficulty = 3; reward = 4000; questName = "Retrieve the package" end
+    if i == 3 then difficulty = 3; reward = 4000; questName = "Eliminate the target" end
+    if i == 4 then difficulty = 1; reward = 750; questName = "Collect zombie blood"; cityName = "" end
+    if i == 5 then difficulty = 2; reward = 1800; questName = "Send automobile parts"; cityName = "" end
+    if i == 6 then difficulty = 3; reward = 4500; questName = "Capture a live zombie"; cityName = "" end
+    if i == 7 then difficulty = 4; reward = 8500; questName = "Prepare the cargo" end
+    if i == 8 then difficulty = 5; reward = 14000; questName = "Protect the building" end
+    if i == 9 then difficulty = 2; reward = 2200; questName = "Send medical equipment"; cityName = "" end
+    if i == 10 then difficulty = 3; reward = 4500; questName = "Send weapons"; cityName = "" end
+    if i == 11 then difficulty = 2; reward = 1800; questName = "Send a computer"; cityName = "" end
+    if i == 12 then difficulty = 1; reward = 750; questName = "Send a fridge"; cityName = "" end
 
     local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190 + 1)
     local randomCode = "Execute a contract for " .. companyCode[randomId].code .. " - Difficulty: " .. difficulty .. "/5" .. cityName
@@ -85,7 +83,8 @@ for i = 1, 12 do
     local priceHistory = companyData.dataName or {}
     local lastIndex = #priceHistory
     local lastPrice = priceHistory[lastIndex] or 1
-    local PZReward = math.ceil((ZombRand(lastPrice, lastPrice * getHourTime) + reward)/10) * 10
+    local maxRewardBase = math.max(lastPrice + 1, math.ceil(lastPrice * getHourTime))
+    local PZReward = math.ceil((ZombRand(lastPrice, maxRewardBase) + reward)/10) * 10
     contracts[i] = { id = i, name = randomCode, code = companyCode[randomId].code, reward = PZReward, questName = questName, cityId = randomCityId }
 end
 
@@ -93,11 +92,29 @@ local contractsCompanyCodes = {}
 local contractsCompanyReward = {}
 local contractsQuestName = {}
 local contractsCityId = {}
-for i, contract in ipairs(contracts) do
+for _, contract in ipairs(contracts) do
     contractsCompanyCodes[contract.id] = contract.code
     contractsCompanyReward[contract.id] = contract.reward
     contractsQuestName[contract.id] = contract.questName
     contractsCityId[contract.id] = contract.cityId
+end
+
+local function PZLinuxContractsApplyBoard(availableContracts)
+    if type(availableContracts) ~= "table" then return end
+
+    selectedContracts = {}
+    contractsCompanyCodes = {}
+    contractsCompanyReward = {}
+    contractsQuestName = {}
+    contractsCityId = {}
+
+    for _, contract in ipairs(availableContracts) do
+        table.insert(selectedContracts, contract)
+        contractsCompanyCodes[contract.id] = contract.code
+        contractsCompanyReward[contract.id] = contract.reward
+        contractsQuestName[contract.id] = contract.questName
+        contractsCityId[contract.id] = contract.cityId
+    end
 end
 
 -- CONSTRUCTOR
@@ -114,6 +131,25 @@ function contractsUI:new(x, y, width, height, player)
     return o
 end
 
+function contractsUI:showContractsBoard()
+    local y = 0.20
+    self.contractButtons = {}
+    for i = 1, #selectedContracts do
+        local contract = selectedContracts[i]
+        local contractButton = ISButton:new(self.width * 0.20, self.height * y, self.width * 0.57, self.height * 0.05, contract.name, self, self.onSelectContract)
+        contractButton.textColor = {r=0, g=1, b=0, a=1}
+        contractButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        contractButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        contractButton.contractId = contract.id
+        contractButton.contractPosition = i
+        contractButton:setVisible(true)
+        contractButton:initialise()
+        self.topBar:addChild(contractButton)
+        table.insert(self.contractButtons, contractButton)
+        y = y + 0.06
+    end
+end
+
 -- INIT
 function contractsUI:initialise()
     ISPanel.initialise(self)
@@ -126,30 +162,30 @@ function contractsUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
-        self.parent.isDragging = true
-        self.parent.initialX = self.parent:getX()
-        self.parent.initialY = self.parent:getY()
-        self.parent.mouseStartX = getMouseX()
-        self.parent.mouseStartY = getMouseY()
+    function self.topBar.onMouseDown(topBar, _x, _y)
+        topBar.parent.isDragging = true
+        topBar.parent.initialX = topBar.parent:getX()
+        topBar.parent.initialY = topBar.parent:getY()
+        topBar.parent.mouseStartX = getMouseX()
+        topBar.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
-        if self.parent.isDragging then
+    function self.topBar.onMouseMove(topBar, _x, _y)
+        if topBar.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
-            local dx = curMouseX - self.parent.mouseStartX
-            local dy = curMouseY - self.parent.mouseStartY
-            self.parent:setX(self.parent.initialX + dx)
-            self.parent:setY(self.parent.initialY + dy)
+            local dx = curMouseX - topBar.parent.mouseStartX
+            local dy = curMouseY - topBar.parent.mouseStartY
+            topBar.parent:setX(topBar.parent.initialX + dx)
+            topBar.parent:setY(topBar.parent.initialY + dy)
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
-        self.parent.isDragging = false
-        local modData = getPlayer():getModData()
-        modData.PZLinuxUIX = self.parent:getX()
-        modData.PZLinuxUIY = self.parent:getY()
+    function self.topBar.onMouseUp(topBar, _x, _y)
+        topBar.parent.isDragging = false
+        local modData = PZLinuxGetPlayer(topBar.parent.player):getModData()
+        modData.PZLinuxUIX = topBar.parent:getX()
+        modData.PZLinuxUIY = topBar.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
@@ -166,7 +202,7 @@ function contractsUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     if modData.PZLinuxUISFX == 0 then
         self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
         self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
@@ -209,7 +245,6 @@ function contractsUI:initialise()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    local modData = getPlayer():getModData()
     if modData.PZLinuxActiveContract == 1 then
         modData.PZLinuxOnZombieDead = modData.PZLinuxOnZombieDead or 0
         local logging = "\nZombie(s) killed during this contract: " .. modData.PZLinuxOnZombieDead
@@ -228,115 +263,54 @@ function contractsUI:initialise()
         return
     end
 
-    local function shuffleTable(t)
-        for i = #t, 2, -1 do
-            local j = ZombRand(1, i + 1)
-            t[i], t[j] = t[j], t[i]
-        end
-    end
-
-    getHourTime = math.ceil(getGameTime():getWorldAgeHours())
-
-    if getHourTime < 168 then
-        getHourTime = 168
-    end
-
-    if (getHourTime - LAST_CONNECTION_TIME) >= 168 then
-        shuffleTable(contracts)
-        selectedContracts = {}
-        local randCountContracts = ZombRand(1, 9)
-        while #selectedContracts < randCountContracts do
-            for _, contract in ipairs(contracts) do
-                table.insert(selectedContracts, contract)
-                if #selectedContracts >= randCountContracts then break end
+    if not self.contractsBoardReady then
+        PZLinuxRequestContractsBoard(self.player, function(result)
+            if not result or not result.ok then return end
+            if result.balance then
+                saveAtmBalance(result.balance, self.player)
+                self.titleLabel:setName("Bank Balance: $" .. tostring(result.balance))
             end
-        end
-        LAST_CONNECTION_TIME = getHourTime
+            PZLinuxContractsApplyBoard(result.contracts)
+            self.contractsBoardReady = true
+            self:showContractsBoard()
+        end)
+        return
     end
-    
-    local y = 0.20
-    self.contractButtons = {}
-    for i = 1, #selectedContracts do
-        local contract = selectedContracts[i]
-        local contractButton = ISButton:new(self.width * 0.20, self.height * y, self.width * 0.57, self.height * 0.05, contract.name, self, self.onSelectContract)
-        contractButton.textColor = {r=0, g=1, b=0, a=1}
-        contractButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-        contractButton.borderColor = {r=0, g=1, b=0, a=0.5}
 
-        -- DEBUG LINE CONTRACT ID
-        -- contractButton.contractId = contract.id
-        contractButton.contractId = contract.id
-
-        contractButton.contractPosition = i
-        contractButton:setVisible(true)
-        contractButton:initialise()
-        self.topBar:addChild(contractButton)
-        table.insert(self.contractButtons, contractButton)
-        y = y + 0.06
-    end
+    self:showContractsBoard()
 end
 
-function contractsUI:onCancelContract(button)
-    local modData = getPlayer():getModData()
+function contractsUI:onCancelContract(_button)
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+
+    local modData = playerObj:getModData()
 
     if modData.PZLinuxContractLocationX and modData.PZLinuxContractLocationX > 0 then
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY)
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
     end
 
-    local inv = getPlayer():getInventory()
-    local note = inv:Remove('Note')
-
-    local dataName = modData.PZLinuxContractCompanyUp
-    local companyData = ModData.getOrCreate(dataName)
-    local priceHistory = companyData.dataName or {}
-    local lastIndex = #priceHistory
-    local lastPrice = priceHistory[lastIndex]
-    local newPrice = math.ceil(lastPrice - (lastPrice * ZombRand(1, 10) / 100))
-
-    table.insert(companyData.dataName, newPrice)
-    if #companyData.dataName > 48 then
-        table.remove(companyData.dataName, 1)
-    end
-
-    self.isClosing = true
-    self:removeFromUIManager()
-    modData.PZLinuxUIOpenMenu = 7
-
-    modData.PZLinuxContractLocationX = 0
-    modData.PZLinuxContractLocationY = 0
-    modData.PZLinuxContractLocationZ = 0
-    modData.PZLinuxOnZombieDead = 0
-    modData.PZLinuxActiveContract = 0
-    modData.PZLinuxContractNote = ""
-    modData.PZLinuxContractInfo = ""
-    modData.PZLinuxContractInfoCount = 0
-    modData.PZLinuxContractKillZombie = 0
-    modData.PZLinuxContractPickUp = 0
-    modData.PZLinuxContractManhunt = 0
-    modData.PZLinuxContractBlood = 0
-    modData.PZLinuxContractCar = 0
-    modData.PZLinuxContractCapture = 0
-    modData.PZLinuxContractCargo = 0
-    modData.PZLinuxContractProtect = 0
-    modData.PZLinuxContractMedical = 0
-    modData.PZLinuxContractWeapon = 0
-    modData.PZLinuxContractSendComputer = 0
-    modData.PZLinuxContractSendFridge = 0
+    PZLinuxRequestContractCancel(self.player, function(result)
+        if not result or not result.ok then return end
+        self.isClosing = true
+        self:removeFromUIManager()
+        modData.PZLinuxUIOpenMenu = 7
+    end)
 end
 
 function contractsUI:onSelectContract(button)
-    for _, button in ipairs(self.contractButtons) do
-        button:setVisible(false)
+    for _, contractButton in ipairs(self.contractButtons) do
+        contractButton:setVisible(false)
     end
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     if modData.PZLinuxActiveContract == nil then
         modData.PZLinuxActiveContract = 0
     end
 
     if modData.PZLinuxActiveContract == 1 then
-        local playerObj = getPlayer()
+        local playerObj = PZLinuxGetPlayer(self.player)
         local globalVolume = getCore():getOptionSoundVolume() / 50
         getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         return
@@ -351,109 +325,76 @@ function contractsUI:onSelectContract(button)
 end
 
 function contractsUI:onContractComplete()
-    local modData = getPlayer():getModData()
-    local moneyEarned = modData.PZLinuxOnReward + modData.PZLinuxOnZombieDead * 5
-    local balance = loadAtmBalance() + moneyEarned
-    saveAtmBalance(balance)
-    self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
 
-    local logMessage = "You have been paid for your contract.\nTotal zombies killed: " .. modData.PZLinuxOnZombieDead .. "\nTotal money earned: $" .. moneyEarned
-    self.completeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, logMessage, 0, 1, 0, 1, UIFont.Small, true)
-    self.completeContractMessage:setVisible(true)
-    self.completeContractMessage:initialise()
-    self.topBar:addChild(self.completeContractMessage)
-
-    local dataName = modData.PZLinuxContractCompanyUp
-    local companyData = ModData.getOrCreate(dataName)
-    local priceHistory = companyData.dataName or {}
-    local lastIndex = #priceHistory
-    local lastPrice = priceHistory[lastIndex]
-    local newPrice = math.ceil(lastPrice * ZombRand(1, 10) / 100 + lastPrice)
-
-    table.insert(companyData.dataName, newPrice)
-    if #companyData.dataName > 48 then
-        table.remove(companyData.dataName, 1)
-    end
-    
-    local playerObj = getPlayer()
-    local globalVolume = getCore():getOptionSoundVolume() / 50
-    getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-
-    local playerObj = getPlayer()
-    local inv = playerObj:getInventory()
-    local note = inv:Remove('Note')
+    local modData = playerObj:getModData()
 
     if modData.PZLinuxContractLocationX and modData.PZLinuxContractLocationX > 0 then
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY)
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
     end
-    
-    LAST_CONNECTION_TIME = 0
-    modData.PZLinuxContractLocationX = 0
-    modData.PZLinuxContractLocationY = 0
-    modData.PZLinuxContractLocationZ = 0
-    modData.PZLinuxOnZombieDead = 0
-    modData.PZLinuxActiveContract = 0
-    modData.PZLinuxContractNote = ""
-    modData.PZLinuxContractInfo = ""
-    modData.PZLinuxContractInfoCount = 0
-    modData.PZLinuxContractKillZombie = 0
-    modData.PZLinuxContractPickUp = 0
-    modData.PZLinuxContractManhunt = 0
-    modData.PZLinuxContractBlood = 0
-    modData.PZLinuxContractCar = 0
-    modData.PZLinuxContractCapture = 0
-    modData.PZLinuxContractCargo = 0
-    modData.PZLinuxContractProtect = 0
-    modData.PZLinuxContractMedical = 0
-    modData.PZLinuxContractWeapon = 0
-    modData.PZLinuxContractSendComputer = 0
-    modData.PZLinuxContractSendFridge = 0
+
+    PZLinuxRequestContractComplete(self.player, function(result)
+        if not result or not result.ok then return end
+
+        saveAtmBalance(result.balance, playerObj)
+        self.titleLabel:setName("Bank balance: $"  .. tostring(result.balance))
+
+        local logMessage = "You have been paid for your contract.\nTotal zombies killed: " .. tostring(result.zombieCount or 0) .. "\nTotal money earned: $" .. tostring(result.amount or 0)
+        self.completeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, logMessage, 0, 1, 0, 1, UIFont.Small, true)
+        self.completeContractMessage:setVisible(true)
+        self.completeContractMessage:initialise()
+        self.topBar:addChild(self.completeContractMessage)
+
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    end)
 end
 
 function contractsUI:onContractId(contract)
     self.minimizeBackButton:setVisible(true)
     self.minimizeButton:setVisible(false)
 
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractInfo = ""
-    modData.PZLinuxContractInfoCount = 0
-    modData.PZLinuxContractLocationX = 0
-    modData.PZLinuxContractLocationY = 0
-    modData.PZLinuxContractLocation2 = 0
+    local uiModData = PZLinuxGetPlayer(self.player):getModData()
+    uiModData.PZLinuxContractInfo = ""
+    uiModData.PZLinuxContractInfoCount = 0
+    uiModData.PZLinuxContractLocationX = 0
+    uiModData.PZLinuxContractLocationY = 0
+    uiModData.PZLinuxContractLocation2 = 0
     locationQuestTown = "All around the world:"
     questDetailName = ""
 
-    local globalVolume = getCore():getOptionSoundVolume() / 50
-    local player = getPlayer()
-    
+    local typingVolume = getCore():getOptionSoundVolume() / 50
+    local player = PZLinuxGetPlayer(self.player)
+
     if not self.typingMessage then
         self.typingMessage = ISLabel:new(self.width * 0.20, self.height * 0.65, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
         self.typingMessage:initialise()
         self.topBar:addChild(self.typingMessage)
     end
-    
+
     if not self.loadingMessage then
         self.loadingMessage = ISLabel:new(self.width * 0.20, self.height * 0.45, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
         self.loadingMessage:initialise()
         self.topBar:addChild(self.loadingMessage)
     end
-    
+
     local function typeText(label, text, callback)
         local index, message = 1, ""
         local totalLetters = string.len(text)
-        
+
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         while index <= totalLetters do
             if self.isClosing then return end
-            
+
             local soundName = "typingKeyboard" .. ZombRand(1, 10)
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            
+            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(typingVolume)
+
             message = message .. string.sub(text, index, index)
             index = index + 1
             label:setName(message)
-            
+
             local letterDelay = elapsed + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -461,26 +402,25 @@ function contractsUI:onContractId(contract)
                 elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
-        
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+
+        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(typingVolume)
         if callback then callback() end
     end
-    
+
     if contract == 1 then self.terminalCoroutine = PZLinux_Contract_KillZombie_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     elseif contract == 2 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
-            local message = ""
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
-            print(contractsCityId[contract])
 
             local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -494,7 +434,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for a courier to retrieve a package."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -509,7 +449,7 @@ function contractsUI:onContractId(contract)
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -661,7 +601,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -672,7 +612,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -687,9 +627,9 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -716,9 +656,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Put the package in a mailbox."
-            
+
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -730,9 +670,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -740,7 +680,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -750,15 +690,15 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 3 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
-            
+
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
-            local message = ""
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -775,7 +715,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for a hunter."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -790,7 +730,7 @@ function contractsUI:onContractId(contract)
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -799,7 +739,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             local firstNameId = ZombRand(1, 101)
             local lastNameId = ZombRand(1, 101)
             local names = {
@@ -905,7 +845,7 @@ function contractsUI:onContractId(contract)
                 { id = 100, first = "Katherine", last = "Foster" },
             }
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             local targetName = names[firstNameId].first .. " " .. names[lastNameId].last
             message = message .. "\n" .. sellerName .. "The target is " .. targetName
             self.loadingMessage:setName(message)
@@ -1011,7 +951,7 @@ function contractsUI:onContractId(contract)
                     [1] = { description = "The target was supposed to return home to Louisville.", x = 12030, y = 3124, z = 0, city = "Louisville" },
                 }
             end
-            
+
             local randomQuest = 1
             if #quests > 1 then
                 randomQuest = ZombRand(1, #quests + 1)
@@ -1026,7 +966,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1037,7 +977,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1052,9 +992,9 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1081,7 +1021,7 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Send us the corpse, or what remains of it, with a mailbox."
             self.loadingMessage:setName(message)
 
@@ -1094,9 +1034,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1104,7 +1044,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -1114,15 +1054,15 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 4 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
-            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
-            local message = ""
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -1139,7 +1079,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for blood analyses of zombies."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1148,7 +1088,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1163,9 +1103,9 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1177,9 +1117,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1187,7 +1127,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -1197,15 +1137,15 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 5 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
-            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
-            local message = ""
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -1222,7 +1162,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for someone to find auto parts for us."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1231,7 +1171,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "Which auto parts do you need ?", function()
                 message = message .. "\n" .. playerName .. "Which auto parts do you need ?"
                 self.loadingMessage:setName(message)
@@ -1269,7 +1209,7 @@ function contractsUI:onContractId(contract)
                 [20] = { baseName = "Base.NormalSuspension2", name = "Standard suspension: Sport", delta = 0.6 },
                 [21] = { baseName = "Base.NormalSuspension1", name = "Standard suspension: Standard", delta = 0.5 }
             }
-            
+
             local randomQuest = ZombRand(1, #quests + 1)
             local quest = quests[randomQuest]
             if quest then
@@ -1280,9 +1220,9 @@ function contractsUI:onContractId(contract)
                 message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
-            
+
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
@@ -1292,7 +1232,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1308,8 +1248,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1321,9 +1261,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1331,7 +1271,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -1341,15 +1281,15 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 6 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
-            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
-            local message = ""
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -1366,7 +1306,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for someone to capture a zombie alive."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1375,7 +1315,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-                        
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1391,8 +1331,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1404,9 +1344,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1414,7 +1354,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -1424,14 +1364,14 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 7 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
-            local message = ""
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -1448,7 +1388,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We lost our cargo, we're looking for someone to retrieve it by helicopter."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1463,7 +1403,7 @@ function contractsUI:onContractId(contract)
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1562,7 +1502,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1573,7 +1513,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1588,9 +1528,9 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1602,9 +1542,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Prepare defenses, we will take the cargo by helicopter."
-            
+
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1616,9 +1556,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1626,7 +1566,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -1636,14 +1576,14 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 8 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
             modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
-            local message = ""
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -1660,7 +1600,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We have a building to protect against a horde of zombies."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1675,7 +1615,7 @@ function contractsUI:onContractId(contract)
                 self.loadingMessage:setName(message)
                 self.typingMessage:setName("")
             end)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1763,7 +1703,7 @@ function contractsUI:onContractId(contract)
                     [1] = { description = "It's the Valley Station Crossroads Mail.", x = 13944, y = 5908, z = 0, city = "Valley Station" },
                 }
             end
-            
+
             if contractsCityId[contract] == 12 then
                 quests = {
                     [1] = { description = "It's the Louisville Hospital.", x = 12940, y = 2078, z = 0, city = "Louisville" },
@@ -1772,7 +1712,7 @@ function contractsUI:onContractId(contract)
                     [4] = { description = "It's the Louisville Court House.", x = 12483, y = 1546, z = 0, city = "Louisville" },
                 }
             end
-            
+
             local randomQuest = 1
             if #quests > 1 then
                 randomQuest = ZombRand(1, #quests + 1)
@@ -1787,7 +1727,7 @@ function contractsUI:onContractId(contract)
                 locationQuestTown = quest.city .. ":\n* " .. quest.description .. "\n* Zombies to kill: 10"
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1798,7 +1738,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1813,9 +1753,9 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1827,9 +1767,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Prepare defenses, there will be many zombies."
-            
+
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1841,9 +1781,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1851,7 +1791,7 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
@@ -1861,15 +1801,15 @@ function contractsUI:onContractId(contract)
 
     elseif contract == 9 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
-            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
-            local message = ""
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -1886,7 +1826,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for medical equipment."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1895,7 +1835,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What exactly are you looking for ?", function()
                 message = message .. "\n" .. playerName .. "What exactly are you looking for ?"
                 self.loadingMessage:setName(message)
@@ -1923,7 +1863,7 @@ function contractsUI:onContractId(contract)
                 [10] = { baseName = "Base.PillsSleepingTablets", name = "Sleeping Pills", delta = 0.8 },
                 [11] = { baseName = "Base.PillsVitamins", name = "Caffeine Pills", delta = 0.7 },
             }
-            
+
             local randomQuest = ZombRand(1, #quests + 1)
             local countRequest = ZombRand(1, 11)
             local quest = quests[randomQuest]
@@ -1935,9 +1875,9 @@ function contractsUI:onContractId(contract)
                 message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -1946,7 +1886,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -1962,8 +1902,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -1975,9 +1915,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -1985,25 +1925,25 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
         end)
 
-    
+
     elseif contract == 10 then
         self.terminalCoroutine = coroutine.create(function()
-            local modData = getPlayer():getModData()
+            local modData = PZLinuxGetPlayer(self.player):getModData()
 
             local globalVolume = getCore():getOptionSoundVolume() / 50
-            local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+            local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
             local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
             modData.PZLinuxOnReward = contractsCompanyReward[contract]
-            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[7]
-            local message = ""
+            modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
+            local message
 
             local sleepSFX = 1
             if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
@@ -2020,7 +1960,7 @@ function contractsUI:onContractId(contract)
 
             message = sellerName .. "We are looking for weapons."
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -2029,7 +1969,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What exactly are you looking for ?", function()
                 message = message .. "\n" .. playerName .. "What exactly are you looking for ?"
                 self.loadingMessage:setName(message)
@@ -2060,7 +2000,7 @@ function contractsUI:onContractId(contract)
                 [13] = { baseName = "Base.VarmintRifle", name ="MSR700 Rifle", delta = 1.5 },
                 [14] = { baseName = "Base.HuntingRifle", name ="MSR788 Rifle", delta = 1.5 },
             }
-            
+
             local randomQuest = ZombRand(1, #quests + 1)
             local countRequest = ZombRand(1, 6)
             local quest = quests[randomQuest]
@@ -2072,9 +2012,9 @@ function contractsUI:onContractId(contract)
                 message = message .. "\n" .. sellerName .. modData.PZLinuxContractInfoCount .. " " .. quest.name
             end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             self.loadingMessage:setName(message)
-            
+
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
             while elapsed < letterDelay do
                 if self.isClosing then return end
@@ -2083,7 +2023,7 @@ function contractsUI:onContractId(contract)
             end
 
             if self.isClosing then return end
-            
+
             typeText(self.typingMessage, "What is the reward for this mission ?", function()
                 message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
                 self.loadingMessage:setName(message)
@@ -2099,8 +2039,8 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward 
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
             self.loadingMessage:setName(message)
 
             letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
@@ -2112,9 +2052,9 @@ function contractsUI:onContractId(contract)
 
             if self.isClosing then return end
 
-            getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             message = message .. "\n" .. sellerName .. "Deal ?"
-            
+
             self.loadingMessage:setName(message)
 
             self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
@@ -2122,20 +2062,26 @@ function contractsUI:onContractId(contract)
             self.yesButton:initialise()
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
-            
+
             self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
             self.noButton:initialise()
             self.noButton:instantiate()
             self.topBar:addChild(self.noButton)
         end)
-    
+
     elseif contract == 11 then self.terminalCoroutine = PZLinux_Contract_SendComputer_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     elseif contract == 12 then self.terminalCoroutine = PZLinux_Contract_SendFridge_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     end
 
     self.updateCoroutineFunc = function()
-        if coroutine.status(self.terminalCoroutine) ~= "dead" then
-            coroutine.resume(self.terminalCoroutine)
+        if self.terminalCoroutine and coroutine.status(self.terminalCoroutine) ~= "dead" then
+            local ok, err = coroutine.resume(self.terminalCoroutine)
+            if not ok then
+                print("PZLinux contracts coroutine error:", tostring(err))
+                Events.OnTick.Remove(self.updateCoroutineFunc)
+                self.updateCoroutineFunc = nil
+                self.terminalCoroutine = nil
+            end
         else
             Events.OnTick.Remove(self.updateCoroutineFunc)
             self.updateCoroutineFunc = nil
@@ -2150,79 +2096,86 @@ end
 -- PZLinuxActiveContract = 1 Active
 -- PZLinuxActiveContract = 2 Complete
 function contractsUI:onYesButton(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxActiveContract = 1
-    modData.PZLinuxOnZombieDead = 0
-    
-    if button.contractId == 1 then modData.PZLinuxContractKillZombie = 1 end
-    if button.contractId == 2 then modData.PZLinuxContractPickUp = 1 end 
-    if button.contractId == 3 then modData.PZLinuxContractManhunt = 1 end
-    if button.contractId == 4 then modData.PZLinuxContractBlood = 1 end
-    if button.contractId == 5 then modData.PZLinuxContractCar = 1 end
-    if button.contractId == 6 then modData.PZLinuxContractCapture = 1 end
-    if button.contractId == 7 then modData.PZLinuxContractCargo = 1 end
-    if button.contractId == 8 then modData.PZLinuxContractProtect = 1 end
-    if button.contractId == 9 then modData.PZLinuxContractMedical = 1 end
-    if button.contractId == 10 then modData.PZLinuxContractWeapon = 1 end
-    if button.contractId == 11 then modData.PZLinuxContractSendComputer = 1 end
-    if button.contractId == 12 then modData.PZLinuxContractSendFridge = 1 end
-
-    modData.PZLinuxContractNote = "* [" .. contractsCompanyCodes[button.contractId] .. "] ".. contractsQuestName[button.contractId] .. " for $" .. contractsCompanyReward[button.contractId]
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+    local modData = playerObj:getModData()
+    local contractId = tonumber(button.contractId)
+    local contractNote = "* [" .. tostring(contractsCompanyCodes[contractId]) .. "] ".. tostring(contractsQuestName[contractId]) .. " for $" .. tostring(contractsCompanyReward[contractId])
     if modData.PZLinuxContractInfoCount and modData.PZLinuxContractInfoCount > 0 then
-        modData.PZLinuxContractNote = modData.PZLinuxContractNote .. "\n* " .. modData.PZLinuxContractInfoCount .. " " .. questDetailName
+        contractNote = contractNote .. "\n* " .. modData.PZLinuxContractInfoCount .. " " .. questDetailName
     end
 
-    local playerObj = getPlayer()
-    local inv = playerObj:getInventory()
-    local note = inv:AddItem('Base.Note')
-    note:setName("Contract")
-    note:setCanBeWrite(true)
-    note:addPage(1, locationQuestTown .. "\n" .. modData.PZLinuxContractNote .. "\n")
-
-    if modData.PZLinuxContractLocationX and modData.PZLinuxContractLocationX > 0 then
-        contractsDrawOnMap(modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractNote)
+    local fullNote = locationQuestTown .. "\n" .. contractNote .. "\n"
+    if contractId == 1 and modData.PZLinuxOnZombieToKill then
+        fullNote = fullNote .. "\n * Zombies to kill: " .. tostring(modData.PZLinuxOnZombieToKill)
     end
 
-    if modData.PZLinuxContractKillZombie and modData.PZLinuxContractKillZombie == 1 then
-        modData.PZLinuxContractNote = modData.PZLinuxContractNote .. "\n * Zombies to kill: " .. modData.PZLinuxOnZombieToKill
-    end
+    local acceptState = {
+        contractId = contractId,
+        code = contractsCompanyCodes[contractId],
+        reward = contractsCompanyReward[contractId],
+        questName = contractsQuestName[contractId],
+        cityId = contractsCityId[contractId],
+        locationX = modData.PZLinuxContractLocationX,
+        locationY = modData.PZLinuxContractLocationY,
+        locationZ = modData.PZLinuxContractLocationZ,
+        info = modData.PZLinuxContractInfo,
+        infoCount = modData.PZLinuxContractInfoCount,
+        zombieToKill = modData.PZLinuxOnZombieToKill,
+        note = contractNote,
+    }
 
-    self.isClosing = true
-    self:removeFromUIManager()
-    modData.PZLinuxUIOpenMenu = 7
+    PZLinuxRequestContractAccept(self.player, acceptState, function(result)
+        if not result or not result.ok then return end
+
+        local updatedModData = playerObj:getModData()
+        local inv = playerObj:getInventory()
+        local note = inv:AddItem('Base.Note')
+        note:setName("Contract")
+        note:setCanBeWrite(true)
+        note:addPage(1, fullNote)
+
+        if updatedModData.PZLinuxContractLocationX and updatedModData.PZLinuxContractLocationX > 0 then
+            contractsDrawOnMap(updatedModData.PZLinuxContractLocationX, updatedModData.PZLinuxContractLocationY, updatedModData.PZLinuxContractNote)
+        end
+
+        self.isClosing = true
+        self:removeFromUIManager()
+        updatedModData.PZLinuxUIOpenMenu = 7
+    end)
 end
 
 -- LOGOUT
-function contractsUI:onMinimizeBack(button)
+function contractsUI:onMinimizeBack(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 7
 end
 
-function contractsUI:onMinimize(button)
+function contractsUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
-function contractsUI:onClose(button)
+function contractsUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- CLOSE
-function contractsUI:onCloseX(button)
+function contractsUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 
-function contractsUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
+function contractsUI:onSFXOn(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 0
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
@@ -2234,8 +2187,8 @@ function contractsUI:onSFXOn(button)
     self.topBar:addChild(self.skipAnimationButton)
 end
 
-function contractsUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
+function contractsUI:onSFXOff(_button)
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUISFX = 1
     self.skipAnimationButton:close()
     self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
@@ -2264,13 +2217,13 @@ function contractsMenu_ShowUI(player)
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
 
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(player):getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
     local ui = contractsUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
-    
+
     centeredImage.scaled = true
     centeredImage.scaledWidth = finalW
     centeredImage.scaledHeight = finalH

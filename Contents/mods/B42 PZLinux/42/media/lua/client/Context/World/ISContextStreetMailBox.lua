@@ -33,7 +33,7 @@ function StreetMailBoxUI:showLoginMenu()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -41,7 +41,7 @@ function StreetMailBoxUI:showLoginMenu()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -52,7 +52,7 @@ function StreetMailBoxUI:showLoginMenu()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
     end
 
@@ -75,155 +75,46 @@ function StreetMailBoxUI:showLoginMenu()
 end
 
 function StreetMailBoxUI:onSendPackage()
-    local playerObj = getPlayer()
-    local inventory = playerObj:getInventory()
-    local items = inventory:getItems()
-    local modData = getPlayer():getModData()
-    local totalCountForContract = false
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
 
-    local itemCount = 0
-    for j = 0, items:size() - 1 do
-        local item = items:get(j)
-        if item:getFullType() == modData.PZLinuxContractInfo then
-            itemCount = itemCount + 1
+    PZLinuxRequestDarkWebRedeemSales(playerObj, function(result)
+        if result and result.ok and result.amount and result.amount > 0 then
+            saveAtmBalance(result.balance, playerObj)
+            HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.amount) .. " transferred to your bank account")
         end
-    end
+    end)
 
-    if modData.PZLinuxContractInfoCount and itemCount >= modData.PZLinuxContractInfoCount then
-        if modData.PZLinuxContractInfoCount > 0 then 
-            totalCountForContract = true 
+    PZLinuxRequestDarkWebDeliverOrders(playerObj, function(result)
+        if result and result.lost then
+            HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
+        elseif result and result.ok and result.delivered and result.delivered > 0 then
+            HaloTextHelper.addGoodText(playerObj, "Dark web order delivered")
         end
-    end
-    
-    for j = items:size() - 1, 0, -1 do
-        local item = items:get(j)
-        if item and item:getFullType() == "Base.SuspiciousPackage" then
-            local boxName = item:getName()
-            boxName = boxName:gsub("%$", "")
-            local balance = loadAtmBalance()
-            local amount = tonumber(boxName)
-            if amount then
-                saveAtmBalance(balance + amount)
-                inventory:Remove(item)
-            end
-        end
+    end)
 
-        local isComputerMoveable = false
-        if item and instanceof(item, "Moveable") then
-            local ws = item:getWorldSprite()
-            if ws == "appliances_com_01_72"
-            or ws == "appliances_com_01_73"
-            or ws == "appliances_com_01_74"
-            or ws == "appliances_com_01_75" then
-                isComputerMoveable = true
-            end
+    PZLinuxRequestContractDeposit(playerObj, function(result)
+        if result and result.ok and result.removed and result.removed > 0 then
+            HaloTextHelper.addGoodText(playerObj, "Contract package sent")
         end
+    end)
 
-        local isFridgeMoveable = false
-        if item and instanceof(item, "Moveable") then
-            local ws = item:getWorldSprite()
-            if ws == "appliances_refrigeration_01_0"
-            or ws == "appliances_refrigeration_01_1"
-            or ws == "appliances_refrigeration_01_2"
-            or ws == "appliances_refrigeration_01_3"
-            or ws == "appliances_refrigeration_01_4"
-            or ws == "appliances_refrigeration_01_5"
-            or ws == "appliances_refrigeration_01_6"
-            or ws == "appliances_refrigeration_01_7"
-            or ws == "appliances_refrigeration_01_8"
-            or ws == "appliances_refrigeration_01_9"
-            or ws == "appliances_refrigeration_01_10"
-            or ws == "appliances_refrigeration_01_11"
-            or ws == "appliances_refrigeration_01_12"
-            or ws == "appliances_refrigeration_01_13"
-            or ws == "appliances_refrigeration_01_14"
-            or ws == "appliances_refrigeration_01_15"
-            or ws == "appliances_refrigeration_01_22"
-            or ws == "appliances_refrigeration_01_23"
-            or ws == "appliances_refrigeration_01_24"
-            or ws == "appliances_refrigeration_01_25"
-            or ws == "appliances_refrigeration_01_26"
-            or ws == "appliances_refrigeration_01_27"
-            or ws == "appliances_refrigeration_01_28"
-            or ws == "appliances_refrigeration_01_29"
-            or ws == "appliances_refrigeration_01_30"
-            or ws == "appliances_refrigeration_01_31"
-            or ws == "appliances_refrigeration_01_32"
-            or ws == "appliances_refrigeration_01_33"
-            or ws == "appliances_refrigeration_01_34"
-            or ws == "appliances_refrigeration_01_35"
-            or ws == "appliances_refrigeration_01_36"
-            or ws == "appliances_refrigeration_01_37"
-            or ws == "appliances_refrigeration_01_40"
-            or ws == "appliances_refrigeration_01_41"
-            or ws == "appliances_refrigeration_01_42"
-            or ws == "appliances_refrigeration_01_43" then
-                isFridgeMoveable = true
-            end
+    PZLinuxRequestDeliver(playerObj, function(result)
+        if result and result.lost then
+            HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
+        elseif result and result.ok and result.delivered and result.delivered > 0 then
+            HaloTextHelper.addGoodText(playerObj, "Request package delivered")
         end
+    end)
 
-        if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
-        or (isComputerMoveable and modData.PZLinuxContractSendComputer == 1)
-        or (isFridgeMoveable and modData.PZLinuxContractSendFridge == 1)
-        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractManhunt == 3)
-        or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
-        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractMedical == 1 and totalCountForContract)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1 and totalCountForContract)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractWeapon == 1 and totalCountForContract) then
-            if modData.PZLinuxContractInfoCount > 0 then
-                modData.PZLinuxActiveContract = 9
-                inventory:Remove(item)
-                modData.PZLinuxContractInfoCount = modData.PZLinuxContractInfoCount - 1
-            else
-                modData.PZLinuxActiveContract = 9
-                inventory:Remove(item)
-            end
-        end
-    end
-
-    if modData.PZLinuxActiveRequest == 1 and modData.PZLinuxOnItemRequest then
-        while #modData.PZLinuxOnItemRequest > 0 do
-            local inv = getPlayer():getInventory()
-            local parcel = inv:AddItem('Base.Parcel_Large')
-            local parcelInv = parcel:getInventory()
-            local lastBatchWrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
-            if lastBatchWrapper and type(lastBatchWrapper) == "table" then
-                local lastBatch = lastBatchWrapper[1]
-                if lastBatch and type(lastBatch.items) == "table" then
-                    for _, item in ipairs(lastBatch.items) do
-                        parcelInv:AddItem(item.name)
-                    end
-                end
-            end
-            table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
-        end
-        modData.PZLinuxActiveRequest = 0
-    end
-
-    if modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLinuxOnItemBuyOnDarkWebStatus then
-        while #modData.PZLinuxOnItemBuyOnDarkWeb > 0 do
-            local inv = getPlayer():getInventory()
-            local parcel = inv:AddItem('Base.Parcel_Large')
-            local parcelInv = parcel:getInventory()
-            local lastBatchWrapper = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
-            if lastBatchWrapper and type(lastBatchWrapper) == "table" then
-                local lastBatch = lastBatchWrapper[1]
-                if lastBatch and type(lastBatch.items) == "table" then
-                    for _, item in ipairs(lastBatch.items) do
-                        parcelInv:AddItem(item.name)
-                    end
-                end
-            end
-            table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
-        end
-        modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-    end
 end
 
 function StreetMailBoxUI:onClose()
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if playerObj then
+        playerObj:StopAllActionQueue()
+    end
 end
 
 function StreetMailBoxMenu_ShowUI(player)
@@ -245,7 +136,7 @@ function StreetMailBoxMenu_ShowUI(player)
 
     local uiStreetMailBox = StreetMailBoxUI:new(uiX, uiY, finalW, finalH, player)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
-    
+
     centeredImage.scaled = true
     centeredImage.scaledWidth = finalW
     centeredImage.scaledHeight = finalH
@@ -280,14 +171,17 @@ function StreetMailBoxMenu_AddContext(player, context, worldobjects)
 end
 
 function StreetMailBoxMenu_OnUse(obj, player, x, y, z, sprite)
-    local playerSquare = getPlayer():getSquare()
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
+    local playerSquare = playerObj:getSquare()
     if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
-        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+        local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISStreetMailBoxAction:new(getPlayer()), obj)
+    ISTimedActionQueue.add(ISStreetMailBoxAction:new(playerObj, obj))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(StreetMailBoxMenu_AddContext)

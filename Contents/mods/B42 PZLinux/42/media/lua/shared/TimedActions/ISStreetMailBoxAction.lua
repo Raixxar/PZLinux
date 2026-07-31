@@ -1,6 +1,6 @@
 ISStreetMailBoxAction = ISBaseTimedAction:derive("ISStreetMailBoxAction")
 
-function ISStreetMailBoxAction:isValid()
+function ISStreetMailBoxAction.isValid(_self)
     return true
 end
 
@@ -21,7 +21,9 @@ function ISStreetMailBoxAction:start()
 end
 
 function ISStreetMailBoxAction:stop()
-    self.ui:removeFromUIManager()
+    if self.ui then
+        self.ui:removeFromUIManager()
+    end
     ISBaseTimedAction.stop(self)
 end
 

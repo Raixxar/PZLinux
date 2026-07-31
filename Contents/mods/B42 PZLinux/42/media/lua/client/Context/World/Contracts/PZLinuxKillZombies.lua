@@ -1,11 +1,11 @@
 function PZLinux_Contract_KillZombie_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     return coroutine.create(function()
         local ZtoKill = tostring(ZombRand(1, 6) * 10)
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetPlayer(self.player):getModData()
         modData.PZLinuxOnZombieToKill = ZtoKill
 
         local globalVolume = getCore():getOptionSoundVolume() / 50
-        local playerName = generatePseudo(string.lower(getPlayer():getUsername()))
+        local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
         local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
 
         modData.PZLinuxOnReward = contractsCompanyReward[contract] + ZtoKill * 100
@@ -45,7 +45,7 @@ function PZLinux_Contract_KillZombie_CreateCoroutine(self, contract, contractsCo
         waitRand(20, 100)
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = message .. "\n" .. sellerName .. modData.PZLinuxOnZombieToKill
         self.loadingMessage:setName(message)
 
@@ -61,14 +61,14 @@ function PZLinux_Contract_KillZombie_CreateCoroutine(self, contract, contractsCo
         waitRand(20, 100)
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
         self.loadingMessage:setName(message)
 
         waitRand(20, 100)
         if self.isClosing then return end
 
-        getSoundManager():PlayWorldSound("ircNotification", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         message = message .. "\n" .. sellerName .. "Deal ?"
         self.loadingMessage:setName(message)
 
