@@ -128,6 +128,7 @@
 - Completed and cancelled contracts remain available as server history but are removed from the player's active-contract index, preventing reconnect synchronization from resurrecting a closed mission.
 - Zombie Race runners now use a dedicated green running silhouette derived from the supplied transparent source image; during a race, each icon moves across its lane instead of rendering an increasingly long string of progress dots.
 - Zombie Race settlement is now split into an authoritative start and finish: the stake is debited when the race starts, but winnings and the final balance are credited only when the animation reaches the finish. Closing the UI settles the locked result, while a server restart rolls an unsettled race back by refunding its stake.
+- Blackjack and Poker now follow the familiar two-color card convention: hearts and diamonds are rendered in red, while clubs and spades retain the green terminal color.
 - Removed the Electricity-skill modifier from simulated player typing in Contracts, Request, Internet login and ATM screens; every player now uses the same short delay configured by `PZLinux.Config.UI.typingDelay`.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 
