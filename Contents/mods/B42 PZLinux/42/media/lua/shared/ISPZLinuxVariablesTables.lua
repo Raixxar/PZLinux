@@ -608,7 +608,7 @@ require "PZLinux/PZLinuxDarkWeb"
 local PZLINUX_BLACKJACK_RANKS = PZLinux.Config.Blackjack.ranks
 local PZLINUX_BLACKJACK_SUITS = PZLinux.Config.Blackjack.suits
 local PZLINUX_BLACKJACK_RANK_LABELS = { A = "A", T = "10", J = "J", Q = "Q", K = "K" }
-local PZLINUX_BLACKJACK_SUIT_LABELS = { C = "♣", D = "♦", H = "♥", S = "♠" }
+local PZLINUX_BLACKJACK_SUIT_LABELS = { C = "C", D = "D", H = "H", S = "S" }
 
 function PZLinuxBlackjackCreateDeck()
     local deck = {}
