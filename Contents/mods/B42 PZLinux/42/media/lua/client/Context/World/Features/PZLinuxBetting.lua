@@ -422,13 +422,13 @@ function PZLinuxBettingUI:showPokerState(result)
         table.insert(recent, result.history[index])
     end
     local historyText = table.concat(recent, "\n")
-    self:addPokerControl(ISLabel:new(self.width * 0.20, self.height * 0.545, self.height * 0.018, historyText, 0.8, 1, 0.8, 1, UIFont.Small, true))
+    self:addPokerControl(ISLabel:new(self.width * 0.20, self.height * 0.520, self.height * 0.018, historyText, 0.8, 1, 0.8, 1, UIFont.Small, true))
 
     local actions = result.legalActions or {}
-    self.pokerActionY = self.height * 0.675
+    self.pokerActionY = self.height * 0.642
     self.pokerActionX = self.width * 0.20
     if result.awaitingPlayer then
-        self.pokerActionInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_PokerAmount"), self.width * 0.20, self.height * 0.635, self.width * 0.18, self.height * 0.030)
+        self.pokerActionInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_PokerAmount"), self.width * 0.20, self.height * 0.603, self.width * 0.18, self.height * 0.028)
         self.pokerActionInput:instantiate()
         self.pokerActionInput:setOnlyNumbers(true)
         self:addPokerControl(self.pokerActionInput)
@@ -437,6 +437,8 @@ function PZLinuxBettingUI:showPokerState(result)
     self:addPokerActionButton("check", PZLinuxGetText("IGUI_PZLinux_Betting_PokerCheck"), actions.check)
     self:addPokerActionButton("call", PZLinuxGetText("IGUI_PZLinux_Betting_PokerCall") .. " $" .. tostring(actions.toCall or 0), actions.call)
     self:addPokerActionButton(actions.raise and "raise" or "bet", actions.raise and PZLinuxGetText("IGUI_PZLinux_Betting_PokerRaise") or PZLinuxGetText("IGUI_PZLinux_Betting_PokerBet"), actions.raise or actions.bet)
+    self.pokerActionX = self.width * 0.20
+    self.pokerActionY = self.pokerActionY + self.height * 0.032
     self:addPokerActionButton("allin", PZLinuxGetText("IGUI_PZLinux_Betting_PokerAllIn"), actions.allin)
 
     if result.phase == "hand_complete" then
@@ -448,17 +450,17 @@ end
 function PZLinuxBettingUI:addPokerActionButton(action, label, enabled)
     if not enabled then return end
 
-    local button = ISButton:new(self.pokerActionX, self.pokerActionY, self.width * 0.145, self.height * 0.030, label, self, self.onPokerAction)
+    local button = ISButton:new(self.pokerActionX, self.pokerActionY, self.width * 0.110, self.height * 0.028, label, self, self.onPokerAction)
     button.pokerAction = action
     button.textColor = {r=0, g=1, b=0, a=1}
     button.backgroundColor = {r=0, g=0, b=0, a=0.5}
     button.borderColor = {r=0, g=1, b=0, a=0.5}
     button:setEnable(enabled and true or false)
     self:addPokerControl(button)
-    self.pokerActionX = self.pokerActionX + self.width * 0.155
-    if self.pokerActionX > self.width * 0.68 then
+    self.pokerActionX = self.pokerActionX + self.width * 0.120
+    if self.pokerActionX > self.width * 0.56 then
         self.pokerActionX = self.width * 0.20
-        self.pokerActionY = self.pokerActionY + self.height * 0.034
+        self.pokerActionY = self.pokerActionY + self.height * 0.032
     end
 end
 

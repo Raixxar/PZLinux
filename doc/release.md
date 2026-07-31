@@ -77,7 +77,7 @@
 - Improved Betting readability: added fallback labels when Project Zomboid translations are not loaded, made Blackjack/Poker cards human-readable, cleaned race runner names and compacted the Poker table UI.
 - Added French UI translations in `shared/Translate/FR/IG_UI_FR.txt` with the same keys as the English reference file.
 - Poker now automatically cashes out the remaining temporary stack before closing, minimizing or returning from the betting interface, preventing accidental fund loss when leaving the UI.
-- Reduced Poker default table size to 6 seats total (player + 5 AI) and tightened the table action/history layout to better fit the CRT interface.
+- Reduced Poker default table size to 5 seats total (player + 4 AI) and tightened the table action/history layout to better fit the CRT interface.
 
 # Update v.0.1.12-rc1
 - Fixes an issue where the contract interface was offering only a single contract type.

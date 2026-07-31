@@ -607,12 +607,18 @@ require "PZLinux/PZLinuxDarkWeb"
 
 local PZLINUX_BLACKJACK_RANKS = PZLinux.Config.Blackjack.ranks
 local PZLINUX_BLACKJACK_SUITS = PZLinux.Config.Blackjack.suits
+local PZLINUX_BLACKJACK_RANK_LABELS = { A = "A", T = "10", J = "J", Q = "Q", K = "K" }
+local PZLINUX_BLACKJACK_SUIT_LABELS = { C = "♣", D = "♦", H = "♥", S = "♠" }
 
 function PZLinuxBlackjackCreateDeck()
     local deck = {}
     for _, suit in ipairs(PZLINUX_BLACKJACK_SUITS) do
         for _, rank in ipairs(PZLINUX_BLACKJACK_RANKS) do
-            table.insert(deck, { rank = rank, suit = suit, label = rank .. suit })
+            table.insert(deck, {
+                rank = rank,
+                suit = suit,
+                label = (PZLINUX_BLACKJACK_RANK_LABELS[rank] or rank) .. (PZLINUX_BLACKJACK_SUIT_LABELS[suit] or suit),
+            })
         end
     end
 

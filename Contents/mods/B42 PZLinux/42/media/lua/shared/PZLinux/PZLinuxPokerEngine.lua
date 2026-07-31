@@ -4,6 +4,8 @@ PZLinux.Poker.Sessions = PZLinux.Poker.Sessions or {}
 
 local PZLINUX_POKER_RANKS = { "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A" }
 local PZLINUX_POKER_SUITS = { "C", "D", "H", "S" }
+local PZLINUX_POKER_RANK_LABELS = { A = "A", T = "10", J = "J", Q = "Q", K = "K" }
+local PZLINUX_POKER_SUIT_LABELS = { C = "♣", D = "♦", H = "♥", S = "♠" }
 local PZLINUX_POKER_RANK_VALUE = {
     ["2"] = 2, ["3"] = 3, ["4"] = 4, ["5"] = 5, ["6"] = 6, ["7"] = 7,
     ["8"] = 8, ["9"] = 9, T = 10, J = 11, Q = 12, K = 13, A = 14,
@@ -35,7 +37,12 @@ function PZLinuxPokerCreateDeck()
     local deck = {}
     for _, suit in ipairs(PZLINUX_POKER_SUITS) do
         for _, rank in ipairs(PZLINUX_POKER_RANKS) do
-            table.insert(deck, { rank = rank, suit = suit, value = PZLINUX_POKER_RANK_VALUE[rank], label = rank .. suit })
+            table.insert(deck, {
+                rank = rank,
+                suit = suit,
+                value = PZLINUX_POKER_RANK_VALUE[rank],
+                label = (PZLINUX_POKER_RANK_LABELS[rank] or rank) .. (PZLINUX_POKER_SUIT_LABELS[suit] or suit),
+            })
         end
     end
     for index = #deck, 2, -1 do
