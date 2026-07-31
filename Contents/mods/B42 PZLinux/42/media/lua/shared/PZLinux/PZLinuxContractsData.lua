@@ -28,4 +28,5 @@ PZLinuxContractCities = PZLinuxContractCities or {
     [10] = "West Point",
     [11] = "Valley Station",
     [12] = "Louisville",
+    [13] = "Coalfield",
 }

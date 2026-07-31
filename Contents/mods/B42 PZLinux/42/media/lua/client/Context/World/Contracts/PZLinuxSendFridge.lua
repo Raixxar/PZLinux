@@ -1,50 +1,19 @@
 function PZLinux_Contract_SendFridge_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     return coroutine.create(function()
-        local modData = PZLinuxGetPlayer(self.player):getModData()
-        local globalVolume = getCore():getOptionSoundVolume() / 50
-        local playerName = generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername()))
-        local sellerName = "<" .. contractsCompanyCodes[contract] .. "> "
-        modData.PZLinuxOnReward = contractsCompanyReward[contract]
-        modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contract]
-        local message = ""
+        local dialogue = PZLinuxContractDialogue.create(self, contract, contractsCompanyCodes, contractsCompanyReward)
+        dialogue.modData.PZLinuxContractInfoCount = 1
 
-        local sleepSFX = 1
-        if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
+        PZLinuxContractDialogue.setSellerLine(self, dialogue, PZLinuxContractDialogue.getText("IGUI_PZLinux_Contracts_SendFridge_Intro", "We are looking for a fridge."), true)
 
-        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        message = sellerName .. "We are looking for a fridge."
-        self.loadingMessage:setName(message)
-        modData.PZLinuxContractInfoCount = 1
+        if not PZLinuxContractDialogue.wait(self, dialogue, 100, 200) then return end
+        PZLinuxContractDialogue.ask(self, dialogue, PZLinuxContractDialogue.getText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"), typeText)
 
-        if not PZLinuxUtils_waitSeconds(100, 200, sleepSFX, self) then return end
+        if not PZLinuxContractDialogue.wait(self, dialogue, 100, 200) then return end
+        PZLinuxContractDialogue.appendSellerLine(self, dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
 
-        typeText(self.typingMessage, "What is the reward for this mission ?", function()
-            message = message .. "\n" .. playerName .. "What is the reward for this mission ?"
-            self.loadingMessage:setName(message)
-            self.typingMessage:setName("")
-        end)
+        if not PZLinuxContractDialogue.wait(self, dialogue, 100, 200) then return end
+        PZLinuxContractDialogue.appendSellerLine(self, dialogue, PZLinuxContractDialogue.getText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
 
-        if not PZLinuxUtils_waitSeconds(100, 200, sleepSFX, self) then return end
-
-        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        message = message .. "\n" .. sellerName .. "$" .. modData.PZLinuxOnReward
-        self.loadingMessage:setName(message)
-
-        if not PZLinuxUtils_waitSeconds(100, 200, sleepSFX, self) then return end
-
-        getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        message = message .. "\n" .. sellerName .. "Deal ?"
-        self.loadingMessage:setName(message)
-
-        self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
-        self.yesButton.contractId = contract
-        self.yesButton:initialise()
-        self.yesButton:instantiate()
-        self.topBar:addChild(self.yesButton)
-
-        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
-        self.noButton:initialise()
-        self.noButton:instantiate()
-        self.topBar:addChild(self.noButton)
+        PZLinuxContractDialogue.addChoiceButtons(self, contract)
     end)
 end

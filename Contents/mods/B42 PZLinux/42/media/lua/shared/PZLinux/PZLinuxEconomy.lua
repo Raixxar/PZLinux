@@ -1,5 +1,6 @@
 PZLinux = PZLinux or {}
 PZLinux.Economy = PZLinux.Economy or {}
+PZLinux.Economy.TRADING_FEE_RATE = 0.05
 
 function PZLinuxNormalizeMoney(amount)
     amount = tonumber(amount)
@@ -83,6 +84,31 @@ end
 function PZLinuxTradingNormalizePrice(price)
     price = tonumber(price) or 1
     return math.max(1, math.floor(price))
+end
+
+function PZLinuxTradingGetFeeRate()
+    return math.max(0, math.min(1, tonumber(PZLinux.Economy.TRADING_FEE_RATE) or 0.05))
+end
+
+function PZLinuxTradingCalculateFee(grossAmount)
+    grossAmount = PZLinuxNormalizeMoney(grossAmount)
+    if grossAmount <= 0 then return 0 end
+    return math.ceil(grossAmount * PZLinuxTradingGetFeeRate())
+end
+
+function PZLinuxTradingCalculateTransaction(grossAmount, transactionType)
+    grossAmount = PZLinuxNormalizeMoney(grossAmount)
+    local fee = PZLinuxTradingCalculateFee(grossAmount)
+    local netAmount = grossAmount + fee
+    if transactionType == "sell" then
+        netAmount = math.max(0, grossAmount - fee)
+    end
+
+    return {
+        grossAmount = grossAmount,
+        fee = fee,
+        netAmount = netAmount,
+    }
 end
 
 function PZLinuxTradingGenerateNextPrice(lastPrice, _minPercent, maxPercent)

@@ -28,7 +28,9 @@ function ISBloodAction:stop()
 end
 
 function ISBloodAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "blood", {}, function(result)
+    PZLinuxRequestContractWorldEvent(self.character, "blood", {
+        target = PZLinuxGetDeadBodyReference(self.body),
+    }, function(result)
         if result and result.ok then
             HaloTextHelper.addGoodText(self.character, "Drop the blood jar in a mailbox")
         end

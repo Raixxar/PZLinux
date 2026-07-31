@@ -26,13 +26,13 @@ function ISCaptureAction:stop()
 end
 
 function ISCaptureAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "capture", {}, function(result)
+    PZLinuxRequestContractWorldEvent(self.character, "capture", {
+        target = PZLinuxGetZombieReference(self.zombie),
+    }, function(result)
         if result and result.ok then
             HaloTextHelper.addGoodText(self.character, "Drop the bag in a mailbox")
         end
     end)
-    self.zombie:removeFromWorld()
-    self.zombie:removeFromSquare()
     ISBaseTimedAction.perform(self)
 end
 

@@ -26,23 +26,26 @@ function ISTakeTheCargoAction:stop()
 end
 
 function ISTakeTheCargoAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "takeCargo", { contractId = self.contractId })
-    local helicopterHandler = rawget(_G, "testHelicopter")
-    if type(helicopterHandler) == "function" then
-        helicopterHandler()
-    else
-        print("PZLinux warning: testHelicopter handler is missing")
-    end
+    PZLinuxRequestContractWorldEvent(self.character, "takeCargo", {
+        target = PZLinuxGetWorldObjectReference(self.item),
+    }, function(result)
+        if not result or not result.ok then return end
+        local helicopterHandler = rawget(_G, "testHelicopter")
+        if type(helicopterHandler) == "function" then
+            helicopterHandler()
+        else
+            print("PZLinux warning: testHelicopter handler is missing")
+        end
+    end)
     ISBaseTimedAction.perform(self)
 end
 
-function ISTakeTheCargoAction:new(character, item, contractId)
+function ISTakeTheCargoAction:new(character, item)
     local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
     o.item = item
-    o.contractId = contractId
     o.stopOnWalk = true
     o.maxTime = 1000
     return o

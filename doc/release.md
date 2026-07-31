@@ -33,8 +33,11 @@
 - Centralized direct `getPlayer()` usage behind the shared PZLinux player helpers; client UI/contract flows now use the player passed by PZ (`player` or `self.player`) instead of implicitly resolving player 0.
 - Reduced Luacheck noise to 328 warnings / 0 errors after the getPlayer MP compatibility pass.
 - Made Dark Web buy/sell flows server-authoritative in MP while preserving the solo fallback: the server now generates and validates buy offers, debits purchases, records pending deliveries, scans/removes sold inventory items, creates suspicious sale packages, delivers purchased parcels through mailboxes and credits completed sales.
+- Secured mailbox interactions against remote commands: Dark Web deliveries and sale redemption, Request deliveries and contract deposits now require a real supported mailbox within two tiles of the server-side player position and on the same Z level.
+- Added `PZLinuxWorldInteractions.lua` for canonical mailbox references and server validation, plus `tools/test_mailbox_proximity.lua` covering missing, forged, distant and wrong-Z interactions.
 - Reduced Luacheck noise to 317 warnings / 0 errors after the Dark Web server-authoritative pass.
 - Made Trading server-authoritative in MP while preserving the solo fallback: the server initializes and ticks shared market prices, clients request a snapshot, and buy/sell orders are validated with server-side price, bank balance and wallet quantity before mutation.
+- Added a server-authoritative 5% Trading fee per transaction: purchases debit the gross value plus the fee, sales credit the gross value minus the fee, and the UI displays the charged fee and final amount.
 - Updated the Wallet UI to use the same Trading snapshot so portfolio values are based on the server market state.
 - Reduced Luacheck noise to 315 warnings / 0 errors after the Trading server-authoritative pass.
 - Added a server-backed Contracts board shared through `PZLinuxContractsBoard`, so clients receive the same weekly contract list in MP.
@@ -58,6 +61,8 @@
 - Removed direct client authority from mail completion rewards; the timed action now asks the server and only plays local feedback after confirmation.
 - Reduced Luacheck status to 279 warnings / 0 errors after the Mail server-authoritative pass.
 - Made Hacking server-authoritative in MP while preserving solo fallback: card consumption, hacked account generation, password attempts, account lock and bank transfer now pass through prefixed `PZLinuxHacking*` commands/helpers.
+- Removed the Hacking password from server responses and client state. Manual sessions now expose only the four-digit code length, while guesses, partial feedback, locking and unlock state remain evaluated by the server-held session.
+- Added `tools/test_hacking_authority.lua` to prevent the password or a client-side `serverPassword` field from being reintroduced.
 - Removed direct client authority from hacking rewards/transfers; the client now only displays the terminal UI and applies local feedback after server confirmation.
 - Reduced Luacheck status to 263 warnings / 0 errors after the Hacking server-authoritative pass.
 - Split the first editable/static data blocks out of `ISPZLinuxVariablesTables.lua` into dedicated shared modules under `shared/PZLinux/`: config, mission locations, gambling data, request definitions, contract definitions and mail definitions.
@@ -78,6 +83,34 @@
 - Added French UI translations in `shared/Translate/FR/IG_UI_FR.txt` with the same keys as the English reference file.
 - Poker now automatically cashes out the remaining temporary stack before closing, minimizing or returning from the betting interface, preventing accidental fund loss when leaving the UI.
 - Reduced Poker default table size to 5 seats total (player + 4 AI) and tightened the table action/history layout to better fit the CRT interface.
+- Moved the Poker action history into a dedicated right-hand column so player cards and table events no longer overlap.
+- Rebuilt the Build 42.20 mission-location catalog with shared pools for 37 package locations, 22 cargo locations, 16 manhunt locations, 7 protection locations and 36 vehicle spawn locations.
+- Reused the 37 validated package destinations for ammunition and medical mail drops.
+- Added city-aware mission pools for Irvington, Ekron, Brandenburg, Echo Creek, Riverside, Fallas Lake, Rosewood, March Ridge, Muldraugh, West Point, Valley Station, Louisville and Coalfield.
+- Added a 5% contract reward modifier per absolute Z level for more dangerous underground or elevated objectives.
+- Added `tools/audit_locations.lua` to validate mission IDs, coordinates, enabled entries and per-city pool coverage.
+- Removed the legacy `RetrievePackage.lua` contract implementation and migrated package retrieval to the shared contract dialogue/location flow.
+- Extracted contract target names and automobile, medical and weapon request tables into `PZLinuxContractRequestData.lua`.
+- Moved contract company codes and contract definitions into `PZLinuxContractsData.lua` and shared dialogue behavior into `PZLinuxContractDialogue.lua`.
+- Refactored the remaining contract conversations onto a common coroutine/dialogue skeleton while preserving their informal IRC writing style.
+- Refactored Request data into `PZLinuxRequestsData.lua` and removed duplicated inline request tables from the UI.
+- Replaced the Request conversation label with a fixed `ISRichTextPanel` supporting automatic wrapping, conditional scrolling and automatic scrolling to the newest message.
+- Moved Request interface messages and mission-location descriptions to `IGUI_PZLinux_*` translation keys with English fallbacks.
+- Added 18 additional translation catalogs: Czech, German, Spanish, Hungarian, Italian, Japanese, Korean, Dutch, Norwegian, Polish, European Portuguese, Brazilian Portuguese, Russian, Thai, Turkish, Ukrainian, Simplified Chinese and Traditional Chinese.
+- Added `tools/check_translations.lua`; all 20 catalogs currently contain the same 284 unique keys, valid UTF-8 and matching dynamic placeholders.
+- Added `tools/generate_translations.pl` to regenerate selected language catalogs while protecting placeholders and proper location names.
+- Updated the release audit with current MP authority gaps, location coverage, localization status and the remaining 1.0.0 test checklist.
+- Made contract acceptance fully server-authoritative: clients request a canonical `PZLinuxContractPreview`, then send only `contractId` when accepting.
+- The server now selects contract locations, Z levels, targets, requested items, quantities and rewards from its own board and shared allowlists, then creates the canonical contract note and world record.
+- Prevented modified clients from increasing rewards through forged Z levels or changing contract objectives through `location`, `info`, `quantity`, `note` or reward fields.
+- Added `tools/test_contract_authority.lua` to validate canonical mission generation and prevent sensitive client fields from being reintroduced into `PZLinuxContractsApplyAccept`.
+- Hardened every contract world-event command against forged clients: the server now resolves real objects, corpses and zombies, checks player distance/Z, canonical mission position, persistent contract tags and the expected world-record state before mutating anything.
+- Moved Kill Zombies, Protect and Blood kill accounting to the server `OnZombieDead` event using the server-side attacker and objective tags; forged `zombieKilled` and `clearCargo` client events are rejected.
+- Removed client-side zombie/corpse deletion from Capture and Manhunt timed actions. Cargo, captured zombies and target corpses are now removed only by the server after successful validation.
+- Removed automatic client `contractId` injection from contract world events. Cargo and Manhunt ownership are derived from the selected entity's persistent `PZLinuxContractId`, preserving stealable MP objectives without trusting the sender.
+- Removed the client reconnect reset that changed an already spawned Manhunt target back to its pre-spawn state.
+- Added `tools/test_contract_world_authority.lua` to prevent client kill counting, forged contract coordinates/IDs and client-side entity removal from being reintroduced.
+- Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 
 # Update v.0.1.12-rc1
 - Fixes an issue where the contract interface was offering only a single contract type.

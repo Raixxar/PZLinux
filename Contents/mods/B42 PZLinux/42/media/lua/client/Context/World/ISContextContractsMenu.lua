@@ -22,7 +22,7 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                     local objectContractId = PZLinuxContractsGetEntityContractId(obj)
                     local worldRecord = PZLinuxContractsGetWorldContract(objectContractId)
                     if worldRecord and tonumber(worldRecord.contractId) == 7 and worldRecord.status == "spawned" then
-                        context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z, objectContractId)
+                        context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z)
                         break
                     end
                     if targetX and targetY and targetZ and isNearTarget(x, y, z, targetX, targetY, targetZ) then
@@ -127,7 +127,7 @@ function completeContractMenu_OnCapture(zombie, player, x, y, z)
     ISTimedActionQueue.add(ISCaptureAction:new(playerObj, zombie))
 end
 
-function completeContractMenu_OnCargo(obj, player, x, y, z, contractWorldId)
+function completeContractMenu_OnCargo(obj, player, x, y, z)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return end
 
@@ -139,7 +139,7 @@ function completeContractMenu_OnCargo(obj, player, x, y, z, contractWorldId)
             ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISTakeTheCargoAction:new(playerObj, obj, contractWorldId or PZLinuxContractsGetEntityContractId(obj)))
+    ISTimedActionQueue.add(ISTakeTheCargoAction:new(playerObj, obj))
 end
 
 function completeContractMenu_OnProtect(obj, player, x, y, z)
@@ -157,7 +157,9 @@ function completeContractMenu_OnProtect(obj, player, x, y, z)
         end
         ISTimedActionQueue.add(ISProtectBuildingAction:new(playerObj, obj))
     else
-        PZLinuxRequestContractWorldEvent(playerObj, "startProtect", { x = x, y = y, z = z })
+        PZLinuxRequestContractWorldEvent(playerObj, "startProtect", {
+            target = PZLinuxGetWorldObjectReference(obj),
+        })
         addSound(playerObj, x, y, z, 1000, 100)
         HaloTextHelper.addGoodText(playerObj, "Kill 10 zombies and return here to confirm the area is secure");
     end

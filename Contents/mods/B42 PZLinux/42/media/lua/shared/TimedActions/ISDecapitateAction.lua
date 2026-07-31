@@ -28,13 +28,13 @@ function ISDecapitateAction:stop()
 end
 
 function ISDecapitateAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "decapitate", {}, function(result)
+    PZLinuxRequestContractWorldEvent(self.character, "decapitate", {
+        target = PZLinuxGetDeadBodyReference(self.body),
+    }, function(result)
         if result and result.ok then
             HaloTextHelper.addGoodText(self.character, "Drop the bag in a mailbox")
         end
     end)
-    self.body:removeFromWorld()
-    self.body:removeFromSquare()
     ISBaseTimedAction.perform(self)
 end
 

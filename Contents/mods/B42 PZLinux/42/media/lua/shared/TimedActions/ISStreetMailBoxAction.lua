@@ -14,7 +14,7 @@ function ISStreetMailBoxAction:update()
 end
 
 function ISStreetMailBoxAction:start()
-    self.ui = StreetMailBoxMenu_ShowUI(self.character)
+    self.ui = StreetMailBoxMenu_ShowUI(self.character, self.item)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")

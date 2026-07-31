@@ -1,29 +1,3 @@
-local function OnZombieDead(_zombie)
-    local player = PZLinuxGetPlayer()
-    if not player then return end
-
-    PZLinuxRequestContractWorldEvent(player, "zombieKilled", {}, function(result)
-        if not result or not result.ok then return end
-        local note = nil
-        local inv = player:getInventory()
-        for i = 0, inv:getItems():size() - 1 do
-            local item = inv:getItems():get(i)
-            if item:getType() == "Note" and item:getName() == "Contract" then
-                note = item
-                break
-            end
-        end
-
-        if note then
-            local oldText = note:seePage(1) or ""
-            local newText = "Total zombies killed: " .. tostring(result.zombieCount or 0)
-            local cleanedText = oldText:gsub("Total zombies killed: %d+", "")
-            note:addPage(1, cleanedText .. newText)
-        end
-    end)
-end
-Events.OnZombieDead.Add(OnZombieDead)
-
 local function checkAndSpawnZombie(player)
     if not player then return end
     local modData = player:getModData()
@@ -66,13 +40,6 @@ local function checkAndSpawnBox(player)
         if dist < 50 then
             PZLinuxRequestContractWorldEvent(player, "spawnCargo")
         end
-    elseif modData.PZLinuxContractCargo == 3 then
-        local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
-        if not x or not y or not z then return end
-        local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
-        if dist > 50 then
-            PZLinuxRequestContractWorldEvent(player, "clearCargo")
-        end
     end
 end
 Events.OnPlayerMove.Add(checkAndSpawnBox)
@@ -96,16 +63,6 @@ local function contractCompletedPlaySound()
     end
 end
 Events.OnTick.Add(contractCompletedPlaySound)
-
-Events.OnGameStart.Add(function()
-    local player = PZLinuxGetPlayer()
-    if not player then return end
-
-    local modData = player:getModData()
-    if modData.PZLinuxContractManhunt == 2 then
-        modData.PZLinuxContractManhunt = 1
-    end
-end)
 
 local function mailTick()
     if isClient() then return end

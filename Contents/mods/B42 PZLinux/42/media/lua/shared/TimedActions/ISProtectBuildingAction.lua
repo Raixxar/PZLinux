@@ -26,7 +26,9 @@ function ISProtectBuildingAction:stop()
 end
 
 function ISProtectBuildingAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "finishProtect")
+    PZLinuxRequestContractWorldEvent(self.character, "finishProtect", {
+        target = PZLinuxGetWorldObjectReference(self.item),
+    })
     ISBaseTimedAction.perform(self)
 end
 

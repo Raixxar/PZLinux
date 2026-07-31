@@ -189,13 +189,13 @@ end
 
 local function PZLinuxServerDarkWebRedeemSales(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxDarkWebRedeemSales", args, "PZLinuxDarkWebRedeemSalesResult", function()
-        return PZLinuxDarkWebApplyRedeemSales(player, args and args.requestId)
+        return PZLinuxDarkWebApplyRedeemSales(player, args and args.mailbox, args and args.requestId)
     end)
 end
 
 local function PZLinuxServerDarkWebDeliverOrders(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxDarkWebDeliverOrders", args, "PZLinuxDarkWebDeliverOrdersResult", function()
-        return PZLinuxDarkWebApplyDeliverOrders(player, args and args.requestId)
+        return PZLinuxDarkWebApplyDeliverOrders(player, args and args.mailbox, args and args.requestId)
     end)
 end
 
@@ -223,6 +223,12 @@ local function PZLinuxServerContractsBoard(player, args)
     end)
 end
 
+local function PZLinuxServerContractPreview(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxContractPreview", args, "PZLinuxContractPreviewResult", function()
+        return PZLinuxContractsGetPreview(player, args and args.contractId, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerContractAccept(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractAccept", args, "PZLinuxContractAcceptResult", function()
         return PZLinuxContractsApplyAccept(player, args, args and args.requestId)
@@ -237,7 +243,7 @@ end
 
 local function PZLinuxServerContractDeposit(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractDeposit", args, "PZLinuxContractDepositResult", function()
-        return PZLinuxContractsApplyDeposit(player, args and args.requestId)
+        return PZLinuxContractsApplyDeposit(player, args and args.mailbox, args and args.requestId)
     end)
 end
 
@@ -261,7 +267,7 @@ end
 
 local function PZLinuxServerRequestDeliver(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxRequestDeliver", args, "PZLinuxRequestDeliverResult", function()
-        return PZLinuxRequestsApplyDelivery(player, args and args.requestId)
+        return PZLinuxRequestsApplyDelivery(player, args and args.mailbox, args and args.requestId)
     end)
 end
 
@@ -343,6 +349,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxTradingBuy = PZLinuxServerTradingBuy,
     PZLinuxTradingSell = PZLinuxServerTradingSell,
     PZLinuxContractsBoard = PZLinuxServerContractsBoard,
+    PZLinuxContractPreview = PZLinuxServerContractPreview,
     PZLinuxContractAccept = PZLinuxServerContractAccept,
     PZLinuxContractCancel = PZLinuxServerContractCancel,
     PZLinuxContractDeposit = PZLinuxServerContractDeposit,
@@ -371,6 +378,12 @@ local function PZLinuxOnClientCommand(module, command, player, args)
 end
 
 Events.OnClientCommand.Add(PZLinuxOnClientCommand)
+
+local function PZLinuxServerOnZombieDead(zombie)
+    PZLinuxContractsApplyServerZombieDeath(zombie)
+end
+
+Events.OnZombieDead.Add(PZLinuxServerOnZombieDead)
 
 local function PZLinuxServerForEachOnlinePlayer(callback)
     if not getOnlinePlayers then return end

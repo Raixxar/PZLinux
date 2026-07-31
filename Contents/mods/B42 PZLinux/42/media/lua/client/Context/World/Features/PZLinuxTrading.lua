@@ -376,6 +376,13 @@ function tradingUI:showCompanyInfo(code, name)
     self.tradingWalletLabel:initialise()
     self.topBar:addChild(self.tradingWalletLabel)
 
+    local feeRate = tonumber(self.tradingSnapshot and self.tradingSnapshot.feeRate) or PZLinuxTradingGetFeeRate()
+    local feePercent = math.floor(feeRate * 100 + 0.5)
+    self.tradingFeeLabel = ISLabel:new(self.width * 0.20, self.height * 0.55, self.height * 0.025, "Transaction fee: " .. feePercent .. "%", 1, 1, 0, 1, UIFont.Small, true)
+    self.tradingFeeLabel.backgroundColor = {r=0, g=0, b=0, a=0}
+    self.tradingFeeLabel:initialise()
+    self.topBar:addChild(self.tradingFeeLabel)
+
     self.quantityInput = ISTextEntryBox:new("QUANTITY", self.width * 0.345, self.height * 0.59, self.width * 0.298, self.height * 0.025)
     self.quantityInput:initialise()
     self.quantityInput:instantiate()
@@ -430,6 +437,10 @@ function tradingUI:onTradingSold(code, _lastPrice, quantityTrading)
             self.tradingSnapshot = result.tradingSnapshot
         end
 
+        if self.tradingFeeLabel then
+            self.tradingFeeLabel:setName("Fee: $" .. tostring(result.fee or 0) .. " | Received: $" .. tostring(result.netAmount or result.amount or 0))
+        end
+
         local amount = tonumber(result.amount) or 0
         if amount >= 5000 then
             player:getStats():add(CharacterStat.UNHAPPINESS, -10)
@@ -457,6 +468,9 @@ function tradingUI:onTradingBuy(code, _lastPrice, quantityTrading)
         end
         if result.tradingSnapshot then
             self.tradingSnapshot = result.tradingSnapshot
+        end
+        if self.tradingFeeLabel then
+            self.tradingFeeLabel:setName("Fee: $" .. tostring(result.fee or 0) .. " | Paid: $" .. tostring(result.netAmount or result.amount or 0))
         end
     end)
 end

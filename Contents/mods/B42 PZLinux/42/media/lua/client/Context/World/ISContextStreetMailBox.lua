@@ -4,7 +4,7 @@
 StreetMailBoxUI = ISPanel:derive("StreetMailBoxUI")
 
 -- CONSTRUCTOR
-function StreetMailBoxUI:new(x, y, width, height, player)
+function StreetMailBoxUI:new(x, y, width, height, player, mailboxObject)
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
@@ -13,6 +13,7 @@ function StreetMailBoxUI:new(x, y, width, height, player)
     o.width           = width
     o.height          = height
     o.player          = player
+    o.mailbox         = PZLinuxGetMailboxReference(mailboxObject)
     o.isClosing       = false
     o.mode            = "main"
     return o
@@ -78,14 +79,14 @@ function StreetMailBoxUI:onSendPackage()
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
-    PZLinuxRequestDarkWebRedeemSales(playerObj, function(result)
+    PZLinuxRequestDarkWebRedeemSales(playerObj, self.mailbox, function(result)
         if result and result.ok and result.amount and result.amount > 0 then
             saveAtmBalance(result.balance, playerObj)
             HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.amount) .. " transferred to your bank account")
         end
     end)
 
-    PZLinuxRequestDarkWebDeliverOrders(playerObj, function(result)
+    PZLinuxRequestDarkWebDeliverOrders(playerObj, self.mailbox, function(result)
         if result and result.lost then
             HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
         elseif result and result.ok and result.delivered and result.delivered > 0 then
@@ -93,13 +94,13 @@ function StreetMailBoxUI:onSendPackage()
         end
     end)
 
-    PZLinuxRequestContractDeposit(playerObj, function(result)
+    PZLinuxRequestContractDeposit(playerObj, self.mailbox, function(result)
         if result and result.ok and result.removed and result.removed > 0 then
             HaloTextHelper.addGoodText(playerObj, "Contract package sent")
         end
     end)
 
-    PZLinuxRequestDeliver(playerObj, function(result)
+    PZLinuxRequestDeliver(playerObj, self.mailbox, function(result)
         if result and result.lost then
             HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
         elseif result and result.ok and result.delivered and result.delivered > 0 then
@@ -117,7 +118,7 @@ function StreetMailBoxUI:onClose()
     end
 end
 
-function StreetMailBoxMenu_ShowUI(player)
+function StreetMailBoxMenu_ShowUI(player, mailboxObject)
     local texture = getTexture("media/ui/streetMailBox.png")
     if not texture then return end
 
@@ -134,7 +135,7 @@ function StreetMailBoxMenu_ShowUI(player)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
     local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
 
-    local uiStreetMailBox = StreetMailBoxUI:new(uiX, uiY, finalW, finalH, player)
+    local uiStreetMailBox = StreetMailBoxUI:new(uiX, uiY, finalW, finalH, player, mailboxObject)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
 
     centeredImage.scaled = true

@@ -2,7 +2,6 @@ hackingUI = ISPanel:derive("hackingUI")
 
 local hackingBankBalance = 0
 local historyPassword = ""
-local hackingPasswordFull = "****"
 local hackZombieName = nil
 
 -- CONSTRUCTOR
@@ -170,7 +169,7 @@ function hackingUI:onIdCard()
 
         hackZombieName = result.cardName
         hackingBankBalance = tonumber(result.amount) or 0
-        self.serverPassword = result.password or {}
+        self.passwordLength = tonumber(result.passwordLength) or 4
         self.maxTries = tonumber(result.maxTries) or 6
         self:startBootSequence()
     end)
@@ -288,7 +287,9 @@ function hackingUI:onHack()
 
     self.triesCount = 0
     self.maxTries = self.maxTries or 6
-    local hackLabelTitle = tostring(hackZombieName) .. " Bank Balance: $" .. hackingBankBalance .. "\nFind the password in 4 numbers.\n"
+    local passwordLength = self.passwordLength or 4
+    local hiddenPassword = string.rep("*", passwordLength)
+    local hackLabelTitle = tostring(hackZombieName) .. " Bank Balance: $" .. hackingBankBalance .. "\nFind the password in " .. passwordLength .. " numbers.\n"
     self.hackLabelTitle = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, hackLabelTitle, 0, 1, 0, 1, UIFont.Small, true)
     self.hackLabelTitle.backgroundColor = {r=0, g=0, b=0, a=0}
     self.hackLabelTitle.borderColor = {r=0, g=0, b=0, a=0}
@@ -296,7 +297,7 @@ function hackingUI:onHack()
     self.hackLabelTitle:initialise()
     self.topBar:addChild(self.hackLabelTitle)
 
-    self.hackLabel = ISLabel:new(self.width * 0.20, self.height * 0.24, self.height * 0.025, hackingPasswordFull, 0, 1, 0, 1, UIFont.Small, true)
+    self.hackLabel = ISLabel:new(self.width * 0.20, self.height * 0.24, self.height * 0.025, hiddenPassword, 0, 1, 0, 1, UIFont.Small, true)
     self.hackLabel.backgroundColor = {r=0, g=0, b=0, a=0}
     self.hackLabel.borderColor = {r=0, g=0, b=0, a=0}
     self.hackLabel:setVisible(true)
@@ -334,8 +335,8 @@ function hackingUI:onHack()
     self.promptCommand:setOnlyNumbers(true)
     self.promptCommand.onTextChange = function(entry)
         local text = entry:getText()
-        if #text > 4 then
-            entry:setText(text:sub(1, 4))
+        if #text > passwordLength then
+            entry:setText(text:sub(1, passwordLength))
         end
     end
 
@@ -359,7 +360,8 @@ function hackingUI:onCommandEnter()
     local globalVolume = getCore():getOptionSoundVolume() / 50
     local commandText = self.promptCommand:getText()
 
-    if #commandText ~= 4 then
+    local passwordLength = self.passwordLength or 4
+    if #commandText ~= passwordLength then
         getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         return
     end
@@ -373,7 +375,7 @@ function hackingUI:onCommandEnter()
             return
         end
 
-        local revealedPassword = result.revealedPassword or "****"
+        local revealedPassword = result.revealedPassword or string.rep("*", passwordLength)
         self.hackLabel:setName(revealedPassword)
         hackingBankBalance = tonumber(result.amount) or hackingBankBalance
         self.triesCount = tonumber(result.tries) or self.triesCount
@@ -547,7 +549,7 @@ function hackingUI:hackNext()
 
         hackZombieName = result.cardName
         hackingBankBalance = tonumber(result.amount) or 0
-        self.serverPassword = result.password or {}
+        self.passwordLength = tonumber(result.passwordLength) or 4
         self.maxTries = tonumber(result.maxTries) or 6
         if self.hackNextButton then self.hackNextButton:setVisible(false) end
         self.triesCount = 0

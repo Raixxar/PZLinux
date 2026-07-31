@@ -28,7 +28,9 @@ function ISTakeThePackageAction:stop()
 end
 
 function ISTakeThePackageAction:perform()
-    PZLinuxRequestContractWorldEvent(self.character, "pickupPackage", {}, function(result)
+    PZLinuxRequestContractWorldEvent(self.character, "pickupPackage", {
+        target = PZLinuxGetWorldObjectReference(self.item),
+    }, function(result)
         if result and result.ok then
             HaloTextHelper.addGoodText(self.character, "Drop the contract case in a mailbox")
         end

@@ -24,6 +24,14 @@ bash tools/audit_function_prefixes.sh
 bash tools/audit_hardcoded_text.sh
 bash tools/check_lua_syntax.sh
 bash tools/audit_assets.sh
+lua5.1 tools/audit_locations.lua
+lua5.1 tools/check_translations.lua
+lua5.1 tools/test_contract_authority.lua
+lua5.1 tools/test_contract_world_authority.lua
+lua5.1 tools/test_hacking_authority.lua
+lua5.1 tools/test_mailbox_proximity.lua
+lua5.1 tools/test_trading_fee.lua
+lua5.1 tools/test_poker_engine.lua
 bash tools/watch_console.sh
 ```
 
@@ -46,4 +54,5 @@ PZ_LOG=/path/to/console.txt bash tools/watch_console.sh
 3. Run `bash tools/audit_hardcoded_text.sh`.
 4. Run `bash tools/check_lua_syntax.sh`.
 5. Run `bash tools/audit_assets.sh`.
-6. Start a new B42.20.x save, reproduce one feature, and keep `bash tools/watch_console.sh` open in a VSCode terminal.
+6. Run `lua5.1 tools/audit_locations.lua`, `lua5.1 tools/check_translations.lua`, `lua5.1 tools/test_contract_authority.lua`, `lua5.1 tools/test_contract_world_authority.lua`, `lua5.1 tools/test_hacking_authority.lua`, `lua5.1 tools/test_mailbox_proximity.lua`, `lua5.1 tools/test_trading_fee.lua` and `lua5.1 tools/test_poker_engine.lua`.
+7. Start a new B42.20.x save, reproduce one feature, and keep `bash tools/watch_console.sh` open in a VSCode terminal.

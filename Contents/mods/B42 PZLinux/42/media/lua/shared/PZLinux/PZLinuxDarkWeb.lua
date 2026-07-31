@@ -216,9 +216,13 @@ function PZLinuxDarkWebApplySell(player, offerIndex, requestId)
     }
 end
 
-function PZLinuxDarkWebApplyRedeemSales(player, requestId)
+function PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
+    if mailboxError then
+        return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
 
     local inventory = playerObj:getInventory()
     local items = inventory:getItems()
@@ -258,9 +262,13 @@ function PZLinuxDarkWebApplyRedeemSales(player, requestId)
     }
 end
 
-function PZLinuxDarkWebApplyDeliverOrders(player, requestId)
+function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
+    if mailboxError then
+        return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
 
     local modData = playerObj:getModData()
     if modData.PZLinuxOnItemBuyOnDarkWebStatus ~= 1 or type(modData.PZLinuxOnItemBuyOnDarkWeb) ~= "table" then
@@ -339,22 +347,22 @@ function PZLinuxRequestDarkWebSell(player, offerIndex, callback)
     return requestId
 end
 
-function PZLinuxRequestDarkWebRedeemSales(player, callback)
+function PZLinuxRequestDarkWebRedeemSales(player, mailboxRef, callback)
     local requestId = PZLinuxNextRequestId("darkweb-redeem-sales")
     PZLinuxRegisterCallback(requestId, callback)
-    if PZLinuxSendClientCommand("PZLinuxDarkWebRedeemSales", { requestId = requestId }) then
+    if PZLinuxSendClientCommand("PZLinuxDarkWebRedeemSales", { requestId = requestId, mailbox = mailboxRef }) then
         return requestId
     end
-    PZLinuxDispatchCallback(PZLinuxDarkWebApplyRedeemSales(player, requestId))
+    PZLinuxDispatchCallback(PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId))
     return requestId
 end
 
-function PZLinuxRequestDarkWebDeliverOrders(player, callback)
+function PZLinuxRequestDarkWebDeliverOrders(player, mailboxRef, callback)
     local requestId = PZLinuxNextRequestId("darkweb-deliver-orders")
     PZLinuxRegisterCallback(requestId, callback)
-    if PZLinuxSendClientCommand("PZLinuxDarkWebDeliverOrders", { requestId = requestId }) then
+    if PZLinuxSendClientCommand("PZLinuxDarkWebDeliverOrders", { requestId = requestId, mailbox = mailboxRef }) then
         return requestId
     end
-    PZLinuxDispatchCallback(PZLinuxDarkWebApplyDeliverOrders(player, requestId))
+    PZLinuxDispatchCallback(PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId))
     return requestId
 end
