@@ -74,6 +74,8 @@
 - Added Texas Hold'em Poker to Online Betting: configurable lobbies, isolated solo/MP sessions per player, server-authoritative buy-in/actions/cashout, masked AI cards before showdown, AI opponents, side pots, hand evaluation tests and restart rollback of the current player stack.
 - Added `PZLinuxPokerStart`, `PZLinuxPokerAction` and `PZLinuxPokerCashOut` network commands with `PZLinuxPokerState` responses.
 - Added Poker configuration under `PZLinux.Poker.Config` for blinds, buy-in limits, AI stacks, opponent count, AI difficulty weights, bluff rates, decision delay and economic limits.
+- Improved Betting readability: added fallback labels when Project Zomboid translations are not loaded, made Blackjack/Poker cards human-readable, cleaned race runner names and compacted the Poker table UI.
+- Added French UI translations in `shared/Translate/FR/IG_UI_FR.txt` with the same keys as the English reference file.
 
 # Update v.0.1.12-rc1
 - Fixes an issue where the contract interface was offering only a single contract type.

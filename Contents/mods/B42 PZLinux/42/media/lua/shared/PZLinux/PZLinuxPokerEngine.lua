@@ -635,6 +635,7 @@ function PZLinuxPokerBuildSnapshot(session)
         balance = session.balance,
         community = PZLinuxPokerCopyCards(session.community, false),
         seats = seats,
+        showdown = session.showdown,
         legalActions = PZLinuxPokerLegalActions(session),
         history = session.history or {},
         handNumber = session.handNumber,

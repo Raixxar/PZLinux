@@ -75,11 +75,56 @@ function PZLinuxGetRandomMissionLocation(group, key)
     return locations[ZombRand(#locations) + 1]
 end
 
+PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
+    IGUI_PZLinux_Betting_Balance = "Bank Balance: $",
+    IGUI_PZLinux_Betting_ZombieRace = "ZOMBIE RACE",
+    IGUI_PZLinux_Betting_Blackjack = "BLACKJACK",
+    IGUI_PZLinux_Betting_Poker = "TEXAS HOLD'EM",
+    IGUI_PZLinux_Betting_LoadingRace = "Loading race card...",
+    IGUI_PZLinux_Betting_Error = "Betting service unavailable",
+    IGUI_PZLinux_Betting_InvalidBet = "Invalid bet",
+    IGUI_PZLinux_Betting_NotEnoughMoney = "Not enough money",
+    IGUI_PZLinux_Betting_StartingRace = "Starting race...",
+    IGUI_PZLinux_Betting_BetOn = "Bet on?",
+    IGUI_PZLinux_Betting_Amount = "Amount",
+    IGUI_PZLinux_Betting_StartRace = "START THE RACE!",
+    IGUI_PZLinux_Betting_YourBet = "Your bet: ",
+    IGUI_PZLinux_Betting_RaceWinner = "%s HAS WON!",
+    IGUI_PZLinux_Betting_BlackjackTitle = "BLACKJACK",
+    IGUI_PZLinux_Betting_Deal = "DEAL",
+    IGUI_PZLinux_Betting_Dealing = "Dealing...",
+    IGUI_PZLinux_Betting_Hit = "HIT",
+    IGUI_PZLinux_Betting_Stand = "STAND",
+    IGUI_PZLinux_Betting_Dealer = "Dealer: ",
+    IGUI_PZLinux_Betting_Player = "Player: ",
+    IGUI_PZLinux_Betting_Payout = "Payout: $",
+    IGUI_PZLinux_Betting_PokerLobby = "TEXAS HOLD'EM LOBBY",
+    IGUI_PZLinux_Betting_PokerBuyIn = "Buy-in",
+    IGUI_PZLinux_Betting_PokerInvalidBuyIn = "Buy-in outside lobby limits",
+    IGUI_PZLinux_Betting_PokerJoining = "Joining table...",
+    IGUI_PZLinux_Betting_PokerError = "Poker error",
+    IGUI_PZLinux_Betting_PokerTable = "POKER TABLE",
+    IGUI_PZLinux_Betting_PokerBoard = "Board:",
+    IGUI_PZLinux_Betting_PokerAmount = "Amount",
+    IGUI_PZLinux_Betting_PokerFold = "FOLD",
+    IGUI_PZLinux_Betting_PokerCheck = "CHECK",
+    IGUI_PZLinux_Betting_PokerCall = "CALL",
+    IGUI_PZLinux_Betting_PokerBet = "BET",
+    IGUI_PZLinux_Betting_PokerRaise = "RAISE",
+    IGUI_PZLinux_Betting_PokerAllIn = "ALL-IN",
+    IGUI_PZLinux_Betting_PokerNextHand = "NEXT HAND",
+    IGUI_PZLinux_Betting_PokerCashOut = "CASH OUT",
+    IGUI_PZLinux_Betting_PokerClosed = "Poker session closed:",
+}
+
 function PZLinuxGetText(key)
     if getText then
-        return getText(key)
+        local translated = getText(key)
+        if translated and translated ~= key then
+            return translated
+        end
     end
-    return key
+    return PZLinux.TextFallbacks[key] or key
 end
 
 PZLinux.callbacks = PZLinux.callbacks or {}
