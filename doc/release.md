@@ -80,7 +80,7 @@
 - Added `PZLinuxPokerStart`, `PZLinuxPokerAction` and `PZLinuxPokerCashOut` network commands with `PZLinuxPokerState` responses.
 - Added Poker configuration under `PZLinux.Poker.Config` for blinds, buy-in limits, AI stacks, opponent count, AI difficulty weights, bluff rates, decision delay and economic limits.
 - Improved Betting readability: added fallback labels when Project Zomboid translations are not loaded, made Blackjack/Poker cards human-readable, cleaned race runner names and compacted the Poker table UI.
-- Added French UI translations in `shared/Translate/FR/IG_UI_FR.txt` with the same keys as the English reference file.
+- Added French UI translations in `shared/Translate/FR/IG_UI.json` with the same keys as the English reference file.
 - Poker now automatically cashes out the remaining temporary stack before closing, minimizing or returning from the betting interface, preventing accidental fund loss when leaving the UI.
 - Reduced Poker default table size to 5 seats total (player + 4 AI) and tightened the table action/history layout to better fit the CRT interface.
 - Moved the Poker action history into a dedicated right-hand column so player cards and table events no longer overlap.
@@ -98,6 +98,8 @@
 - Moved Request interface messages and mission-location descriptions to `IGUI_PZLinux_*` translation keys with English fallbacks.
 - Added 18 additional translation catalogs: Czech, German, Spanish, Hungarian, Italian, Japanese, Korean, Dutch, Norwegian, Polish, European Portuguese, Brazilian Portuguese, Russian, Thai, Turkish, Ukrainian, Simplified Chinese and Traditional Chinese.
 - Added `tools/check_translations.lua`; all 20 catalogs currently contain the same 284 unique keys, valid UTF-8 and matching dynamic placeholders.
+- Migrated all UI and Sandbox translation catalogs from the legacy `.txt` format to the locale-independent `IG_UI.json`/`Sandbox.json` format required by B42.20.
+- Connected the Contracts balance and Yes/No controls to the translated UI catalog instead of hard-coded English labels.
 - Added `tools/generate_translations.pl` to regenerate selected language catalogs while protecting placeholders and proper location names.
 - Updated the release audit with current MP authority gaps, location coverage, localization status and the remaining 1.0.0 test checklist.
 - Made contract acceptance fully server-authoritative: clients request a canonical `PZLinuxContractPreview`, then send only `contractId` when accepting.
@@ -115,6 +117,8 @@
 - Added `tools/test_darkweb_delivery.lua` covering parcel contents, MP inventory synchronization and retry-safe pending orders.
 - Fixed a Contracts dialogue traceback when a Lua reload or stale client cache cleared the local reward table: dialogues now retain the canonical server preview reward and never overwrite valid ModData with `nil`.
 - Applied the same reward snapshot/fallback handling to all inline and externalized contract conversations.
+- Fixed hosted/dedicated MP contract acceptance not synchronizing objective flags to the client, which could draw a package marker without exposing the retrieval context action.
+- Package retrieval can now recover its actionable state from the persistent world-contract record, and server-created contract cases, corpse bags and blood jars are explicitly synchronized to the client inventory.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 
 # Update v.0.1.12-rc1

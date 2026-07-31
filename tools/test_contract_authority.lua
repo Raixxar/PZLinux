@@ -84,5 +84,23 @@ local requestBlock = variables:match("function PZLinuxRequestContractAccept.-\ne
 PZLinuxTestAssert(requestBlock ~= nil, "could not inspect PZLinuxRequestContractAccept")
 PZLinuxTestAssert(requestBlock:find("local state = { requestId = requestId, contractId = tonumber%(contractId%) }", 1, false) ~= nil,
     "accept request must contain only requestId and contractId")
+PZLinuxTestAssert(acceptBlock:find("contractPickUp = modData%.PZLinuxContractPickUp"),
+    "accept response must synchronize the package objective flag")
+
+local contextMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextContractsMenu.lua")
+PZLinuxTestAssert(contextMenu:find('tonumber%(worldRecord%.contractId%) == 2'),
+    "package context menu must recover objective state from the persistent world contract")
+PZLinuxTestAssert(contextMenu:find('PZLinuxContractsIsRecordStatus%(worldRecord, "accepted", "in_progress"%)'),
+    "package context menu must only recover an actionable persistent objective")
+
+for _, helperName in ipairs({
+    "PZLinuxContractsGiveContractCase",
+    "PZLinuxContractsGiveMailCorpseBag",
+    "PZLinuxContractsGiveBloodJar",
+}) do
+    local helperBlock = variables:match("function " .. helperName .. ".-\nend")
+    PZLinuxTestAssert(helperBlock and helperBlock:find("PZLinuxSyncAddedInventoryItem"),
+        helperName .. " must synchronize server-created inventory items")
+end
 
 print("PZLinux contract authority tests OK")

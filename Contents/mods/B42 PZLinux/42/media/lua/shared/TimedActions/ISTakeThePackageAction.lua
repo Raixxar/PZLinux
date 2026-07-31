@@ -33,6 +33,9 @@ function ISTakeThePackageAction:perform()
     }, function(result)
         if result and result.ok then
             HaloTextHelper.addGoodText(self.character, "Drop the contract case in a mailbox")
+        else
+            local errorCode = result and result.error or "no_server_response"
+            HaloTextHelper.addBadText(self.character, "Contract interaction failed: " .. tostring(errorCode))
         end
     end)
     ISBaseTimedAction.perform(self)

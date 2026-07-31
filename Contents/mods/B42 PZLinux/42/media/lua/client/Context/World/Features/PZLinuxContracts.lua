@@ -8,6 +8,15 @@ local selectedContracts = {}
 local contractsCompanyCodes = {}
 local contractsCompanyReward = {}
 
+local function PZLinuxContractsText(key, fallback, ...)
+    if getText then
+        local translated = getText(key, ...)
+        if translated and translated ~= key then return translated end
+    end
+    if select("#", ...) > 0 then return string.format(fallback, ...) end
+    return fallback
+end
+
 local function PZLinuxContractsApplyBoard(availableContracts)
     if type(availableContracts) ~= "table" then return end
 
@@ -101,7 +110,7 @@ function contractsUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    self.titleLabel = ISLabel:new(self.width * 0.20, self.height * 0.17, self.height * 0.025, "Bank Balance: $"  .. tostring(loadAtmBalance()), 0, 1, 0, 1, UIFont.Small, true)
+    self.titleLabel = ISLabel:new(self.width * 0.20, self.height * 0.17, self.height * 0.025, PZLinuxContractsText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", tostring(loadAtmBalance())), 0, 1, 0, 1, UIFont.Small, true)
     self.titleLabel.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabel:setVisible(true)
     self.titleLabel:initialise()
@@ -173,7 +182,7 @@ function contractsUI:initialise()
             if not result or not result.ok then return end
             if result.balance then
                 saveAtmBalance(result.balance, self.player)
-                self.titleLabel:setName("Bank Balance: $" .. tostring(result.balance))
+                self.titleLabel:setName(PZLinuxContractsText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", tostring(result.balance)))
             end
             PZLinuxContractsApplyBoard(result.contracts)
             self.contractsBoardReady = true
@@ -244,7 +253,7 @@ function contractsUI:onContractComplete()
         if not result or not result.ok then return end
 
         saveAtmBalance(result.balance, playerObj)
-        self.titleLabel:setName("Bank balance: $"  .. tostring(result.balance))
+        self.titleLabel:setName(PZLinuxContractsText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", tostring(result.balance)))
 
         local logMessage = "You have been paid for your contract.\nTotal zombies killed: " .. tostring(result.zombieCount or 0) .. "\nTotal money earned: $" .. tostring(result.amount or 0)
         self.completeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, logMessage, 0, 1, 0, 1, UIFont.Small, true)
@@ -322,16 +331,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
 
         getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(typingVolume)
         if callback then callback() end
-    end
-
-    local function PZLinuxContractsText(key, fallback)
-        if getText then
-            local translated = getText(key)
-            if translated and translated ~= key then
-                return translated
-            end
-        end
-        return fallback
     end
 
     local function PZLinuxContractsCreateDialogue(contractId)
@@ -417,13 +416,13 @@ function contractsUI:onContractPreview(contract, contractPreview)
     end
 
     local function PZLinuxContractsAddChoiceButtons(contractId)
-        self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+        self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, PZLinuxContractsText("IGUI_PZLinux_Request_Yes", "Yes"), self, self.onYesButton)
         self.yesButton.contractId = contractId
         self.yesButton:initialise()
         self.yesButton:instantiate()
         self.topBar:addChild(self.yesButton)
 
-        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, PZLinuxContractsText("IGUI_PZLinux_Request_No", "No"), self, self.onMinimizeBack)
         self.noButton:initialise()
         self.noButton:instantiate()
         self.topBar:addChild(self.noButton)
@@ -723,6 +722,18 @@ function contractsUI:onYesButton(button)
         updatedModData.PZLinuxContractTargetName = result.targetName or ""
         updatedModData.PZLinuxOnZombieToKill = tonumber(result.zombieToKill) or 0
         updatedModData.PZLinuxContractNote = result.note or ""
+        updatedModData.PZLinuxContractKillZombie = tonumber(result.contractKillZombie) or 0
+        updatedModData.PZLinuxContractPickUp = tonumber(result.contractPickUp) or 0
+        updatedModData.PZLinuxContractManhunt = tonumber(result.contractManhunt) or 0
+        updatedModData.PZLinuxContractBlood = tonumber(result.contractBlood) or 0
+        updatedModData.PZLinuxContractCar = tonumber(result.contractCar) or 0
+        updatedModData.PZLinuxContractCapture = tonumber(result.contractCapture) or 0
+        updatedModData.PZLinuxContractCargo = tonumber(result.contractCargo) or 0
+        updatedModData.PZLinuxContractProtect = tonumber(result.contractProtect) or 0
+        updatedModData.PZLinuxContractMedical = tonumber(result.contractMedical) or 0
+        updatedModData.PZLinuxContractWeapon = tonumber(result.contractWeapon) or 0
+        updatedModData.PZLinuxContractSendComputer = tonumber(result.contractSendComputer) or 0
+        updatedModData.PZLinuxContractSendFridge = tonumber(result.contractSendFridge) or 0
 
         local inv = playerObj:getInventory()
         local note = inv:AddItem('Base.Note')

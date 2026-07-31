@@ -107,7 +107,7 @@ Les villes sans point pour une activite restent dans la liste globale, mais ne d
 - Reference EN et traduction FR synchronisees.
 - 18 catalogues supplementaires crees : `CS`, `DE`, `ES`, `HU`, `IT`, `JP`, `KO`, `NL`, `NO`, `PL`, `PT`, `PTBR`, `RU`, `TH`, `TR`, `UA`, `CN`, `CH`.
 - Total : 20 langues, 284 cles par langue.
-- `tools/check_translations.lua` controle fichiers, table Lua, UTF-8, doublons, cles manquantes/supplementaires et signatures `%s`/`<parametre>`.
+- `tools/check_translations.lua` controle les catalogues B42.20 `IG_UI.json` : objet JSON, UTF-8, virgules, doublons, cles manquantes/supplementaires et signatures `%s`/`<parametre>`.
 - `tools/generate_translations.pl` permet de regenerer une langue en preservant les placeholders et noms propres.
 
 Attention : la presence des catalogues ne signifie pas que tout le mod est traduit. L'audit heuristique trouve encore 1927 chaines candidates, dont beaucoup sont des identifiants, noms d'items, etats internes ou textes volontairement anglais. Les textes visibles doivent etre tries et migres domaine par domaine.

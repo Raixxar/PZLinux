@@ -37,24 +37,26 @@ local function PZLinuxTranslationSignature(value)
 end
 
 local function PZLinuxTranslationParse(locale)
-    local path = translateRoot .. "/" .. locale .. "/IG_UI_" .. locale .. ".txt"
+    local path = translateRoot .. "/" .. locale .. "/IG_UI.json"
     local content, err = PZLinuxTranslationRead(path)
     if not content then return nil, { path .. ": " .. tostring(err) } end
 
     local errors = {}
     if not PZLinuxTranslationIsUtf8(content) then table.insert(errors, path .. ": invalid UTF-8") end
-    if not content:match("^IG_UI_" .. locale .. "%s*=%s*{") then
-        table.insert(errors, path .. ": expected table IG_UI_" .. locale)
+    if not content:match("^%s*{") or not content:match("}%s*$") then
+        table.insert(errors, path .. ": expected a JSON object")
     end
 
     local entries = {}
+    local entryLines = {}
     for lineNumber, line in ipairs((function()
         local lines = {}
         for current in (content .. "\n"):gmatch("(.-)\n") do table.insert(lines, current) end
         return lines
     end)()) do
-        local key, literal = line:match("^%s*(IGUI_[%w_]+)%s*=%s*(\".*\")%s*,%s*$")
+        local key, literal, comma = line:match('^%s*"(IGUI_[%w_]+)"%s*:%s*(".*")%s*(,?)%s*$')
         if key then
+            table.insert(entryLines, { lineNumber = lineNumber, comma = comma })
             if entries[key] then
                 table.insert(errors, path .. ":" .. lineNumber .. ": duplicate key " .. key)
             else
@@ -67,6 +69,14 @@ local function PZLinuxTranslationParse(locale)
                     else table.insert(errors, path .. ":" .. lineNumber .. ": invalid string for " .. key) end
                 end
             end
+        elseif not line:match("^%s*$") and not line:match("^%s*{%s*$") and not line:match("^%s*}%s*$") then
+            table.insert(errors, path .. ":" .. lineNumber .. ": invalid JSON catalog line")
+        end
+    end
+    for index, entryLine in ipairs(entryLines) do
+        local expectedComma = index < #entryLines
+        if expectedComma ~= (entryLine.comma == ",") then
+            table.insert(errors, path .. ":" .. entryLine.lineNumber .. ": invalid JSON comma")
         end
     end
     return entries, errors

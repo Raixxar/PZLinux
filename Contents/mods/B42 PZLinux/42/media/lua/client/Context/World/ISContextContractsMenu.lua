@@ -9,8 +9,13 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     local targetX = modData.PZLinuxContractLocationX
     local targetY = modData.PZLinuxContractLocationY
     local targetZ = modData.PZLinuxContractLocationZ
+    local worldRecord = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
+    local packageReady = modData.PZLinuxContractPickUp == 1
+        or (worldRecord
+            and tonumber(worldRecord.contractId) == 2
+            and PZLinuxContractsIsRecordStatus(worldRecord, "accepted", "in_progress"))
 
-    if modData.PZLinuxContractPickUp == 1
+    if packageReady
     or modData.PZLinuxContractCargo == 2
     or modData.PZLinuxContractProtect == 1
     or modData.PZLinuxContractProtect == 3 then
@@ -20,13 +25,13 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                 if square then
                     local x, y, z = square:getX(), square:getY(), square:getZ()
                     local objectContractId = PZLinuxContractsGetEntityContractId(obj)
-                    local worldRecord = PZLinuxContractsGetWorldContract(objectContractId)
-                    if worldRecord and tonumber(worldRecord.contractId) == 7 and worldRecord.status == "spawned" then
+                    local objectWorldRecord = PZLinuxContractsGetWorldContract(objectContractId)
+                    if objectWorldRecord and tonumber(objectWorldRecord.contractId) == 7 and objectWorldRecord.status == "spawned" then
                         context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z)
                         break
                     end
                     if targetX and targetY and targetZ and isNearTarget(x, y, z, targetX, targetY, targetZ) then
-                        if modData.PZLinuxContractPickUp == 1 then context:addOption("Take the package of the contract", obj, completeContractMenu_OnUse, player, x, y, z); break end
+                        if packageReady then context:addOption("Take the package of the contract", obj, completeContractMenu_OnUse, player, x, y, z); break end
                         if modData.PZLinuxContractCargo == 2 then context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z); break end
                         if modData.PZLinuxContractProtect == 1 then context:addOption("Protect the building", obj, completeContractMenu_OnProtect, player, x, y, z); break end
                         if modData.PZLinuxContractProtect == 3 then context:addOption("Tag the sector as clear", obj, completeContractMenu_OnProtect, player, x, y, z); break end

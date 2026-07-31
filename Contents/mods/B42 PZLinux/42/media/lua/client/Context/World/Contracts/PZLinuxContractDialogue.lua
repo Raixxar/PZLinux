@@ -78,13 +78,15 @@ function PZLinuxContractDialogue.ask(self, dialogue, text, typeText)
 end
 
 function PZLinuxContractDialogue.addChoiceButtons(self, contractId)
-    self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, "Yes", self, self.onYesButton)
+    local yesText = PZLinuxContractDialogue.getText("IGUI_PZLinux_Request_Yes", "Yes")
+    local noText = PZLinuxContractDialogue.getText("IGUI_PZLinux_Request_No", "No")
+    self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, yesText, self, self.onYesButton)
     self.yesButton.contractId = contractId
     self.yesButton:initialise()
     self.yesButton:instantiate()
     self.topBar:addChild(self.yesButton)
 
-    self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, "No", self, self.onMinimizeBack)
+    self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, noText, self, self.onMinimizeBack)
     self.noButton:initialise()
     self.noButton:instantiate()
     self.topBar:addChild(self.noButton)

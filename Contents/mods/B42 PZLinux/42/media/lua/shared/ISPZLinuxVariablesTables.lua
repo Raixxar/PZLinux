@@ -1035,7 +1035,7 @@ if Events and Events.OnServerCommand then
                 local modData = playerObj and playerObj:getModData()
                 if modData then modData.PZLinuxContractId = args.worldContractId end
             end
-            if command == "PZLinuxContractWorldEventResult" and args then
+            if (command == "PZLinuxContractAcceptResult" or command == "PZLinuxContractWorldEventResult") and args then
                 local playerObj = PZLinuxGetPlayer()
                 local modData = playerObj and playerObj:getModData()
                 if modData then
@@ -1048,6 +1048,12 @@ if Events and Events.OnServerCommand then
                     if args.contractPickUp ~= nil then modData.PZLinuxContractPickUp = args.contractPickUp end
                     if args.contractBlood ~= nil then modData.PZLinuxContractBlood = args.contractBlood end
                     if args.contractCapture ~= nil then modData.PZLinuxContractCapture = args.contractCapture end
+                    if args.contractKillZombie ~= nil then modData.PZLinuxContractKillZombie = args.contractKillZombie end
+                    if args.contractCar ~= nil then modData.PZLinuxContractCar = args.contractCar end
+                    if args.contractMedical ~= nil then modData.PZLinuxContractMedical = args.contractMedical end
+                    if args.contractWeapon ~= nil then modData.PZLinuxContractWeapon = args.contractWeapon end
+                    if args.contractSendComputer ~= nil then modData.PZLinuxContractSendComputer = args.contractSendComputer end
+                    if args.contractSendFridge ~= nil then modData.PZLinuxContractSendFridge = args.contractSendFridge end
                 end
             end
             PZLinuxDispatchCallback(args)
@@ -2055,6 +2061,18 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
         worldContractId = modData.PZLinuxContractId,
         balance = PZLinuxLoadBankBalance(playerObj),
         activeContract = modData.PZLinuxActiveContract,
+        contractKillZombie = modData.PZLinuxContractKillZombie,
+        contractPickUp = modData.PZLinuxContractPickUp,
+        contractManhunt = modData.PZLinuxContractManhunt,
+        contractBlood = modData.PZLinuxContractBlood,
+        contractCar = modData.PZLinuxContractCar,
+        contractCapture = modData.PZLinuxContractCapture,
+        contractCargo = modData.PZLinuxContractCargo,
+        contractProtect = modData.PZLinuxContractProtect,
+        contractMedical = modData.PZLinuxContractMedical,
+        contractWeapon = modData.PZLinuxContractWeapon,
+        contractSendComputer = modData.PZLinuxContractSendComputer,
+        contractSendFridge = modData.PZLinuxContractSendFridge,
     }
 end
 
@@ -2373,6 +2391,7 @@ function PZLinuxContractsGiveContractCase(playerObj, contractWorldId)
     elseif bonusRand == 2 then
         parcelInv:AddItem("Base.Revolver")
     end
+    PZLinuxSyncAddedInventoryItem(playerObj, parcel)
     return true
 end
 
@@ -2386,6 +2405,7 @@ function PZLinuxContractsGiveMailCorpseBag(playerObj, bagName, contractWorldId)
     PZLinuxContractsTagEntity(parcel, contractWorldId, "corpse")
     local corpse = parcel:getInventory():AddItem("Base.CorpseMale")
     PZLinuxContractsTagEntity(corpse, contractWorldId, "corpse")
+    PZLinuxSyncAddedInventoryItem(playerObj, parcel)
     return true
 end
 
@@ -2400,6 +2420,7 @@ function PZLinuxContractsGiveBloodJar(playerObj, contractWorldId)
     if jar.getFluidContainer and jar:getFluidContainer() then
         jar:getFluidContainer():addFluid(FluidType.Blood, 1)
     end
+    PZLinuxSyncAddedInventoryItem(playerObj, jar)
     return true
 end
 
