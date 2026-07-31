@@ -264,7 +264,7 @@ function requestUI:onContractId(contract)
             index = index + 1
             label:setName(message)
 
-            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
+            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()

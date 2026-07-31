@@ -202,6 +202,7 @@ function linuxUI:onCloseX(_button)
     self.isClosing = true
     local player = PZLinuxGetPlayer(self.player)
     if player then
+        PZLinuxRequestContractSync(player)
         player:StopAllActionQueue()
     end
 end

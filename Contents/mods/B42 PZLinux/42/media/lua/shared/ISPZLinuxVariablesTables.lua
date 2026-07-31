@@ -1008,6 +1008,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxTradingSellResult"
         or command == "PZLinuxContractsBoardResult"
         or command == "PZLinuxContractPreviewResult"
+        or command == "PZLinuxContractSyncResult"
         or command == "PZLinuxContractAcceptResult"
         or command == "PZLinuxContractCancelResult"
         or command == "PZLinuxContractDepositResult"
@@ -1035,7 +1036,10 @@ if Events and Events.OnServerCommand then
                 local modData = playerObj and playerObj:getModData()
                 if modData then modData.PZLinuxContractId = args.worldContractId end
             end
-            if (command == "PZLinuxContractAcceptResult" or command == "PZLinuxContractWorldEventResult") and args then
+            if (command == "PZLinuxContractSyncResult"
+            or command == "PZLinuxContractAcceptResult"
+            or command == "PZLinuxContractDepositResult"
+            or command == "PZLinuxContractWorldEventResult") and args then
                 local playerObj = PZLinuxGetPlayer()
                 local modData = playerObj and playerObj:getModData()
                 if modData then
@@ -1054,6 +1058,10 @@ if Events and Events.OnServerCommand then
                     if args.contractWeapon ~= nil then modData.PZLinuxContractWeapon = args.contractWeapon end
                     if args.contractSendComputer ~= nil then modData.PZLinuxContractSendComputer = args.contractSendComputer end
                     if args.contractSendFridge ~= nil then modData.PZLinuxContractSendFridge = args.contractSendFridge end
+                    if args.contractId ~= nil then modData.PZLinuxContractTypeId = args.contractId end
+                    if args.locationX ~= nil then modData.PZLinuxContractLocationX = args.locationX end
+                    if args.locationY ~= nil then modData.PZLinuxContractLocationY = args.locationY end
+                    if args.locationZ ~= nil then modData.PZLinuxContractLocationZ = args.locationZ end
                 end
             end
             PZLinuxDispatchCallback(args)
@@ -1833,6 +1841,7 @@ function PZLinuxContractsSyncWorldRecordToPlayer(player, record, activeState)
 
     local modData = playerObj:getModData()
     modData.PZLinuxContractId = record.id
+    modData.PZLinuxContractTypeId = tonumber(record.contractId) or 0
     modData.PZLinuxActiveContract = activeState or modData.PZLinuxActiveContract or 1
     modData.PZLinuxOnReward = PZLinuxNormalizeMoney(record.reward)
     modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. tostring(record.code or "")
@@ -1865,6 +1874,49 @@ function PZLinuxContractsSyncWorldRecordToPlayer(player, record, activeState)
         if tonumber(record.contractId) == 8 then modData.PZLinuxContractProtect = 3 end
     end
     PZLinuxTransmitPlayerModData(playerObj)
+end
+
+function PZLinuxContractsGetActiveState(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local modData = playerObj:getModData()
+    local worldData = PZLinuxContractsGetWorldData()
+    local playerKey = PZLinuxGetPlayerKey(playerObj)
+    local worldContractId = modData.PZLinuxContractId
+    if not worldContractId or worldContractId == "" then
+        worldContractId = worldData.byPlayer[playerKey]
+    end
+    local record = worldContractId and worldData.active[tostring(worldContractId)] or nil
+    if not record then
+        worldContractId = worldData.byPlayer[playerKey]
+        record = worldContractId and worldData.active[tostring(worldContractId)] or nil
+    end
+    if record then PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record) end
+
+    return {
+        ok = true,
+        requestId = requestId,
+        hasActiveContract = record ~= nil,
+        worldContractId = record and record.id or modData.PZLinuxContractId,
+        contractId = record and record.contractId or modData.PZLinuxContractTypeId,
+        activeContract = modData.PZLinuxActiveContract or 0,
+        locationX = record and record.locationX or modData.PZLinuxContractLocationX,
+        locationY = record and record.locationY or modData.PZLinuxContractLocationY,
+        locationZ = record and record.locationZ or modData.PZLinuxContractLocationZ,
+        contractKillZombie = modData.PZLinuxContractKillZombie,
+        contractPickUp = modData.PZLinuxContractPickUp,
+        contractManhunt = modData.PZLinuxContractManhunt,
+        contractBlood = modData.PZLinuxContractBlood,
+        contractCar = modData.PZLinuxContractCar,
+        contractCapture = modData.PZLinuxContractCapture,
+        contractCargo = modData.PZLinuxContractCargo,
+        contractProtect = modData.PZLinuxContractProtect,
+        contractMedical = modData.PZLinuxContractMedical,
+        contractWeapon = modData.PZLinuxContractWeapon,
+        contractSendComputer = modData.PZLinuxContractSendComputer,
+        contractSendFridge = modData.PZLinuxContractSendFridge,
+    }
 end
 
 function PZLinuxContractsSetTypeFlags(modData, contractId)
@@ -1930,6 +1982,7 @@ function PZLinuxContractsClearState(modData)
     modData.PZLinuxContractLocationY = 0
     modData.PZLinuxContractLocationZ = 0
     modData.PZLinuxContractId = ""
+    modData.PZLinuxContractTypeId = 0
     modData.PZLinuxOnZombieDead = 0
     modData.PZLinuxActiveContract = 0
     modData.PZLinuxContractNote = ""
@@ -2626,7 +2679,8 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     elseif eventName == "pickupPackage" then
         local record, recordError = usePlayerRecord(2, "accepted", "in_progress")
         if recordError then return reject(recordError) end
-        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 5) then
+        local packageRadius = tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 10
+        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, packageRadius) then
             return reject("too_far_from_contract")
         end
         if not PZLinuxContractsGiveContractCase(playerObj, record.id) then return reject("item_creation_failed") end
@@ -2720,6 +2774,16 @@ function PZLinuxRequestContractsBoard(player, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxContractsGetBoard(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractSync(player, callback)
+    local requestId = PZLinuxNextRequestId("contract-sync")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxContractSync", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsGetActiveState(player, requestId))
     return requestId
 end
 

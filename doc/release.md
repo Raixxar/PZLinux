@@ -120,6 +120,9 @@
 - Fixed hosted/dedicated MP contract acceptance not synchronizing objective flags to the client, which could draw a package marker without exposing the retrieval context action.
 - Package retrieval can now recover its actionable state from the persistent world-contract record, and server-created contract cases, corpse bags and blood jars are explicitly synchronized to the client inventory.
 - Package retrieval no longer depends on right-clicking an arbitrary map object near the marker: the option is exposed from the player's real position inside the five-tile objective zone, which is independently validated by the server.
+- Added `PZLinuxContractSync`: reconnecting clients request their canonical active contract, objective flags and location from the server, and closing the PZLinux computer performs the same synchronization automatically before leaving the terminal.
+- Contract context menus now perform a silent server resynchronization while an objective is active, throttled to one request per player every ten seconds; mailbox deposit results also apply their next-stage state immediately.
+- Removed the Electricity-skill modifier from simulated player typing in Contracts, Request, Internet login and ATM screens; every player now uses the same short delay configured by `PZLinux.Config.UI.typingDelay`.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 
 # Update v.0.1.12-rc1

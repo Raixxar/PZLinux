@@ -92,6 +92,18 @@ PZLinuxTestAssert(contextMenu:find('tonumber%(worldRecord%.contractId%) == 2'),
     "package context menu must recover objective state from the persistent world contract")
 PZLinuxTestAssert(contextMenu:find('PZLinuxContractsIsRecordStatus%(worldRecord, "accepted", "in_progress"%)'),
     "package context menu must only recover an actionable persistent objective")
+PZLinuxTestAssert(variables:find('function PZLinuxContractsGetActiveState'),
+    "server-authoritative active contract synchronization must exist")
+local linuxMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextLinuxMenu.lua")
+local closeBlock = linuxMenu:match("function linuxUI:onCloseX.-\nend")
+PZLinuxTestAssert(closeBlock and closeBlock:find("PZLinuxRequestContractSync"),
+    "closing the computer must synchronize the active contract")
+PZLinuxTestAssert(not contextMenu:find("Synchronize active contract"),
+    "contract synchronization must not leak into the player context menu")
+PZLinuxTestAssert(contextMenu:find("PZLinuxContractsMaybeSyncContext"),
+    "opening the contract context menu must perform a throttled silent resynchronization")
+PZLinuxTestAssert(variables:find('command == "PZLinuxContractDepositResult"'),
+    "mailbox deposit results must synchronize the next contract stage")
 
 for _, helperName in ipairs({
     "PZLinuxContractsGiveContractCase",

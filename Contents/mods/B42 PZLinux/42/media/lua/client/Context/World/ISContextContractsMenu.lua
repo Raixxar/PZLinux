@@ -1,23 +1,53 @@
 completeContractUI = ISPanel:derive("completeContractUI")
 
+local PZLinuxContractContextSync = {
+    pending = {},
+    lastAt = {},
+}
+
+local function PZLinuxContractsMaybeSyncContext(playerObj)
+    local modData = playerObj and playerObj:getModData()
+    if not modData or tonumber(modData.PZLinuxActiveContract) == 0 then return end
+
+    local playerKey = tostring(playerObj:getPlayerNum())
+    local now = math.floor(getGameTime():getWorldAgeHours() * 3600)
+    local pendingAt = PZLinuxContractContextSync.pending[playerKey]
+    if pendingAt and now - pendingAt < 10 then return end
+    if now - (PZLinuxContractContextSync.lastAt[playerKey] or -10) < 10 then return end
+
+    PZLinuxContractContextSync.pending[playerKey] = now
+    PZLinuxContractContextSync.lastAt[playerKey] = now
+    PZLinuxRequestContractSync(playerObj, function()
+        PZLinuxContractContextSync.pending[playerKey] = nil
+    end)
+end
+
+local function PZLinuxContractsOnCreatePlayer(_playerIndex, playerObj)
+    PZLinuxRequestContractSync(playerObj)
+end
+
 -- CONTEXT MENU
 function completeContractMenu_AddContext(player, context, worldobjects)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return end
 
     local modData = playerObj:getModData()
-    local targetX = modData.PZLinuxContractLocationX
-    local targetY = modData.PZLinuxContractLocationY
-    local targetZ = modData.PZLinuxContractLocationZ
+    PZLinuxContractsMaybeSyncContext(playerObj)
+    local targetX = tonumber(modData.PZLinuxContractLocationX)
+    local targetY = tonumber(modData.PZLinuxContractLocationY)
+    local targetZ = tonumber(modData.PZLinuxContractLocationZ)
     local worldRecord = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
     local packageReady = modData.PZLinuxContractPickUp == 1
+        or tonumber(modData.PZLinuxContractTypeId) == 2
         or (worldRecord
             and tonumber(worldRecord.contractId) == 2
             and PZLinuxContractsIsRecordStatus(worldRecord, "accepted", "in_progress"))
 
     local playerSquare = playerObj:getSquare()
     if packageReady and playerSquare and targetX and targetY and targetZ
-    and isNearTarget(playerSquare:getX(), playerSquare:getY(), playerSquare:getZ(), targetX, targetY, targetZ) then
+    and math.max(math.abs(playerSquare:getX() - targetX), math.abs(playerSquare:getY() - targetY))
+        <= (tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 10)
+    and playerSquare:getZ() == targetZ then
         context:addOption("Take the package of the contract", nil, completeContractMenu_OnUse, player)
     end
 
@@ -167,3 +197,4 @@ function completeContractMenu_OnProtect(obj, player, x, y, z)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(completeContractMenu_AddContext)
+Events.OnCreatePlayer.Add(PZLinuxContractsOnCreatePlayer)

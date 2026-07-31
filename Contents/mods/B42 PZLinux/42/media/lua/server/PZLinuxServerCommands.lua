@@ -229,6 +229,12 @@ local function PZLinuxServerContractPreview(player, args)
     end)
 end
 
+local function PZLinuxServerContractSync(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxContractSync", args, "PZLinuxContractSyncResult", function()
+        return PZLinuxContractsGetActiveState(player, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerContractAccept(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractAccept", args, "PZLinuxContractAcceptResult", function()
         return PZLinuxContractsApplyAccept(player, args, args and args.requestId)
@@ -350,6 +356,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxTradingSell = PZLinuxServerTradingSell,
     PZLinuxContractsBoard = PZLinuxServerContractsBoard,
     PZLinuxContractPreview = PZLinuxServerContractPreview,
+    PZLinuxContractSync = PZLinuxServerContractSync,
     PZLinuxContractAccept = PZLinuxServerContractAccept,
     PZLinuxContractCancel = PZLinuxServerContractCancel,
     PZLinuxContractDeposit = PZLinuxServerContractDeposit,

@@ -167,7 +167,7 @@ function connectUI:startConnect()
             index = index + 1
             self.loadingMessage:setName(currentLogin)
 
-            local letterDelay = elapsed + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
+            local letterDelay = elapsed + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
             while elapsed < letterDelay do
                 if self.isClosing then return end
                 coroutine.yield()
@@ -188,7 +188,7 @@ function connectUI:startConnect()
             currentPassword = currentPassword .. "*"
             passwordIndex = passwordIndex + 1
             self.loadingMessage:setName(currentPassword)
-            local passwordDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(2, math.ceil((-((player:getPerkLevel(Perks.Electricity)^2) / 1) + 130) / 10))
+            local passwordDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
             while elapsed < passwordDelay do
                 if self.isClosing then return end
                 coroutine.yield()
