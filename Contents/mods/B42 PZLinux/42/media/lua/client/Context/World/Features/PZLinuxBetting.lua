@@ -33,7 +33,7 @@ local function PZLinuxBettingHide(controls)
 end
 
 local function PZLinuxBettingFormatCard(card)
-    if not card or card.hidden then return "Hidden" end
+    if not card or card.hidden then return "??" end
 
     local rank = card.rank
     local suit = card.suit
@@ -47,9 +47,9 @@ local function PZLinuxBettingFormatCard(card)
         end
     end
 
-    local ranks = { T = "10", J = "Jack", Q = "Queen", K = "King", A = "Ace" }
-    local suits = { C = "Clubs", D = "Diamonds", H = "Hearts", S = "Spades" }
-    return (ranks[rank] or rank or "?") .. " " .. (suits[suit] or suit or "?")
+    local ranks = { A = "A", T = "10", J = "J", Q = "Q", K = "K" }
+    local suits = { C = "♣", D = "♦", H = "♥", S = "♠" }
+    return (ranks[rank] or rank or "?") .. (suits[suit] or suit or "?")
 end
 
 local function PZLinuxBettingFormatCards(cards)
