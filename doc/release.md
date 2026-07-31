@@ -110,6 +110,11 @@
 - Removed automatic client `contractId` injection from contract world events. Cargo and Manhunt ownership are derived from the selected entity's persistent `PZLinuxContractId`, preserving stealable MP objectives without trusting the sender.
 - Removed the client reconnect reset that changed an already spawned Manhunt target back to its pre-spawn state.
 - Added `tools/test_contract_world_authority.lua` to prevent client kill counting, forged contract coordinates/IDs and client-side entity removal from being reintroduced.
+- Fixed Dark Web mailbox deliveries on hosted/dedicated servers: completed parcels are now explicitly synchronized to the owning client's inventory with the B42 container packet.
+- Dark Web pending orders are no longer consumed when the parcel or purchased contents cannot be created, and mailbox UIs now display the server rejection reason.
+- Added `tools/test_darkweb_delivery.lua` covering parcel contents, MP inventory synchronization and retry-safe pending orders.
+- Fixed a Contracts dialogue traceback when a Lua reload or stale client cache cleared the local reward table: dialogues now retain the canonical server preview reward and never overwrite valid ModData with `nil`.
+- Applied the same reward snapshot/fallback handling to all inline and externalized contract conversations.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 
 # Update v.0.1.12-rc1

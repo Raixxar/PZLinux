@@ -283,22 +283,37 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
         return { ok = true, requestId = requestId, delivered = 0, lost = true, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
+    local inventory = playerObj:getInventory()
     local delivered = 0
     while #modData.PZLinuxOnItemBuyOnDarkWeb > 0 do
-        local parcel = playerObj:getInventory():AddItem("Base.Parcel_Large")
-        local parcelInv = parcel and parcel:getInventory()
         local lastBatchWrapper = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
-        if parcelInv and lastBatchWrapper and type(lastBatchWrapper) == "table" then
-            local lastBatch = lastBatchWrapper[1]
-            if lastBatch and type(lastBatch.items) == "table" then
-                for _, item in ipairs(lastBatch.items) do
-                    if item.name and getScriptManager():FindItem(item.name) then
-                        parcelInv:AddItem(item.name)
-                        delivered = delivered + 1
-                    end
-                end
+        local lastBatch = type(lastBatchWrapper) == "table" and lastBatchWrapper[1] or nil
+        if not lastBatch or type(lastBatch.items) ~= "table" then
+            return { ok = false, error = "invalid_pending_order", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
+
+        local parcel = inventory:AddItem("Base.Parcel_Large")
+        local parcelInv = parcel and parcel:getInventory()
+        if not parcelInv then
+            if parcel then inventory:Remove(parcel) end
+            return { ok = false, error = "parcel_creation_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
+
+        local batchDelivered = 0
+        for _, item in ipairs(lastBatch.items) do
+            if item.name and getScriptManager():FindItem(item.name) then
+                local deliveredItem = parcelInv:AddItem(item.name)
+                if deliveredItem then batchDelivered = batchDelivered + 1 end
             end
         end
+
+        if batchDelivered <= 0 then
+            inventory:Remove(parcel)
+            return { ok = false, error = "invalid_pending_item", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
+
+        PZLinuxSyncAddedInventoryItem(playerObj, parcel)
+        delivered = delivered + batchDelivered
         table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
     end
 

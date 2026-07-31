@@ -340,8 +340,13 @@ function contractsUI:onContractPreview(contract, contractPreview)
         local sleepSFX = 1
         if modData.PZLinuxUISFX == 0 then sleepSFX = 0.1 end
 
-        modData.PZLinuxOnReward = contractsCompanyReward[contractId]
-        modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contractId]
+        local companyCode = tostring(contractPreview.code or contractsCompanyCodes[contractId] or "")
+        local reward = tonumber(contractPreview.reward)
+            or tonumber(contractsCompanyReward[contractId])
+            or tonumber(modData.PZLinuxOnReward)
+            or 0
+        modData.PZLinuxOnReward = reward
+        modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. companyCode
 
         return {
             contractId = contractId,
@@ -349,7 +354,8 @@ function contractsUI:onContractPreview(contract, contractPreview)
             modData = modData,
             globalVolume = getCore():getOptionSoundVolume() / 50,
             playerName = generatePseudo(string.lower(playerObj:getUsername())),
-            sellerName = "<" .. contractsCompanyCodes[contractId] .. "> ",
+            sellerName = "<" .. companyCode .. "> ",
+            reward = reward,
             message = nil,
             sleepSFX = sleepSFX,
             elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600),
@@ -441,7 +447,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_RetrievePackage_AskDelivery", "How do I give you the package ?"))
@@ -479,7 +485,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Manhunt_AskProof", "How can I prove to you that he is dead ?"))
@@ -506,7 +512,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
@@ -532,7 +538,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
@@ -552,7 +558,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
@@ -578,7 +584,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Cargo_Defense", "Prepare defenses, we will take the cargo by helicopter."), true)
@@ -607,7 +613,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Protect_Defense", "Prepare defenses, there will be many zombies."), true)
@@ -636,7 +642,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
@@ -662,7 +668,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)

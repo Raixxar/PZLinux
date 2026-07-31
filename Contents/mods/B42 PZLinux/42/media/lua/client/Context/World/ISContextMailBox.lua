@@ -87,7 +87,9 @@ function MailBoxUI:onSendTakePackage()
     end)
 
     PZLinuxRequestDarkWebDeliverOrders(playerObj, self.mailbox, function(result)
-        if result and result.lost then
+        if result and result.ok == false then
+            HaloTextHelper.addBadText(playerObj, "Dark web delivery failed: " .. tostring(result.error or "unknown error"))
+        elseif result and result.lost then
             HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Dark web order delivered")

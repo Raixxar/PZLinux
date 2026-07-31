@@ -146,6 +146,15 @@ function PZLinuxTransmitPlayerModData(player)
     end
 end
 
+function PZLinuxSyncAddedInventoryItem(player, item)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj or not item then return false end
+    if isServer and isServer() and sendAddItemToContainer then
+        sendAddItemToContainer(playerObj:getInventory(), item)
+    end
+    return true
+end
+
 function PZLinuxLoadBankBalance(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end

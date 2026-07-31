@@ -16,8 +16,14 @@ function PZLinuxContractDialogue.create(self, contractId, contractsCompanyCodes,
     local sleepSFX = 1
     if modData.PZLinuxUISFX == 0 then sleepSFX = 0.1 end
 
-    modData.PZLinuxOnReward = contractsCompanyReward[contractId]
-    modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. contractsCompanyCodes[contractId]
+    local preview = self.contractPreview or {}
+    local companyCode = tostring(preview.code or contractsCompanyCodes[contractId] or "")
+    local reward = tonumber(preview.reward)
+        or tonumber(contractsCompanyReward[contractId])
+        or tonumber(modData.PZLinuxOnReward)
+        or 0
+    modData.PZLinuxOnReward = reward
+    modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. companyCode
 
     return {
         contractId = contractId,
@@ -25,7 +31,8 @@ function PZLinuxContractDialogue.create(self, contractId, contractsCompanyCodes,
         modData = modData,
         globalVolume = getCore():getOptionSoundVolume() / 50,
         playerName = generatePseudo(string.lower(playerObj:getUsername())),
-        sellerName = "<" .. contractsCompanyCodes[contractId] .. "> ",
+        sellerName = "<" .. companyCode .. "> ",
+        reward = reward,
         message = nil,
         sleepSFX = sleepSFX,
         elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600),

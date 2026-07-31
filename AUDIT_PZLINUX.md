@@ -33,6 +33,7 @@ Les durcissements P1 les plus sensibles sont egalement termines dans le code : l
 - Commandes reseau regroupees sous le module `PZLinux` et noms de commandes sensibles prefixes `PZLinux*`.
 - Banque et ATM serveur-autoritatifs en MP, avec depot/retrait atomique et reserve ATM persistante de `$10k-$50k`.
 - Dark Web achat, vente, offres, commandes, livraisons et encaissements migres vers le serveur.
+- Les colis Dark Web crees par le serveur sont explicitement synchronises vers l'inventaire client; une creation echouee conserve la commande pending pour permettre un retry.
 - Livraisons Dark Web/Request, encaissements Dark Web et depots de contrats limites par le serveur a une vraie mailbox situee a deux cases maximum et sur le meme niveau Z.
 - Trading et Wallet bases sur les prix globaux serveur et un snapshot commun.
 - Board de contrats global, accept/cancel/deposit/complete et evenements monde relies au serveur.
@@ -242,6 +243,7 @@ Resultats mesures le 2026-07-31 :
 | Test autorite objectifs contrats | OK |
 | Test secret Hacking | OK |
 | Test proximite mailbox | OK |
+| Test livraison Dark Web MP | OK |
 | Test commission Trading | OK |
 | Fonctions globales non prefixees | 294 declarations |
 | Textes hardcodes | 1927 candidats heuristiques |
@@ -464,6 +466,7 @@ lua5.1 tools/test_contract_authority.lua
 lua5.1 tools/test_contract_world_authority.lua
 lua5.1 tools/test_hacking_authority.lua
 lua5.1 tools/test_mailbox_proximity.lua
+lua5.1 tools/test_darkweb_delivery.lua
 lua5.1 tools/test_trading_fee.lua
 ```
 

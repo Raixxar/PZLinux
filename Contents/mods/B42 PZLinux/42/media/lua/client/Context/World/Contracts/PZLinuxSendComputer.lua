@@ -9,7 +9,7 @@ function PZLinux_Contract_SendComputer_CreateCoroutine(self, contract, contracts
         PZLinuxContractDialogue.ask(self, dialogue, PZLinuxContractDialogue.getText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"), typeText)
 
         if not PZLinuxContractDialogue.wait(self, dialogue, 100, 200) then return end
-        PZLinuxContractDialogue.appendSellerLine(self, dialogue, "$" .. dialogue.modData.PZLinuxOnReward, true)
+        PZLinuxContractDialogue.appendSellerLine(self, dialogue, "$" .. tostring(dialogue.reward), true)
 
         if not PZLinuxContractDialogue.wait(self, dialogue, 100, 200) then return end
         PZLinuxContractDialogue.appendSellerLine(self, dialogue, PZLinuxContractDialogue.getText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
