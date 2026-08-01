@@ -143,7 +143,7 @@ function connectUI:startConnect()
 
     self.terminalCoroutine = coroutine.create(function()
         self.loadingMessage:setName(loginBase)
-        if not PZLinux.Typing.wait(self) then return end
+        if not PZLinux.Typing.waitProfile(self, "systemStatus") then return end
         if not PZLinux.Typing.typeLabel(self, self.loadingMessage, playerUsername, player, {
             prefix = loginBase,
             volume = globalVolume,
@@ -158,7 +158,7 @@ function connectUI:startConnect()
             if self.isClosing then return end
 
             self.loadingMessage:setName(message)
-            if not PZLinux.Typing.wait(self) then return end
+            if not PZLinux.Typing.waitProfile(self, "systemStatus") then return end
         end
 
         self.topBar:removeChild(self.loadingMessage)

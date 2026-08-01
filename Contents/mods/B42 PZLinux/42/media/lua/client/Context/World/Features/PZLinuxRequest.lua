@@ -252,7 +252,7 @@ function requestUI:onContractId(contract)
         local sleepSFX = 1
         if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
         PZLinuxRequestSetConversation(self, message)
-        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
         if self.isClosing then return end
 
         local waitUser = ZombRand(1, 4)
@@ -270,7 +270,7 @@ function requestUI:onContractId(contract)
         PZLinuxRequestSetConversation(self, message)
         sellerName = PZLinuxRequestChatName(sellerName)
 
-        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
 
 
         if self.isClosing then return end
@@ -279,7 +279,7 @@ function requestUI:onContractId(contract)
         message = sellerName .. PZLinuxRequestFormatText("IGUI_PZLinux_Request_LookingFor", PZLinuxRequestCatalog[contract].name)
         PZLinuxRequestSetConversation(self, message)
 
-        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
 
         if self.isClosing then return end
 
@@ -290,7 +290,7 @@ function requestUI:onContractId(contract)
             self.typingMessage:setName("")
         end)
 
-        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
 
         if self.isClosing then return end
 
@@ -370,7 +370,7 @@ function requestUI:onContractId(contract)
             PZLinuxRequestSetConversation(self, message)
         end
 
-        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
 
         if contract == 9 then
             if self.isClosing then return end
@@ -378,7 +378,7 @@ function requestUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. PZLinuxRequestFormatText("IGUI_PZLinux_Request_VehicleLocation", locationName)
             PZLinuxRequestSetConversation(self, message)
 
-            if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
+            if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
         end
 
         if self.isClosing then return end

@@ -38,8 +38,8 @@ function PZLinuxContractDialogue.create(self, contractId, contractsCompanyCodes,
     }
 end
 
-function PZLinuxContractDialogue.wait(self, dialogue, minDelay, maxDelay)
-    return PZLinux.Typing.wait(self, minDelay, maxDelay, dialogue.sleepSFX)
+function PZLinuxContractDialogue.wait(self, dialogue)
+    return PZLinux.Typing.waitProfile(self, "message", dialogue.sleepSFX)
 end
 
 function PZLinuxContractDialogue.notify(dialogue)

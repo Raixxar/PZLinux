@@ -272,10 +272,10 @@ function AtmUI:onLoginMenu()
     self.terminalCoroutine = coroutine.create(function()
         getSoundManager():PlayWorldSound("creditCard", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.loadingMessage:setName(loginBase)
-        if not PZLinux.Typing.wait(self) then return end
+        if not PZLinux.Typing.waitProfile(self, "atmPrompt") then return end
 
         self.loadingMessage:setName(passwordBase)
-        if not PZLinux.Typing.wait(self) then return end
+        if not PZLinux.Typing.waitProfile(self, "atmPrompt") then return end
         if not PZLinux.Typing.typeLabel(self, self.loadingMessage, string.rep("*", totalAsterisks), playerObj, {
             prefix = passwordBase,
             soundName = "atmBip",
@@ -289,7 +289,7 @@ function AtmUI:onLoginMenu()
             end
 
             self.loadingMessage:setName(message)
-            if not PZLinux.Typing.wait(self) then return end
+            if not PZLinux.Typing.waitProfile(self, "atmStatus") then return end
         end
 
         self.loadingMessage:setVisible(false)

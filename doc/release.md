@@ -88,6 +88,8 @@
 - Removed the redundant Poker title row; blinds, phase and pot are now grouped on the centered virtual table.
 - Blackjack now reuses the centered oval table with the dealer at the top and the player at the bottom; cards, values, bet and outcome occupy the table while HIT/STAND and the next-bet controls remain below it.
 - Contracts, Request, ATM authentication and Internet login now share one UTF-8-safe typing system with the same randomized character rhythm and conversation delays, independent of character skills and framerate.
+- Tuned the shared typing profiles: player input is slower and more natural, Request contacts pause before replying, while ATM password prompts and loading statuses no longer inherit long conversation delays.
+- Normalized all human dialogue pauses in Contracts and Request to the same randomized 80-180 profile; technical ATM and Internet status animations retain shorter dedicated delays.
 - Rebuilt the Build 42.20 mission-location catalog with shared pools for 37 package locations, 22 cargo locations, 16 manhunt locations, 7 protection locations and 36 vehicle spawn locations.
 - Reused the 37 validated package destinations for ammunition and medical mail drops.
 - Added city-aware mission pools for Irvington, Ekron, Brandenburg, Echo Creek, Riverside, Fallas Lake, Rosewood, March Ridge, Muldraugh, West Point, Valley Station, Louisville and Coalfield.

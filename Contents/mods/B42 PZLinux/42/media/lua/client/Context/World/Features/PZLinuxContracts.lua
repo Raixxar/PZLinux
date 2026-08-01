@@ -340,7 +340,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
     end
 
     local function PZLinuxContractsWaitDialogue(dialogue)
-        return PZLinux.Typing.wait(self, nil, nil, dialogue.sleepSFX)
+        return PZLinux.Typing.waitProfile(self, "message", dialogue.sleepSFX)
     end
 
     local function PZLinuxContractsNotify(dialogue)
