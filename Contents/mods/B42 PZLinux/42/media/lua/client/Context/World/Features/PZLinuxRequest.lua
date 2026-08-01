@@ -31,14 +31,6 @@ local function PZLinuxRequestFormatText(key, ...)
     return ok and result or template
 end
 
-local function PZLinuxRequestUtf8Characters(value)
-    local characters = {}
-    for character in tostring(value or ""):gmatch("([%z\1-\127\194-\244][\128-\191]*)") do
-        table.insert(characters, character)
-    end
-    return characters
-end
-
 local function PZLinuxRequestChatName(value)
     local name = tostring(value or ""):gsub("[<>]", ""):gsub("^%s+", ""):gsub("%s+$", "")
     return "[" .. name .. "] "
@@ -248,32 +240,9 @@ function requestUI:onContractId(contract)
     end
 
     local function typeText(label, text, callback)
-        local index, message = 1, ""
-        local characters = PZLinuxRequestUtf8Characters(text)
-        local totalLetters = #characters
-
-        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-
-        while index <= totalLetters do
-            if self.isClosing then return end
-
-            local soundName = "typingKeyboard" .. ZombRand(1, 10)
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-
-            message = message .. characters[index]
-            index = index + 1
-            label:setName(message)
-
-            local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
+        if PZLinux.Typing.typeLabel(self, label, text, player, { volume = globalVolume }) and callback then
+            callback()
         end
-
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        if callback then callback() end
     end
 
     self.terminalCoroutine = coroutine.create(function()
@@ -282,9 +251,8 @@ function requestUI:onContractId(contract)
 
         local sleepSFX = 1
         if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
-        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
         PZLinuxRequestSetConversation(self, message)
-        if not PZLinuxUtils_waitSeconds(200, 1000, sleepSFX, self) then return end
+        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
         if self.isClosing then return end
 
         local waitUser = ZombRand(1, 4)
@@ -302,12 +270,7 @@ function requestUI:onContractId(contract)
         PZLinuxRequestSetConversation(self, message)
         sellerName = PZLinuxRequestChatName(sellerName)
 
-        local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-        while elapsed < letterDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
+        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
 
 
         if self.isClosing then return end
@@ -316,12 +279,7 @@ function requestUI:onContractId(contract)
         message = sellerName .. PZLinuxRequestFormatText("IGUI_PZLinux_Request_LookingFor", PZLinuxRequestCatalog[contract].name)
         PZLinuxRequestSetConversation(self, message)
 
-        letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-        while elapsed < letterDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
+        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
 
         if self.isClosing then return end
 
@@ -332,12 +290,7 @@ function requestUI:onContractId(contract)
             self.typingMessage:setName("")
         end)
 
-        letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-        while elapsed < letterDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
+        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
 
         if self.isClosing then return end
 
@@ -417,12 +370,7 @@ function requestUI:onContractId(contract)
             PZLinuxRequestSetConversation(self, message)
         end
 
-        letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-        while elapsed < letterDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
+        if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
 
         if contract == 9 then
             if self.isClosing then return end
@@ -430,12 +378,7 @@ function requestUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. PZLinuxRequestFormatText("IGUI_PZLinux_Request_VehicleLocation", locationName)
             PZLinuxRequestSetConversation(self, message)
 
-            letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * sleepSFX
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
+            if not PZLinux.Typing.wait(self, nil, nil, sleepSFX) then return end
         end
 
         if self.isClosing then return end

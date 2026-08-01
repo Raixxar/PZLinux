@@ -26,30 +26,30 @@ function connectUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(_x, _y)
-        self.parent.isDragging = true
-        self.parent.initialX = self.parent:getX()
-        self.parent.initialY = self.parent:getY()
-        self.parent.mouseStartX = getMouseX()
-        self.parent.mouseStartY = getMouseY()
+    function self.topBar.onMouseDown(topBar, _x, _y)
+        topBar.parent.isDragging = true
+        topBar.parent.initialX = topBar.parent:getX()
+        topBar.parent.initialY = topBar.parent:getY()
+        topBar.parent.mouseStartX = getMouseX()
+        topBar.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(_x, _y)
-        if self.parent.isDragging then
+    function self.topBar.onMouseMove(topBar, _x, _y)
+        if topBar.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
-            local dx = curMouseX - self.parent.mouseStartX
-            local dy = curMouseY - self.parent.mouseStartY
-            self.parent:setX(self.parent.initialX + dx)
-            self.parent:setY(self.parent.initialY + dy)
+            local dx = curMouseX - topBar.parent.mouseStartX
+            local dy = curMouseY - topBar.parent.mouseStartY
+            topBar.parent:setX(topBar.parent.initialX + dx)
+            topBar.parent:setY(topBar.parent.initialY + dy)
         end
     end
 
-    function self.topBar:onMouseUp(_x, _y)
-        self.parent.isDragging = false
-        local modData = PZLinuxGetPlayer(self.parent.player):getModData()
-        modData.PZLinuxUIX = self.parent:getX()
-        modData.PZLinuxUIY = self.parent:getY()
+    function self.topBar.onMouseUp(topBar, _x, _y)
+        topBar.parent.isDragging = false
+        local modData = PZLinuxGetPlayer(topBar.parent.player):getModData()
+        modData.PZLinuxUIX = topBar.parent:getX()
+        modData.PZLinuxUIY = topBar.parent:getY()
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
@@ -109,13 +109,8 @@ function connectUI:startConnect()
         playerUsername = string.lower(player:getUsername()) .. "@aol.com"
     end
     local loginBase = "login: "
-    local currentLogin = loginBase
-    local index = 1
-    local totalLetters = string.len(playerUsername)
 
     local passwordBase = "password: "
-    local currentPassword = passwordBase
-    local passwordIndex = 1
     local totalAsterisks = 8
 
     local messageTemplates = {
@@ -148,65 +143,22 @@ function connectUI:startConnect()
 
     self.terminalCoroutine = coroutine.create(function()
         self.loadingMessage:setName(loginBase)
-        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        local initialDelay = elapsed + 40
-        while elapsed < initialDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
-
-        while index <= totalLetters do
-            if self.isClosing then return end
-
-            local randomSoundIndex = ZombRand(1, 10)
-            local soundName = "typingKeyboard" .. randomSoundIndex
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-
-            currentLogin = currentLogin .. string.sub(playerUsername, index, index)
-            index = index + 1
-            self.loadingMessage:setName(currentLogin)
-
-            local letterDelay = elapsed + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-        end
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-
-        while passwordIndex <= totalAsterisks do
-            if self.isClosing then
-                return
-            end
-
-            local randomSoundIndex = ZombRand(1, 10)
-            local soundName = "typingKeyboard" .. randomSoundIndex
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-
-            currentPassword = currentPassword .. "*"
-            passwordIndex = passwordIndex + 1
-            self.loadingMessage:setName(currentPassword)
-            local passwordDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
-            while elapsed < passwordDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-        end
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        if not PZLinux.Typing.wait(self) then return end
+        if not PZLinux.Typing.typeLabel(self, self.loadingMessage, playerUsername, player, {
+            prefix = loginBase,
+            volume = globalVolume,
+        }) then return end
+        if not PZLinux.Typing.typeLabel(self, self.loadingMessage, string.rep("*", totalAsterisks), player, {
+            prefix = passwordBase,
+            volume = globalVolume,
+        }) then return end
         getSoundManager():PlayWorldSound("upInternet", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
 
         for _, message in ipairs(messages) do
             if self.isClosing then return end
 
             self.loadingMessage:setName(message)
-            local delay = ZombRand(60, 240)
-            for _ = 1, delay do
-                if self.isClosing then return end
-                coroutine.yield()
-            end
+            if not PZLinux.Typing.wait(self) then return end
         end
 
         self.topBar:removeChild(self.loadingMessage)

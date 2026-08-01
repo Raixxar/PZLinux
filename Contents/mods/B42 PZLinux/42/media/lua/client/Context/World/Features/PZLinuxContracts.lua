@@ -307,30 +307,9 @@ function contractsUI:onContractPreview(contract, contractPreview)
     end
 
     local function typeText(label, text, callback)
-        local index, message = 1, ""
-        local totalLetters = string.len(text)
-
-        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        while index <= totalLetters do
-            if self.isClosing then return end
-
-            local soundName = "typingKeyboard" .. ZombRand(1, 10)
-            getSoundManager():PlayWorldSound(soundName, false, player:getSquare(), 0, 20, 1, true):setVolume(typingVolume)
-
-            message = message .. string.sub(text, index, index)
-            index = index + 1
-            label:setName(message)
-
-            local letterDelay = elapsed + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
+        if PZLinux.Typing.typeLabel(self, label, text, player, { volume = typingVolume }) and callback then
+            callback()
         end
-
-        getSoundManager():PlayWorldSound("typingKeyboardEnd", false, player:getSquare(), 0, 20, 1, true):setVolume(typingVolume)
-        if callback then callback() end
     end
 
     local function PZLinuxContractsCreateDialogue(contractId)
@@ -357,18 +336,11 @@ function contractsUI:onContractPreview(contract, contractPreview)
             reward = reward,
             message = nil,
             sleepSFX = sleepSFX,
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600),
         }
     end
 
     local function PZLinuxContractsWaitDialogue(dialogue)
-        local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(20, 100) * dialogue.sleepSFX
-        while dialogue.elapsed < letterDelay do
-            if self.isClosing then return false end
-            coroutine.yield()
-            dialogue.elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
-        return not self.isClosing
+        return PZLinux.Typing.wait(self, nil, nil, dialogue.sleepSFX)
     end
 
     local function PZLinuxContractsNotify(dialogue)

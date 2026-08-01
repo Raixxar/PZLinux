@@ -240,8 +240,6 @@ function AtmUI:onLoginMenu()
     local loginBase = PZLinuxGetText("IGUI_PZLinux_ATM_InsertCard")
 
     local passwordBase = PZLinuxGetText("IGUI_PZLinux_ATM_PasswordPrompt")
-    local currentPassword = passwordBase
-    local passwordIndex = 1
     local totalAsterisks = 4
 
     local messageTemplates = {
@@ -274,42 +272,16 @@ function AtmUI:onLoginMenu()
     self.terminalCoroutine = coroutine.create(function()
         getSoundManager():PlayWorldSound("creditCard", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.loadingMessage:setName(loginBase)
-
-        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        local initialDelay = elapsed + 40
-        while elapsed < initialDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
+        if not PZLinux.Typing.wait(self) then return end
 
         self.loadingMessage:setName(passwordBase)
-        local passwordElapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        local passwordDelay = passwordElapsed + 40
-        while passwordElapsed < passwordDelay do
-            if self.isClosing then return end
-            coroutine.yield()
-            passwordElapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        end
-
-        while passwordIndex <= totalAsterisks do
-            if self.isClosing then
-                return
-            end
-
-            getSoundManager():PlayWorldSound("atmBip", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            currentPassword = currentPassword .. "*"
-            passwordIndex = passwordIndex + 1
-            self.loadingMessage:setName(currentPassword)
-
-            elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            local letterDelay = elapsed + (tonumber(PZLinux.Config.UI.typingDelay) or 2)
-            while elapsed < letterDelay do
-                if self.isClosing then return end
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
-        end
+        if not PZLinux.Typing.wait(self) then return end
+        if not PZLinux.Typing.typeLabel(self, self.loadingMessage, string.rep("*", totalAsterisks), playerObj, {
+            prefix = passwordBase,
+            soundName = "atmBip",
+            endSound = false,
+            volume = globalVolume,
+        }) then return end
 
         for _, message in ipairs(messages) do
             if self.isClosing then
@@ -317,13 +289,7 @@ function AtmUI:onLoginMenu()
             end
 
             self.loadingMessage:setName(message)
-            local delay = ZombRand(60, 240)
-            for _ = 1, delay do
-                if self.isClosing then
-                    return
-                end
-                coroutine.yield()
-            end
+            if not PZLinux.Typing.wait(self) then return end
         end
 
         self.loadingMessage:setVisible(false)

@@ -11,7 +11,10 @@ PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
 }
 
 PZLinux.Config.UI = PZLinux.Config.UI or {
-    typingDelay = 2,
+    typingDelayMin = 1,
+    typingDelayMax = 3,
+    messageDelayMin = 20,
+    messageDelayMax = 100,
 }
 
 PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {

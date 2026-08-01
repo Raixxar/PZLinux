@@ -1,6 +1,7 @@
 PZLinux = PZLinux or {}
 
 require "PZLinux/PZLinuxConfig"
+require "PZLinux/PZLinuxTyping"
 require "PZLinux/PZLinuxWorldInteractions"
 require "PZLinux/PZLinuxMissionLocations"
 require "PZLinux/PZLinuxGamblingData"

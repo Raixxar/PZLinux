@@ -35,18 +35,11 @@ function PZLinuxContractDialogue.create(self, contractId, contractsCompanyCodes,
         reward = reward,
         message = nil,
         sleepSFX = sleepSFX,
-        elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600),
     }
 end
 
 function PZLinuxContractDialogue.wait(self, dialogue, minDelay, maxDelay)
-    local letterDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(minDelay or 20, maxDelay or 100) * dialogue.sleepSFX
-    while dialogue.elapsed < letterDelay do
-        if self.isClosing then return false end
-        coroutine.yield()
-        dialogue.elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-    end
-    return not self.isClosing
+    return PZLinux.Typing.wait(self, minDelay, maxDelay, dialogue.sleepSFX)
 end
 
 function PZLinuxContractDialogue.notify(dialogue)
