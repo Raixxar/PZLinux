@@ -131,7 +131,7 @@
 - Blackjack and Poker now follow the familiar two-color card convention: hearts and diamonds are rendered in red, while clubs and spades retain the green terminal color.
 - Poker now displays the player's translated current hand and an estimated win probability. The 300-sample Monte Carlo calculation uses only the player's cards, the public board and the number of active opponents, never their hidden cards.
 - Poker end-of-hand controls now reserve a full row with translation-safe button widths, preventing long labels such as `MAIN SUIVANTE` and `QUITTER LA TABLE` from overlapping.
-- The ATM main screen now presents the ATM cash first and the player's bank balance beneath it, with withdrawal and deposit controls moved lower to prevent the balance from overlapping the bank title.
+- The ATM main screen now presents the ATM cash first and the player's bank balance beneath it, with compact vertical spacing and transaction controls positioned below without overlapping the bank title.
 - Removed the Electricity-skill modifier from simulated player typing in Contracts, Request, Internet login and ATM screens; every player now uses the same short delay configured by `PZLinux.Config.UI.typingDelay`.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 
