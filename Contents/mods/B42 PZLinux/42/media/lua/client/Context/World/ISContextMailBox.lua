@@ -103,7 +103,9 @@ function MailBoxUI:onSendTakePackage()
     end)
 
     PZLinuxRequestDeliver(playerObj, self.mailbox, function(result)
-        if result and result.lost then
+        if result and result.ok == false then
+            HaloTextHelper.addBadText(playerObj, "Request delivery failed: " .. tostring(result.error or "unknown error"))
+        elseif result and result.lost then
             HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Request package delivered")

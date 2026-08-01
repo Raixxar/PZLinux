@@ -455,7 +455,7 @@ function PZLinuxApplyLocationRewardModifier(reward, z)
     local zLevel = math.abs(tonumber(z) or 0)
     if zLevel <= 0 then return reward end
 
-    return math.ceil((reward * (1 + zLevel * 0.05)) / 10) * 10
+    return reward * (1 + zLevel * 0.05)
 end
 
 PZLinuxMissionLocations = PZLinuxMissionLocations or {

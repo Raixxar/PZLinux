@@ -141,8 +141,9 @@ function PZLinuxDarkWebRemoveInventoryItems(player, itemIds)
     for index = items:size() - 1, 0, -1 do
         local item = items:get(index)
         if PZLinuxDarkWebInventoryItemMatches(item, itemIds) then
-            inventory:Remove(item)
-            removed = removed + 1
+            if PZLinuxRemoveInventoryItem(playerObj, item) then
+                removed = removed + 1
+            end
         end
     end
     return removed
@@ -189,17 +190,37 @@ function PZLinuxDarkWebApplySell(player, offerIndex, requestId)
         return { ok = false, error = "invalid_offer", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local removed = PZLinuxDarkWebRemoveInventoryItems(playerObj, offer.id)
-    if removed <= 0 then
+    local inventory = playerObj:getInventory()
+    local soldItems = {}
+    local inventoryItems = inventory:getItems()
+    for index = inventoryItems:size() - 1, 0, -1 do
+        local item = inventoryItems:get(index)
+        if PZLinuxDarkWebInventoryItemMatches(item, offer.id) then
+            table.insert(soldItems, item)
+        end
+    end
+    if #soldItems == 0 then
         return { ok = false, error = "item_not_available", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local amount = PZLinuxNormalizeMoney((offer.price or 0) * removed)
-    local parcel = playerObj:getInventory():AddItem("Base.SuspiciousPackage")
-    if parcel then
-        parcel:setName("$" .. tostring(amount))
-        parcel:getModData().PZLinuxDarkWebSale = true
-        parcel:getModData().PZLinuxDarkWebSaleAmount = amount
+    local amount = PZLinuxNormalizeMoney((offer.price or 0) * #soldItems)
+    local parcel = inventory:AddItem("Base.SuspiciousPackage")
+    if not parcel then
+        return { ok = false, error = "sale_parcel_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    parcel:setName("$" .. tostring(amount))
+    parcel:getModData().PZLinuxDarkWebSale = true
+    parcel:getModData().PZLinuxDarkWebSaleAmount = amount
+    if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
+        inventory:Remove(parcel)
+        return { ok = false, error = "sale_parcel_sync_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local removed = 0
+    for _, soldItem in ipairs(soldItems) do
+        if PZLinuxRemoveInventoryItem(playerObj, soldItem) then
+            removed = removed + 1
+        end
     end
 
     if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
@@ -242,7 +263,7 @@ function PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId)
             if packageAmount and packageAmount > 0 then
                 amount = amount + PZLinuxNormalizeMoney(packageAmount)
                 redeemed = redeemed + 1
-                inventory:Remove(item)
+                PZLinuxRemoveInventoryItem(playerObj, item)
             end
         end
     end
@@ -312,7 +333,10 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
             return { ok = false, error = "invalid_pending_item", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
         end
 
-        PZLinuxSyncAddedInventoryItem(playerObj, parcel)
+        if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
+            inventory:Remove(parcel)
+            return { ok = false, error = "parcel_sync_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
         delivered = delivered + batchDelivered
         table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
     end

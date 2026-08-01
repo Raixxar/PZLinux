@@ -9,8 +9,55 @@ function PZLinuxNormalizeMoney(amount)
 end
 
 function PZLinux.Economy.applyReputationDelta(currentReputation, amount)
-    currentReputation = tonumber(currentReputation) or 1
-    return math.max(1, currentReputation + (tonumber(amount) or 0))
+    local config = PZLinux.Config and PZLinux.Config.Reputation or {}
+    local baseline = tonumber(config.baseline) or 1
+    local minimum = tonumber(config.minimum) or -99
+    local maximum = math.max(minimum, tonumber(config.maximum) or 200)
+    currentReputation = tonumber(currentReputation) or baseline
+    return math.max(minimum, math.min(maximum, currentReputation + (tonumber(amount) or 0)))
+end
+
+function PZLinux.Economy.decayReputation(currentReputation, amount)
+    local config = PZLinux.Config and PZLinux.Config.Reputation or {}
+    local baseline = tonumber(config.baseline) or 1
+    currentReputation = tonumber(currentReputation) or baseline
+    amount = math.max(0, tonumber(amount) or 0.001)
+    if currentReputation > baseline then
+        return math.max(baseline, currentReputation - amount)
+    end
+    if currentReputation < baseline then
+        return math.min(baseline, currentReputation + amount)
+    end
+    return baseline
+end
+
+function PZLinux.Economy.contractCancelPenalty()
+    local config = PZLinux.Config and PZLinux.Config.Reputation or {}
+    return math.max(0, tonumber(config.contractCancelPenalty) or 10)
+end
+
+function PZLinux.Economy.reputationPurchaseMultiplier(reputation)
+    local config = PZLinux.Config and PZLinux.Config.Reputation or {}
+    local baseline = tonumber(config.baseline) or 1
+    reputation = tonumber(reputation) or baseline
+
+    if reputation < baseline then
+        local rate = math.max(0, tonumber(config.purchaseSurchargePerPoint) or 0.01)
+        local maximum = math.max(0, tonumber(config.maximumPurchaseSurcharge) or 1.00)
+        return 1 + math.min(maximum, (baseline - reputation) * rate)
+    end
+
+    local rate = math.max(0, tonumber(config.purchaseDiscountPerPoint) or 0.0025)
+    local maximum = math.max(0, math.min(0.95, tonumber(config.maximumPurchaseDiscount) or 0.25))
+    return 1 - math.min(maximum, (reputation - baseline) * rate)
+end
+
+function PZLinuxGetReputationPurchaseMultiplier(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 1 end
+    local modData = playerObj:getModData()
+    local reputation = modData and modData.pzlinux and modData.pzlinux.player and modData.pzlinux.player.reputation
+    return PZLinux.Economy.reputationPurchaseMultiplier(reputation)
 end
 
 function PZLinux.Economy.mailDelayMax(reputation)
@@ -18,9 +65,56 @@ function PZLinux.Economy.mailDelayMax(reputation)
     return math.max(49, math.floor(30 * 24 + 1 - playerRep))
 end
 
+function PZLinux.Economy.scarcityMultiplier(worldAgeHours)
+    local config = PZLinux.Config and PZLinux.Config.Economy or {}
+    local periodHours = math.max(1, tonumber(config.scarcityPeriodHours) or 2190)
+    local maximum = math.max(1, math.floor(tonumber(config.scarcityMaximumMultiplier) or 8))
+    local ageHours = tonumber(worldAgeHours)
+    if ageHours == nil then
+        ageHours = getGameTime and getGameTime():getWorldAgeHours() or 0
+    end
+    return math.min(maximum, math.max(1, math.ceil(math.max(0, ageHours) / periodHours)))
+end
+
+function PZLinux.Economy.priceRoundingStep(amount)
+    local config = PZLinux.Config and PZLinux.Config.Economy or {}
+    local tiers = config.priceRoundingTiers or {
+        { maximum = 99, step = 5 },
+        { maximum = 999, step = 10 },
+        { maximum = 9999, step = 50 },
+        { maximum = 49999, step = 100 },
+        { step = 500 },
+    }
+    amount = math.abs(tonumber(amount) or 0)
+
+    for _, tier in ipairs(tiers) do
+        local maximum = tonumber(tier.maximum)
+        if not maximum or amount <= maximum then
+            return math.max(1, math.floor(tonumber(tier.step) or 1))
+        end
+    end
+    return 1
+end
+
+function PZLinux.Economy.roundPrice(amount, direction)
+    amount = tonumber(amount) or 0
+    if amount <= 0 then return 0 end
+
+    local step = PZLinux.Economy.priceRoundingStep(amount)
+    local units = amount / step
+    local roundedUnits
+    if direction == "buy" then
+        roundedUnits = math.ceil(units)
+    elseif direction == "sell" then
+        roundedUnits = math.floor(units)
+    else
+        roundedUnits = math.floor(units + 0.5)
+    end
+    return math.max(1, math.floor(roundedUnits * step))
+end
+
 function PZLinuxDarkWebGetHourMultiplier()
-    if not getGameTime then return 1 end
-    return math.max(1, math.ceil(getGameTime():getWorldAgeHours() / 2190))
+    return PZLinux.Economy.scarcityMultiplier()
 end
 
 function PZLinuxDarkWebGetPurchaseMultiplier()
@@ -44,7 +138,10 @@ function PZLinuxDarkWebCalculateBuyPrice(player, itemData)
     local perkLevel = playerObj:getPerkLevel(Perks.PlantScavenging)
     local buyMaxMultiplier = 3.0 - (2.0 * perkLevel / 10)
     local maxPrice = math.max(itemData.Price + 1, math.ceil(itemData.Price * buyMaxMultiplier))
-    return math.ceil(ZombRand(itemData.Price, maxPrice) / 10) * 10 * PZLinuxDarkWebGetHourMultiplier() * PZLinuxDarkWebGetPurchaseMultiplier()
+    local price = math.ceil(ZombRand(itemData.Price, maxPrice) / 10) * 10
+    price = price * PZLinuxDarkWebGetHourMultiplier() * PZLinuxDarkWebGetPurchaseMultiplier()
+    price = price * PZLinuxGetReputationPurchaseMultiplier(playerObj)
+    return PZLinux.Economy.roundPrice(price, "buy")
 end
 
 function PZLinuxDarkWebCalculateSellPrice(player, itemData)
@@ -56,7 +153,8 @@ function PZLinuxDarkWebCalculateSellPrice(player, itemData)
     local sellMaxMultiplier = 0.50 + (0.025 * perkLevel)
     local minPrice = math.max(1, math.floor(itemData.Price * sellMinMultiplier))
     local maxPrice = math.max(minPrice + 1, math.ceil(itemData.Price * sellMaxMultiplier))
-    return math.ceil(ZombRand(minPrice, maxPrice)) * PZLinuxDarkWebGetSaleMultiplier()
+    local price = ZombRand(minPrice, maxPrice) * PZLinuxDarkWebGetSaleMultiplier()
+    return PZLinux.Economy.roundPrice(price, "sell")
 end
 
 function PZLinuxRequestsCalculateUnitPrice(player, definition)
@@ -67,18 +165,15 @@ function PZLinuxRequestsCalculateUnitPrice(player, definition)
     if playerObj then
         skillLevel = playerObj:getPerkLevel(Perks.PlantScavenging) or 0
     end
-    local worldAgeMultiplier = 1
-    if getGameTime then
-        worldAgeMultiplier = math.ceil(getGameTime():getWorldAgeHours() / 2190 + 1)
-    end
+    local worldAgeMultiplier = PZLinux.Economy.scarcityMultiplier()
     local sandboxMultiplier = 1.0
     if SandboxVars and SandboxVars.PZLinux and SandboxVars.PZLinux.PurchasePriceMultiplier then
         sandboxMultiplier = SandboxVars.PZLinux.PurchasePriceMultiplier
     end
     local discountPercent = math.min(15, math.max(0, skillLevel + 1))
     local basePrice = math.ceil((definition.price or 0) * worldAgeMultiplier * sandboxMultiplier)
-    local requestPrice = math.ceil(basePrice * (1 - discountPercent / 100))
-    return math.ceil(requestPrice / 10) * 10
+    local requestPrice = math.ceil(basePrice * (1 - discountPercent / 100) * PZLinuxGetReputationPurchaseMultiplier(playerObj))
+    return PZLinux.Economy.roundPrice(requestPrice, "buy")
 end
 
 function PZLinuxTradingNormalizePrice(price)

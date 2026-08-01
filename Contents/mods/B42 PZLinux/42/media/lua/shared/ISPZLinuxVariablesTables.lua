@@ -13,6 +13,7 @@ require "PZLinux/PZLinuxMailData"
 require "PZLinux/PZLinuxDarkWebData"
 require "PZLinux/PZLinuxTradingData"
 require "PZLinux/PZLinuxEconomy"
+require "PZLinux/PZLinuxInventoryCash"
 require "PZLinux/PZLinuxPokerConfig"
 require "PZLinux/PZLinuxPokerEngine"
 
@@ -161,26 +162,33 @@ function PZLinuxTransmitPlayerModData(player)
     end
 end
 
-function PZLinuxSyncAddedInventoryItem(player, item)
-    local playerObj = PZLinuxGetPlayer(player)
-    if not playerObj or not item then return false end
+function PZLinuxSyncAddedContainerItem(container, item)
+    if not container or not item then return false end
     if isServer and isServer() and sendAddItemToContainer then
-        sendAddItemToContainer(playerObj:getInventory(), item)
+        sendAddItemToContainer(container, item)
     end
     return true
 end
 
+function PZLinuxRemoveContainerItem(container, item)
+    if not container or not item then return false end
+    if isServer and isServer() and sendRemoveItemFromContainer then
+        sendRemoveItemFromContainer(container, item)
+    end
+    container:Remove(item)
+    return true
+end
+
+function PZLinuxSyncAddedInventoryItem(player, item)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return false end
+    return PZLinuxSyncAddedContainerItem(playerObj:getInventory(), item)
+end
+
 function PZLinuxRemoveInventoryItem(player, item)
     local playerObj = PZLinuxGetPlayer(player)
-    if not playerObj or not item then return false end
-
-    local inventory = playerObj:getInventory()
-    if not inventory then return false end
-    if isServer and isServer() and sendRemoveItemFromContainer then
-        sendRemoveItemFromContainer(inventory, item)
-    end
-    inventory:Remove(item)
-    return true
+    if not playerObj then return false end
+    return PZLinuxRemoveContainerItem(playerObj:getInventory(), item)
 end
 
 function PZLinuxLoadBankBalance(player)
@@ -293,16 +301,26 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
     if hacking and not PZLinux.hackingSessions[playerKey] then
         local inventory = playerObj:getInventory()
         local restored = 0
+        local pendingCardTypes = {}
         if inventory then
             for _, fullType in ipairs(hacking.cardTypes or {}) do
                 if fullType then
-                    inventory:AddItem(fullType)
-                    restored = restored + 1
+                    local card = inventory:AddItem(fullType)
+                    if card and PZLinuxSyncAddedInventoryItem(playerObj, card) then
+                        restored = restored + 1
+                    else
+                        if card then inventory:Remove(card) end
+                        table.insert(pendingCardTypes, fullType)
+                    end
                 end
             end
         end
         applied.hackingCards = restored
-        sessions.hacking = nil
+        if #pendingCardTypes == 0 then
+            sessions.hacking = nil
+        else
+            hacking.cardTypes = pendingCardTypes
+        end
     end
 
     local poker = sessions.poker
@@ -408,84 +426,6 @@ function PZLinuxFindAtmObject(atmRef)
     return nil
 end
 
-function PZLinuxCountInventoryCash(player)
-    local playerObj = PZLinuxGetPlayer(player)
-    if not playerObj then return 0 end
-
-    local inv = playerObj:getInventory()
-    if not inv then return 0 end
-
-    local total = 0
-    for i = 0, inv:getItems():size() - 1 do
-        local item = inv:getItems():get(i)
-        if item then
-            if item:getFullType() == "Base.MoneyBundle" then
-                total = total + 100
-            elseif item:getFullType() == "Base.Money" or item:getType() == "Money" then
-                total = total + (tonumber(item:getCount()) or 1)
-            end
-        end
-    end
-
-    return total
-end
-
-function PZLinuxAddInventoryCash(player, amount)
-    local playerObj = PZLinuxGetPlayer(player)
-    amount = PZLinuxNormalizeMoney(amount)
-    if not playerObj or amount <= 0 then return 0 end
-
-    local inv = playerObj:getInventory()
-    local added = 0
-    while amount >= 100 do
-        inv:AddItem("Base.MoneyBundle")
-        amount = amount - 100
-        added = added + 100
-    end
-    for _ = 1, amount do
-        inv:AddItem("Base.Money")
-        added = added + 1
-    end
-
-    return added
-end
-
-function PZLinuxRemoveInventoryCash(player, amount)
-    local playerObj = PZLinuxGetPlayer(player)
-    amount = PZLinuxNormalizeMoney(amount)
-    if not playerObj or amount <= 0 then return 0 end
-
-    local inv = playerObj:getInventory()
-    local totalCash = PZLinuxCountInventoryCash(playerObj)
-    if totalCash < amount then return 0 end
-
-    local remaining = amount
-    while remaining >= 100 do
-        local bundle = inv:FindAndReturn("Base.MoneyBundle")
-        if not bundle then break end
-        inv:Remove(bundle)
-        remaining = remaining - 100
-    end
-
-    if remaining > 0 and PZLinuxCountInventoryCash(playerObj) < remaining then
-        local bundle = inv:FindAndReturn("Base.MoneyBundle")
-        if bundle then
-            inv:Remove(bundle)
-            for _ = 1, 100 do
-                inv:AddItem("Base.Money")
-            end
-        end
-    end
-
-    for _ = 1, remaining do
-        local money = inv:FindAndReturn("Base.Money")
-        if not money then return amount - remaining end
-        inv:Remove(money)
-    end
-
-    return amount
-end
-
 function PZLinuxApplyAtmWithdrawal(player, atmRef, amount, requestId)
     amount = PZLinuxNormalizeMoney(amount)
     local atmObject = PZLinuxFindAtmObject(atmRef)
@@ -505,9 +445,13 @@ function PZLinuxApplyAtmWithdrawal(player, atmRef, amount, requestId)
         return { ok = false, error = "not_enough_atm_cash", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash }
     end
 
+    local added = PZLinuxAddInventoryCash(player, amount)
+    if added ~= amount then
+        return { ok = false, error = "cash_add_failed", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash }
+    end
+
     local balance = PZLinuxSetBankBalance(player, previousBalance - amount)
     atmCash = PZLinuxAtmSaveCash(atmObject, atmCash - amount)
-    PZLinuxAddInventoryCash(player, amount)
 
     return { ok = true, type = "withdrawal", requestId = requestId, amount = amount, balance = balance, previousBalance = previousBalance, atmCash = atmCash }
 end
@@ -1134,6 +1078,10 @@ if Events and Events.OnServerCommand then
                 local modData = playerObj and playerObj:getModData()
                 if modData then modData.PZLinuxContractId = args.worldContractId end
             end
+            if args and args.reputation ~= nil then
+                local _, pzlinux = PZLinuxGetModData(PZLinuxGetPlayer())
+                if pzlinux then pzlinux.player.reputation = tonumber(args.reputation) or pzlinux.player.reputation end
+            end
             if (command == "PZLinuxContractSyncResult"
             or command == "PZLinuxContractAcceptResult"
             or command == "PZLinuxContractDepositResult"
@@ -1310,22 +1258,41 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
 
     local delivered = 0
     local inventory = playerObj:getInventory()
+    if not inventory then
+        return { ok = false, error = "missing_inventory", requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
     while #modData.PZLinuxOnItemRequest > 0 do
-        local parcel = inventory:AddItem("Base.Parcel_Large")
-        if parcel then
-            local parcelInv = parcel:getInventory()
-            local wrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
-            local batch = wrapper and wrapper[1]
-            if batch and type(batch.items) == "table" then
-                for _, item in ipairs(batch.items) do
-                    if item and item.name then
-                        parcelInv:AddItem(item.name)
-                        delivered = delivered + 1
-                    end
-                end
-            end
+        local wrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
+        local batch = wrapper and wrapper[1]
+        if not batch or type(batch.items) ~= "table" or #batch.items == 0 then
+            return { ok = false, error = "invalid_pending_request", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
         end
+
+        local parcel = inventory:AddItem("Base.Parcel_Large")
+        if not parcel then
+            return { ok = false, error = "parcel_creation_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
+
+        local parcelInv = parcel:getInventory()
+        local batchDelivered = 0
+        for _, item in ipairs(batch.items) do
+            local created = item and item.name and parcelInv:AddItem(item.name)
+            if not created then
+                inventory:Remove(parcel)
+                return { ok = false, error = "item_creation_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+            end
+            batchDelivered = batchDelivered + 1
+        end
+
+        if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
+            inventory:Remove(parcel)
+            return { ok = false, error = "parcel_sync_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
+
         table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
+        delivered = delivered + batchDelivered
+        PZLinuxTransmitPlayerModData(playerObj)
     end
     modData.PZLinuxActiveRequest = 0
     PZLinuxTransmitPlayerModData(playerObj)
@@ -1363,7 +1330,10 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
     key:setName("Pirated Key #" .. uniqueKeyId)
     vehicle:setKeyId(uniqueKeyId)
     vehicle:repair()
-    playerObj:getInventory():AddItem(key)
+    local keyItem = playerObj:getInventory():AddItem(key)
+    if keyItem then
+        PZLinuxSyncAddedInventoryItem(playerObj, keyItem)
+    end
     modData.PZLinuxOnItemRequestCar = 0
     modData.PZLinuxActiveRequest = 0
     PZLinuxTransmitPlayerModData(playerObj)
@@ -1750,9 +1720,8 @@ function PZLinuxContractsBuildContract(definition)
     PZLinuxTradingSyncToWorldHour()
     local history = PZLinuxTradingGetCompanyHistory(companyCode) or {}
     local lastPrice = tonumber(history[#history]) or 1
-    local hourMultiplier = getGameTime and math.ceil(getGameTime():getWorldAgeHours() / 2190 + 1) or 1
-    local maxRewardBase = math.max(lastPrice + 1, math.ceil(lastPrice * hourMultiplier))
-    local reward = math.ceil((ZombRand(lastPrice, maxRewardBase) + definition.reward) / 10) * 10
+    local maxRewardBase = lastPrice + 1
+    local reward = PZLinux.Economy.roundPrice(ZombRand(lastPrice, maxRewardBase) + definition.reward, "nearest")
 
     return {
         id = definition.id,
@@ -2366,7 +2335,13 @@ function PZLinuxContractsApplyCancel(player, requestId)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
     local modData = playerObj:getModData()
+    if (tonumber(modData.PZLinuxActiveContract) or 0) ~= 1 then
+        return { ok = false, error = "no_active_contract", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
     local dataName = modData.PZLinuxContractCompanyUp
+    local reputationPenalty = PZLinux.Economy.contractCancelPenalty()
+    local reputation = PZLinuxApplyReputationDelta(playerObj, -reputationPenalty)
     PZLinuxContractsUpdateCompanyPrice(dataName, "down")
     PZLinuxContractsMarkWorldContract(modData.PZLinuxContractId, "cancelled", playerObj)
     PZLinuxContractsRemoveContractNote(playerObj)
@@ -2374,7 +2349,13 @@ function PZLinuxContractsApplyCancel(player, requestId)
     modData.PZLinuxUIOpenMenu = 7
     PZLinuxTransmitPlayerModData(playerObj)
 
-    return { ok = true, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    return {
+        ok = true,
+        requestId = requestId,
+        balance = PZLinuxLoadBankBalance(playerObj),
+        reputation = reputation,
+        reputationPenalty = reputationPenalty,
+    }
 end
 
 function PZLinuxContractsBagContainsCorpse(bag)
@@ -2588,7 +2569,14 @@ function PZLinuxApplyReputationDelta(player, amount)
 end
 
 function PZLinuxApplyReputationDecay(player, amount)
-    return PZLinuxApplyReputationDelta(player, -(tonumber(amount) or 0.001))
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 1 end
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    if not pzlinux then return 1 end
+
+    pzlinux.player.reputation = PZLinux.Economy.decayReputation(pzlinux.player.reputation, amount)
+    PZLinuxTransmitPlayerModData(playerObj)
+    return pzlinux.player.reputation
 end
 
 function PZLinuxContractsTransmitSquareObject(square, obj)
@@ -3385,8 +3373,9 @@ function PZLinuxMailRemoveInventoryItems(player, fullType, quantity)
     for index = inventory:getItems():size() - 1, 0, -1 do
         local item = inventory:getItems():get(index)
         if PZLinuxMailInventoryItemMatches(item, fullType) then
-            inventory:Remove(item)
-            removed = removed + 1
+            if PZLinuxRemoveInventoryItem(playerObj, item) then
+                removed = removed + 1
+            end
             if removed >= quantity then break end
         end
     end
@@ -3404,28 +3393,47 @@ function PZLinuxMailGiveReward(player)
     local parcelInv = parcel:getInventory()
     local bonusRand = ZombRand(1, 6)
     local added = 0
+    local function PZLinuxMailAddRewardItem(fullType)
+        local item = parcelInv:AddItem(fullType)
+        if not item then return false end
+        added = added + 1
+        return true
+    end
+
     for _ = 1, bonusRand do
         local entry = PZLinuxDarkWebItemsTable[ZombRand(#PZLinuxDarkWebItemsTable) + 1]
         if entry and entry.id and #entry.id > 0 then
             local one = entry.id[ZombRand(#entry.id) + 1]
-            parcelInv:AddItem(one)
-            added = added + 1
+            if not PZLinuxMailAddRewardItem(one) then
+                inventory:Remove(parcel)
+                return 0, nil
+            end
         end
     end
 
     if bonusRand == 1 then
-        parcelInv:AddItem("Base.Revolver")
-        added = added + 1
+        if not PZLinuxMailAddRewardItem("Base.Revolver") then
+            inventory:Remove(parcel)
+            return 0, nil
+        end
         for _ = 1, ZombRand(100, 301) do
-            parcelInv:AddItem("Base.Money")
-            added = added + 1
+            if not PZLinuxMailAddRewardItem("Base.Money") then
+                inventory:Remove(parcel)
+                return 0, nil
+            end
         end
     elseif bonusRand == 2 then
-        parcelInv:AddItem("Base.Revolver")
-        added = added + 1
+        if not PZLinuxMailAddRewardItem("Base.Revolver") then
+            inventory:Remove(parcel)
+            return 0, nil
+        end
     end
 
-    return added
+    if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
+        inventory:Remove(parcel)
+        return 0, nil
+    end
+    return added, parcel
 end
 
 function PZLinuxMailApplyComplete(player, mailId, requestId)
@@ -3449,12 +3457,17 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
         return { ok = false, error = "missing_items", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, available = available }
     end
 
+    local rewardItems, rewardParcel = PZLinuxMailGiveReward(playerObj)
+    if not rewardParcel then
+        return { ok = false, error = "reward_creation_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity }
+    end
+
     local removed = PZLinuxMailRemoveInventoryItems(playerObj, mail.object, quantity)
     if removed < quantity then
+        PZLinuxRemoveInventoryItem(playerObj, rewardParcel)
         return { ok = false, error = "remove_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, removed = removed }
     end
 
-    local rewardItems = PZLinuxMailGiveReward(playerObj)
     local reputation = PZLinuxApplyReputationDelta(playerObj, 10)
     mail.status = 10
     PZLinuxTransmitPlayerModData(playerObj)
@@ -3543,8 +3556,9 @@ function PZLinuxHackingRemoveCards(player, maxCount)
         if PZLinuxHackingIsCard(item) then
             firstName = firstName or item:getName()
             table.insert(cardTypes, item:getFullType())
-            inventory:Remove(item)
-            removed = removed + 1
+            if PZLinuxRemoveInventoryItem(playerObj, item) then
+                removed = removed + 1
+            end
             if removed >= maxCount then break end
         end
     end

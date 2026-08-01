@@ -564,7 +564,7 @@ est souhaite et a valider les captures definitives du Workshop.
 
 - [ ] Nettoyer les warnings Luacheck cosmetiques.
 - [ ] Rendre les scripts `tools/*.sh` executables ou documenter `bash tools/...`.
-- [ ] Ajouter un changelog 1.0.0 lisible a partir de `doc/release.md`.
+- [x] Separer les notes publiques `RELEASE.md` du journal technique `CHANGELOG.md`.
 - [ ] Mettre a jour les captures Workshop des nouvelles features.
 - [ ] Faire une sauvegarde longue de plusieurs semaines monde.
 

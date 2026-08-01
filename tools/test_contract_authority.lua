@@ -12,11 +12,14 @@ local function PZLinuxTestRead(path)
     return content
 end
 
-function ZombRand(minimum, maximum)
+rawset(_G, "ZombRand", function(_minimum, maximum)
     if maximum == nil then return 0 end
     return maximum - 1
-end
+end)
 
+PZLinuxDarkWebItemsTable = {}
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxConfig.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxEconomy.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractsData.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxMissionLocations.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractRequestData.lua")
@@ -145,7 +148,7 @@ end
 local depositBlock = variables:match("function PZLinuxContractsApplyDeposit.-\nend")
 PZLinuxTestAssert(depositBlock and depositBlock:find("PZLinuxRemoveInventoryItem"),
     "mailbox deposits must synchronize removal of delivered contract items")
-PZLinuxTestAssert(variables:find("sendRemoveItemFromContainer%(inventory, item%)"),
+PZLinuxTestAssert(variables:find("sendRemoveItemFromContainer%(container, item%)"),
     "server inventory removals must be sent to the owning client")
 PZLinuxTestAssert(contextMenu:find("packageInteractionRadius%) or 5"),
     "package context interactions must keep the five-tile fallback radius")

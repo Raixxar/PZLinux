@@ -87,8 +87,10 @@ PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and #modData.PZLi
     "a failed delivery must preserve the pending order")
 
 local variables = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
-PZLinuxTestAssert(variables:find("sendAddItemToContainer%(playerObj:getInventory%(%), item%)"),
-    "server-created inventory items must use the B42 inventory packet")
+PZLinuxTestAssert(variables:find("sendAddItemToContainer%(container, item%)"),
+    "server-created inventory items must use the B42 container packet")
+PZLinuxTestAssert(variables:find("PZLinuxSyncAddedContainerItem%(playerObj:getInventory%(%), item%)"),
+    "player inventory synchronization must delegate to the container packet helper")
 
 for _, uiPath in ipairs({
     "/client/Context/World/ISContextMailBox.lua",

@@ -1,7 +1,7 @@
 PZLinux = PZLinux or {}
 
 local function PZLinuxContractsRoundReward(value)
-    return math.ceil((tonumber(value) or 0) / 10) * 10
+    return PZLinux.Economy.roundPrice(value, "nearest")
 end
 
 local function PZLinuxContractsMissionRequest(entries, minimum, maximum)
@@ -72,7 +72,7 @@ function PZLinuxContractsBuildMission(selectedContract)
         questName = tostring(selectedContract.questName or ""),
         cityId = tonumber(selectedContract.cityId) or 0,
         difficulty = tonumber(selectedContract.difficulty) or 0,
-        reward = PZLinuxContractsRoundReward(selectedContract.reward),
+        reward = tonumber(selectedContract.reward) or 0,
         locationId = "",
         locationPool = "",
         locationX = 0,
@@ -101,12 +101,12 @@ function PZLinuxContractsBuildMission(selectedContract)
         mission.locationCity = tostring(location.city or PZLinuxContractCities[mission.cityId] or "")
         mission.locationDescription = tostring(location.rawDescription or location.description or "")
         mission.locationDescriptionKey = tostring(location.descriptionKey or "")
-        mission.reward = PZLinuxContractsRoundReward(PZLinuxApplyLocationRewardModifier(mission.reward, mission.locationZ))
+        mission.reward = PZLinuxApplyLocationRewardModifier(mission.reward, mission.locationZ)
     end
 
     if contractId == 1 then
         mission.zombieToKill = ZombRand(1, 6) * 10
-        mission.reward = PZLinuxContractsRoundReward(mission.reward + mission.zombieToKill * 100)
+        mission.reward = mission.reward + mission.zombieToKill * 100
     elseif contractId == 3 then
         mission.targetName = PZLinuxContractsRandomTargetName()
     elseif contractId == 5 then
@@ -115,25 +115,26 @@ function PZLinuxContractsBuildMission(selectedContract)
         mission.info = request.baseName
         mission.infoName = request.name
         mission.infoCount = count
-        mission.reward = PZLinuxContractsRoundReward(mission.reward * request.delta)
+        mission.reward = mission.reward * request.delta
     elseif contractId == 9 then
         local request, count = PZLinuxContractsMissionRequest(PZLinuxContractMedicalRequests, 1, 10)
         if not request then return nil, "missing_contract_request" end
         mission.info = request.baseName
         mission.infoName = request.name
         mission.infoCount = count
-        mission.reward = PZLinuxContractsRoundReward(mission.reward * request.delta)
+        mission.reward = mission.reward * request.delta
     elseif contractId == 10 then
         local request, count = PZLinuxContractsMissionRequest(PZLinuxContractWeaponRequests, 1, 5)
         if not request then return nil, "missing_contract_request" end
         mission.info = request.baseName
         mission.infoName = request.name
         mission.infoCount = count
-        mission.reward = PZLinuxContractsRoundReward(mission.reward * request.delta)
+        mission.reward = mission.reward * request.delta
     elseif contractId == 11 or contractId == 12 then
         mission.infoCount = 1
     end
 
+    mission.reward = PZLinuxContractsRoundReward(mission.reward)
     mission.note, mission.fullNote = PZLinuxContractsMissionNote(mission)
     return mission
 end
