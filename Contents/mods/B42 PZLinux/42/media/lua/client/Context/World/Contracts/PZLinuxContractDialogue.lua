@@ -13,9 +13,6 @@ end
 function PZLinuxContractDialogue.create(self, contractId, contractsCompanyCodes, contractsCompanyReward)
     local playerObj = PZLinuxGetPlayer(self.player)
     local modData = playerObj:getModData()
-    local sleepSFX = 1
-    if modData.PZLinuxUISFX == 0 then sleepSFX = 0.1 end
-
     local preview = self.contractPreview or {}
     local companyCode = tostring(preview.code or contractsCompanyCodes[contractId] or "")
     local reward = tonumber(preview.reward)
@@ -34,12 +31,11 @@ function PZLinuxContractDialogue.create(self, contractId, contractsCompanyCodes,
         sellerName = "<" .. companyCode .. "> ",
         reward = reward,
         message = nil,
-        sleepSFX = sleepSFX,
     }
 end
 
-function PZLinuxContractDialogue.wait(self, dialogue)
-    return PZLinux.Typing.waitProfile(self, "message", dialogue.sleepSFX)
+function PZLinuxContractDialogue.wait(self)
+    return PZLinux.Typing.waitProfile(self, "message")
 end
 
 function PZLinuxContractDialogue.notify(dialogue)

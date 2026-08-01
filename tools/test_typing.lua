@@ -1,17 +1,17 @@
 local scriptPath = debug.getinfo(1, "S").source:sub(2)
 local repoRoot = scriptPath:match("^(.*)/tools/test_typing.lua$") or "."
 
-local worldSeconds = 0
+local worldMilliseconds = 0
 local randomRanges = {}
 local playedSounds = {}
 
 PZLinux = {
     Config = {
         UI = {
-            typingDelayMin = 2,
-            typingDelayMax = 5,
-            messageDelayMin = 80,
-            messageDelayMax = 180,
+            typingDelayMinMs = 90,
+            typingDelayMaxMs = 180,
+            messageDelayMinMs = 1800,
+            messageDelayMaxMs = 4200,
         },
     },
 }
@@ -24,9 +24,13 @@ end
 function getGameTime()
     return {
         getWorldAgeHours = function()
-            return worldSeconds / 3600
+            return worldMilliseconds / 3600000
         end,
     }
+end
+
+function getTimestampMs()
+    return worldMilliseconds
 end
 
 function getSoundManager()
@@ -51,7 +55,7 @@ local function runCoroutine(callback)
     while coroutine.status(thread) ~= "dead" do
         local ok, errorMessage = coroutine.resume(thread)
         if not ok then error(errorMessage) end
-        worldSeconds = worldSeconds + 1
+        worldMilliseconds = worldMilliseconds + 25
     end
 end
 
@@ -74,16 +78,16 @@ assertEqual(#label.values, 3, "UTF-8 characters are appended atomically")
 assertEqual(label.values[1], "> ", "prefix is displayed first")
 assertEqual(label.values[2], "> é", "accented character remains intact")
 assertEqual(label.values[3], "> é漢", "Asian character remains intact")
-assertEqual(randomRanges[1][1], 2, "typing minimum delay")
-assertEqual(randomRanges[1][2], 6, "typing maximum delay is inclusive")
+assertEqual(randomRanges[1][1], 90, "typing minimum delay")
+assertEqual(randomRanges[1][2], 181, "typing maximum delay is inclusive")
 
 local profileCompleted
 runCoroutine(function()
     profileCompleted = PZLinux.Typing.waitProfile({ isClosing = false }, "message")
 end)
 assertEqual(profileCompleted, true, "conversation profile completes")
-assertEqual(randomRanges[3][1], 80, "conversation minimum delay")
-assertEqual(randomRanges[3][2], 181, "conversation maximum delay is inclusive")
+assertEqual(randomRanges[3][1], 1800, "conversation minimum delay")
+assertEqual(randomRanges[3][2], 4201, "conversation maximum delay is inclusive")
 
 local closingUi = { isClosing = false }
 local interrupted

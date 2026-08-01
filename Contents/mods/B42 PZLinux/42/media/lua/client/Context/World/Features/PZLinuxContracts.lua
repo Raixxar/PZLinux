@@ -117,24 +117,6 @@ function contractsUI:initialise()
     self.topBar:addChild(self.titleLabel)
 
     local modData = PZLinuxGetPlayer(self.player):getModData()
-    if modData.PZLinuxUISFX == 0 then
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    else
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    end
-
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
     self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
@@ -315,9 +297,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
     local function PZLinuxContractsCreateDialogue(contractId)
         local playerObj = PZLinuxGetPlayer(self.player)
         local modData = playerObj:getModData()
-        local sleepSFX = 1
-        if modData.PZLinuxUISFX == 0 then sleepSFX = 0.1 end
-
         local companyCode = tostring(contractPreview.code or contractsCompanyCodes[contractId] or "")
         local reward = tonumber(contractPreview.reward)
             or tonumber(contractsCompanyReward[contractId])
@@ -335,12 +314,11 @@ function contractsUI:onContractPreview(contract, contractPreview)
             sellerName = "<" .. companyCode .. "> ",
             reward = reward,
             message = nil,
-            sleepSFX = sleepSFX,
         }
     end
 
-    local function PZLinuxContractsWaitDialogue(dialogue)
-        return PZLinux.Typing.waitProfile(self, "message", dialogue.sleepSFX)
+    local function PZLinuxContractsWaitDialogue(_dialogue)
+        return PZLinux.Typing.waitProfile(self, "message")
     end
 
     local function PZLinuxContractsNotify(dialogue)
@@ -752,31 +730,6 @@ function contractsUI:onCloseX(_button)
     PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 
-function contractsUI:onSFXOn(_button)
-    local modData = PZLinuxGetPlayer(self.player):getModData()
-    modData.PZLinuxUISFX = 0
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
-
-function contractsUI:onSFXOff(_button)
-    local modData = PZLinuxGetPlayer(self.player):getModData()
-    modData.PZLinuxUISFX = 1
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
 
 
 function contractsMenu_ShowUI(player)

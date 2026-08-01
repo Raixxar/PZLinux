@@ -11,16 +11,16 @@ PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
 }
 
 PZLinux.Config.UI = PZLinux.Config.UI or {
-    typingDelayMin = 2,
-    typingDelayMax = 5,
-    messageDelayMin = 80,
-    messageDelayMax = 180,
-    systemStatusDelayMin = 20,
-    systemStatusDelayMax = 100,
-    atmPromptDelayMin = 5,
-    atmPromptDelayMax = 15,
-    atmStatusDelayMin = 8,
-    atmStatusDelayMax = 20,
+    typingDelayMinMs = 90,
+    typingDelayMaxMs = 180,
+    messageDelayMinMs = 1800,
+    messageDelayMaxMs = 4200,
+    systemStatusDelayMinMs = 400,
+    systemStatusDelayMaxMs = 1000,
+    atmPromptDelayMinMs = 250,
+    atmPromptDelayMaxMs = 650,
+    atmStatusDelayMinMs = 350,
+    atmStatusDelayMaxMs = 850,
 }
 
 PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {

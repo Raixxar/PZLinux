@@ -89,7 +89,9 @@
 - Blackjack now reuses the centered oval table with the dealer at the top and the player at the bottom; cards, values, bet and outcome occupy the table while HIT/STAND and the next-bet controls remain below it.
 - Contracts, Request, ATM authentication and Internet login now share one UTF-8-safe typing system with the same randomized character rhythm and conversation delays, independent of character skills and framerate.
 - Tuned the shared typing profiles: player input is slower and more natural, Request contacts pause before replying, while ATM password prompts and loading statuses no longer inherit long conversation delays.
-- Normalized all human dialogue pauses in Contracts and Request to the same randomized 80-180 profile; technical ATM and Internet status animations retain shorter dedicated delays.
+- Normalized all human dialogue pauses in Contracts and Request through one shared profile; technical ATM and Internet status animations retain shorter dedicated delays.
+- Replaced world-time dialogue timing with real millisecond timing: Contracts and Request now wait 1.8-4.2 seconds between human messages regardless of game speed or SFX settings, while typing uses a natural 90-180 ms rhythm and ATM prompts remain short.
+- Removed the obsolete SFX toggle from all ten computer interfaces and retired `PZLinuxUISFX`; Project Zomboid's audio settings remain the single source of truth for sound volume.
 - Rebuilt the Build 42.20 mission-location catalog with shared pools for 37 package locations, 22 cargo locations, 16 manhunt locations, 7 protection locations and 36 vehicle spawn locations.
 - Reused the 37 validated package destinations for ammunition and medical mail drops.
 - Added city-aware mission pools for Irvington, Ekron, Brandenburg, Echo Creek, Riverside, Fallas Lake, Rosewood, March Ridge, Muldraugh, West Point, Valley Station, Louisville and Coalfield.

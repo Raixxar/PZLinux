@@ -85,25 +85,6 @@ function mailUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = PZLinuxGetModData(self.player)
-    if not modData then return end
-    if modData.PZLinuxUISFX == 0 then
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    else
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    end
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -378,33 +359,6 @@ function mailUI:onCloseX(_button)
     end
 end
 
-function mailUI:onSFXOn(_button)
-    local modData = PZLinuxGetModData(self.player)
-    if not modData then return end
-    modData.PZLinuxUISFX = 0
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
-
-function mailUI:onSFXOff(_button)
-    local modData = PZLinuxGetModData(self.player)
-    if not modData then return end
-    modData.PZLinuxUISFX = 1
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
 
 function mailMenu_ShowUI(player)
     local texture = getTexture("media/ui/oldCRT.png")

@@ -21,24 +21,28 @@ local function PZLinuxTypingCharacters(value)
     return characters
 end
 
-local function PZLinuxTypingNow()
-    return math.ceil(getGameTime():getWorldAgeHours() * 3600)
+local function PZLinuxTypingNowMs()
+    local timestampProvider = rawget(_G, "getTimestampMs")
+    if timestampProvider then
+        return tonumber(timestampProvider()) or 0
+    end
+    return math.ceil(getGameTime():getWorldAgeHours() * 3600000)
 end
 
 local PZLinuxTypingProfiles = {
-    message = { minKey = "messageDelayMin", maxKey = "messageDelayMax", minimum = 80, maximum = 180 },
-    systemStatus = { minKey = "systemStatusDelayMin", maxKey = "systemStatusDelayMax", minimum = 20, maximum = 100 },
-    atmPrompt = { minKey = "atmPromptDelayMin", maxKey = "atmPromptDelayMax", minimum = 5, maximum = 15 },
-    atmStatus = { minKey = "atmStatusDelayMin", maxKey = "atmStatusDelayMax", minimum = 8, maximum = 20 },
+    message = { minKey = "messageDelayMinMs", maxKey = "messageDelayMaxMs", minimum = 1800, maximum = 4200 },
+    systemStatus = { minKey = "systemStatusDelayMinMs", maxKey = "systemStatusDelayMaxMs", minimum = 400, maximum = 1000 },
+    atmPrompt = { minKey = "atmPromptDelayMinMs", maxKey = "atmPromptDelayMaxMs", minimum = 250, maximum = 650 },
+    atmStatus = { minKey = "atmStatusDelayMinMs", maxKey = "atmStatusDelayMaxMs", minimum = 350, maximum = 850 },
 }
 
 function PZLinux.Typing.wait(ui, minimum, maximum, multiplier)
-    local minDelay = minimum or PZLinuxTypingConfigNumber("messageDelayMin", 80)
-    local maxDelay = maximum or PZLinuxTypingConfigNumber("messageDelayMax", 180)
+    local minDelay = minimum or PZLinuxTypingConfigNumber("messageDelayMinMs", 1800)
+    local maxDelay = maximum or PZLinuxTypingConfigNumber("messageDelayMaxMs", 4200)
     local duration = PZLinuxTypingRandomDelay(minDelay, maxDelay) * (tonumber(multiplier) or 1)
-    local deadline = PZLinuxTypingNow() + duration
+    local deadline = PZLinuxTypingNowMs() + duration
 
-    while PZLinuxTypingNow() < deadline do
+    while PZLinuxTypingNowMs() < deadline do
         if ui and ui.isClosing then return false end
         coroutine.yield()
     end
@@ -56,8 +60,8 @@ function PZLinux.Typing.typeLabel(ui, label, text, playerObj, options)
     options = options or {}
     local message = tostring(options.prefix or "")
     local volume = tonumber(options.volume)
-    local minDelay = options.minDelay or PZLinuxTypingConfigNumber("typingDelayMin", 2)
-    local maxDelay = options.maxDelay or PZLinuxTypingConfigNumber("typingDelayMax", 5)
+    local minDelay = options.minDelay or PZLinuxTypingConfigNumber("typingDelayMinMs", 90)
+    local maxDelay = options.maxDelay or PZLinuxTypingConfigNumber("typingDelayMaxMs", 180)
 
     if label then label:setName(message) end
     for _, character in ipairs(PZLinuxTypingCharacters(text)) do

@@ -114,24 +114,6 @@ function requestUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = PZLinuxGetPlayer(self.player):getModData()
-    if modData.PZLinuxUISFX == 0 then
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    else
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    end
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -246,13 +228,10 @@ function requestUI:onContractId(contract)
     end
 
     self.terminalCoroutine = coroutine.create(function()
-        local modData = PZLinuxGetPlayer(self.player):getModData()
         local message = PZLinuxRequestText("IGUI_PZLinux_Request_WaitParticipants")
 
-        local sleepSFX = 1
-        if modData.PZLinuxUISFX ==  0 then sleepSFX = 0.1 end
         PZLinuxRequestSetConversation(self, message)
-        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message") then return end
         if self.isClosing then return end
 
         local waitUser = ZombRand(1, 4)
@@ -270,7 +249,7 @@ function requestUI:onContractId(contract)
         PZLinuxRequestSetConversation(self, message)
         sellerName = PZLinuxRequestChatName(sellerName)
 
-        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message") then return end
 
 
         if self.isClosing then return end
@@ -279,7 +258,7 @@ function requestUI:onContractId(contract)
         message = sellerName .. PZLinuxRequestFormatText("IGUI_PZLinux_Request_LookingFor", PZLinuxRequestCatalog[contract].name)
         PZLinuxRequestSetConversation(self, message)
 
-        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message") then return end
 
         if self.isClosing then return end
 
@@ -290,7 +269,7 @@ function requestUI:onContractId(contract)
             self.typingMessage:setName("")
         end)
 
-        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message") then return end
 
         if self.isClosing then return end
 
@@ -370,7 +349,7 @@ function requestUI:onContractId(contract)
             PZLinuxRequestSetConversation(self, message)
         end
 
-        if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
+        if not PZLinux.Typing.waitProfile(self, "message") then return end
 
         if contract == 9 then
             if self.isClosing then return end
@@ -378,7 +357,7 @@ function requestUI:onContractId(contract)
             message = message .. "\n" .. sellerName .. PZLinuxRequestFormatText("IGUI_PZLinux_Request_VehicleLocation", locationName)
             PZLinuxRequestSetConversation(self, message)
 
-            if not PZLinux.Typing.waitProfile(self, "message", sleepSFX) then return end
+            if not PZLinux.Typing.waitProfile(self, "message") then return end
         end
 
         if self.isClosing then return end
@@ -523,31 +502,6 @@ function requestUI:onCloseX(_button)
 
 end
 
-function requestUI:onSFXOn(_button)
-    local modData = PZLinuxGetPlayer(self.player):getModData()
-    modData.PZLinuxUISFX = 0
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
-
-function requestUI:onSFXOff(_button)
-    local modData = PZLinuxGetPlayer(self.player):getModData()
-    modData.PZLinuxUISFX = 1
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
 
 function requestMenu_ShowUI(player)
     local texture = getTexture("media/ui/oldCRT.png")
