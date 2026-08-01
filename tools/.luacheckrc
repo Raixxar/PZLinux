@@ -173,6 +173,7 @@ globals = {
     "PZLinuxPokerCreateDeck",
     "PZLinuxPokerCreateSession",
     "PZLinuxPokerDraw",
+    "PZLinuxPokerEstimateEquity",
     "PZLinuxPokerEvaluateHand",
     "PZLinuxPokerGetBuyInLimits",
     "PZLinuxPokerGetLobby",

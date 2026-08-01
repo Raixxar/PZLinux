@@ -163,23 +163,23 @@ function AtmUI:showLoginMenu()
 end
 
 function AtmUI:showMainMenu()
-    self.withdrawalButton = ISButton:new(self.width * 0.295, self.width * 0.52, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_ATM_Withdrawal"), self, self.onWithdrawal)
+    self.withdrawalButton = ISButton:new(self.width * 0.295, self.width * 0.57, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_ATM_Withdrawal"), self, self.onWithdrawal)
     self.withdrawalButton:setVisible(true)
     self.withdrawalButton:initialise()
     self.topBar:addChild(self.withdrawalButton)
 
-    self.depositeButton = ISButton:new(self.width * 0.295, self.width * 0.63, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_ATM_Deposit"), self, self.onDeposite)
+    self.depositeButton = ISButton:new(self.width * 0.295, self.width * 0.68, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_ATM_Deposit"), self, self.onDeposite)
     self.depositeButton:setVisible(true)
     self.depositeButton:initialise()
     self.topBar:addChild(self.depositeButton)
 
-    self.balanceLabel = ISLabel:new(self.width * 0.225, self.width * 0.42, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Balance") .. tostring(self.balance), 1, 1, 1, 1, UIFont.Small, true)
-    self.balanceLabel:initialise()
-    self:addChild(self.balanceLabel)
-
-    self.atmCashLabel = ISLabel:new(self.width * 0.225, self.width * 0.45, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Cash") .. tostring(self.atmCash), 1, 1, 1, 1, UIFont.Small, true)
+    self.atmCashLabel = ISLabel:new(self.width * 0.225, self.width * 0.47, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Cash") .. tostring(self.atmCash), 1, 1, 1, 1, UIFont.Small, true)
     self.atmCashLabel:initialise()
     self:addChild(self.atmCashLabel)
+
+    self.balanceLabel = ISLabel:new(self.width * 0.225, self.width * 0.51, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Balance") .. tostring(self.balance), 1, 1, 1, 1, UIFont.Small, true)
+    self.balanceLabel:initialise()
+    self:addChild(self.balanceLabel)
     self:updateBalanceLabels()
 
     local playerObj = PZLinuxGetPlayer(self.player)

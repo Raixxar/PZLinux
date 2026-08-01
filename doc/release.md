@@ -129,6 +129,9 @@
 - Zombie Race runners now use a dedicated green running silhouette derived from the supplied transparent source image; during a race, each icon moves across its lane instead of rendering an increasingly long string of progress dots.
 - Zombie Race settlement is now split into an authoritative start and finish: the stake is debited when the race starts, but winnings and the final balance are credited only when the animation reaches the finish. Closing the UI settles the locked result, while a server restart rolls an unsettled race back by refunding its stake.
 - Blackjack and Poker now follow the familiar two-color card convention: hearts and diamonds are rendered in red, while clubs and spades retain the green terminal color.
+- Poker now displays the player's translated current hand and an estimated win probability. The 300-sample Monte Carlo calculation uses only the player's cards, the public board and the number of active opponents, never their hidden cards.
+- Poker end-of-hand controls now reserve a full row with translation-safe button widths, preventing long labels such as `MAIN SUIVANTE` and `QUITTER LA TABLE` from overlapping.
+- The ATM main screen now presents the ATM cash first and the player's bank balance beneath it, with withdrawal and deposit controls moved lower to prevent the balance from overlapping the bank title.
 - Removed the Electricity-skill modifier from simulated player typing in Contracts, Request, Internet login and ATM screens; every player now uses the same short delay configured by `PZLinux.Config.UI.typingDelay`.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
 

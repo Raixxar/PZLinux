@@ -63,4 +63,23 @@ local pairAces = hand("AH AD KC QS 9D 2C 3H")
 local pairKings = hand("KH KD AC QS 9D 2C 3H")
 assert(PZLinuxPokerCompareHands(pairAces, pairKings) > 0, "pair aces should beat pair kings")
 
+local equitySession = {
+    handNumber = 1,
+    phase = "preflop",
+    community = {},
+    seats = {
+        { inHand = true, folded = false, cards = { card("AH"), card("AD") } },
+        { inHand = true, folded = false, cards = {} },
+    },
+}
+local acesEquity = PZLinuxPokerEstimateEquity(equitySession, 1000)
+assert(acesEquity > 75 and acesEquity < 95, "pocket aces heads-up equity should be plausible, got " .. tostring(acesEquity))
+assert(PZLinuxPokerEstimateEquity(equitySession, 1000) == acesEquity, "equity estimate must be deterministic and cached")
+
+equitySession.phase = "river"
+equitySession.community = { card("QH"), card("JH"), card("TH"), card("2C"), card("3D") }
+equitySession.seats[1].cards = { card("AH"), card("KH") }
+equitySession.playerEquityCache = nil
+assert(PZLinuxPokerEstimateEquity(equitySession, 500) == 100, "a private royal flush must have 100 percent equity")
+
 print("PZLinux poker engine tests OK")

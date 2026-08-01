@@ -31,6 +31,7 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
         last = { "Stone", "Cross", "Vale", "Reed", "Fox", "Blake", "Wells", "King", "Cole", "Shaw", "Moss", "Page" },
     },
 }
+PZLinux.Poker.Config.equitySimulationCount = PZLinux.Poker.Config.equitySimulationCount or 300
 
 function PZLinuxPokerGetLobby(lobbyId)
     for _, lobby in ipairs(PZLinux.Poker.Config.lobbies or {}) do

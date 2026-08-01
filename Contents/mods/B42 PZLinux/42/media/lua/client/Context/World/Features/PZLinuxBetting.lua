@@ -482,6 +482,23 @@ local function PZLinuxBettingPokerStateLabel(seat)
     return "IN"
 end
 
+local function PZLinuxBettingPokerHandName(handName)
+    if not handName then return PZLinuxGetText("IGUI_PZLinux_Betting_PokerHandHighCard") end
+    local keys = {
+        royal_flush = "IGUI_PZLinux_Betting_PokerHandRoyalFlush",
+        straight_flush = "IGUI_PZLinux_Betting_PokerHandStraightFlush",
+        four_kind = "IGUI_PZLinux_Betting_PokerHandFourKind",
+        full_house = "IGUI_PZLinux_Betting_PokerHandFullHouse",
+        flush = "IGUI_PZLinux_Betting_PokerHandFlush",
+        straight = "IGUI_PZLinux_Betting_PokerHandStraight",
+        three_kind = "IGUI_PZLinux_Betting_PokerHandThreeKind",
+        two_pair = "IGUI_PZLinux_Betting_PokerHandTwoPair",
+        pair = "IGUI_PZLinux_Betting_PokerHandPair",
+        high_card = "IGUI_PZLinux_Betting_PokerHandHighCard",
+    }
+    return PZLinuxGetText(keys[handName] or keys.high_card)
+end
+
 function PZLinuxBettingUI:showPokerState(result)
     if not result or not result.ok then
         local message = result and result.error or "error"
@@ -505,7 +522,14 @@ function PZLinuxBettingUI:showPokerState(result)
 
     PZLinuxBettingAddCardLine(self, self.pokerControls, leftX, self.height * 0.255, PZLinuxGetText("IGUI_PZLinux_Betting_PokerBoard") .. " ", result.community)
 
-    local yOffset = self.height * 0.30
+    local handText = PZLinuxGetText("IGUI_PZLinux_Betting_PokerCurrentHand") .. ": " .. PZLinuxBettingPokerHandName(result.playerHand)
+    self:addPokerControl(ISLabel:new(leftX, self.height * 0.278, self.height * 0.018, handText, 1, 1, 0, 1, UIFont.Small, true))
+    if result.playerEquity ~= nil then
+        local equityText = PZLinuxGetText("IGUI_PZLinux_Betting_PokerWinChance") .. ": ~" .. string.format("%.1f", result.playerEquity) .. "%"
+        self:addPokerControl(ISLabel:new(leftX, self.height * 0.298, self.height * 0.018, equityText, 1, 1, 0, 1, UIFont.Small, true))
+    end
+
+    local yOffset = self.height * 0.325
     for _, seat in ipairs(result.seats or {}) do
         local flags = (seat.dealer and "D" or "-") .. (seat.turn and ">" or " ")
         local stars = seat.isHuman and "" or string.rep("*", tonumber(seat.difficulty) or 1)
@@ -551,26 +575,31 @@ function PZLinuxBettingUI:showPokerState(result)
     self:addPokerActionButton("allin", PZLinuxGetText("IGUI_PZLinux_Betting_PokerAllIn"), actions.allin)
 
     if result.phase == "hand_complete" then
-        self:addPokerActionButton("next", PZLinuxGetText("IGUI_PZLinux_Betting_PokerNextHand"), true)
+        self.pokerActionX = self.width * 0.20
+        self:addPokerActionButton("next", PZLinuxGetText("IGUI_PZLinux_Betting_PokerNextHand"), true, 0.27)
+        self:addPokerActionButton("cashout", PZLinuxGetText("IGUI_PZLinux_Betting_PokerCashOut"), true, 0.27)
+    else
+        self:addPokerActionButton("cashout", PZLinuxGetText("IGUI_PZLinux_Betting_PokerCashOut"), true, 0.20)
     end
-    self:addPokerActionButton("cashout", PZLinuxGetText("IGUI_PZLinux_Betting_PokerCashOut"), true)
 end
 
-function PZLinuxBettingUI:addPokerActionButton(action, label, enabled)
+function PZLinuxBettingUI:addPokerActionButton(action, label, enabled, relativeWidth)
     if not enabled then return end
 
-    local button = ISButton:new(self.pokerActionX, self.pokerActionY, self.width * 0.110, self.height * 0.028, label, self, self.onPokerAction)
+    relativeWidth = relativeWidth or 0.110
+    if self.pokerActionX + self.width * relativeWidth > self.width * 0.77 then
+        self.pokerActionX = self.width * 0.20
+        self.pokerActionY = self.pokerActionY + self.height * 0.032
+    end
+
+    local button = ISButton:new(self.pokerActionX, self.pokerActionY, self.width * relativeWidth, self.height * 0.028, label, self, self.onPokerAction)
     button.pokerAction = action
     button.textColor = {r=0, g=1, b=0, a=1}
     button.backgroundColor = {r=0, g=0, b=0, a=0.5}
     button.borderColor = {r=0, g=1, b=0, a=0.5}
     button:setEnable(enabled and true or false)
     self:addPokerControl(button)
-    self.pokerActionX = self.pokerActionX + self.width * 0.120
-    if self.pokerActionX > self.width * 0.56 then
-        self.pokerActionX = self.width * 0.20
-        self.pokerActionY = self.pokerActionY + self.height * 0.032
-    end
+    self.pokerActionX = self.pokerActionX + self.width * (relativeWidth + 0.02)
 end
 
 function PZLinuxBettingUI:onPokerAction(button)

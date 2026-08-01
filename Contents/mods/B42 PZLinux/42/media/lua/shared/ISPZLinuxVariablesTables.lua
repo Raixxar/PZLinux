@@ -110,6 +110,18 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Betting_PokerNextHand = "NEXT HAND",
     IGUI_PZLinux_Betting_PokerCashOut = "CASH OUT",
     IGUI_PZLinux_Betting_PokerClosed = "Poker session closed:",
+    IGUI_PZLinux_Betting_PokerCurrentHand = "Current hand",
+    IGUI_PZLinux_Betting_PokerWinChance = "Win chance",
+    IGUI_PZLinux_Betting_PokerHandRoyalFlush = "Royal flush",
+    IGUI_PZLinux_Betting_PokerHandStraightFlush = "Straight flush",
+    IGUI_PZLinux_Betting_PokerHandFourKind = "Four of a kind",
+    IGUI_PZLinux_Betting_PokerHandFullHouse = "Full house",
+    IGUI_PZLinux_Betting_PokerHandFlush = "Flush",
+    IGUI_PZLinux_Betting_PokerHandStraight = "Straight",
+    IGUI_PZLinux_Betting_PokerHandThreeKind = "Three of a kind",
+    IGUI_PZLinux_Betting_PokerHandTwoPair = "Two pair",
+    IGUI_PZLinux_Betting_PokerHandPair = "Pair",
+    IGUI_PZLinux_Betting_PokerHandHighCard = "High card",
 }
 
 function PZLinuxGetText(key)

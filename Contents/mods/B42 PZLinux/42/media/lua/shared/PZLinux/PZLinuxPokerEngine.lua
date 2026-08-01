@@ -33,7 +33,7 @@ local function PZLinuxPokerRandomRange(minInclusive, maxExclusive)
     return math.random(minInclusive, maxExclusive - 1)
 end
 
-function PZLinuxPokerCreateDeck()
+local function PZLinuxPokerCreateOrderedDeck()
     local deck = {}
     for _, suit in ipairs(PZLINUX_POKER_SUITS) do
         for _, rank in ipairs(PZLINUX_POKER_RANKS) do
@@ -45,6 +45,11 @@ function PZLinuxPokerCreateDeck()
             })
         end
     end
+    return deck
+end
+
+function PZLinuxPokerCreateDeck()
+    local deck = PZLinuxPokerCreateOrderedDeck()
     for index = #deck, 2, -1 do
         local swapIndex = PZLinuxPokerRandomRange(1, index + 1)
         deck[index], deck[swapIndex] = deck[swapIndex], deck[index]
@@ -227,6 +232,114 @@ function PZLinuxPokerEvaluateHand(cards)
         if #highCards == 5 then break end
     end
     return { rank = 0, name = PZLINUX_POKER_HAND_NAMES[0], kickers = highCards }
+end
+
+local function PZLinuxPokerEquityStateKey(session)
+    local parts = { tostring(session.handNumber or 0), tostring(session.phase or "") }
+    for _, card in ipairs((session.seats[1] and session.seats[1].cards) or {}) do
+        table.insert(parts, tostring(card.label))
+    end
+    for _, card in ipairs(session.community or {}) do table.insert(parts, tostring(card.label)) end
+    for index, seat in ipairs(session.seats or {}) do
+        table.insert(parts, tostring(index) .. ":" .. tostring(seat.inHand) .. ":" .. tostring(seat.folded))
+    end
+    return table.concat(parts, "|")
+end
+
+local function PZLinuxPokerEquitySeed(key)
+    local seed = 104729
+    for index = 1, #key do
+        seed = (seed * 31 + string.byte(key, index)) % 2147483647
+    end
+    return math.max(1, seed)
+end
+
+local function PZLinuxPokerEquityRandom(seed, maxInclusive)
+    seed = (seed * 48271) % 2147483647
+    return seed, (seed % maxInclusive) + 1
+end
+
+local function PZLinuxPokerEquityDraw(deck, seed)
+    local index
+    seed, index = PZLinuxPokerEquityRandom(seed, #deck)
+    local card = deck[index]
+    deck[index] = deck[#deck]
+    deck[#deck] = nil
+    return card, seed
+end
+
+function PZLinuxPokerEstimateEquity(session, simulationCount)
+    local playerSeat = session and session.seats and session.seats[1]
+    if not playerSeat or not playerSeat.inHand or playerSeat.folded or #(playerSeat.cards or {}) ~= 2 then return 0 end
+    if session.phase == "finished" or session.phase == "hand_complete" then return nil end
+
+    local opponentCount = 0
+    for index, seat in ipairs(session.seats or {}) do
+        if index ~= 1 and seat.inHand and not seat.folded then opponentCount = opponentCount + 1 end
+    end
+    if opponentCount == 0 then return 100 end
+
+    local known = {}
+    for _, card in ipairs(playerSeat.cards or {}) do known[card.label] = true end
+    for _, card in ipairs(session.community or {}) do known[card.label] = true end
+
+    local available = {}
+    for _, card in ipairs(PZLinuxPokerCreateOrderedDeck()) do
+        if not known[card.label] then table.insert(available, card) end
+    end
+
+    local missingBoardCards = math.max(0, 5 - #(session.community or {}))
+    if opponentCount * 2 + missingBoardCards > #available then return nil end
+
+    simulationCount = math.max(50, math.floor(tonumber(simulationCount) or 300))
+    local stateKey = PZLinuxPokerEquityStateKey(session)
+    local cache = session.playerEquityCache
+    if cache and cache.key == stateKey and cache.samples == simulationCount then return cache.equity end
+
+    local equity = 0
+    local seed = PZLinuxPokerEquitySeed(stateKey)
+    for _ = 1, simulationCount do
+        local deck = {}
+        for index, card in ipairs(available) do deck[index] = card end
+
+        local opponentHands = {}
+        for opponent = 1, opponentCount do
+            local first, second
+            first, seed = PZLinuxPokerEquityDraw(deck, seed)
+            second, seed = PZLinuxPokerEquityDraw(deck, seed)
+            opponentHands[opponent] = { first, second }
+        end
+
+        local board = {}
+        for _, card in ipairs(session.community or {}) do table.insert(board, card) end
+        while #board < 5 do
+            local card
+            card, seed = PZLinuxPokerEquityDraw(deck, seed)
+            table.insert(board, card)
+        end
+
+        local playerCards = { playerSeat.cards[1], playerSeat.cards[2] }
+        for _, card in ipairs(board) do table.insert(playerCards, card) end
+        local playerValue = PZLinuxPokerEvaluateHand(playerCards)
+        local tiedWinners = 1
+        local beaten = false
+        for _, opponentHand in ipairs(opponentHands) do
+            local opponentCards = { opponentHand[1], opponentHand[2] }
+            for _, card in ipairs(board) do table.insert(opponentCards, card) end
+            local comparison = PZLinuxPokerCompareHands(PZLinuxPokerEvaluateHand(opponentCards), playerValue)
+            if comparison > 0 then
+                beaten = true
+                break
+            elseif comparison == 0 then
+                tiedWinners = tiedWinners + 1
+            end
+        end
+        if not beaten then equity = equity + 1 / tiedWinners end
+    end
+
+    equity = math.floor(equity * 1000 / simulationCount + 0.5) / 10
+    session.playerEquityCache = { key = stateKey, samples = simulationCount, equity = equity }
+    return equity
 end
 
 local function PZLinuxPokerAddHistory(session, text)
@@ -571,6 +684,7 @@ function PZLinuxPokerStartHand(session)
     session.currentBet = 0
     session.minRaise = session.bigBlind
     session.awaitingPlayer = false
+    session.playerEquityCache = nil
     for _, seat in ipairs(session.seats) do
         seat.cards = {}
         seat.bet = 0
@@ -611,6 +725,11 @@ end
 
 function PZLinuxPokerBuildSnapshot(session)
     if not session then return nil end
+    local playerCards = {}
+    for _, card in ipairs((session.seats[1] and session.seats[1].cards) or {}) do table.insert(playerCards, card) end
+    for _, card in ipairs(session.community or {}) do table.insert(playerCards, card) end
+    local playerHand = #playerCards > 0 and PZLinuxPokerEvaluateHand(playerCards) or nil
+    local playerEquity = PZLinuxPokerEstimateEquity(session, PZLinux.Poker.Config.equitySimulationCount)
     local seats = {}
     for index, seat in ipairs(session.seats or {}) do
         local reveal = index == 1 or session.showdown or session.phase == "finished" or session.phase == "hand_complete"
@@ -626,7 +745,7 @@ function PZLinuxPokerBuildSnapshot(session)
             dealer = index == session.dealer,
             turn = index == session.turn,
             cards = PZLinuxPokerCopyCards(seat.cards, not reveal),
-            hand = seat.handValue and seat.handValue.name or nil,
+            hand = index == 1 and playerHand and playerHand.name or (seat.handValue and seat.handValue.name or nil),
         })
     end
     return {
@@ -647,6 +766,9 @@ function PZLinuxPokerBuildSnapshot(session)
         history = session.history or {},
         handNumber = session.handNumber,
         awaitingPlayer = session.awaitingPlayer,
+        playerHand = playerHand and playerHand.name or nil,
+        playerEquity = playerEquity,
+        equitySamples = playerEquity and PZLinux.Poker.Config.equitySimulationCount or nil,
     }
 end
 
