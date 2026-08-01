@@ -1,4 +1,5 @@
 {
+    "IGUI_PZLinux_Contracts_PreviewError": "Contrato no disponible (%s).",
     "IGUI_PZLinux_NeedPower": "necesito poder",
     "IGUI_PZLinux_ATM_Title": "Cajero Automático BANCO AMERICANO",
     "IGUI_PZLinux_ATM_Leave": "SALIR",

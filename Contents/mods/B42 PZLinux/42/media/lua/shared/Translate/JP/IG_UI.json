@@ -1,4 +1,5 @@
 {
+    "IGUI_PZLinux_Contracts_PreviewError": "契約を利用できません（%s）。",
     "IGUI_PZLinux_NeedPower": "力が必要です",
     "IGUI_PZLinux_ATM_Title": "ATM アメリカンバンク",
     "IGUI_PZLinux_ATM_Leave": "離れる",

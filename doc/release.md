@@ -98,6 +98,8 @@
 - Added a 5% contract reward modifier per absolute Z level for more dangerous underground or elevated objectives.
 - Added `tools/audit_locations.lua` to validate mission IDs, coordinates, enabled entries and per-city pool coverage.
 - Removed the legacy `RetrievePackage.lua` contract implementation and migrated package retrieval to the shared contract dialogue/location flow.
+- Audited all 12 contract conversations and normalized their startup: every contract now displays its first seller line immediately, continues while the game is paused and cleans up its coroutine when the UI closes.
+- Contract preview failures no longer leave a silent empty screen: offers remain available until server acceptance, the board is restored on failure, and a translated diagnostic reports the server error code.
 - Extracted contract target names and automobile, medical and weapon request tables into `PZLinuxContractRequestData.lua`.
 - Moved contract company codes and contract definitions into `PZLinuxContractsData.lua` and shared dialogue behavior into `PZLinuxContractDialogue.lua`.
 - Refactored the remaining contract conversations onto a common coroutine/dialogue skeleton while preserving their informal IRC writing style.

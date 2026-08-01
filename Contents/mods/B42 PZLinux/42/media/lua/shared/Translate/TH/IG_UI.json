@@ -1,4 +1,5 @@
 {
+    "IGUI_PZLinux_Contracts_PreviewError": "ไม่สามารถใช้งานสัญญาได้ (%s)",
     "IGUI_PZLinux_NeedPower": "ฉันต้องการพลัง",
     "IGUI_PZLinux_ATM_Title": "ตู้เอทีเอ็มธนาคารอเมริกัน",
     "IGUI_PZLinux_ATM_Leave": "ลาออก",

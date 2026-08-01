@@ -1,4 +1,5 @@
 {
+    "IGUI_PZLinux_Contracts_PreviewError": "Auftrag nicht verfügbar (%s).",
     "IGUI_PZLinux_NeedPower": "Ich brauche Kraft",
     "IGUI_PZLinux_ATM_Title": "Geldautomat der American Bank",
     "IGUI_PZLinux_ATM_Leave": "VERLASSEN",

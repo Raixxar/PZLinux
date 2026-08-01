@@ -17,6 +17,28 @@ local function PZLinuxContractsText(key, fallback, ...)
     return fallback
 end
 
+local function PZLinuxContractsStopDialogue(self)
+    if self.contractDialogueRegistered and self.contractDialogueEvent and self.updateCoroutineFunc then
+        self.contractDialogueEvent.Remove(self.updateCoroutineFunc)
+    end
+    self.contractDialogueRegistered = false
+    self.contractDialogueEvent = nil
+    self.updateCoroutineFunc = nil
+    self.terminalCoroutine = nil
+end
+
+local function PZLinuxContractsFailDialogue(self, err)
+    print("PZLinux contracts coroutine error:", tostring(err))
+    if self.loadingMessage then
+        self.loadingMessage:setName(PZLinuxContractsText(
+            "IGUI_PZLinux_Contracts_PreviewError",
+            "Contract unavailable (%s).",
+            "dialogue_error"
+        ))
+    end
+    PZLinuxContractsStopDialogue(self)
+end
+
 local function PZLinuxContractsApplyBoard(availableContracts)
     if type(availableContracts) ~= "table" then return end
 
@@ -216,7 +238,9 @@ function contractsUI:onSelectContract(button)
         self:onContractComplete()
         return
     end
-    table.remove(selectedContracts, button.contractPosition)
+    if self.previewErrorMessage then
+        self.previewErrorMessage:setName("")
+    end
     self:onContractId(button.contractId)
 end
 
@@ -250,7 +274,36 @@ end
 
 function contractsUI:onContractId(contract)
     PZLinuxRequestContractPreview(self.player, contract, function(preview)
-        if self.isClosing or not preview or not preview.ok then return end
+        if self.isClosing then return end
+        if not preview or not preview.ok then
+            local errorCode = tostring(preview and preview.error or "no_response")
+            print("PZLinux contract preview error:", errorCode, "contract:", tostring(contract))
+            for _, contractButton in ipairs(self.contractButtons or {}) do
+                contractButton:setVisible(true)
+            end
+            if not self.previewErrorMessage then
+                self.previewErrorMessage = ISLabel:new(
+                    self.width * 0.20,
+                    self.height * 0.72,
+                    self.height * 0.025,
+                    "",
+                    1,
+                    0.7,
+                    0,
+                    1,
+                    UIFont.Small,
+                    true
+                )
+                self.previewErrorMessage:initialise()
+                self.topBar:addChild(self.previewErrorMessage)
+            end
+            self.previewErrorMessage:setName(PZLinuxContractsText(
+                "IGUI_PZLinux_Contracts_PreviewError",
+                "Contract unavailable (%s).",
+                errorCode
+            ))
+            return
+        end
         self:onContractPreview(contract, preview)
     end)
 end
@@ -383,7 +436,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_RetrievePackage_Intro", "We are looking for a courier to retrieve a package."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -415,7 +467,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Manhunt_Intro", "We are looking for a hunter."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -454,7 +505,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_BloodAnalysis_Intro", "We are looking for blood analyses of zombies."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -474,7 +524,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AutoParts_Intro", "We are looking for someone to find auto parts for us."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -500,7 +549,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_CaptureZombie_Intro", "We are looking for someone to capture a zombie alive."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -520,7 +568,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Cargo_Intro", "We lost our cargo, we're looking for someone to retrieve it by helicopter."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -549,7 +596,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Protect_Intro", "We have a building to protect against a horde of zombies."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -578,7 +624,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Medical_Intro", "We are looking for medical equipment."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -604,7 +649,6 @@ function contractsUI:onContractPreview(contract, contractPreview)
         self.terminalCoroutine = coroutine.create(function()
             local dialogue = PZLinuxContractsCreateDialogue(contract)
 
-            if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Weapons_Intro", "We are looking for weapons."))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
@@ -629,22 +673,36 @@ function contractsUI:onContractPreview(contract, contractPreview)
     elseif contract == 12 then self.terminalCoroutine = PZLinux_Contract_SendFridge_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     end
 
+    if not self.terminalCoroutine then
+        PZLinuxContractsFailDialogue(self, "unsupported contract id " .. tostring(contract))
+        return
+    end
+
+    self.contractDialogueEvent = Events.OnTickEvenPaused or Events.OnTick
+    self.contractDialogueRegistered = false
     self.updateCoroutineFunc = function()
-        if self.terminalCoroutine and coroutine.status(self.terminalCoroutine) ~= "dead" then
-            local ok, err = coroutine.resume(self.terminalCoroutine)
-            if not ok then
-                print("PZLinux contracts coroutine error:", tostring(err))
-                Events.OnTick.Remove(self.updateCoroutineFunc)
-                self.updateCoroutineFunc = nil
-                self.terminalCoroutine = nil
-            end
-        else
-            Events.OnTick.Remove(self.updateCoroutineFunc)
-            self.updateCoroutineFunc = nil
-            self.terminalCoroutine = nil
+        if not self.terminalCoroutine or coroutine.status(self.terminalCoroutine) == "dead" then
+            PZLinuxContractsStopDialogue(self)
+            return
+        end
+
+        local ok, err = coroutine.resume(self.terminalCoroutine)
+        if not ok then
+            PZLinuxContractsFailDialogue(self, err)
+            return
+        end
+
+        if coroutine.status(self.terminalCoroutine) == "dead" then
+            PZLinuxContractsStopDialogue(self)
         end
     end
-    Events.OnTick.Add(self.updateCoroutineFunc)
+
+    -- Prime the dialogue now so its first line never depends on a later game tick.
+    self.updateCoroutineFunc()
+    if self.updateCoroutineFunc and self.contractDialogueEvent then
+        self.contractDialogueEvent.Add(self.updateCoroutineFunc)
+        self.contractDialogueRegistered = true
+    end
 end
 
 -- RESET ALL QUESTS
@@ -704,6 +762,7 @@ end
 -- LOGOUT
 function contractsUI:onMinimizeBack(_button)
     self.isClosing = true
+    PZLinuxContractsStopDialogue(self)
     self:removeFromUIManager()
     local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 7
@@ -711,6 +770,7 @@ end
 
 function contractsUI:onMinimize(_button)
     self.isClosing = true
+    PZLinuxContractsStopDialogue(self)
     self:removeFromUIManager()
     local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
@@ -719,6 +779,7 @@ end
 -- CLOSE
 function contractsUI:onClose(_button)
     self.isClosing = true
+    PZLinuxContractsStopDialogue(self)
     self:removeFromUIManager()
     local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
@@ -727,6 +788,7 @@ end
 -- CLOSE
 function contractsUI:onCloseX(_button)
     self.isClosing = true
+    PZLinuxContractsStopDialogue(self)
     PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 

@@ -138,4 +138,45 @@ PZLinuxTestAssert(variables:find("sendRemoveItemFromContainer%(inventory, item%)
 PZLinuxTestAssert(contextMenu:find("packageInteractionRadius%) or 5"),
     "package context interactions must keep the five-tile fallback radius")
 
+local contractsUi = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua")
+PZLinuxTestAssert(contractsUi:find("Events%.OnTickEvenPaused or Events%.OnTick"),
+    "contract dialogues must continue while the game is paused")
+PZLinuxTestAssert(contractsUi:find("self%.updateCoroutineFunc%(%)\n    if self%.updateCoroutineFunc"),
+    "contract dialogues must be primed immediately before tick registration")
+PZLinuxTestAssert(not contractsUi:find("table%.remove%(selectedContracts"),
+    "previewing a contract must not consume the client-side offer")
+PZLinuxTestAssert(contractsUi:find("PZLinux contract preview error:"),
+    "contract preview failures must not leave a silent empty screen")
+
+local inlineIntros = {
+    [2] = "RetrievePackage_Intro",
+    [3] = "Manhunt_Intro",
+    [4] = "BloodAnalysis_Intro",
+    [5] = "AutoParts_Intro",
+    [6] = "CaptureZombie_Intro",
+    [7] = "Cargo_Intro",
+    [8] = "Protect_Intro",
+    [9] = "Medical_Intro",
+    [10] = "Weapons_Intro",
+}
+for contractId, introName in pairs(inlineIntros) do
+    local startMarker = "elseif contract == " .. tostring(contractId) .. " then"
+    local startAt = assert(contractsUi:find(startMarker, 1, true), "missing UI branch for contract " .. tostring(contractId))
+    local introAt = assert(contractsUi:find(introName, startAt, true), "missing intro for contract " .. tostring(contractId))
+    local openingBlock = contractsUi:sub(startAt, introAt)
+    PZLinuxTestAssert(not openingBlock:find("PZLinuxContractsWaitDialogue", 1, true),
+        "contract " .. tostring(contractId) .. " waits before displaying its intro")
+end
+
+for contractId, filename in pairs({
+    [1] = "PZLinuxKillZombies.lua",
+    [11] = "PZLinuxSendComputer.lua",
+    [12] = "PZLinuxSendFridge.lua",
+}) do
+    local externalDialogue = PZLinuxTestRead(luaRoot .. "/client/Context/World/Contracts/" .. filename)
+    local introAt = assert(externalDialogue:find("_Intro", 1, true), "missing intro for contract " .. tostring(contractId))
+    PZLinuxTestAssert(not externalDialogue:sub(1, introAt):find("PZLinuxContractDialogue.wait", 1, true),
+        "contract " .. tostring(contractId) .. " waits before displaying its intro")
+end
+
 print("PZLinux contract authority tests OK")

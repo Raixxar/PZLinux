@@ -1,4 +1,5 @@
 {
+    "IGUI_PZLinux_Contracts_PreviewError": "Контракт недоступний (%s).",
     "IGUI_PZLinux_NeedPower": "Мені потрібна сила",
     "IGUI_PZLinux_ATM_Title": "АТМ АМЕРИКАНСЬКИЙ БАНК",
     "IGUI_PZLinux_ATM_Leave": "ЗАЛИШИ",

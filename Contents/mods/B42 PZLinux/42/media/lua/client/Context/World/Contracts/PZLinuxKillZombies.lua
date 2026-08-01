@@ -3,7 +3,6 @@ function PZLinux_Contract_KillZombie_CreateCoroutine(self, contract, contractsCo
         local dialogue = PZLinuxContractDialogue.create(self, contract, contractsCompanyCodes, contractsCompanyReward)
         local zombiesToKill = tonumber(dialogue.modData.PZLinuxOnZombieToKill) or 0
 
-        if not PZLinuxContractDialogue.wait(self, dialogue) then return end
         PZLinuxContractDialogue.setSellerLine(self, dialogue, PZLinuxContractDialogue.getText("IGUI_PZLinux_Contracts_KillZombies_Intro", "We are looking for a mercenary to clean the streets of our city."))
 
         if not PZLinuxContractDialogue.wait(self, dialogue) then return end

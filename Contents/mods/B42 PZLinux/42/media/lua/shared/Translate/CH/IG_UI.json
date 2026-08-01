@@ -1,4 +1,5 @@
 {
+    "IGUI_PZLinux_Contracts_PreviewError": "合約無法使用（%s）。",
     "IGUI_PZLinux_NeedPower": "我需要力量",
     "IGUI_PZLinux_ATM_Title": "美國銀行 ATM",
     "IGUI_PZLinux_ATM_Leave": "離開",
