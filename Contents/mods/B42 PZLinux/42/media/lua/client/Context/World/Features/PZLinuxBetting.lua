@@ -119,9 +119,9 @@ local function PZLinuxBettingClearDisplayControls(controls)
     end
 end
 
-local PZLinuxPokerTablePanel = ISPanel:derive("PZLinuxPokerTablePanel")
+local PZLinuxBettingTablePanel = ISPanel:derive("PZLinuxBettingTablePanel")
 
-function PZLinuxPokerTablePanel:new(x, y, width, height)
+function PZLinuxBettingTablePanel:new(x, y, width, height)
     local panel = ISPanel:new(x, y, width, height)
     setmetatable(panel, self)
     self.__index = self
@@ -130,7 +130,7 @@ function PZLinuxPokerTablePanel:new(x, y, width, height)
     return panel
 end
 
-function PZLinuxPokerTablePanel:prerender()
+function PZLinuxBettingTablePanel:prerender()
     ISPanel.prerender(self)
     local rowHeight = 4
     local centerX = self.width / 2
@@ -547,15 +547,13 @@ function PZLinuxBettingUI:showPokerState(result)
     self:updateBalanceLabel(result.balance)
 
     local leftX = self.width * 0.20
-    local title = string.format("%s $%d/$%d - %s", PZLinuxGetText("IGUI_PZLinux_Betting_PokerTable"), result.smallBlind or 0, result.bigBlind or 0, tostring(result.phase or ""))
-    self:addPokerControl(ISLabel:new(leftX, self.height * 0.21, self.height * 0.023, title, 0, 1, 0, 1, UIFont.Small, true))
-
-    local tablePanel = PZLinuxPokerTablePanel:new(self.width * 0.195, self.height * 0.24, self.width * 0.58, self.height * 0.32)
+    local tablePanel = PZLinuxBettingTablePanel:new(self.width * 0.195, self.height * 0.24, self.width * 0.58, self.height * 0.32)
     self:addPokerControl(tablePanel)
 
     local pot = 0
     for _, seat in ipairs(result.seats or {}) do pot = pot + (tonumber(seat.committed) or 0) end
-    self:addPokerControl(ISLabel:new(self.width * 0.415, self.height * 0.315, self.height * 0.018, string.upper(tostring(result.phase or "")) .. "  |  POT $" .. tostring(pot), 1, 1, 0, 1, UIFont.Small, true))
+    local tableInfo = string.format("$%d/$%d  |  %s  |  POT $%d", result.smallBlind or 0, result.bigBlind or 0, string.upper(tostring(result.phase or "")), pot)
+    self:addPokerControl(ISLabel:new(self.width * 0.395, self.height * 0.315, self.height * 0.018, tableInfo, 1, 1, 0, 1, UIFont.Small, true))
     PZLinuxBettingAddCardLine(self, self.pokerControls, self.width * 0.35, self.height * 0.35, "", result.community)
     local handText = PZLinuxGetText("IGUI_PZLinux_Betting_PokerCurrentHand") .. ": " .. PZLinuxBettingPokerHandName(result.playerHand)
     self:addPokerControl(ISLabel:new(self.width * 0.355, self.height * 0.405, self.height * 0.018, handText, 1, 1, 0, 1, UIFont.Small, true))
@@ -945,19 +943,24 @@ function PZLinuxBettingUI:showBlackjackMenu()
     self.blackjackCardControls = {}
     self:updateBalanceLabel(PZLinuxLoadBankBalance(self.player))
 
-    self.blackjackTitle = ISLabel:new(self.width * 0.20, self.height * 0.25, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Betting_BlackjackTitle"), 0, 1, 0, 1, UIFont.Small, true)
+    self.blackjackTablePanel = PZLinuxBettingTablePanel:new(self.width * 0.195, self.height * 0.24, self.width * 0.58, self.height * 0.32)
+    self.blackjackTablePanel:initialise()
+    self.topBar:addChild(self.blackjackTablePanel)
+    table.insert(self.blackjackControls, self.blackjackTablePanel)
+
+    self.blackjackTitle = ISLabel:new(self.width * 0.43, self.height * 0.35, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Betting_BlackjackTitle"), 1, 1, 0, 1, UIFont.Small, true)
     self.blackjackTitle:initialise()
     self.topBar:addChild(self.blackjackTitle)
     table.insert(self.blackjackControls, self.blackjackTitle)
 
-    self.blackjackAmountInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_Amount"), self.width * 0.20, self.height * 0.31, self.width * 0.22, self.height * 0.033)
+    self.blackjackAmountInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_Amount"), self.width * 0.20, self.height * 0.603, self.width * 0.18, self.height * 0.028)
     self.blackjackAmountInput:initialise()
     self.blackjackAmountInput:instantiate()
     self.blackjackAmountInput:setOnlyNumbers(true)
     self.topBar:addChild(self.blackjackAmountInput)
     table.insert(self.blackjackControls, self.blackjackAmountInput)
 
-    self.blackjackDealButton = ISButton:new(self.width * 0.45, self.height * 0.31, self.width * 0.32, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Betting_Deal"), self, self.onBlackjackDeal)
+    self.blackjackDealButton = ISButton:new(self.width * 0.40, self.height * 0.603, self.width * 0.37, self.height * 0.04, PZLinuxGetText("IGUI_PZLinux_Betting_Deal"), self, self.onBlackjackDeal)
     self.blackjackDealButton.textColor = {r=0, g=1, b=0, a=1}
     self.blackjackDealButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.blackjackDealButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -966,24 +969,24 @@ function PZLinuxBettingUI:showBlackjackMenu()
     self.topBar:addChild(self.blackjackDealButton)
     table.insert(self.blackjackControls, self.blackjackDealButton)
 
-    self.blackjackDealerLabel = ISLabel:new(self.width * 0.20, self.height * 0.42, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
+    self.blackjackDealerLabel = ISLabel:new(self.width * 0.435, self.height * 0.255, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Betting_Dealer"), 0, 1, 0, 1, UIFont.Small, true)
     self.blackjackDealerLabel:initialise()
-    self.blackjackDealerLabel:setVisible(false)
+    self.blackjackDealerLabel:setVisible(true)
     self.topBar:addChild(self.blackjackDealerLabel)
     table.insert(self.blackjackControls, self.blackjackDealerLabel)
 
-    self.blackjackPlayerLabel = ISLabel:new(self.width * 0.20, self.height * 0.48, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
+    self.blackjackPlayerLabel = ISLabel:new(self.width * 0.44, self.height * 0.455, self.height * 0.025, "(YOU)", 0.2, 1, 0.8, 1, UIFont.Small, true)
     self.blackjackPlayerLabel:initialise()
-    self.blackjackPlayerLabel:setVisible(false)
+    self.blackjackPlayerLabel:setVisible(true)
     self.topBar:addChild(self.blackjackPlayerLabel)
     table.insert(self.blackjackControls, self.blackjackPlayerLabel)
 
-    self.blackjackMessageLabel = ISLabel:new(self.width * 0.20, self.height * 0.56, self.height * 0.025, "", 1, 1, 0, 1, UIFont.Small, true)
+    self.blackjackMessageLabel = ISLabel:new(self.width * 0.35, self.height * 0.39, self.height * 0.025, "", 1, 1, 0, 1, UIFont.Small, true)
     self.blackjackMessageLabel:initialise()
     self.topBar:addChild(self.blackjackMessageLabel)
     table.insert(self.blackjackControls, self.blackjackMessageLabel)
 
-    self.blackjackHitButton = ISButton:new(self.width * 0.20, self.height * 0.64, self.width * 0.25, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Betting_Hit"), self, self.onBlackjackHit)
+    self.blackjackHitButton = ISButton:new(self.width * 0.20, self.height * 0.652, self.width * 0.25, self.height * 0.04, PZLinuxGetText("IGUI_PZLinux_Betting_Hit"), self, self.onBlackjackHit)
     self.blackjackHitButton.textColor = {r=0, g=1, b=0, a=1}
     self.blackjackHitButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.blackjackHitButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -992,7 +995,7 @@ function PZLinuxBettingUI:showBlackjackMenu()
     self.topBar:addChild(self.blackjackHitButton)
     table.insert(self.blackjackControls, self.blackjackHitButton)
 
-    self.blackjackStandButton = ISButton:new(self.width * 0.52, self.height * 0.64, self.width * 0.25, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Betting_Stand"), self, self.onBlackjackStand)
+    self.blackjackStandButton = ISButton:new(self.width * 0.52, self.height * 0.652, self.width * 0.25, self.height * 0.04, PZLinuxGetText("IGUI_PZLinux_Betting_Stand"), self, self.onBlackjackStand)
     self.blackjackStandButton.textColor = {r=0, g=1, b=0, a=1}
     self.blackjackStandButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.blackjackStandButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -1053,19 +1056,25 @@ function PZLinuxBettingUI:showBlackjackState(result)
 
     PZLinuxBettingAddCardLine(self,
         self.blackjackCardControls,
-        self.width * 0.20,
-        self.height * 0.42,
-        PZLinuxGetText("IGUI_PZLinux_Betting_Dealer"),
+        self.width * 0.39,
+        self.height * 0.285,
+        "",
         result.dealerHand,
         " (" .. tostring(result.dealerValue) .. (result.dealerHidden and "+?" or "") .. ")")
 
     PZLinuxBettingAddCardLine(self,
         self.blackjackCardControls,
-        self.width * 0.20,
-        self.height * 0.48,
-        PZLinuxGetText("IGUI_PZLinux_Betting_Player"),
+        self.width * 0.39,
+        self.height * 0.485,
+        "",
         result.playerHand,
         " (" .. tostring(result.playerValue) .. ")")
+
+    PZLinuxBettingAddDisplayControl(self,
+        self.blackjackCardControls,
+        ISLabel:new(self.width * 0.39, self.height * 0.42, self.height * 0.018,
+            PZLinuxGetText("IGUI_PZLinux_Betting_YourBet") .. "$" .. tostring(result.bet or 0),
+            1, 1, 0, 1, UIFont.Small, true))
 
     local payoutText = ""
     if result.finished then
@@ -1085,6 +1094,7 @@ function PZLinuxBettingUI:showBlackjackState(result)
         self.blackjackStandButton:setVisible(false)
         self.blackjackDealButton:setEnable(true)
         self.blackjackDealButton:setVisible(true)
+        self.blackjackAmountInput:setVisible(true)
         self.blackjackStakeMoodApplied = false
         if result.outcome == "win" or result.outcome == "blackjack" then
             PZLinuxBettingPlaySound(self, "sold")
@@ -1093,6 +1103,7 @@ function PZLinuxBettingUI:showBlackjackState(result)
     end
 
     self.blackjackDealButton:setVisible(false)
+    self.blackjackAmountInput:setVisible(false)
     self.blackjackHitButton:setVisible(true)
     self.blackjackStandButton:setVisible(true)
     self.blackjackHitButton:setEnable(true)

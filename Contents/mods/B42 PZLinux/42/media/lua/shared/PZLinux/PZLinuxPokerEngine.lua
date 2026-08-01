@@ -753,7 +753,6 @@ function PZLinuxPokerBuildSnapshot(session)
             committed = seat.committed,
             lastAction = seat.lastAction,
             state = seat.state,
-            difficulty = seat.difficulty,
             isHuman = seat.isHuman,
             dealer = index == session.dealer,
             turn = index == session.turn,

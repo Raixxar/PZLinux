@@ -84,6 +84,9 @@
 - Poker now automatically cashes out the remaining temporary stack before closing, minimizing or returning from the betting interface, preventing accidental fund loss when leaving the UI.
 - Expanded Poker to 6 seats total (player + 5 AI) and replaced the list layout with a compact oval table designed for the CRT interface.
 - Poker seats now show the latest action and remaining stack beneath each name, reveal cards at the end of the hand and disappear when eliminated; the player's stable randomized visual seat also carries the equity percentage.
+- Poker AI difficulty remains active in the authoritative server session but is no longer included in client snapshots, preventing players from identifying opponent skill levels through the UI or client Lua state.
+- Removed the redundant Poker title row; blinds, phase and pot are now grouped on the centered virtual table.
+- Blackjack now reuses the centered oval table with the dealer at the top and the player at the bottom; cards, values, bet and outcome occupy the table while HIT/STAND and the next-bet controls remain below it.
 - Rebuilt the Build 42.20 mission-location catalog with shared pools for 37 package locations, 22 cargo locations, 16 manhunt locations, 7 protection locations and 36 vehicle spawn locations.
 - Reused the 37 validated package destinations for ammunition and medical mail drops.
 - Added city-aware mission pools for Irvington, Ekron, Brandenburg, Echo Creek, Riverside, Fallas Lake, Rosewood, March Ridge, Muldraugh, West Point, Valley Station, Louisville and Coalfield.
