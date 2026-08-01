@@ -42,6 +42,12 @@ PZLinuxTestAssert(not requestBlock:find("PZLinuxContractId"), "world-event reque
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
 PZLinuxTestAssert(serverCommands:find("Events%.OnZombieDead%.Add%(PZLinuxServerOnZombieDead%)"),
     "the server must own zombie-death accounting")
+PZLinuxTestAssert(variables:find("modData%.PZLinuxActiveContract = PZLinuxContractsCanonicalActiveState%(record%.status%)"),
+    "active contract state must be rebuilt from the persistent server record")
+PZLinuxTestAssert(variables:find("PZLinuxContractsUpdateKillNote%(playerObj, record%)"),
+    "server kill accounting must synchronize the persistent contract note")
+PZLinuxTestAssert(variables:find('PZLinuxContractsTagEntity%(note, record%.id, "contract_note"%)'),
+    "contract notes must carry their persistent server contract id")
 
 for _, path in ipairs({
     "/shared/TimedActions/ISCaptureAction.lua",

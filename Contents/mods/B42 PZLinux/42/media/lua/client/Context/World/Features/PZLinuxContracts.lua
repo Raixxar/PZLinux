@@ -86,6 +86,51 @@ function contractsUI:showContractsBoard()
     end
 end
 
+function contractsUI:showSynchronizedContractState()
+    if self.isClosing or self.contractStateRendered then return end
+    self.contractStateRendered = true
+
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+    local modData = playerObj:getModData()
+    local activeContract = tonumber(modData.PZLinuxActiveContract) or 0
+
+    if activeContract == 1 then
+        local logging = ""
+        if tonumber(modData.PZLinuxContractTypeId) == 1 then
+            local zombieCount = tonumber(modData.PZLinuxOnZombieDead) or 0
+            local zombieTarget = tonumber(modData.PZLinuxOnZombieToKill) or 0
+            logging = "\nZombies killed: " .. tostring(zombieCount) .. " / " .. tostring(zombieTarget)
+        end
+        self.activeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, "Contract already in progress" .. logging, 0, 1, 0, 1, UIFont.Small, true)
+        self.activeContractMessage:setVisible(true)
+        self.activeContractMessage:initialise()
+        self.topBar:addChild(self.activeContractMessage)
+
+        self.cancelContractButton = ISButton:new(self.width * 0.20, self.height * 0.20, self.width * 0.57, self.height * 0.05, "Cancel the contract", self, self.onCancelContract)
+        self.cancelContractButton:setVisible(true)
+        self.cancelContractButton:initialise()
+        self.topBar:addChild(self.cancelContractButton)
+        return
+    end
+
+    if activeContract == 9 or activeContract == 10 then
+        self:onContractComplete()
+        return
+    end
+
+    PZLinuxRequestContractsBoard(self.player, function(result)
+        if self.isClosing or not result or not result.ok then return end
+        if result.balance then
+            saveAtmBalance(result.balance, self.player)
+            self.titleLabel:setName(PZLinuxContractsText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", tostring(result.balance)))
+        end
+        PZLinuxContractsApplyBoard(result.contracts)
+        self.contractsBoardReady = true
+        self:showContractsBoard()
+    end)
+end
+
 -- INIT
 function contractsUI:initialise()
     ISPanel.initialise(self)
@@ -138,7 +183,6 @@ function contractsUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = PZLinuxGetPlayer(self.player):getModData()
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
     self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
@@ -163,39 +207,10 @@ function contractsUI:initialise()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    if modData.PZLinuxActiveContract == 1 then
-        modData.PZLinuxOnZombieDead = modData.PZLinuxOnZombieDead or 0
-        local logging = "\nZombie(s) killed during this contract: " .. modData.PZLinuxOnZombieDead
-        self.activeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, "Contract already in progress" .. logging, 0, 1, 0, 1, UIFont.Small, true)
-        self.activeContractMessage:setVisible(true)
-        self.activeContractMessage:initialise()
-        self.topBar:addChild(self.activeContractMessage)
-
-        self.cancelContractButton = ISButton:new(self.width * 0.20, self.height * 0.20, self.width * 0.57, self.height * 0.05, "Cancel the contract", self, self.onCancelContract)
-        self.cancelContractButton:setVisible(true)
-        self.cancelContractButton:initialise()
-        self.topBar:addChild(self.cancelContractButton)
-        return
-    elseif modData.PZLinuxActiveContract == 10 then
-        self:onContractComplete()
-        return
-    end
-
-    if not self.contractsBoardReady then
-        PZLinuxRequestContractsBoard(self.player, function(result)
-            if not result or not result.ok then return end
-            if result.balance then
-                saveAtmBalance(result.balance, self.player)
-                self.titleLabel:setName(PZLinuxContractsText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", tostring(result.balance)))
-            end
-            PZLinuxContractsApplyBoard(result.contracts)
-            self.contractsBoardReady = true
-            self:showContractsBoard()
-        end)
-        return
-    end
-
-    self:showContractsBoard()
+    self.contractStateRendered = false
+    PZLinuxRequestContractSync(self.player, function()
+        self:showSynchronizedContractState()
+    end)
 end
 
 function contractsUI:onCancelContract(_button)
@@ -742,12 +757,6 @@ function contractsUI:onYesButton(button)
         updatedModData.PZLinuxContractWeapon = tonumber(result.contractWeapon) or 0
         updatedModData.PZLinuxContractSendComputer = tonumber(result.contractSendComputer) or 0
         updatedModData.PZLinuxContractSendFridge = tonumber(result.contractSendFridge) or 0
-
-        local inv = playerObj:getInventory()
-        local note = inv:AddItem('Base.Note')
-        note:setName("Contract")
-        note:setCanBeWrite(true)
-        note:addPage(1, result.fullNote or result.note or "")
 
         if updatedModData.PZLinuxContractLocationX and updatedModData.PZLinuxContractLocationX > 0 then
             contractsDrawOnMap(updatedModData.PZLinuxContractLocationX, updatedModData.PZLinuxContractLocationY, updatedModData.PZLinuxContractNote)

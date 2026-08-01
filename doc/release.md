@@ -1,4 +1,10 @@
 # Update v.1.0.0
+- Finalized release metadata across README, Workshop, overview and the Build 42 `mod.info`; removed BETA/0.1.x labels and declared version 1.0.0 with Build 42.20+ compatibility.
+- Removed the duplicate `common/mod.info` from the Build 42 package and retained the stable `B42_PZLinux` mod ID for save and server compatibility.
+- Expanded the Workshop documentation with Poker, Blackjack, server-authoritative multiplayer behavior and the current controller/split-screen limitations.
+- Fixed the Kill Zombies contract in multiplayer: its inventory note is now created and synchronized by the server, tagged with the persistent contract ID, and displays live progress as `kills / target`.
+- Rebuilt the active-contract client state from the canonical server record after every kill, preventing an in-progress Kill Zombies contract from disappearing because of stale client ModData.
+- Synchronized the Contracts screen before rendering it, so weekly server offer renewal can no longer hide the cancel or payment controls of an accepted contract.
 - Added a first B42.20.0 stable hardening pass for the 1.0.0 release.
 - Fixed ATM, mailbox and street mailbox timed actions receiving a missing world object.
 - Fixed timed actions and several UI paths using the wrong player object in local split-screen or MP contexts.
@@ -147,7 +153,7 @@
 - Poker seat rows now display each player's cumulative contribution to the current hand instead of the street-only bet that reset to zero between streets; AI pot-odds calculations also no longer count current bets twice.
 - The ATM main screen now presents the ATM cash first and the player's bank balance beneath it, with compact vertical spacing and transaction controls positioned below without overlapping the bank title.
 - Removed the Electricity-skill modifier from simulated player typing in Contracts, Request, Internet login and ATM screens; every player now uses the same short delay configured by `PZLinux.Config.UI.typingDelay`.
-- Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.
+- Current release validation passes Lua 5.1 syntax on 56 mod files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 110 warnings / 0 errors.
 
 # Update v.0.1.12-rc1
 - Fixes an issue where the contract interface was offering only a single contract type.

@@ -16,6 +16,30 @@ local function PZLinuxContractsMissionRequest(entries, minimum, maximum)
     return request, count
 end
 
+function PZLinuxContractsFormatKillProgress(zombieCount, zombieTarget)
+    return "* Zombies killed: " .. tostring(math.max(0, tonumber(zombieCount) or 0))
+        .. " / " .. tostring(math.max(0, tonumber(zombieTarget) or 0))
+end
+
+function PZLinuxContractsSetKillProgress(noteText, zombieCount, zombieTarget)
+    local note = tostring(noteText or "")
+    local progress = PZLinuxContractsFormatKillProgress(zombieCount, zombieTarget)
+    local replacements
+    note, replacements = note:gsub("%* Zombies killed: %d+ / %d+", progress, 1)
+    if replacements == 0 then
+        note = note:gsub("\n%s*%* Zombies to kill: %d+", "", 1)
+        note = note:gsub("\n%s*Total zombies killed: %d+", "", 1)
+        note = note:gsub("%s+$", "") .. "\n\n" .. progress
+    end
+    return note
+end
+
+function PZLinuxContractsCanonicalActiveState(status)
+    if status == "completed" or status == "cancelled" then return 0 end
+    if status == "ready_to_complete" or status == "deposited" then return 9 end
+    return 1
+end
+
 local function PZLinuxContractsMissionNote(mission)
     local locationLine = "All around the world:"
     if mission.locationCity and mission.locationDescription then
@@ -33,7 +57,7 @@ local function PZLinuxContractsMissionNote(mission)
 
     local fullNote = locationLine .. "\n" .. contractNote .. "\n"
     if mission.contractId == 1 and mission.zombieToKill > 0 then
-        fullNote = fullNote .. "\n * Zombies to kill: " .. tostring(mission.zombieToKill)
+        fullNote = fullNote .. "\n" .. PZLinuxContractsFormatKillProgress(0, mission.zombieToKill)
     end
     return contractNote, fullNote
 end

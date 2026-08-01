@@ -1,136 +1,153 @@
-# Audit technique PZLinux - preparation v1.0.0
+# Audit technique complet PZLinux - preparation v1.0.0
 
-Date : 2026-07-31
+Date : 2026-08-01
 
 Cible : Project Zomboid Build 42.20.0 Stable
 
-Perimetre : depot local complet, Lua client/server/shared, economie, missions, MP, traductions, outils et qualite release.
+Branche auditee : `dev/release-v1.0.0`
+
+Perimetre : depot local complet, code Lua client/server/shared, donnees, economie,
+missions, persistance, securite MP, traductions, interfaces, assets, outils et
+documentation de publication.
 
 ## 1. Resume executif
 
-PZLinux est maintenant beaucoup plus proche d'une release 1.0.0 qu'au debut de la migration. Les flux economiques majeurs disposent d'un chemin serveur en MP et conservent un fallback local en solo : banque/ATM, Dark Web, Trading, contrats, Requests, Mails, Hacking, Blackjack, courses et Poker.
+PZLinux est une **release candidate avancee**. Le socle solo est jouable et les
+principaux flux multijoueurs ne reposent plus sur la confiance accordee au client.
+Banque, ATM, Dark Web, Trading, contrats, Requests, Mails, Hacking, Blackjack,
+Zombie Race et Poker possedent un coeur serveur en MP et reutilisent le meme coeur
+local en solo.
 
-La structure des donnees a aussi progresse. Les catalogues Dark Web et Trading, les formules economie, les definitions de contrats et Requests, le Poker et les locations B42.20 sont dans des modules `shared/PZLinux/` dedies. Le vieux fichier `RetrievePackage.lua` a ete retire et les dialogues de contrats ont ete fortement mutualises.
+L'audit statique ne met plus en evidence de P0 exploitable connu permettant a un
+client de choisir librement un paiement, un prix, une location de contrat ou un
+objectif monde. Les commandes sensibles sont prefixees, dispatches par le module
+`PZLinux`, validees par domaine et protegees contre la repetition d'un meme
+`requestId`.
 
-Verdict actuel : **release candidate avancee, mais pas encore publiable comme MP complet**.
+Le mod ne doit toutefois pas encore etre presente comme « MP complet » ou pret pour
+un grand serveur public. Le verrou principal n'est plus une faiblesse evidente du
+code : c'est l'absence d'une campagne reproductible sur serveur dedie avec deux
+clients, reconnexion, concurrence, objectifs voles, unload/reload de chunks et
+redemarrage au milieu des transactions.
 
-| Cible | Verdict | Motif principal |
+| Cible | Verdict | Motif |
 | --- | --- | --- |
-| Solo | Fonctionnel, retest final requis | Les derniers changements locations/traductions doivent etre rejoues en B42.20.0 |
-| MP coop | Fonctionnel avec reserves | Les grands flux et mailboxes sont serveur-autoritatifs, mais les tests live restent a traiter |
-| Serveur dedie | Non valide en production | Aucun test complet deux joueurs/reconnexion/redemarrage n'est documente |
-| Traductions | Structure complete, qualite a relire | 20 catalogues synchronises, mais 18 sont des premieres traductions automatiques |
-| Manette | Non garanti | Navigation/focus controller non implementes systematiquement |
+| Solo B42.20 | Release candidate | Retest final des 12 contrats et d'une sauvegarde longue requis |
+| Serveur heberge | Fonctionnel avec reserves | Plusieurs flux ont ete testes en direct et corriges, mais pas toute la matrice |
+| Serveur dedie | Non certifie production | Pas de campagne complete deux clients/restart documentee |
+| Securite MP statique | Bonne base | Aucun P0 connu; tests de commandes forgees encore necessaires |
+| Traductions | Infrastructure valide, contenu incomplet | 20 catalogues synchronises, textes hardcodes et qualite linguistique a reprendre |
+| Split-screen | Non garanti | Reponses reseau generiques encore appliquees au joueur local par defaut |
+| Manette | Non supportee officiellement | Aucun parcours de focus/navigation complet |
 
-Les deux P0 contrats identifies sont maintenant corriges. `PZLinuxContractsApplyComplete` ignore les anciennes donnees de paiement client et `PZLinuxContractsApplyAccept` ne lit plus que `contractId`. Le serveur prepare et conserve un brouillon canonique contenant location, cible, demande, quantite, reward et note, puis consomme ce brouillon a l'acceptation.
+### Decision de release
 
-Les durcissements P1 les plus sensibles sont egalement termines dans le code : les actions mailbox et objectifs de contrats sont validees contre le monde et la position serveur, le comptage des zombies morts appartient au serveur, et le mot de passe Hacking ne quitte plus la session serveur. Le principal verrou avant production n'est donc plus une mutation economique client connue, mais la campagne de tests reels : deux clients, commandes forgees, streaming des objectifs, reconnexion et redemarrage du serveur.
+La v1.0.0 peut entrer en phase de **release candidate testable**. Une publication
+publique raisonnable demande au minimum :
 
-## 2. Travaux realises
+1. une campagne MP a deux joueurs sur serveur dedie ;
+2. les tests de reconnexion et rollback apres redemarrage ;
+3. les tests finaux des limitations split-screen et manette deja annoncees ;
+4. un passage d'equilibrage sur les cadeaux Mail et le bonus du contrat Package.
 
-### Autorite serveur et MP
+Il n'est pas necessaire de corriger les 110 warnings Luacheck avant la release. Les
+deux warnings fonctionnels W411/W311 doivent etre examines; les shadowings UI et le
+whitespace peuvent etre traites ensuite.
 
-- Commandes reseau regroupees sous le module `PZLinux` et noms de commandes sensibles prefixes `PZLinux*`.
-- Banque et ATM serveur-autoritatifs en MP, avec depot/retrait atomique et reserve ATM persistante de `$10k-$50k`.
-- Dark Web achat, vente, offres, commandes, livraisons et encaissements migres vers le serveur.
-- Les colis Dark Web crees par le serveur sont explicitement synchronises vers l'inventaire client; une creation echouee conserve la commande pending pour permettre un retry.
-- Livraisons Dark Web/Request, encaissements Dark Web et depots de contrats limites par le serveur a une vraie mailbox situee a deux cases maximum et sur le meme niveau Z.
-- Trading et Wallet bases sur les prix globaux serveur et un snapshot commun.
-- Board de contrats global, accept/cancel/deposit/complete et evenements monde relies au serveur.
-- Preview de contrat genere et cache cote serveur; l'acceptation client n'envoie que `contractId`.
-- Registre global `PZLinuxContractsWorld` et tags persistants `PZLinuxContractId` sur objectifs/items compatibles.
-- Les commandes d'objectifs ne font plus confiance a un `contractId` ou a des coordonnees client : le serveur resout l'objet, le cadavre ou le zombie reel, controle distance/Z/tag/statut, puis effectue lui-meme spawn, retrait et reward.
-- `OnZombieDead` est traite cote serveur a partir du dernier attaquant et des tags d'objectif; les commandes client `zombieKilled` et `clearCargo` sont refusees.
-- Requests, livraisons d'items et spawn de vehicules migres vers le serveur.
-- Mails : generation, acceptation, suppression, completion, retrait des items et reward migres vers le serveur.
-- Hacking : consommation de cartes, session, tentatives, lock et transfert migres vers le serveur.
-- Le mot de passe Hacking reste dans la session serveur; le client ne recoit que sa longueur et le feedback de ses propres tentatives.
-- Blackjack, course et Texas Hold'em resolus cote serveur en MP.
-- Idempotence generique par joueur, commande et `requestId` pour limiter doubles clics et retries reseau.
-- Politique de redemarrage : remboursement Blackjack, restauration des cartes Hacking et cashout/rollback Poker.
-- Appels directs `getPlayer()` elimines hors helper central selon `tools/run_static_audit.sh`.
+## 2. Mesures du depot
 
-### Economie et gameplay
+Resultats mesures le 2026-08-01 :
 
-- Prix Dark Web releves pour les armes, munitions, explosifs, livres, generateurs, armures et objets rares.
-- Requests rencheries et remise PlantScavenging plafonnee a 15 %.
-- Recompenses des contrats faciles reduites; contrats dangereux conserves comme activite de milieu/fin de partie.
-- Bonus rare de mail plafonne a `$100-$300`.
-- Reputation centralisee, attribuee cote serveur et soumise a une decroissance periodique.
-- Bonus vertical de location : `+5 %` de recompense par niveau absolu de Z.
-- Effets stress/bonheur/ennui ajoutes aux paris.
+| Mesure | Resultat |
+| --- | ---: |
+| Fichiers Lua | 56 |
+| Lignes Lua | 16 642 |
+| Fichiers media/mod | 117 |
+| Taille du mod | 7,4 MiB |
+| Catalogues `IG_UI.json` | 20 |
+| Cles par catalogue | 299 |
+| Modules de tests Lua | 9 |
+| Warnings Luacheck | 110 |
+| Erreurs Luacheck | 0 |
+| Fonctions/declarations non prefixees (heuristique) | 276 |
+| Textes hardcodes candidats (heuristique large) | 1 983 |
+| Appels directs `getPlayer()` hors helper central | 0 |
+| Noms de fonctions globales dupliques | 2 |
 
-### Poker et betting
+Le fichier [ISPZLinuxVariablesTables.lua](Contents/mods/B42%20PZLinux/42/media/lua/shared/ISPZLinuxVariablesTables.lua)
+mesure encore 3 753 lignes. Les donnees les plus volumineuses ont ete extraites,
+mais ce fichier reste le runtime central pour banque, ATM, jeux, callbacks reseau,
+contrats, Requests, Mails et Hacking.
 
-- Texas Hold'em ajoute avec quatre lobbies, buy-in, blinds, IA, evaluation complete des mains et pots secondaires.
-- Sessions isolees par joueur, actions et cashout serveur-autoritatifs.
-- Fermeture/minimisation de l'UI Poker : cashout automatique pour eviter la perte des fonds temporaires.
-- Table reduite a cinq places au total et historique separe visuellement des cartes/joueurs.
-- Cartes rendues lisibles avec rangs `A, 2-10, J, Q, K` et symboles de couleur quand la police PZ les supporte.
-- Test hors-jeu du moteur Poker disponible et passant.
+## 3. Resultats automatiques
 
-### Donnees, contrats et locations
+| Controle | Resultat | Commentaire |
+| --- | --- | --- |
+| Syntaxe Lua 5.1, 56 fichiers | OK | Aucun parse error |
+| Luacheck complet | 110 warnings / 0 errors | La commande globale retourne non-zero a cause des warnings |
+| Audit statique P0 historique | OK | `Pric2`, debug force, index contrat 7 et helper Mail duplique absents |
+| Assets ImageMagick/FFprobe | OK | PNG/JPG/OGG/WAV lisibles |
+| Locations B42.20 | OK | IDs, coordonnees et entrees activees valides |
+| Traductions | OK structurel | 20 langues, 299 cles et placeholders identiques |
+| Autorite contrats | OK | 12 missions canoniques et dialogues couverts |
+| Autorite objectifs contrats | OK | Evenements interdits et validations monde couverts statiquement |
+| Livraison Dark Web | OK | Creation, synchronisation inventaire et retry |
+| Proximite Mailbox | OK | Objet, distance et niveau Z |
+| Secret Hacking | OK | Mot de passe absent des reponses client |
+| Trading fee | OK | Commission serveur de 5 % |
+| Poker engine | OK | Evaluation, actions, side pots et sessions |
+| Zombie Race settlement | OK | Paiement uniquement apres fin de course |
+| Typing | OK | UTF-8, profils et timing partage |
 
-- `PZLinuxDarkWebData.lua` : catalogue/prix Dark Web.
-- `PZLinuxTradingData.lua` : societes, codes et prix initiaux.
-- `PZLinuxWorldInteractions.lua` : references monde et validation serveur des mailboxes, objets, cadavres et zombies.
-- `PZLinuxEconomy.lua` : normalisation argent, prix, inflation, reputation et delais.
-- `PZLinuxContractsData.lua` : definitions des 12 contrats et companies.
-- `PZLinuxContractRequestData.lua` : noms de cibles et demandes auto/medical/armes.
-- `PZLinuxContractMission.lua` : generation canonique serveur des previews et notes de contrats.
-- `PZLinuxRequestsData.lua` : catalogues, poids, prix et donnees Requests.
-- `PZLinuxMissionLocations.lua` : villes et pools B42.20 mutualises.
-- `PZLinuxContractDialogue.lua` : squelette de conversation commun aux contrats.
-- Suppression du fichier legacy `RetrievePackage.lua`; le contrat colis utilise le flux commun.
-- Dialogues des contrats 2 a 12 restructures sans changer volontairement leur ton IRC.
-- Request refactorise pour consommer ses donnees partagees au lieu de longues tables inline.
+Ces tests sont des tests Lua hors-jeu et des assertions statiques. Ils ne remplacent
+pas le moteur Project Zomboid, le streaming des chunks, les paquets conteneur, les
+timed actions, ni deux clients reels.
 
-Etat des pools de locations valide par `tools/audit_locations.lua` :
+### Repartition Luacheck
 
-| Pool | Nombre | Etat |
-| --- | ---: | --- |
-| packages | 37 | OK |
-| cargo | 22 | OK |
-| manhunt | 16 | OK |
-| protect | 7 | OK |
-| vehicles | 36 | OK |
-| mailDrops.ammo | 37 | Reutilise packages, OK |
-| mailDrops.medical | 37 | Reutilise packages, OK |
+| Code | Nombre | Risque | Action |
+| --- | ---: | --- | --- |
+| W432 | 47 | Faible | Shadowing `self` dans closures UI historiques |
+| W611 | 20 | Aucun fonctionnel | Lignes contenant du whitespace |
+| W211 | 12 | Faible/moyen | Variables locales inutilisees |
+| W612 | 8 | Aucun fonctionnel | Trailing whitespace |
+| W613 | 6 | A verifier | Espaces dans des strings, parfois volontaires |
+| W581 | 5 | Faible | Expressions booleennes simplifiables |
+| W614 | 4 | Aucun fonctionnel | Whitespace dans commentaires |
+| W213 | 4 | Faible | Variables de boucle inutilisees |
+| W431 | 2 | Moyen | Shadowing d'upvalue |
+| W411 | 1 | Moyen | Variable redefinie dans Wallet |
+| W311 | 1 | Moyen | Affectation inutilisee dans Mail |
 
-Les villes sans point pour une activite restent dans la liste globale, mais ne doivent pas etre tirees pour ce pool. La repartition est encore inegale : Ekron n'a que Protect, Coalfield seulement Package/Cargo, et Fallas Lake/Valley Station n'ont actuellement aucun point actif.
+Priorite de correction conseillee : W411, W311, W211, W431, puis nettoyage du
+reste sans modifier les strings de dialogue aveuglement.
 
-### UI et traductions
-
-- Request utilise maintenant un `ISRichTextPanel` de taille fixe avec retour a la ligne, scroll conditionnel et descente automatique.
-- Le texte tape et les boutons Oui/Non restent hors du panneau de conversation.
-- Descriptions de locations converties en cles traduisibles avec fallback anglais.
-- Reference EN et traduction FR synchronisees.
-- 18 catalogues supplementaires crees : `CS`, `DE`, `ES`, `HU`, `IT`, `JP`, `KO`, `NL`, `NO`, `PL`, `PT`, `PTBR`, `RU`, `TH`, `TR`, `UA`, `CN`, `CH`.
-- Total : 20 langues, 284 cles par langue.
-- `tools/check_translations.lua` controle les catalogues B42.20 `IG_UI.json` : objet JSON, UTF-8, virgules, doublons, cles manquantes/supplementaires et signatures `%s`/`<parametre>`.
-- `tools/generate_translations.pl` permet de regenerer une langue en preservant les placeholders et noms propres.
-
-Attention : la presence des catalogues ne signifie pas que tout le mod est traduit. L'audit heuristique trouve encore 1927 chaines candidates, dont beaucoup sont des identifiants, noms d'items, etats internes ou textes volontairement anglais. Les textes visibles doivent etre tries et migres domaine par domaine.
-
-## 3. Architecture actuelle
+## 4. Architecture actuelle
 
 ```text
-media/lua/client/Context/World/     UI, context menus, affichage et interactions
-media/lua/server/                   dispatch des commandes MP
-media/lua/shared/TimedActions/      actions temporisees PZ
-media/lua/shared/PZLinux/           donnees et moteurs partages par domaine
-media/lua/shared/Translate/         catalogues de traduction
-ISPZLinuxVariablesTables.lua        helpers, wrappers MP/solo et runtimes restants
-tools/                              audits, tests et suivi console
+Contents/mods/B42 PZLinux/
+  common/                         metadonnees communes
+  42/
+    mod.info
+    media/
+      lua/client/Context/World/   UI, menus et interactions locales
+      lua/server/                 dispatch serveur des commandes MP
+      lua/shared/TimedActions/    timed actions Project Zomboid
+      lua/shared/PZLinux/         donnees et moteurs partages par domaine
+      lua/shared/Translate/       catalogues IG_UI/Sandbox
+      lua/shared/ISPZLinuxVariablesTables.lua
+      sandbox-options.txt
+      scripts/                    definitions sons
+      sound/ et ui/               assets
+tools/                            audits, tests et suivi console
+doc/                              release notes, FAQ et presentation
 ```
 
-`ISPZLinuxVariablesTables.lua` mesure encore 3483 lignes. Son role est plus raisonnable qu'avant, mais il contient toujours banque/ATM, betting, wrappers reseau, contrats, mails, Hacking et sessions temporaires. Les prochaines extractions doivent etre faites par domaine sans renommer brutalement les cles ModData historiques.
-
-Modules partages actuels :
+Modules partages deja extraits :
 
 - `PZLinuxConfig.lua`
-- `PZLinuxContractRequestData.lua`
 - `PZLinuxContractMission.lua`
+- `PZLinuxContractRequestData.lua`
 - `PZLinuxContractsData.lua`
 - `PZLinuxDarkWeb.lua`
 - `PZLinuxDarkWebData.lua`
@@ -142,341 +159,486 @@ Modules partages actuels :
 - `PZLinuxPokerEngine.lua`
 - `PZLinuxRequestsData.lua`
 - `PZLinuxTradingData.lua`
+- `PZLinuxTyping.lua`
 - `PZLinuxWorldInteractions.lua`
 
-## 4. Etat fonctionnel detaille
+### Dette architecturale principale
 
-| Fonctionnalite | Solo | MP code | Persistance/restart | Validation restante |
+- `ISPZLinuxVariablesTables.lua` reste un point de couplage tres important.
+- Les domaines Mail, banque/ATM, Blackjack/Race et Hacking peuvent encore etre
+  extraits sans changer leurs APIs publiques.
+- Les callbacks reseau sont stockes dans `PZLinux.callbacks` sans timeout. Une
+  reponse perdue laisse un callback en memoire jusqu'au redemarrage/reload Lua.
+- Le cache d'idempotence serveur est volontairement en memoire, limite a 128
+  entrees par joueur et deux heures monde.
+- Les fonctions `PZLinuxTrading_initializePrices` et
+  `PZLinuxUpdateTradingPrices` sont encore definies dans le shared et le client.
+  Le comportement actuel sert de wrapper, mais l'ecrasement depend de l'ordre de
+  chargement et doit etre supprime avant une maintenance longue.
+
+## 5. Etat fonctionnel
+
+| Domaine | Solo | MP code | Persistance/restart | Etat restant |
 | --- | --- | --- | --- | --- |
-| Ordinateur et connexion | Oui | Player explicite | ModData | Split-screen/controller |
-| Banque | Oui | Serveur | Player ModData | Reconnexion et double commande |
-| ATM reserve/depot/retrait | Oui | Serveur atomique | Object + Player ModData | Deux joueurs sur le meme ATM |
-| Dark Web achat/vente | Oui | Serveur + mailbox validee | Pending Player ModData | Reconnexion et test commande distante |
-| Trading/Wallet | Oui | Prix globaux serveur | Global + Player ModData | Deux clients, restart, commission 5 % |
-| Contrats board | Oui | Global serveur | Global ModData | Rotation et concurrence |
-| Contrats accept | Oui | Serveur-autoritatif | Player + World ModData | Test client forge et UX MP |
-| Contrats objectifs volables | Oui | Resolution/tag/distance/statut serveur | Object/Item/Global ModData | Streaming chunks et vol entre joueurs |
-| Contrats completion | Oui | Serveur, reward serveur | Player/Global ModData | Test legitime + commande forgee |
-| Requests items | Oui | Serveur + mailbox validee | Pending Player ModData | Test commande distante |
-| Requests vehicules | Oui | Serveur | Pending puis monde | Chunk charge, double spawn, MP |
-| Mails | Oui | Serveur | Player ModData | Reward tiers et tests distance |
-| Hacking | Oui | Session et secret serveur | Rollback cartes | Tests MP/restart et economie |
-| Blackjack | Oui | Serveur | Refund mise au retour | Restart live |
-| Course | Oui | Serveur | Pas de stake persistant bloque | Esperance mathematique |
-| Poker | Oui | Serveur | Rollback/cashout stack | Test MP/restart/UI resolutions |
-| Traductions | Partiel | Identique | Fichiers statiques | Relecture native et textes restants |
-| Manette | Non garanti | n/a | n/a | Implementation complete |
+| Ordinateur/Internet | Oui | Player explicite dans les UI | Player ModData | Pause, split-screen, manette |
+| Banque | Oui | Serveur | Player ModData | Crash entre mutation et persistance |
+| ATM | Oui | Serveur, reserve atomique | ATM object + joueur | Concurrence deux joueurs |
+| Dark Web achats | Oui | Offres/prix/debit serveur | Pending orders | Reconnexion et mailbox distante forgee |
+| Dark Web ventes | Oui | Inventaire et credit serveur | Pending sales | Double redemption/concurrence live |
+| Trading/Wallet | Oui | Prix globaux serveur | Global + Player ModData | Restart et wrappers dupliques |
+| Contrats board | Oui | Board global serveur | Global ModData | Rotation/concurrence live |
+| Contrats preview/accept | Oui | Mission canonique serveur | Cache + World ModData | Reconnexion et offre prise par autre joueur |
+| Objectifs contrats | Oui | Entites/tags/proximite serveur | Monde + Global ModData | Streaming chunk et vol live |
+| Completion contrats | Oui | Reward et reputation serveur | Player + World ModData | Crash consistency et commandes forgees live |
+| Requests items | Oui | Prix/debit/livraison serveur | Pending Player ModData | Reconnexion/double clic |
+| Requests vehicules | Oui | Spawn serveur | Pending puis monde | Chunk indisponible/double spawn live |
+| Mails | Oui | Generation/retrait/reward serveur | Player ModData | Equilibrage reward et traductions |
+| Hacking | Oui | Secret et transfert serveur | Rollback cartes | Cooldown et restart live |
+| Blackjack | Oui | Deck/payout serveur | Refund mise interrompue | Restart live |
+| Zombie Race | Oui | Resultat/payout serveur | Refund mise interrompue | Esperance mathematique |
+| Poker | Oui | Session/IA/actions serveur | Rollback stack/cashout | Deux sessions MP et restart live |
+| Traductions | Partiel | Identique | Fichiers statiques | Textes visibles et relecture native |
+| Split-screen | Partiel | Non garanti | n/a | Routage reponses vers joueur 0 |
+| Manette | Non | n/a | n/a | Navigation complete a implementer |
 
-## 5. Audit MP et securite
+## 6. Autorite serveur et securite MP
 
 ### Protections en place
 
-- Le serveur recalcule les prix Dark Web, Trading et Requests.
-- Les mutations d'argent majeures passent par les helpers banque serveur.
-- Les commandes economiques utilisent un `requestId` idempotent.
-- La completion des contrats ne fait plus confiance au reward client.
-- Les contrats monde ont un identifiant persistant et un statut global.
-- Les commandes banque, ATM et betting utilisent toutes le prefixe `PZLinux`.
-- Les commandes mailbox resolvent l'objet cote serveur depuis ses coordonnees et son sprite, puis valident son type, la distance et le niveau Z du joueur.
-- Les commandes contrats resolvent une reference technique vers l'entite chargee cote serveur; elles ne lisent ni `args.contractId` ni position de mission fournie par le client.
-- Package/Protect exigent un objet reel proche du joueur et du point canonique; Cargo/Manhunt exigent le tag persistant du contrat; Blood/Capture exigent un cadavre ou zombie reel a portee.
-- Le serveur retire le cargo, le cadavre ou le zombie seulement apres validation et transition atomique de l'etat global.
-- Le comptage Kill/Protect/Blood vient de `Events.OnZombieDead` cote serveur et de `zombie:getAttackedBy()`, pas d'une commande client.
-- Le mot de passe Hacking n'est jamais inclus dans une reponse reseau; chaque proposition est comparee dans la session serveur.
+- Toutes les commandes serveur sont sous le module `PZLinux`.
+- Les noms de commandes reseau sont prefixes `PZLinux*`.
+- Chaque handler serveur passe par `PZLinuxServerProcessIdempotent`.
+- Le joueur est fourni par Project Zomboid au handler serveur; le client ne choisit
+  pas l'objet joueur a muter.
+- Banque, prix, rewards, quantites et soldes sont recalcules ou lus cote serveur.
+- ATM et mailboxes sont resolus depuis une reference monde puis controles en
+  distance et niveau Z.
+- Le client n'envoie que `contractId` pour accepter un contrat.
+- Location, Z, cible, item, quantite, reward et note sont generes cote serveur.
+- Les objectifs monde utilisent `PZLinuxContractId`, un statut global et des tags
+  persistants lorsque l'API de l'entite le permet.
+- Cargo, Manhunt, Blood, Capture et Protect resolvent une entite reelle cote
+  serveur avant mutation.
+- Kill/Protect/Blood utilisent `Events.OnZombieDead` serveur et le dernier
+  attaquant, pas un compteur fourni par le client.
+- `zombieKilled` et `clearCargo` envoyes par un client sont explicitement refuses.
+- Le mot de passe Hacking ne quitte pas la session serveur.
+- Poker ne transmet pas les cartes IA masquees ni leur niveau avant revelation.
+- Les mises temporaires Blackjack/Race, cartes Hacking et stack Poker disposent
+  d'une donnee de rollback persistante.
 
-### P0 corriges
+### Points de vigilance restants
 
-- Completion : le serveur utilise uniquement son ModData pour valider et payer le contrat.
-- Acceptation : `PZLinuxContractPreview` genere la mission cote serveur et `PZLinuxContractAccept` ne recoit que `requestId` et `contractId`.
-- Le serveur choisit la location dans le pool/city du board, la cible, l'item, la quantite, le niveau Z, la recompense et la note.
-- Un contrat en etat actif, depose ou pret a encaisser bloque toute nouvelle preview/acceptation.
-- `tools/test_contract_authority.lua` verifie les generations canoniques et interdit la reintroduction de champs `state.*` sensibles.
-- `tools/test_contract_world_authority.lua` interdit le retour du comptage client, des coordonnees/IDs de contrat client et des suppressions d'entites cote client.
+#### P1 - Split-screen et routage des reponses
 
-### P1 implementation terminee, validation live requise
+Le listener `Events.OnServerCommand` applique encore les soldes et etats contrats
+generiques avec `PZLinuxGetPlayer()` sans index. Sur un client split-screen, cela
+peut mettre a jour le joueur 0 alors que la requete appartenait au joueur 1. Les UI
+passent majoritairement un joueur explicite, mais le bus de reponse ne conserve pas
+encore cette association.
 
-- Les evenements monde contrats sont durcis statiquement mais doivent encore etre testes avec commandes forgees, objets stream/unstream et objectifs appartenant a un autre joueur.
+Correction attendue : stocker `playerNum` avec chaque callback/requestId et
+resoudre le bon joueur lors de la reponse, ou laisser exclusivement le callback
+metier appliquer l'etat au joueur capture.
 
-### P2 et robustesse
+#### P1 - Crash consistency
 
-- Le cache idempotent est en memoire; sa tenue et son nettoyage sur serveur long doivent etre observes.
-- ATM simultane, livraison simultanee et deux cashouts Poker exigent un test reel a deux clients.
-- Deux fonctions globales ont des definitions client/shared en doublon : `PZLinuxTrading_initializePrices` et `PZLinuxUpdateTradingPrices`. Clarifier wrappers ou rendre les versions client locales.
-- Les cles ModData historiques doivent rester compatibles avec les sauvegardes existantes.
+L'idempotence evite un resend dans un serveur qui continue de tourner, mais son
+cache n'est pas persistant. Plusieurs operations effectuent successivement debit ou
+credit, mise a jour d'etat, puis transmission ModData. Un arret brutal exactement
+entre ces etapes peut produire une fenetre de double paiement, de perte ou de
+rollback rejoue.
 
-## 6. Audit economie
+Ce risque est faible en frequence mais important economiquement. Il faut tester en
+tuant volontairement le serveur pendant :
 
-L'economie est mieux calibree qu'avant : le Dark Web n'offre plus aussi vite les objets les plus puissants, les Requests sont du confort cher et les petits contrats ne financent plus immediatement l'equipement end-game.
+- `ContractComplete` apres credit ;
+- un achat/livraison Dark Web ;
+- un cashout Poker ;
+- l'application d'un rollback interrompu.
 
-Points encore a mesurer :
+Une vraie correction demanderait un journal persistant de transaction ou un statut
+`pending/applied` durable par operation economique critique.
 
-- Trading applique maintenant une commission serveur de 5 % a l'achat comme a la vente. Un aller-retour au meme prix rend environ 90,48 % de la somme effectivement debitee a l'achat, avant arrondi.
-- Course : le payout `mise * cote` doit etre confronte a la probabilite reelle de victoire par une simulation massive.
-- Hacking peut rester une source de cash repetable sans cooldown/rendement decroissant.
-- `PZLinuxMailGiveReward` tire encore 1 a 5 objets dans tout le catalogue Dark Web et peut ajouter un revolver. Le cash est plafonne, pas la puissance de l'objet.
-- Le bonus de reward par Z est raisonnable a 5 % et utilise maintenant uniquement le Z choisi par le serveur.
-- La reputation existe et decroit, mais ses seuils/avantages doivent etre observes sur une partie longue.
+#### P2 - Rate limiting
 
-Recommandations avant publication :
+L'idempotence ne limite pas un client qui fabrique toujours de nouveaux
+`requestId`. Les validations empechent les gains illegitimes connus, mais un client
+peut spammer sync, preview, mail generation ou actions invalides. Ajouter un petit
+rate limit par joueur/commande reduirait le bruit serveur et les risques de DoS.
 
-1. Tester en serveur dedie les controles mailbox avec un client legitime puis des commandes distantes forgees.
-2. Mesurer en partie longue si la commission Trading de 5 % freine suffisamment les gros capitaux sans rendre les petits ordres frustrants.
-3. Simuler au moins 100 000 courses par configuration et maintenir une esperance joueur negative moderee.
-4. Ajouter un cooldown Hacking de 12 a 24 heures monde ou des rendements decroissants.
-5. Remplacer le reward mail global par trois tiers ponderes.
+#### P3 - Endpoint banque generique
 
-## 7. Qualite statique et namespace
+`PZLinuxBankDebit` accepte encore un montant et une raison client. Il ne permet que
+de retirer l'argent du joueur emetteur et ne constitue pas un cheat rentable connu,
+mais les domaines majeurs debitent deja directement cote serveur. Cette surface
+generique devrait etre reservee a une allowlist de raisons ou retiree si elle n'est
+plus necessaire.
 
-Resultats mesures le 2026-07-31 :
+## 7. Contrats et locations
 
-| Controle | Resultat |
-| --- | --- |
-| Lua 5.1 `luac5.1 -p` sur 55 fichiers | OK |
-| Luacheck | 113 warnings, 0 errors |
-| Audit statique P0 historique | OK |
-| Appels `getPlayer()` hors helper | 0 |
-| Assets PNG/OGG | OK |
-| Locations B42.20 | OK, 7 pools |
-| Traductions | OK, 20 langues x 284 cles |
-| Test moteur Poker | OK |
-| Test autorite contrats | OK |
-| Test autorite objectifs contrats | OK |
-| Test secret Hacking | OK |
-| Test proximite mailbox | OK |
-| Test livraison Dark Web MP | OK |
-| Test commission Trading | OK |
-| Fonctions globales non prefixees | 294 declarations |
-| Textes hardcodes | 1927 candidats heuristiques |
+### Etat des 12 contrats
 
-Repartition Luacheck :
+- Les 12 definitions sont generees par `PZLinuxContractsBuildMission`.
+- Les contrats avec location ne tirent que parmi les villes disposant d'un point
+  actif dans leur pool.
+- Les introductions des 12 conversations s'affichent immediatement.
+- Les reponses suivantes utilisent le profil partage de 1,8 a 4,2 secondes.
+- Les dialogues continuent avec `OnTickEvenPaused` et sont nettoyes a la fermeture.
+- Une preview refusee n'affiche plus un ecran vide : l'offre reste visible et le
+  code d'erreur est traduit.
+- Un contrat n'est retire du board qu'apres acceptation serveur.
+- La notification de completion est idempotente par joueur et
+  `PZLinuxContractId`; un clic droit/sync ne rejoue plus son, halo et effets humeur.
+- Le depot mailbox retire et synchronise l'item cote serveur.
 
-| Code | Nombre | Priorite | Action |
-| --- | ---: | --- | --- |
-| W432 | 50 | Faible | Shadowing `self` dans closures UI; renommer progressivement |
-| W611 | 20 | Faible | Lignes vides avec whitespace |
-| W211 | 12 | Moyenne | Variables locales inutilisees |
-| W612 | 8 | Faible | Trailing whitespace |
-| W613 | 6 | A verifier | Whitespace dans strings, ne pas corriger aveuglement |
-| W581 | 5 | Faible | Expressions booleennes simplifiables |
-| W614 | 4 | Faible | Whitespace dans commentaires |
-| W213 | 4 | Faible | Variables de boucle inutilisees |
-| W431 | 2 | Moyenne | Shadowing d'upvalue |
-| W411 | 1 | Importante | Variable redefinie dans Wallet |
-| W311 | 1 | Importante | Affectation inutilisee dans Mail |
+### Pools B42.20 valides
 
-Le script `tools/check_lua_syntax.sh` retourne actuellement un code d'erreur parce qu'il enchaine Luacheck apres la syntaxe. La syntaxe seule est bien valide; la commande globale restera rouge tant que les 113 warnings ne seront pas traites ou explicitement toleres.
+| Pool | Nombre | Couverture |
+| --- | ---: | --- |
+| packages | 37 | 9 villes |
+| cargo | 22 | 8 villes |
+| manhunt | 16 | 7 villes |
+| protect | 7 | 3 villes |
+| vehicles | 36 | 8 villes |
+| mailDrops.ammo | 37 | Reutilise packages |
+| mailDrops.medical | 37 | Reutilise packages |
 
-Les 294 declarations non prefixees comprennent beaucoup de methodes de classes UI historiques (`linuxUI`, `darkWebUI`, `AtmUI`, etc.). Leur renommage reste souhaitable pour eviter les collisions entre mods, mais doit etre fait classe par classe avec toutes les references et, si necessaire, un alias temporaire.
+La structure est robuste, mais la distribution geographique reste volontairement
+inegale : Fallas Lake et Valley Station n'ont aucun point actif; Ekron est surtout
+couvert par Protect; Coalfield par Package/Cargo.
 
-## 8. Traductions et UI
+### Point d'equilibrage important
 
-Etat positif : tous les catalogues possedent exactement les memes 284 cles et placeholders que l'anglais. La syntaxe Lua et l'UTF-8 passent.
+`PZLinuxContractsGiveContractCase` contient encore un bonus aleatoire :
 
-Limites :
+- 1 chance sur 5 environ de recevoir un revolver ;
+- le meilleur tirage ajoute aussi jusqu'a 1 999 billets.
 
-- Les 18 nouvelles langues sont des premieres passes automatiques; elles exigent une relecture communautaire/native.
-- Les textes visibles hors catalogue restent nombreux dans Mail, Hacking, Trading, Wallet, context menus, evenements et certaines TimedActions.
-- Le boot PC peut rester en anglais par choix artistique, mais erreurs, boutons, objectifs et feedback joueur doivent etre traduits.
-- Les UIs autres que Request et certains ecrans Betting n'ont pas toutes une zone scrollable adaptee aux textes longs.
-- Les symboles de cartes dependent de la police chargee par PZ; le fallback ASCII doit rester disponible.
+Le joueur peut potentiellement vider le contenu avant de renvoyer la valise. Ce
+bonus est tres eleve pour un contrat Package deja remunere et doit etre supprime,
+plafonne ou integre explicitement au calcul du reward.
 
-Commandes utiles :
+## 8. Economie et progression
+
+### Points positifs
+
+- Les prix Dark Web puissants ont ete releves.
+- Les Requests sont un service de confort couteux et non une source de loot gratuit.
+- La remise PlantScavenging est plafonnee a 15 %.
+- Trading applique 5 % de fee serveur sur achats et ventes.
+- Les contrats faciles paient moins que les objectifs dangereux.
+- Le niveau Z ajoute 5 % de reward par etage absolu, sur un Z choisi par le serveur.
+- La reputation est attribuee cote serveur et decroit dans le temps.
+- Les soldes ATM sont limites et persistants.
+- Le bonus cash Mail est limite a 100-300 dollars.
+
+### Risques d'equilibrage
+
+#### P1 - Cadeaux Mail
+
+`PZLinuxMailGiveReward` tire encore entre 1 et 5 objets dans l'ensemble de
+`PZLinuxDarkWebItemsTable`. Le tirage peut donc fournir un objet end-game, puis
+ajouter un revolver. Le plafonnement cash ne suffit pas a controler la puissance du
+cadeau.
+
+Correction recommandee : trois tiers de reward avec allowlists et poids, lies a la
+difficulte/quantite du Mail et a la reputation.
+
+#### P1 - Bonus Package
+
+Le revolver et les 1 999 billets possibles dans la valise de contrat contournent
+l'equilibrage normal des rewards.
+
+#### P2 - Hacking
+
+Le Hacking reste une source de cash repetable sans cooldown serveur long ni
+rendement decroissant documente.
+
+#### P2 - Zombie Race
+
+Le settlement est correct, mais aucune simulation statistique massive ne prouve
+encore que les cotes donnent une esperance joueur negative et raisonnable.
+
+#### P2 - Reputation
+
+La reputation existe et decroit, mais son impact concret sur Dark Web/deals reste
+moins visible que son infrastructure. Les seuils et avantages doivent etre mesures
+sur une partie longue.
+
+## 9. Traductions et UI
+
+### Infrastructure
+
+- 20 catalogues `IG_UI.json` valides en UTF-8.
+- 299 cles identiques par langue.
+- Controle automatique des doublons, cles et placeholders `%s`/`<name>`.
+- Request utilise un `ISRichTextPanel` fixe, wrappe, scrollable et auto-scroll.
+- Les descriptions de locations utilisent des cles traduisibles et un fallback.
+- Poker/Blackjack ont ete ajustes au CRT avec cartes, table et actions compactes.
+- Les symboles de cartes utilisent des textures rouge/noir, evitant les limites de
+  glyphes de `ISLabel`.
+
+### Limites
+
+- L'audit large trouve 1 983 strings candidates hors catalogues.
+- 204 motifs visibles simples restent notamment dans boutons, labels, halos et
+  menus; ce chiffre contient encore des faux positifs.
+- 16 `context:addOption` sont encore ecrits en dur.
+- `Sandbox.json` n'existe qu'en anglais.
+- Les catalogues automatiques ont des erreurs semantiques visibles. Exemple :
+  `ALL-IN` est traduit par `TODO INCLUIDO` en espagnol et `TUDO INCLUIDO` en
+  portugais au lieu du terme de poker.
+- Plusieurs textes de Mail, context menus, feedbacks et notes de contrat restent en
+  anglais.
+- Le boot du PC peut rester en anglais par choix de lore; les commandes et erreurs
+  joueur doivent etre traduites.
+
+Avant release, migrer en priorite : context menus, erreurs reseau, confirmation des
+transactions, etapes de contrats, Mail et Hacking. Une relecture native ou
+communautaire est indispensable pour les 18 catalogues generes.
+
+## 10. Namespace et compatibilite autres mods
+
+### Etat
+
+- Les commandes reseau critiques sont prefixees.
+- Les nouveaux moteurs partages utilisent majoritairement `PZLinux*`.
+- Aucun appel direct `getPlayer()` ne reste hors helper central selon l'audit.
+- 276 declarations heuristiques ne commencent toujours pas par `PZLinux`.
+- 26 classes UI/TimedActions globales restent non prefixees.
+- Plusieurs callbacks d'evenements restent globaux et non prefixes.
+
+Les 276 entrees ne sont pas 276 bugs : une grande partie sont des methodes de
+classes historiques comme `AtmUI:on...`. Le vrai risque concerne les racines de
+classes et fonctions globales : `AtmUI`, `linuxUI`, `MailBoxUI`,
+`ISBloodAction`, `isNearTarget`, `generatePseudo`, etc.
+
+Migration conseillee : domaine par domaine, avec renommage de la classe, de sa
+chaine `derive`, de toutes les references et event callbacks dans le meme patch.
+Eviter un remplacement global massif avant la 1.0.0.
+
+## 11. Manette, clavier et split-screen
+
+### Manette
+
+Etat : **non implemente systematiquement**.
+
+- Aucun `onGainJoypadFocus`/`onJoypad...` n'est present dans le mod.
+- Les champs de mise, quantite, mot de passe et prix supposent clavier/souris.
+- Les listes n'ont pas d'ordre de focus controller commun.
+- Back/B n'est pas mappe de facon coherente.
+- Le clavier virtuel n'est pas teste.
+
+La v1.0.0 peut sortir avec cette limitation annoncee. Elle ne doit pas revendiquer
+la compatibilite manette avant implementation et test.
+
+### Split-screen
+
+Les UI utilisent beaucoup mieux le joueur transmis par PZ, mais le listener reseau
+commun reste centre sur `PZLinuxGetPlayer()` sans index. La compatibilite
+split-screen complete ne doit pas etre annoncee avant correction et test de deux
+joueurs locaux.
+
+## 12. Metadonnees et packaging release
+
+Etat : **metadonnees v1.0.0 harmonisees**.
+
+- `README.md`, `workshop.txt` et `doc/overview.md` presentent PZLinux 1.0.0 sans
+  marqueur BETA ou version 0.1.x.
+- `workshop.txt` conserve correctement `version=1`, qui designe la version du
+  format Workshop et non celle du mod.
+- Le `mod.info` versionne declare `modversion=1.0.0`, `versionMin=42.20`, la
+  categorie `features` et les compatibilites/limitations principales.
+- Le doublon `common/mod.info` a ete supprime. Le dossier `common` reste present,
+  comme l'exige la structure Build 42.
+- L'ID historique `B42_PZLinux` est conserve pour ne pas casser sauvegardes,
+  abonnements et configurations serveur.
+- La description Workshop couvre Poker, Blackjack, l'autorite serveur, les 20
+  catalogues de traduction et les limitations manette/split-screen.
+- `tools/check_release_metadata.lua` empeche le retour accidentel de BETA, d'une
+  version 0.1.x ou d'un second `mod.info`.
+- Plusieurs scripts `.sh` dans `tools/` sont suivis en mode `100644`; `./tools/...`
+  echoue avec « Permission denied ». Ils fonctionnent avec `bash tools/...`.
+
+Avant tag, il reste seulement a rendre les outils shell executables si l'usage direct
+est souhaite et a valider les captures definitives du Workshop.
+
+## 13. Checklist de tests manuels
+
+### Solo B42.20
+
+- [ ] Nouvelle sauvegarde : ordinateur, Internet, fermeture et reouverture.
+- [ ] Sauvegarde existante pre-v1 : migration sans perte banque/contrat/mail.
+- [ ] ATM : depot, retrait, reserve, manque de cash et reload save.
+- [ ] Dark Web : achat, perte, livraison, vente, redemption et reconnexion.
+- [ ] Trading : snapshot, achat, vente, Wallet et progression sur plusieurs jours.
+- [ ] Jouer, annuler et completer les 12 contrats.
+- [ ] Verifier qu'une sync/clic droit ne rejoue plus la completion d'un contrat.
+- [ ] Echantillonner packages, cargo, manhunt, protect et vehicules B42.20.
+- [ ] Requests item/vehicule, double clic et chunk temporairement indisponible.
+- [ ] Mails ammo/medical, accept/delete/complete et inventaire insuffisant.
+- [ ] Hacking manuel/auto, lock, transfert et restart.
+- [ ] Blackjack win/lose/push/blackjack et fermeture en cours de partie.
+- [ ] Zombie Race win/lose, animation puis paiement final.
+- [ ] Poker : cinq joueurs, eliminations, duel final, side pot et cashout.
+- [ ] Tester EN, FR, DE, RU, TH, JP, KO, CN et CH sur les UI principales.
+
+### MP serveur dedie, deux clients
+
+- [ ] Meme solde apres sync/reconnexion pour chaque joueur.
+- [ ] Deux depots/retraits simultanes sur le meme ATM.
+- [ ] Meme snapshot/prix Trading pour les deux joueurs.
+- [ ] Trading simultane et fee 5 % apres redemarrage.
+- [ ] Dark Web : achat, reconnexion, livraison et redemption par le bon joueur.
+- [ ] Commandes mailbox forgees a distance/mauvais Z refusees.
+- [ ] Meme board de contrats pour les deux joueurs.
+- [ ] Offre acceptee simultanement : un seul gagnant, board resynchronise.
+- [ ] Objectif Package/Cargo/Manhunt vole et livre par un autre joueur.
+- [ ] Unload/reload chunk conserve tags et statut d'objectif.
+- [ ] ContractAccept forge avec location/Z/reward/info ignores.
+- [ ] ContractComplete forge refuse sans credit.
+- [ ] Chaque event monde forge a distance/mauvaise entite refuse.
+- [ ] Request vehicule ne spawn qu'une fois apres double commande/reconnexion.
+- [ ] Mail complete simultane ne retire/reward qu'une fois.
+- [ ] Deux Blackjack/Race/Poker simultanes sans fuite d'etat.
+- [ ] Restart pendant Blackjack/Race/Hacking/Poker applique un rollback exact.
+- [ ] Arret brutal pendant ContractComplete et cashout ne duplique pas le credit.
+
+### Controller et split-screen
+
+- [ ] Deux joueurs locaux conservent banque, callbacks et contrats independants.
+- [ ] Une reponse serveur met a jour le bon joueur local.
+- [ ] Focus initial sur chaque UI.
+- [ ] Navigation complete sans souris.
+- [ ] Scroll listes/RichTextPanel au D-pad ou stick.
+- [ ] Saisie via clavier virtuel.
+- [ ] Back/B ferme ou revient sans perdre une transaction.
+
+## 14. Todo priorisee avant v1.0.0
+
+### P0 - Gates de release
+
+- [x] Retirer l'autorite client des prix, soldes, rewards et missions.
+- [x] Durcir les mailboxes et objectifs monde par distance/Z/entite/statut.
+- [x] Ne plus transmettre le mot de passe Hacking.
+- [x] Ajouter l'idempotence par commande/requestId.
+- [ ] Executer la campagne MP deux clients complete.
+- [ ] Tester reconnexion, unload/reload chunk et redemarrage serveur.
+- [ ] Tester les commandes forgees listees dans la checklist.
+- [ ] Valider une sauvegarde pre-v1 et documenter la strategie de backup.
+
+### P1 - Avant publication publique
+
+- [x] Corriger le routage des reponses reseau en split-screen ou annoncer la
+  limitation explicitement.
+- [ ] Tester puis durcir les fenetres de crash des paiements critiques.
+- [ ] Refaire les rewards Mail avec tiers/allowlists.
+- [ ] Supprimer ou plafonner le revolver/cash du contrat Package.
+- [x] Harmoniser `README.md`, `workshop.txt`, `overview.md` et `mod.info` en 1.0.0.
+- [ ] Corriger les traductions automatiques manifestement erronees.
+
+### P2 - Maintenabilite et robustesse
+
+- [ ] Extraire Mail runtime/rewards hors `ISPZLinuxVariablesTables.lua`.
+- [ ] Extraire banque/ATM, jeux et Hacking par domaine.
+- [ ] Supprimer les deux wrappers Trading globaux dupliques.
+- [ ] Ajouter timeout/nettoyage aux callbacks client sans reponse.
+- [ ] Ajouter rate limit serveur par joueur/commande.
+- [ ] Examiner W411 Wallet, W311 Mail, W211 et W431.
+- [ ] Ajouter tests directs ATM, banque, Blackjack, Mail et Requests.
+- [ ] Simuler au moins 100 000 Zombie Races et mesurer le RTP.
+- [ ] Ajouter cooldown ou rendement decroissant Hacking.
+
+### P3 - Traductions, namespace et accessibilite
+
+- [ ] Migrer les textes visibles restants vers `IG_UI`.
+- [ ] Creer les `Sandbox.json` manquants ou documenter le fallback anglais.
+- [ ] Faire relire les 18 langues generees par des locuteurs.
+- [ ] Renommer classes, TimedActions et globals non prefixes par domaine.
+- [ ] Implementer la navigation manette.
+- [ ] Completer et tester le split-screen.
+- [ ] Completer Fallas Lake/Valley Station si une couverture totale est souhaitee.
+
+### P4 - Finition
+
+- [ ] Nettoyer les warnings Luacheck cosmetiques.
+- [ ] Rendre les scripts `tools/*.sh` executables ou documenter `bash tools/...`.
+- [ ] Ajouter un changelog 1.0.0 lisible a partir de `doc/release.md`.
+- [ ] Mettre a jour les captures Workshop des nouvelles features.
+- [ ] Faire une sauvegarde longue de plusieurs semaines monde.
+
+## 15. Roadmap apres 1.0.0
+
+### 1.1 - Economie et services
+
+- Panier Request multi-items avec devis serveur.
+- Depot libre de ressources via allowlist economique.
+- Matieres premieres Trading et historique saisonnier.
+- Acces PZLinux par radio ou satellite.
+- Reputation reliee a des offres, prix et avantages explicites.
+- Options Sandbox : fee, reserves ATM, rewards, reputation et cooldowns.
+
+### 1.1 - Nouveaux contrats
+
+- Station radio attirant une horde.
+- Livraison chronometree.
+- Recuperation piegee avec alarme serveur.
+- Livraison de carburant/eau avec capacites reelles.
+- Reapprovisionnement d'un ATM sans duplication de cash.
+- Livraison d'un vehicule validee par identite/position/etat.
+
+### 1.2 - Narratif
+
+- Objets rares et documents thematiques.
+- Coursier mort avec choix moral sur le colis.
+- Livraison d'eau avec controle de contamination.
+- Transport d'animaux avec API Build 42.
+
+### Regles pour toute nouvelle feature
+
+- Le serveur choisit ou valide prix, quantite, objectif, timer, spawn et reward.
+- Le client envoie une intention et des references minimales.
+- Toute mutation economique est idempotente et possede une strategie de restart.
+- Toute mission utilise `PZLinuxMissionLocations` et un ID persistant.
+- Tout texte visible nait dans `IG_UI` avec UI adaptee aux textes longs.
+- Toute logique calculable hors-jeu recoit un test Lua.
+- Toute feature recoit un scenario solo, MP, reconnexion et restart.
+
+## 16. Commandes de validation
 
 ```bash
-lua5.1 tools/check_translations.lua
-perl tools/generate_translations.pl --locale DE --force
-bash tools/audit_hardcoded_text.sh
-```
+find "Contents/mods/B42 PZLinux/42/media/lua" -type f -name '*.lua' -print0 \
+  | xargs -0 -n1 luac5.1 -p
 
-## 9. Audit manette et split-screen
+luacheck --config tools/.luacheckrc \
+  "Contents/mods/B42 PZLinux/42/media/lua"
 
-Etat : **non implemente de maniere systematique**.
-
-Travail restant :
-
-- Definir un focus initial dans chaque fenetre.
-- Construire l'ordre de navigation D-pad/stick entre boutons et listes.
-- Mapper Back/B a fermeture ou retour.
-- Rendre les listes scrollables au controller.
-- Remplacer ou accompagner les champs numeriques par presets/steppers.
-- Verifier le clavier virtuel pour Hacking, Trading, Betting et Request.
-- Tester deux joueurs locaux et verifier qu'aucune UI ne reprend le joueur 0.
-
-Ce chantier peut etre annonce comme limitation de la 1.0.0, mais une compatibilite manette complete ne doit pas etre revendiquee avant test.
-
-## 10. Checklist de tests manuels
-
-### Solo B42.20.0
-
-- [ ] Nouveau personnage : ordinateur, connexion, fermeture/reouverture et sauvegarde.
-- [ ] ATM : depot/retrait, reserve locale, limites, reconnexion et reload save.
-- [ ] Dark Web : offre, achat, perte, livraison, vente et encaissement.
-- [ ] Trading : snapshot, achat, vente et Wallet apres plusieurs jours monde.
-- [ ] Hacking : no card, manuel, six echecs, auto, transfert et restart.
-- [ ] Jouer les 12 contrats, annuler et completer chaque type.
-- [ ] Verifier les 37 packages, 22 cargos, 16 manhunts, 7 protects par echantillonnage en jeu.
-- [ ] Requests items et les 36 emplacements vehicules.
-- [ ] Mails ammo/medical, accept/delete/complete/missing items.
-- [ ] Blackjack : win/lose/push/blackjack et fermeture.
-- [ ] Course : win/lose, mise invalide et fermeture.
-- [ ] Poker : chaque lobby, fold/call/raise/all-in, side pot, next hand, cashout et fermeture.
-- [ ] Charger EN, FR, DE, RU, TH, JP, KO, CN et CH pour verifier glyphes/debordements.
-
-### MP serveur dedie
-
-- [ ] Deux joueurs sur le meme ATM avec retraits simultanes.
-- [ ] Deux joueurs voient exactement les memes prix Trading.
-- [ ] Achat/vente Trading puis reconnexion et redemarrage serveur.
-- [ ] Dark Web : livraison apres reconnexion et tentative de commande distante forgee.
-- [ ] Contrat global : meme board, objectif vole et livre par un autre joueur.
-- [ ] Tester les tags objectif apres unload/reload du chunk.
-- [ ] Tester ContractComplete legitime et commande forgee.
-- [ ] Tester ContractAccept forge avec location/Z/info modifies; le serveur doit les ignorer.
-- [ ] Forger chaque evenement contrat (`zombieKilled`, spawn, package, cargo, protect, decapitate, blood, capture) a distance ou avec une mauvaise reference; le serveur doit refuser sans mutation.
-- [ ] Requests : double clic, retry, livraison distante et double spawn vehicule.
-- [ ] Mails : completion simultanee et commande distante.
-- [ ] Redemarrage pendant Blackjack, Hacking et Poker; verifier remboursement exact.
-- [ ] Deux sessions Poker simultanees sans fuite de cartes/stack.
-
-### Controller/split-screen
-
-- [ ] Focus initial et fermeture de chaque UI.
-- [ ] Navigation de toutes les actions sans souris.
-- [ ] Scroll des listes et RichTextPanels.
-- [ ] Saisie numerique/texte avec clavier virtuel.
-- [ ] Deux joueurs locaux avec soldes, contrats et UI independants.
-
-## 11. Todo avant release 1.0.0
-
-### P0 - Bloquant
-
-- [x] Rendre `PZLinuxContractsApplyAccept` totalement serveur-autoritatif : seul `contractId` vient du client.
-- [x] Durcir tous les evenements monde contrats : resolution d'entite, proximite/Z, tag, etat canonique, comptage des kills et suppression cote serveur.
-- [ ] Tester la completion de contrat legitime et forgee sur serveur dedie.
-- [ ] Executer un cycle MP deux joueurs complet sur ATM, Trading, Dark Web, contrats et Requests.
-
-### P1 - Securite et economie
-
-- [x] Ajouter validation serveur d'une mailbox et de la distance pour Dark Web, Request, encaissement et depot contrat.
-- [x] Garder le password Hacking dans la session serveur et ne renvoyer que sa longueur et le feedback de tentative.
-- [ ] Tester les rollbacks Blackjack/Hacking/Poker apres redemarrage reel.
-- [ ] Rebalancer les rewards mails par tiers.
-- [ ] Simuler et corriger l'esperance des courses.
-- [x] Ajouter une commission Trading serveur de 5 % par transaction.
-- [ ] Ajouter cooldown ou rendements decroissants Hacking.
-
-### P2 - Maintenabilite
-
-- [x] Extraire Dark Web data/runtime, Trading data et economie.
-- [x] Extraire contrats, demandes de contrats, Requests, Poker et locations.
-- [x] Mutualiser les dialogues contrats et retirer `RetrievePackage.lua`.
-- [ ] Extraire Mail rewards/runtime hors `ISPZLinuxVariablesTables.lua`.
-- [ ] Extraire banque/ATM, betting et Hacking par domaine.
-- [ ] Resoudre les deux definitions globales Trading en doublon.
-- [ ] Corriger W411 Wallet et W311 Mail, puis W211/W431.
-- [ ] Renommer les classes UI et TimedActions non prefixees par lots.
-
-### P3 - Traductions et accessibilite
-
-- [x] Creer 20 catalogues synchronises et le validateur automatique.
-- [x] Rendre Request scrollable et migrer ses dialogues principaux.
-- [x] Rendre les descriptions de locations traduisibles.
-- [ ] Trier les 1927 candidats et migrer tous les textes visibles restants.
-- [ ] Faire relire les 18 traductions automatiques.
-- [ ] Tester textes longs et glyphes sur les langues representatives.
-- [ ] Implementer la navigation manette et tester split-screen.
-
-### P4 - Finition release
-
-- [ ] Completer les villes/pools encore vides si la couverture geographique est souhaitee.
-- [ ] Nettoyer les 113 warnings Luacheck ou documenter les exceptions acceptees.
-- [ ] Relancer syntaxe, Luacheck, assets, locations, traductions et Poker apres le dernier patch.
-- [ ] Mettre a jour README/Workshop, compatibilite B42.20.0 et limitations manette.
-- [ ] Faire une sauvegarde longue, une reconnexion et un redemarrage serveur avant publication.
-
-## 12. Roadmap et idees futures
-
-Cette section fusionne l'ancienne `doc/roadmap.md`. Elle distingue les travaux necessaires a la 1.0.0 des extensions qui pourront etre developpees sans retarder la release.
-
-Legende :
-
-- `[x]` socle implemente.
-- `[ ]` idee retenue ou a concevoir.
-- `[?]` decision de gameplay encore necessaire avant implementation.
-
-### Version 1.0.0 - stabilisation et finition
-
-- [ ] Rendre les interfaces compatibles manette et split-screen; suivre les controles detailles des sections 9, 10 et 11.
-- [ ] Ajouter un message de bienvenue lors de la premiere connexion a PZLinux, avec un flag persistant par joueur pour ne pas le rejouer.
-- [ ] Ecrire le lore minimal de la 1.0.0 : origine du reseau, societes de Trading, contrats, Dark Web et coherence des mails.
-- [x] Limiter la reserve initiale d'un ATM entre `$10 000` et `$50 000` et la persister en solo/MP.
-- [x] Ajouter une reputation par contrat, calculee notamment depuis la difficulte, puis la faire diminuer avec le temps.
-- [ ] Relier concretement la reputation aux avantages, prix Dark Web, qualite des offres et penalites d'annulation; calibrer et expliquer les seuils au joueur.
-- [ ] Completer les options Sandbox pour les valeurs d'equilibrage importantes : commission Trading, reserves ATM, rewards, reputation, cooldowns et multiplicateurs de prix.
-
-### Version 1.1 - economie et services PZLinux
-
-- [ ] Ajouter un panier Request personnalisable : le joueur choisit plusieurs articles et quantites, recoit un devis serveur, confirme puis attend la livraison.
-- [ ] Ajouter un point de depot libre de ressources. Le serveur identifie les items deposes, retire les quantites et calcule leur valeur depuis une allowlist economique.
-- [ ] Ajouter les matieres premieres au Trading, avec prix saisonniers ou mensuels et historique global commun a tous les joueurs.
-- [ ] Faire de la connexion radio un moyen d'acces ou de communication avec PZLinux.
-- [ ] Ajouter une solution satellite pour obtenir Internet sur un ordinateur, avec objet requis, alimentation et condition d'installation.
-- [?] Definir la regle « cargo brule » : echec automatique du contrat, livraison partielle interdite, ou compensation possible selon l'etat du cargo.
-- [ ] Limiter le piratage de carte bancaire a un ATM proche et a trois tentatives validees par le serveur.
-
-### Version 1.1 - nouveaux contrats
-
-- [ ] Station radio : activer une diffusion qui attire des zombies dans la zone pendant une duree donnee.
-- [ ] Livraison chronometree : recuperer puis remettre des items avant l'expiration du contrat.
-- [ ] Recuperation piegee : utiliser un ordinateur avec une chance d'alarme et de horde serveur.
-- [ ] Logistique : livrer `200 L` de carburant ou d'eau en tenant compte des capacites reelles des conteneurs.
-- [ ] Reapprovisionner un ATM avec une somme imposee, sans permettre de dupliquer le cash ou la reserve ATM.
-- [ ] Livrer un vehicule dans une zone precise; valider cote serveur l'identite, la position, l'etat et les eventuels objets requis.
-- [ ] Contrat a forte angoisse : declencher une horde en contrepartie d'un loot rare apportant un avantage temporaire de survie.
-
-### Version 1.2 et au-dela - quetes narratives
-
-- [ ] Trouver un objet rare, par exemple un grand Spiffo ou un masque a gaz.
-- [ ] Recuperer des documents chez un medecin ou dans un autre lieu thematique.
-- [ ] Retrouver un coursier mort et decider de livrer ou garder son colis.
-- [ ] Livrer de l'eau potable avec controle de quantite et de contamination.
-- [ ] Transporter et livrer des animaux en s'appuyant sur les API Build 42 et une validation serveur adaptee.
-
-### Principes communs aux futures features
-
-- Le serveur choisit ou valide les objectifs, prix, quantites, timers, spawns et rewards; le client ne transmet que l'intention et les identifiants necessaires.
-- Toute nouvelle mission utilise `PZLinuxMissionLocations`, des IDs persistants et des pools par ville plutot que des coordonnees inline dans l'UI.
-- Toute mutation economique est atomique, idempotente et compatible solo via le meme coeur partage.
-- Les nouveaux textes visibles utilisent les catalogues `IG_UI` des leur creation et l'UI supporte textes longs, glyphes et controller.
-- Chaque feature recoit au minimum un test Lua hors-jeu pour ses calculs et un scenario manuel solo/MP/restart dans cet audit.
-
-## 13. Commandes de validation
-
-```bash
 bash tools/run_static_audit.sh
-find "Contents/mods/B42 PZLinux/42/media/lua" -type f -name '*.lua' -print0 | xargs -0 -n1 luac5.1 -p
-luacheck --config tools/.luacheckrc "Contents/mods/B42 PZLinux/42/media/lua"
+bash tools/audit_namespace.sh
 bash tools/audit_function_prefixes.sh
 bash tools/audit_hardcoded_text.sh
 bash tools/audit_assets.sh
+
 lua5.1 tools/audit_locations.lua
 lua5.1 tools/check_translations.lua
-lua5.1 tools/test_poker_engine.lua
-lua5.1 tools/test_contract_authority.lua
-lua5.1 tools/test_contract_world_authority.lua
-lua5.1 tools/test_hacking_authority.lua
-lua5.1 tools/test_mailbox_proximity.lua
-lua5.1 tools/test_darkweb_delivery.lua
-lua5.1 tools/test_trading_fee.lua
+
+for test_file in tools/test_*.lua; do
+  lua5.1 "$test_file" . || exit 1
+done
 ```
 
-## 14. Decision de release
+## 17. Conclusion
 
-La base solo est suffisamment avancee pour poursuivre les tests de release. Les controles mailbox, les objectifs de contrats et le secret Hacking sont maintenant serveur-autoritatifs dans le code; la mention **100 % serveur-autoritatif** doit encore attendre les essais a deux clients et les tests de redemarrage.
+Le travail de migration a transforme PZLinux d'un mod essentiellement solo en un
+mod disposant d'une architecture MP credible. Les flux economiques et missions les
+plus sensibles sont maintenant serveur-autoritatifs dans le code, les erreurs
+rencontrees en serveur heberge ont ete corrigees avec des tests de regression, et
+la structure des donnees est nettement plus maintenable.
 
-Ordre conseille pour la prochaine passe :
-
-1. Tests MP/restart, dont ContractAccept, objectifs monde et commandes mailbox forges.
-2. Economie Mail/Trading/Race/Hacking.
-3. Traductions visibles restantes et relecture.
-4. Namespace, Luacheck, controller et finition Workshop.
+La prochaine etape utile n'est pas un nouveau grand refactor. Il faut figer les
+features, executer la campagne MP/restart, corriger les deux rewards trop genereux,
+regler les metadonnees de release et traiter uniquement les defauts observes. Une
+fois ces gates franchies, PZLinux pourra raisonnablement quitter BETA pour une
+v1.0.0, avec controller/split-screen annonces comme limitations si ces chantiers ne
+sont pas termines.

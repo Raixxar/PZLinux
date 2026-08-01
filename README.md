@@ -1,52 +1,78 @@
-# B42 PZLinux [BETA]
-Tired of finding stacks of useless cash in Project Zomboid? With PZLinux, the in-game economy finally comes to life, and money has real value!
+# PZLinux
 
-## Key Features:
-### Revitalized Economy System
-Buy and sell valuable items in an underground marketplace.
-The money you find in the world now serves a real purpose!
+PZLinux gives cash a purpose in Project Zomboid by adding a persistent apocalypse
+economy accessed through computers, ATMs and mailboxes.
 
+**Release:** 1.0.0
 
-### Connect via Computers
-Access PZLinux through in-game computers.
-Make sure you have a power source and funds in your bank account to start trading.
+**Game:** Project Zomboid Build 42.20 or newer
 
+**Mod ID:** `B42_PZLinux`
+
+**Workshop ID:** `3414468585`
+
+## Features
+
+### Banking and ATMs
+
+Deposit physical cash into a persistent bank account and withdraw it from ATMs
+with their own finite cash reserves.
 
 ### Dark Web
-A thriving underground market filled with weapons, ammo, blueprints, clothing, and more!
-The dark web marketplace refreshes daily, offering new chances to find rare and valuable items.
 
+Buy and sell weapons, ammunition, equipment, blueprints, clothing and survival
+supplies. Offers evolve with survival time, item rarity and reputation. Purchased
+goods are delivered through the mailbox system.
 
-### Trading System
-Invest in fictional companies to increase your earnings.
-Grow your wealth by making smart financial decisions!
+### Trading
 
+Invest in fictional companies whose prices evolve over time. Trading prices are
+shared by the server in multiplayer and every transaction includes a 5% fee.
 
-### Bank Account Hacking
-Find ID cards on zombies and attempt to crack bank accounts.
-Will you be able to decipher the codes and access hidden funds?
+### Contracts and Reputation
 
+Accept missions that send you back into the world: eliminate zombies or targets,
+retrieve packages, deliver equipment, prepare cargo and protect locations.
+Completing contracts builds a reputation that unlocks better economic conditions;
+cancelling contracts damages it.
 
-### Contract System
-Accept quests to earn even more money.
-Will you rise to the challenge?
+### Requests, Mail and Hacking
 
-
-### Special Requests
-Spend your money to obtain essential survival items.
-Boost your chances of living longer in the apocalypse.
-
+Order survival supplies and vehicles through online contacts, complete jobs from
+your mailbox, and use ID cards found on zombies to attempt server-validated bank
+account hacks.
 
 ### Online Betting
-Take a break to play online and maybe win big!
 
+Spend some downtime and risk your bank balance on:
 
-### A New Approach to Survival
-Enjoy an enhanced experience with a complete economic system.
-Deposit your money via an ATM to use it online.
+- Zombie Race betting;
+- Blackjack with a real 52-card deck;
+- six-seat Texas Hold'em Poker with persistent table stacks and AI opponents.
 
-Embrace the dark side of survival and elevate your Project Zomboid experience with PZLinux mod. Whether you're looking to get rid of excess items or hunt for elusive treasures, this mod makes every encounter with currency count. Get ready to dive into the shadows and see what the underground market has in store for you!
+## Solo and Multiplayer
 
-- Build 42
-- version=0.1.8
-- id=3414468585
+PZLinux supports single-player, hosted multiplayer and dedicated servers. In MP,
+banking, ATM operations, Dark Web transactions, Trading, Contracts, Requests,
+Mail, Hacking and betting mutations are processed and validated by the server.
+Shared markets, contract boards and world objectives are synchronized for all
+players, while personal balances and pending deliveries persist per player.
+
+## Languages
+
+Translation catalogs are included for 20 Project Zomboid locales. English is the
+reference catalog. Community proofreading of translated text remains welcome.
+
+## Known Limitations
+
+- Keyboard and mouse are currently required; full controller navigation is not implemented.
+- Split-screen is not officially supported or certified for the 1.0.0 release.
+- This package targets Build 42.20 and newer Build 42 versions only.
+
+## Installation
+
+Subscribe through Steam Workshop, enable `PZLinux` in the mod manager, and add
+`B42_PZLinux` to the server mod list when hosting multiplayer. No additional mod
+dependency is required.
+
+PZLinux is created and maintained by Raixxar.

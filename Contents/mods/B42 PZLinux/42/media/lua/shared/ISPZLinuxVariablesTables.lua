@@ -1143,6 +1143,7 @@ if Events and Events.OnServerCommand then
                 if modData then
                     if args.worldContractId ~= nil then modData.PZLinuxContractId = args.worldContractId end
                     if args.activeContract ~= nil then modData.PZLinuxActiveContract = args.activeContract end
+                    if args.zombieTarget ~= nil then modData.PZLinuxOnZombieToKill = args.zombieTarget end
                     if args.zombieCount ~= nil then modData.PZLinuxOnZombieDead = args.zombieCount end
                     if args.contractManhunt ~= nil then modData.PZLinuxContractManhunt = args.contractManhunt end
                     if args.contractCargo ~= nil then modData.PZLinuxContractCargo = args.contractCargo end
@@ -1991,14 +1992,65 @@ function PZLinuxContractsCreateWorldContract(player, selectedContract, contractI
     return record
 end
 
-function PZLinuxContractsSyncWorldRecordToPlayer(player, record, activeState)
+function PZLinuxContractsBuildNoteText(record)
+    if not record then return "" end
+    local noteText = record.fullNote or record.note or ""
+    if tonumber(record.contractId) == 1 then
+        noteText = PZLinuxContractsSetKillProgress(noteText, record.zombieCount, record.zombieToKill)
+    end
+    return noteText
+end
+
+function PZLinuxContractsReplaceContractNote(player, record)
+    local playerObj = PZLinuxGetPlayer(player)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory or not record then return false end
+
+    local items = inventory:getItems()
+    for index = items:size() - 1, 0, -1 do
+        local item = items:get(index)
+        if item and item:getType() == "Note" and item:getName() == "Contract" then
+            PZLinuxRemoveInventoryItem(playerObj, item)
+        end
+    end
+
+    local note = inventory:AddItem("Base.Note")
+    if not note then return false end
+    note:setName("Contract")
+    note:setCanBeWrite(true)
+    note:addPage(1, PZLinuxContractsBuildNoteText(record))
+    PZLinuxContractsTagEntity(note, record.id, "contract_note")
+    PZLinuxSyncAddedInventoryItem(playerObj, note)
+    return true
+end
+
+function PZLinuxContractsEnsureContractNote(player, record)
+    local playerObj = PZLinuxGetPlayer(player)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory or not record then return false end
+
+    local items = inventory:getItems()
+    local expectedText = PZLinuxContractsBuildNoteText(record)
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and item:getType() == "Note"
+        and item:getName() == "Contract"
+        and PZLinuxContractsGetEntityContractId(item) == record.id then
+            if item.seePage and item:seePage(1) == expectedText then return true end
+            break
+        end
+    end
+    return PZLinuxContractsReplaceContractNote(playerObj, record)
+end
+
+function PZLinuxContractsSyncWorldRecordToPlayer(player, record)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj or not record then return end
 
     local modData = playerObj:getModData()
     modData.PZLinuxContractId = record.id
     modData.PZLinuxContractTypeId = tonumber(record.contractId) or 0
-    modData.PZLinuxActiveContract = activeState or modData.PZLinuxActiveContract or 1
+    modData.PZLinuxActiveContract = PZLinuxContractsCanonicalActiveState(record.status)
     modData.PZLinuxOnReward = PZLinuxNormalizeMoney(record.reward)
     modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. tostring(record.code or "")
     modData.PZLinuxContractLocationX = tonumber(record.locationX) or 0
@@ -2059,7 +2111,10 @@ function PZLinuxContractsGetActiveState(player, requestId)
         end
         record = nil
     end
-    if record then PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record) end
+    if record then
+        PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record)
+        PZLinuxContractsEnsureContractNote(playerObj, record)
+    end
 
     return {
         ok = true,
@@ -2068,6 +2123,8 @@ function PZLinuxContractsGetActiveState(player, requestId)
         worldContractId = record and record.id or modData.PZLinuxContractId,
         contractId = record and record.contractId or modData.PZLinuxContractTypeId,
         activeContract = modData.PZLinuxActiveContract or 0,
+        zombieTarget = record and record.zombieToKill or modData.PZLinuxOnZombieToKill,
+        zombieCount = record and record.zombieCount or modData.PZLinuxOnZombieDead,
         locationX = record and record.locationX or modData.PZLinuxContractLocationX,
         locationY = record and record.locationY or modData.PZLinuxContractLocationY,
         locationZ = record and record.locationZ or modData.PZLinuxContractLocationZ,
@@ -2182,14 +2239,14 @@ function PZLinuxContractsRemoveContractNote(player)
     if not inventory then return false end
 
     local items = inventory:getItems()
+    local removed = false
     for index = items:size() - 1, 0, -1 do
         local item = items:get(index)
         if item and item:getType() == "Note" and item:getName() == "Contract" then
-            inventory:Remove(item)
-            return true
+            removed = PZLinuxRemoveInventoryItem(playerObj, item) or removed
         end
     end
-    return false
+    return removed
 end
 
 function PZLinuxContractsUpdateCompanyPrice(dataName, direction)
@@ -2256,6 +2313,7 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
         return { ok = false, error = "contract_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
     modData.PZLinuxContractId = worldRecord.id
+    PZLinuxContractsReplaceContractNote(playerObj, worldRecord)
     PZLinuxContractsRemoveBoardContract(contractId, boardData.generatedHour)
 
     local cacheKey = PZLinuxGetPlayerKey(playerObj) .. ":" .. tostring(contractId)
@@ -2429,7 +2487,7 @@ function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
         local itemContractId = PZLinuxContractsGetEntityContractId(item)
         local taggedRecord = PZLinuxContractsGetWorldContract(itemContractId)
         if taggedRecord and taggedRecord.status ~= "completed" and taggedRecord.status ~= "cancelled" then
-            PZLinuxContractsSyncWorldRecordToPlayer(playerObj, taggedRecord, 1)
+            PZLinuxContractsSyncWorldRecordToPlayer(playerObj, taggedRecord)
             modData = playerObj:getModData()
             break
         end
@@ -2718,19 +2776,9 @@ function PZLinuxContractsSyncRecordToParticipants(record)
     if getPlayer then syncPlayer(getPlayer()) end
 end
 
-function PZLinuxContractsUpdateKillNote(playerObj, zombieCount)
-    local inventory = playerObj and playerObj:getInventory()
-    if not inventory then return end
-    local items = inventory:getItems()
-    for index = 0, items:size() - 1 do
-        local item = items:get(index)
-        if item and item:getType() == "Note" and item:getName() == "Contract" then
-            local oldText = item:seePage(1) or ""
-            local newText = "Total zombies killed: " .. tostring(zombieCount or 0)
-            item:addPage(1, oldText:gsub("Total zombies killed: %d+", "") .. newText)
-            return
-        end
-    end
+function PZLinuxContractsUpdateKillNote(playerObj, record)
+    if not playerObj or not record then return false end
+    return PZLinuxContractsReplaceContractNote(playerObj, record)
 end
 
 function PZLinuxContractsIsPlayerCharacter(character)
@@ -2745,7 +2793,12 @@ function PZLinuxContractsCreditZombieKill(player, record)
     if not playerObj or not record then return false end
     record.zombieCount = (tonumber(record.zombieCount) or 0) + 1
     if tonumber(record.contractId) == 1 then
-        if record.zombieCount >= (tonumber(record.zombieToKill) or 0) then
+        local zombieTarget = tonumber(record.zombieToKill) or 0
+        if zombieTarget <= 0 then
+            zombieTarget = 10
+            record.zombieToKill = zombieTarget
+        end
+        if record.zombieCount >= zombieTarget then
             record.status = "ready_to_complete"
         else
             record.status = "in_progress"
@@ -2756,7 +2809,7 @@ function PZLinuxContractsCreditZombieKill(player, record)
     record.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or record.updatedHour
     PZLinuxContractsSyncRecordToParticipants(record)
     if tonumber(record.contractId) == 1 then
-        PZLinuxContractsUpdateKillNote(playerObj, record.zombieCount)
+        PZLinuxContractsUpdateKillNote(playerObj, record)
     end
     PZLinuxContractsTransmitWorldData()
     return true
