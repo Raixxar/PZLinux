@@ -44,7 +44,24 @@ local function checkAndSpawnBox(player)
 end
 Events.OnPlayerMove.Add(checkAndSpawnBox)
 
-local function contractCompletedPlaySound()
+PZLinux = PZLinux or {}
+PZLinux.ContractCompletionNotifications = PZLinux.ContractCompletionNotifications or {}
+
+local function PZLinuxContractCompletionNotificationKey(playerObj, modData)
+    local playerKey = tostring(playerObj:getPlayerNum())
+    local contractKey = tostring(modData.PZLinuxContractId or "")
+    if contractKey == "" then
+        contractKey = table.concat({
+            tostring(modData.PZLinuxContractTypeId or "legacy"),
+            tostring(modData.PZLinuxContractLocationX or 0),
+            tostring(modData.PZLinuxContractLocationY or 0),
+            tostring(modData.PZLinuxOnReward or 0),
+        }, ":")
+    end
+    return playerKey .. ":" .. contractKey
+end
+
+local function PZLinuxContractCompletedPlaySound()
     local playerObj = PZLinuxGetPlayer()
     if not playerObj then return end
 
@@ -52,17 +69,23 @@ local function contractCompletedPlaySound()
     if not modData then return end
 
     if modData.PZLinuxActiveContract == 9 then
+        local notificationKey = PZLinuxContractCompletionNotificationKey(playerObj, modData)
+        local alreadyNotified = PZLinux.ContractCompletionNotifications[notificationKey] == true
+        PZLinux.ContractCompletionNotifications[notificationKey] = true
+        modData.PZLinuxActiveContract = 10
+
+        if alreadyNotified then return end
+
         local globalVolume = getCore():getOptionSoundVolume() / 50
         getSoundManager():PlayWorldSound("done", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        HaloTextHelper.addGoodText(playerObj, "Contract completed");
-        modData.PZLinuxActiveContract = 10
+        HaloTextHelper.addGoodText(playerObj, "Contract completed")
 
         playerObj:getStats():add(CharacterStat.BOREDOM, -5)
         playerObj:getStats():add(CharacterStat.UNHAPPINESS, -5)
         playerObj:getStats():add(CharacterStat.STRESS, -0.05)
     end
 end
-Events.OnTick.Add(contractCompletedPlaySound)
+Events.OnTick.Add(PZLinuxContractCompletedPlaySound)
 
 local function mailTick()
     if isClient() then return end

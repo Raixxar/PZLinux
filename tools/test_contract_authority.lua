@@ -138,6 +138,14 @@ PZLinuxTestAssert(variables:find("sendRemoveItemFromContainer%(inventory, item%)
 PZLinuxTestAssert(contextMenu:find("packageInteractionRadius%) or 5"),
     "package context interactions must keep the five-tile fallback radius")
 
+local contractEvents = PZLinuxTestRead(luaRoot .. "/client/Context/World/Events/PZLinuxOnEvents.lua")
+PZLinuxTestAssert(contractEvents:find("PZLinux%.ContractCompletionNotifications%[notificationKey%] == true"),
+    "contract completion feedback must be idempotent across server synchronization")
+PZLinuxTestAssert(contractEvents:find("modData%.PZLinuxActiveContract = 10"),
+    "a synchronized completed contract must still expose the payment state locally")
+PZLinuxTestAssert(contractEvents:find("if alreadyNotified then return end"),
+    "repeated contract synchronization must not replay completion feedback")
+
 local contractsUi = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua")
 PZLinuxTestAssert(contractsUi:find("Events%.OnTickEvenPaused or Events%.OnTick"),
     "contract dialogues must continue while the game is paused")
