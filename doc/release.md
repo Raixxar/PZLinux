@@ -82,8 +82,8 @@
 - Improved Betting readability: added fallback labels when Project Zomboid translations are not loaded, made Blackjack/Poker cards human-readable, cleaned race runner names and compacted the Poker table UI.
 - Added French UI translations in `shared/Translate/FR/IG_UI.json` with the same keys as the English reference file.
 - Poker now automatically cashes out the remaining temporary stack before closing, minimizing or returning from the betting interface, preventing accidental fund loss when leaving the UI.
-- Reduced Poker default table size to 5 seats total (player + 4 AI) and tightened the table action/history layout to better fit the CRT interface.
-- Moved the Poker action history into a dedicated right-hand column so player cards and table events no longer overlap.
+- Expanded Poker to 6 seats total (player + 5 AI) and replaced the list layout with a compact oval table designed for the CRT interface.
+- Poker seats now show the latest action and remaining stack beneath each name, reveal cards at the end of the hand and disappear when eliminated; the player's stable randomized visual seat also carries the equity percentage.
 - Rebuilt the Build 42.20 mission-location catalog with shared pools for 37 package locations, 22 cargo locations, 16 manhunt locations, 7 protection locations and 36 vehicle spawn locations.
 - Reused the 37 validated package destinations for ammunition and medical mail drops.
 - Added city-aware mission pools for Irvington, Ekron, Brandenburg, Echo Creek, Riverside, Fallas Lake, Rosewood, March Ridge, Muldraugh, West Point, Valley Station, Louisville and Coalfield.
@@ -131,6 +131,9 @@
 - Blackjack and Poker now follow the familiar two-color card convention: hearts and diamonds are rendered in red, while clubs and spades retain the green terminal color.
 - Poker now displays the player's translated current hand and an estimated win probability. The 300-sample Monte Carlo calculation uses only the player's cards, the public board and the number of active opponents, never their hidden cards.
 - Poker end-of-hand controls now reserve a full row with translation-safe button widths, preventing long labels such as `MAIN SUIVANTE` and `QUITTER LA TABLE` from overlapping.
+- Poker now states why a table session ended, distinguishing an empty player chip stack from a table victory so the separate bank balance cannot be mistaken for playable table chips.
+- Fixed Poker hands stalling after the player folded: later betting streets now skip folded, all-in and eliminated seats, allowing the AI opponents to finish the hand and return the `NEXT HAND` action.
+- Poker seat rows now display each player's cumulative contribution to the current hand instead of the street-only bet that reset to zero between streets; AI pot-odds calculations also no longer count current bets twice.
 - The ATM main screen now presents the ATM cash first and the player's bank balance beneath it, with compact vertical spacing and transaction controls positioned below without overlapping the bank title.
 - Removed the Electricity-skill modifier from simulated player typing in Contracts, Request, Internet login and ATM screens; every player now uses the same short delay configured by `PZLinux.Config.UI.typingDelay`.
 - Current release validation passes Lua 5.1 syntax on 55 files, assets, all mission-location pools, all 20 translation catalogs, contract authority/world-event authority and the standalone Poker engine tests; Luacheck remains at 113 warnings / 0 errors.

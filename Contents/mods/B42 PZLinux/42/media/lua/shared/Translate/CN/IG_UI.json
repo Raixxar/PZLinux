@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "下一手牌",
     "IGUI_PZLinux_Betting_PokerCashOut": "提现",
     "IGUI_PZLinux_Betting_PokerClosed": "扑克时段结束：",
+    "IGUI_PZLinux_Betting_PokerBusted": "筹码已用完 - 离桌后可重新买入",
+    "IGUI_PZLinux_Betting_PokerTableWon": "牌桌胜利 - 提现你的筹码",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "当前牌型",
     "IGUI_PZLinux_Betting_PokerWinChance": "胜率",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "皇家同花顺",

@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "NESTE HÅND",
     "IGUI_PZLinux_Betting_PokerCashOut": "UTTANN",
     "IGUI_PZLinux_Betting_PokerClosed": "Pokerøkten stengt:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Tom for sjetonger - forlat bordet for å kjøpe deg inn igjen",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Bordet er vunnet - ta ut sjetongene",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Nåværende hånd",
     "IGUI_PZLinux_Betting_PokerWinChance": "Vinnersjanse",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Royal flush",

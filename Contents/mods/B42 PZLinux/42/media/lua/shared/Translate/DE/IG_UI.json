@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "NÄCHSTE HAND",
     "IGUI_PZLinux_Betting_PokerCashOut": "AUSZAHLUNG",
     "IGUI_PZLinux_Betting_PokerClosed": "Pokersitzung geschlossen:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Keine Chips mehr - Tisch verlassen und neu einkaufen",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Tisch gewonnen - Chips auszahlen",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Aktuelle Hand",
     "IGUI_PZLinux_Betting_PokerWinChance": "Gewinnchance",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Royal Flush",

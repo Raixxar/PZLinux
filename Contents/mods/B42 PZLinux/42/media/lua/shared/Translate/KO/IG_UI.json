@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "다음 손",
     "IGUI_PZLinux_Betting_PokerCashOut": "캐시아웃",
     "IGUI_PZLinux_Betting_PokerClosed": "포커 세션 종료:",
+    "IGUI_PZLinux_Betting_PokerBusted": "칩이 없습니다 - 테이블을 나가 다시 바이인하세요",
+    "IGUI_PZLinux_Betting_PokerTableWon": "테이블 승리 - 칩을 환전하세요",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "현재 핸드",
     "IGUI_PZLinux_Betting_PokerWinChance": "승리 확률",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "로열 플러시",

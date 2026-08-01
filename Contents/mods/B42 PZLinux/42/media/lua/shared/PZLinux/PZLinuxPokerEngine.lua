@@ -270,7 +270,7 @@ end
 
 function PZLinuxPokerEstimateEquity(session, simulationCount)
     local playerSeat = session and session.seats and session.seats[1]
-    if not playerSeat or not playerSeat.inHand or playerSeat.folded or #(playerSeat.cards or {}) ~= 2 then return 0 end
+    if not playerSeat or not playerSeat.inHand or playerSeat.folded or #(playerSeat.cards or {}) ~= 2 then return nil end
     if session.phase == "finished" or session.phase == "hand_complete" then return nil end
 
     local opponentCount = 0
@@ -412,6 +412,7 @@ local function PZLinuxPokerPostBlind(session, seatIndex, amount, label)
     seat.bet = seat.bet + posted
     seat.committed = seat.committed + posted
     if seat.stack == 0 then seat.allIn = true end
+    seat.lastAction = label == "posts SB" and ("SB $" .. tostring(posted)) or ("BB $" .. tostring(posted))
     session.currentBet = math.max(session.currentBet, seat.bet)
     PZLinuxPokerAddHistory(session, seat.name .. " " .. label .. " $" .. tostring(posted))
 end
@@ -528,6 +529,7 @@ local function PZLinuxPokerResolvePots(session)
             local win = share
             if winnerOrder <= remainder then win = win + 1 end
             session.seats[index].stack = session.seats[index].stack + win
+            session.seats[index].lastAction = "WIN $" .. tostring(win)
             payouts[index] = (payouts[index] or 0) + win
         end
     end
@@ -543,6 +545,7 @@ local function PZLinuxPokerFinishHand(session)
         local pot = 0
         for _, seat in ipairs(session.seats) do pot = pot + (seat.committed or 0) end
         winner.stack = winner.stack + pot
+        winner.lastAction = "WIN $" .. tostring(pot)
         session.pots = { { amount = pot, eligible = contenders } }
         PZLinuxPokerAddHistory(session, winner.name .. " wins $" .. tostring(pot))
     else
@@ -615,13 +618,14 @@ local function PZLinuxPokerAIAct(session, seatIndex)
     local bluff = PZLinuxPokerRandom(100) < (PZLinux.Poker.Config.aiBluffChance[difficulty] or 10)
     local confidence = math.max(0, math.min(1, strength + noise + (bluff and 0.18 or 0)))
     local pot = 0
-    for _, other in ipairs(session.seats) do pot = pot + (other.committed or 0) + (other.bet or 0) end
+    for _, other in ipairs(session.seats) do pot = pot + (other.committed or 0) end
     local potOdds = toCall > 0 and (toCall / math.max(1, pot + toCall)) or 0
 
     if toCall > 0 and confidence < potOdds + 0.12 then
         seat.folded = true
         seat.acted = true
         seat.state = "folded"
+        seat.lastAction = "FOLD"
         PZLinuxPokerAddHistory(session, seat.name .. " folds")
         return
     end
@@ -636,6 +640,7 @@ local function PZLinuxPokerAIAct(session, seatIndex)
         session.minRaise = math.max(session.minRaise, raiseAmount - toCall)
         seat.acted = true
         if seat.stack == 0 then seat.allIn = true seat.state = "allin" end
+        seat.lastAction = seat.allIn and "ALL-IN" or ("RAISE $" .. tostring(raiseAmount))
         PZLinuxPokerAddHistory(session, seat.name .. " raises $" .. tostring(raiseAmount))
         return
     end
@@ -647,8 +652,10 @@ local function PZLinuxPokerAIAct(session, seatIndex)
     seat.acted = true
     if seat.stack == 0 then seat.allIn = true seat.state = "allin" end
     if paid > 0 then
+        seat.lastAction = seat.allIn and "ALL-IN" or ("CALL $" .. tostring(paid))
         PZLinuxPokerAddHistory(session, seat.name .. " calls $" .. tostring(paid))
     else
+        seat.lastAction = "CHECK"
         PZLinuxPokerAddHistory(session, seat.name .. " checks")
     end
 end
@@ -657,11 +664,15 @@ local function PZLinuxPokerRunAIUntilPlayer(session)
     local guard = 0
     while session.phase ~= "finished" and session.phase ~= "hand_complete" and PZLinuxPokerNeedMoreActions(session) and guard < 128 do
         guard = guard + 1
-        if session.turn == 1 then
+        local turnSeat = session.seats[session.turn]
+        local canAct = turnSeat and turnSeat.inHand and not turnSeat.folded and not turnSeat.allIn and not turnSeat.eliminated
+        if session.turn == 1 and canAct then
             session.awaitingPlayer = true
             return
         end
-        PZLinuxPokerAIAct(session, session.turn)
+        if canAct then
+            PZLinuxPokerAIAct(session, session.turn)
+        end
         if #PZLinuxPokerHandContenders(session) <= 1 then break end
         PZLinuxPokerMoveTurn(session)
     end
@@ -693,6 +704,7 @@ function PZLinuxPokerStartHand(session)
         seat.allIn = false
         seat.acted = false
         seat.handValue = nil
+        seat.lastAction = ""
         seat.inHand = not seat.eliminated and seat.stack > 0
         seat.state = seat.inHand and "active" or "eliminated"
     end
@@ -739,6 +751,7 @@ function PZLinuxPokerBuildSnapshot(session)
             stack = seat.stack,
             bet = seat.bet,
             committed = seat.committed,
+            lastAction = seat.lastAction,
             state = seat.state,
             difficulty = seat.difficulty,
             isHuman = seat.isHuman,
@@ -866,9 +879,11 @@ function PZLinuxPokerAction(player, action, amount, sessionId, requestId)
         seat.folded = true
         seat.acted = true
         seat.state = "folded"
+        seat.lastAction = "FOLD"
         PZLinuxPokerAddHistory(session, "You fold")
     elseif action == "check" and legal.check then
         seat.acted = true
+        seat.lastAction = "CHECK"
         PZLinuxPokerAddHistory(session, "You check")
     elseif action == "call" and legal.call then
         local paid = math.min(seat.stack, toCall)
@@ -877,6 +892,7 @@ function PZLinuxPokerAction(player, action, amount, sessionId, requestId)
         seat.committed = seat.committed + paid
         seat.acted = true
         if seat.stack == 0 then seat.allIn = true seat.state = "allin" end
+        seat.lastAction = seat.allIn and "ALL-IN" or ("CALL $" .. tostring(paid))
         PZLinuxPokerAddHistory(session, "You call $" .. tostring(paid))
     elseif (action == "bet" or action == "raise") and (legal.bet or legal.raise) then
         local minAmount = legal.minBet or session.bigBlind
@@ -890,6 +906,7 @@ function PZLinuxPokerAction(player, action, amount, sessionId, requestId)
         session.currentBet = seat.bet
         seat.acted = true
         if seat.stack == 0 then seat.allIn = true seat.state = "allin" end
+        seat.lastAction = seat.allIn and "ALL-IN" or (string.upper(action) .. " $" .. tostring(amount))
         PZLinuxPokerAddHistory(session, "You " .. action .. " $" .. tostring(amount))
     elseif action == "allin" and legal.allin then
         local allin = seat.stack
@@ -903,6 +920,7 @@ function PZLinuxPokerAction(player, action, amount, sessionId, requestId)
         seat.allIn = true
         seat.state = "allin"
         seat.acted = true
+        seat.lastAction = "ALL-IN"
         PZLinuxPokerAddHistory(session, "You all-in $" .. tostring(allin))
     else
         return { ok = false, error = "illegal_action", requestId = requestId, legalActions = legal, balance = PZLinuxLoadBankBalance(player) }

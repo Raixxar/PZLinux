@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "NASTĘPNA RĘKA",
     "IGUI_PZLinux_Betting_PokerCashOut": "WYPŁATA",
     "IGUI_PZLinux_Betting_PokerClosed": "Sesja pokerowa zamknięta:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Brak żetonów - opuść stół, aby ponownie wkupić się do gry",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Stół wygrany - wypłać żetony",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Aktualny układ",
     "IGUI_PZLinux_Betting_PokerWinChance": "Szansa wygranej",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Poker królewski",

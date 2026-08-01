@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "KÖVETKEZŐ KÉZ",
     "IGUI_PZLinux_Betting_PokerCashOut": "KIFIZETÉS",
     "IGUI_PZLinux_Betting_PokerClosed": "Pókerülés lezárva:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Elfogyott a zseton - hagyd el az asztalt az új beszállóhoz",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Megnyerted az asztalt - váltsd be a zsetonokat",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Aktuális kéz",
     "IGUI_PZLinux_Betting_PokerWinChance": "Nyerési esély",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Royal flush",

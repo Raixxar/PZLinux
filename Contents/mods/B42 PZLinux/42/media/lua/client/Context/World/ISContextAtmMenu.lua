@@ -173,11 +173,11 @@ function AtmUI:showMainMenu()
     self.depositeButton:initialise()
     self.topBar:addChild(self.depositeButton)
 
-    self.atmCashLabel = ISLabel:new(self.width * 0.225, self.width * 0.465, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Cash") .. tostring(self.atmCash), 1, 1, 1, 1, UIFont.Small, true)
+    self.atmCashLabel = ISLabel:new(self.width * 0.225, self.width * 0.448, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Cash") .. tostring(self.atmCash), 1, 1, 1, 1, UIFont.Small, true)
     self.atmCashLabel:initialise()
     self:addChild(self.atmCashLabel)
 
-    self.balanceLabel = ISLabel:new(self.width * 0.225, self.width * 0.49, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Balance") .. tostring(self.balance), 1, 1, 1, 1, UIFont.Small, true)
+    self.balanceLabel = ISLabel:new(self.width * 0.225, self.width * 0.47, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Balance") .. tostring(self.balance), 1, 1, 1, 1, UIFont.Small, true)
     self.balanceLabel:initialise()
     self:addChild(self.balanceLabel)
     self:updateBalanceLabels()

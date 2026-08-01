@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "PROSSIMA MANO",
     "IGUI_PZLinux_Betting_PokerCashOut": "INCASSA",
     "IGUI_PZLinux_Betting_PokerClosed": "Sessione di poker chiusa:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Fiches esaurite - lascia il tavolo per un nuovo buy-in",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Tavolo vinto - incassa le fiches",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Mano attuale",
     "IGUI_PZLinux_Betting_PokerWinChance": "Probabilità di vittoria",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Scala reale",

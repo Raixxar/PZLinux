@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "PRÓXIMA MANO",
     "IGUI_PZLinux_Betting_PokerCashOut": "RETIRAR EFECTIVO",
     "IGUI_PZLinux_Betting_PokerClosed": "Sesión de póquer cerrada:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Sin fichas - sal de la mesa para volver a comprar",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Mesa ganada - retira tus fichas",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Mano actual",
     "IGUI_PZLinux_Betting_PokerWinChance": "Probabilidad de ganar",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Escalera real",

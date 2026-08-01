@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "次のハンド",
     "IGUI_PZLinux_Betting_PokerCashOut": "キャッシュアウト",
     "IGUI_PZLinux_Betting_PokerClosed": "ポーカーセッション終了:",
+    "IGUI_PZLinux_Betting_PokerBusted": "チップ切れ - テーブルを退出して再度バイイン",
+    "IGUI_PZLinux_Betting_PokerTableWon": "テーブル勝利 - チップを換金",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "現在のハンド",
     "IGUI_PZLinux_Betting_PokerWinChance": "勝率",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "ロイヤルフラッシュ",

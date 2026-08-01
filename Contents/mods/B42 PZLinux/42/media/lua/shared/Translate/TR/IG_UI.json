@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "SONRAKİ EL",
     "IGUI_PZLinux_Betting_PokerCashOut": "NAKİT ÇIKIŞI",
     "IGUI_PZLinux_Betting_PokerClosed": "Poker oturumu kapandı:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Fişler bitti - yeniden katılmak için masadan ayrıl",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Masa kazanıldı - fişlerini bozdur",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Mevcut el",
     "IGUI_PZLinux_Betting_PokerWinChance": "Kazanma şansı",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Royal floş",

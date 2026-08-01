@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "PRÓXIMA MÃO",
     "IGUI_PZLinux_Betting_PokerCashOut": "SACAR",
     "IGUI_PZLinux_Betting_PokerClosed": "Sessão de póquer encerrada:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Ficou sem fichas - saia da mesa para voltar a entrar",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Mesa vencida - levante as fichas",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Mão atual",
     "IGUI_PZLinux_Betting_PokerWinChance": "Chance de vitória",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Royal flush",

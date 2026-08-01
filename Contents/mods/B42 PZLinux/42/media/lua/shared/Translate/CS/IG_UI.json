@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "DALŠÍ RUKA",
     "IGUI_PZLinux_Betting_PokerCashOut": "VYHOTOVIT",
     "IGUI_PZLinux_Betting_PokerClosed": "Pokerová relace uzavřena:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Došly vám žetony - opusťte stůl a znovu se přihlaste",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Vyhráli jste stůl - vyberte si žetony",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Aktuální kombinace",
     "IGUI_PZLinux_Betting_PokerWinChance": "Šance na výhru",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Královská postupka",

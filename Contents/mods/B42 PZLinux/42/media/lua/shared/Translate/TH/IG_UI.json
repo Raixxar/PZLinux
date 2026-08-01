@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "มือถัดไป",
     "IGUI_PZLinux_Betting_PokerCashOut": "เงินสดออก",
     "IGUI_PZLinux_Betting_PokerClosed": "เซสชั่นโป๊กเกอร์ปิด:",
+    "IGUI_PZLinux_Betting_PokerBusted": "ชิปหมด - ออกจากโต๊ะเพื่อซื้อเข้าใหม่",
+    "IGUI_PZLinux_Betting_PokerTableWon": "ชนะโต๊ะแล้ว - แลกชิปเป็นเงิน",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "ไพ่ปัจจุบัน",
     "IGUI_PZLinux_Betting_PokerWinChance": "โอกาสชนะ",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "รอยัลฟลัช",

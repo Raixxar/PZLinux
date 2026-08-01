@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "MAIN SUIVANTE",
     "IGUI_PZLinux_Betting_PokerCashOut": "QUITTER LA TABLE",
     "IGUI_PZLinux_Betting_PokerClosed": "Session poker fermee :",
+    "IGUI_PZLinux_Betting_PokerBusted": "Plus de jetons - quittez la table pour reprendre une cave",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Table remportee - recuperez vos jetons",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Main actuelle",
     "IGUI_PZLinux_Betting_PokerWinChance": "Chances de gagner",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Quinte flush royale",

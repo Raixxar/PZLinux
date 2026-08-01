@@ -82,4 +82,14 @@ equitySession.seats[1].cards = { card("AH"), card("KH") }
 equitySession.playerEquityCache = nil
 assert(PZLinuxPokerEstimateEquity(equitySession, 500) == 100, "a private royal flush must have 100 percent equity")
 
+PZLinux.Poker.Sessions = {}
+local foldPlayer = {}
+local foldSnapshot = PZLinuxPokerCreateSession(foldPlayer, "micro", 500, "fold-start")
+assert(foldSnapshot.ok and foldSnapshot.legalActions.fold, "the regression hand must allow the player to fold")
+assert(#foldSnapshot.seats == 6, "the Poker table must contain the player and five opponents")
+local foldedResult = PZLinuxPokerAction(foldPlayer, "fold", 0, foldSnapshot.sessionId, "fold-action")
+assert(foldedResult.phase == "hand_complete", "AI must finish the hand after the player folds, got " .. tostring(foldedResult.phase))
+assert(not foldedResult.legalActions.fold and not foldedResult.legalActions.check, "a folded player must not receive another betting action")
+assert(foldedResult.seats[1].lastAction == "FOLD", "the snapshot must expose the player's latest table action")
+
 print("PZLinux poker engine tests OK")

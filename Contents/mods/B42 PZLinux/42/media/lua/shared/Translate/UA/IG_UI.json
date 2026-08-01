@@ -61,6 +61,8 @@
     "IGUI_PZLinux_Betting_PokerNextHand": "НАСТУПНА РУКА",
     "IGUI_PZLinux_Betting_PokerCashOut": "ВИВЕДЕННЯ ГОТІВКИ",
     "IGUI_PZLinux_Betting_PokerClosed": "Покерна сесія закрита:",
+    "IGUI_PZLinux_Betting_PokerBusted": "Фішки закінчилися - залиште стіл для нового входу",
+    "IGUI_PZLinux_Betting_PokerTableWon": "Стіл виграно - заберіть фішки",
     "IGUI_PZLinux_Betting_PokerCurrentHand": "Поточна комбінація",
     "IGUI_PZLinux_Betting_PokerWinChance": "Шанс на перемогу",
     "IGUI_PZLinux_Betting_PokerHandRoyalFlush": "Роял-флеш",

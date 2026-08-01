@@ -119,6 +119,41 @@ local function PZLinuxBettingClearDisplayControls(controls)
     end
 end
 
+local PZLinuxPokerTablePanel = ISPanel:derive("PZLinuxPokerTablePanel")
+
+function PZLinuxPokerTablePanel:new(x, y, width, height)
+    local panel = ISPanel:new(x, y, width, height)
+    setmetatable(panel, self)
+    self.__index = self
+    panel.backgroundColor = {r=0, g=0, b=0, a=0}
+    panel.borderColor = {r=0, g=0, b=0, a=0}
+    return panel
+end
+
+function PZLinuxPokerTablePanel:prerender()
+    ISPanel.prerender(self)
+    local rowHeight = 4
+    local centerX = self.width / 2
+    local centerY = self.height / 2
+
+    for y = 0, self.height - 1, rowHeight do
+        local normalizedY = (y + rowHeight / 2 - centerY) / centerY
+        local halfWidth = centerX * math.sqrt(math.max(0, 1 - normalizedY * normalizedY))
+        self:drawRect(centerX - halfWidth, y, halfWidth * 2, rowHeight + 1, 0.95, 0.02, 0.30, 0.10)
+    end
+
+    local inset = 5
+    local innerWidth = self.width - inset * 2
+    local innerHeight = self.height - inset * 2
+    local innerCenterX = self.width / 2
+    local innerCenterY = inset + innerHeight / 2
+    for y = inset, self.height - inset - 1, rowHeight do
+        local normalizedY = (y + rowHeight / 2 - innerCenterY) / (innerHeight / 2)
+        local halfWidth = innerWidth / 2 * math.sqrt(math.max(0, 1 - normalizedY * normalizedY))
+        self:drawRect(innerCenterX - halfWidth, y, halfWidth * 2, rowHeight + 1, 0.96, 0.01, 0.16, 0.055)
+    end
+end
+
 local function PZLinuxBettingAddCardLine(ui, controls, x, y, prefix, cards, suffix)
     local labelHeight = ui.height * 0.019
     local iconSize = math.max(10, math.floor(labelHeight))
@@ -465,21 +500,20 @@ function PZLinuxBettingUI:onPokerSelectLobby(button)
     end)
 end
 
-local function PZLinuxBettingPokerCards(cards)
-    local labels = {}
-    for _, card in ipairs(cards or {}) do
-        table.insert(labels, PZLinuxBettingFormatCard(card))
+local function PZLinuxBettingPokerPlayerSlot(sessionId)
+    local value = tostring(sessionId or "poker")
+    local hash = 0
+    for index = 1, #value do
+        hash = (hash + string.byte(value, index) * index) % 6
     end
-    if #labels == 0 then return "--" end
-    return table.concat(labels, " | ")
+    return hash + 1
 end
 
-local function PZLinuxBettingPokerStateLabel(seat)
-    if seat.isHuman then return "YOU" end
+local function PZLinuxBettingPokerSeatAction(seat)
+    if seat.lastAction and seat.lastAction ~= "" then return seat.lastAction end
     if seat.state == "folded" then return "FOLD" end
     if seat.state == "allin" then return "ALL-IN" end
-    if seat.state == "eliminated" then return "OUT" end
-    return "IN"
+    return "..."
 end
 
 local function PZLinuxBettingPokerHandName(handName)
@@ -513,48 +547,65 @@ function PZLinuxBettingUI:showPokerState(result)
     self:updateBalanceLabel(result.balance)
 
     local leftX = self.width * 0.20
-    local cardX = self.width * 0.22
-    local rightX = self.width * 0.55
-    local rowStep = self.height * 0.022
-
     local title = string.format("%s $%d/$%d - %s", PZLinuxGetText("IGUI_PZLinux_Betting_PokerTable"), result.smallBlind or 0, result.bigBlind or 0, tostring(result.phase or ""))
-    self:addPokerControl(ISLabel:new(leftX, self.height * 0.22, self.height * 0.023, title, 0, 1, 0, 1, UIFont.Small, true))
+    self:addPokerControl(ISLabel:new(leftX, self.height * 0.21, self.height * 0.023, title, 0, 1, 0, 1, UIFont.Small, true))
 
-    PZLinuxBettingAddCardLine(self, self.pokerControls, leftX, self.height * 0.255, PZLinuxGetText("IGUI_PZLinux_Betting_PokerBoard") .. " ", result.community)
+    local tablePanel = PZLinuxPokerTablePanel:new(self.width * 0.195, self.height * 0.24, self.width * 0.58, self.height * 0.32)
+    self:addPokerControl(tablePanel)
 
+    local pot = 0
+    for _, seat in ipairs(result.seats or {}) do pot = pot + (tonumber(seat.committed) or 0) end
+    self:addPokerControl(ISLabel:new(self.width * 0.415, self.height * 0.315, self.height * 0.018, string.upper(tostring(result.phase or "")) .. "  |  POT $" .. tostring(pot), 1, 1, 0, 1, UIFont.Small, true))
+    PZLinuxBettingAddCardLine(self, self.pokerControls, self.width * 0.35, self.height * 0.35, "", result.community)
     local handText = PZLinuxGetText("IGUI_PZLinux_Betting_PokerCurrentHand") .. ": " .. PZLinuxBettingPokerHandName(result.playerHand)
-    self:addPokerControl(ISLabel:new(leftX, self.height * 0.278, self.height * 0.018, handText, 1, 1, 0, 1, UIFont.Small, true))
-    if result.playerEquity ~= nil then
-        local equityText = PZLinuxGetText("IGUI_PZLinux_Betting_PokerWinChance") .. ": ~" .. string.format("%.1f", result.playerEquity) .. "%"
-        self:addPokerControl(ISLabel:new(leftX, self.height * 0.298, self.height * 0.018, equityText, 1, 1, 0, 1, UIFont.Small, true))
-    end
+    self:addPokerControl(ISLabel:new(self.width * 0.355, self.height * 0.405, self.height * 0.018, handText, 1, 1, 0, 1, UIFont.Small, true))
 
-    local yOffset = self.height * 0.325
-    for _, seat in ipairs(result.seats or {}) do
-        local flags = (seat.dealer and "D" or "-") .. (seat.turn and ">" or " ")
-        local stars = seat.isHuman and "" or string.rep("*", tonumber(seat.difficulty) or 1)
-        local cards = PZLinuxBettingPokerCards(seat.cards)
-        if not seat.isHuman and not result.showdown then cards = "?? | ??" end
-        local text = string.format("%d %s %-14s %-5s $%d / bet $%d  %s", seat.index, flags, seat.name, PZLinuxBettingPokerStateLabel(seat), seat.stack or 0, seat.bet or 0, stars)
-        self:addPokerControl(ISLabel:new(leftX, yOffset, self.height * 0.018, PZLinuxBettingShortText(text, 46), 0, 1, 0, 1, UIFont.Small, true))
-        yOffset = yOffset + rowStep
-        if seat.isHuman or seat.hand then
-            if seat.isHuman or result.showdown then
-                PZLinuxBettingAddCardLine(self, self.pokerControls, cardX, yOffset, "   ", seat.cards, seat.hand and (" - " .. seat.hand) or "")
-            else
-                local cardText = "   " .. cards .. (seat.hand and (" - " .. seat.hand) or "")
-                self:addPokerControl(ISLabel:new(cardX, yOffset, self.height * 0.018, cardText, 1, 1, 0, 1, UIFont.Small, true))
+    local anchors = {
+        {x = 0.235, y = 0.245},
+        {x = 0.525, y = 0.245},
+        {x = 0.615, y = 0.345},
+        {x = 0.525, y = 0.47},
+        {x = 0.235, y = 0.47},
+        {x = 0.16, y = 0.345},
+    }
+    local playerSlot = PZLinuxBettingPokerPlayerSlot(result.sessionId)
+    for index, seat in ipairs(result.seats or {}) do
+        if seat.state ~= "eliminated" then
+            local visualSlot = ((playerSlot + index - 2) % #anchors) + 1
+            local anchor = anchors[visualSlot]
+            local seatX = self.width * anchor.x
+            local seatY = self.height * anchor.y
+            local seatName = PZLinuxBettingShortText(seat.isHuman and "(YOU)" or seat.name, 15)
+            if seat.isHuman and result.playerEquity ~= nil then
+                seatName = seatName .. " ~" .. string.format("%.1f", result.playerEquity) .. "%"
             end
-            yOffset = yOffset + rowStep
+            if seat.dealer then seatName = seatName .. " [D]" end
+            if seat.turn then seatName = "> " .. seatName end
+
+            local nameR, nameG, nameB = 0, 1, 0
+            if seat.state == "folded" then
+                nameR, nameG, nameB = 0.45, 0.65, 0.45
+            elseif seat.state == "allin" then
+                nameR, nameG, nameB = 1, 1, 0
+            elseif seat.isHuman then
+                nameR, nameG, nameB = 0.2, 1, 0.8
+            end
+            self:addPokerControl(ISLabel:new(seatX, seatY, self.height * 0.018, seatName, nameR, nameG, nameB, 1, UIFont.Small, true))
+
+            local actionText = PZLinuxBettingPokerSeatAction(seat) .. "  |  $" .. tostring(seat.stack or 0)
+            self:addPokerControl(ISLabel:new(seatX, seatY + self.height * 0.019, self.height * 0.016, PZLinuxBettingShortText(actionText, 22), 0.8, 1, 0.8, 1, UIFont.Small, true))
+
+            local revealCards = seat.isHuman or result.showdown or result.phase == "hand_complete" or result.phase == "finished"
+            if revealCards then
+                local suffix = seat.hand and (" - " .. PZLinuxBettingPokerHandName(seat.hand)) or ""
+                PZLinuxBettingAddCardLine(self, self.pokerControls, seatX, seatY + self.height * 0.038, "", seat.cards, suffix)
+            end
         end
     end
 
-    self:addPokerControl(ISLabel:new(rightX, self.height * 0.22, self.height * 0.023, "LOG", 1, 1, 0, 1, UIFont.Small, true))
-    local historyY = self.height * 0.255
-    for index = 1, math.min(8, #(result.history or {})) do
-        local historyText = PZLinuxBettingShortText(result.history[index], 31)
-        self:addPokerControl(ISLabel:new(rightX, historyY, self.height * 0.018, historyText, 0.8, 1, 0.8, 1, UIFont.Small, true))
-        historyY = historyY + rowStep
+    if result.phase == "finished" then
+        local statusKey = result.status == "won" and "IGUI_PZLinux_Betting_PokerTableWon" or "IGUI_PZLinux_Betting_PokerBusted"
+        self:addPokerControl(ISLabel:new(leftX, self.height * 0.575, self.height * 0.018, PZLinuxGetText(statusKey), 1, 1, 0, 1, UIFont.Small, true))
     end
 
     local actions = result.legalActions or {}
