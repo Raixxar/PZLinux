@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "購入",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "売り切れ",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "在庫不足",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "利用可能な契約を見る",
     "IGUI_PZLinux_Contracts_PreviewError": "契約を利用できません（%s）。",
     "IGUI_PZLinux_NeedPower": "力が必要です",
     "IGUI_PZLinux_ATM_Title": "ATM アメリカンバンク",

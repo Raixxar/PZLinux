@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "구매",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "품절",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "재고 부족",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "사용 가능한 계약 보기",
     "IGUI_PZLinux_Contracts_PreviewError": "계약을 이용할 수 없습니다 (%s).",
     "IGUI_PZLinux_NeedPower": "힘이 필요해",
     "IGUI_PZLinux_ATM_Title": "ATM 아메리칸 뱅크",

@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Kopen",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Uitverkocht",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Onvoldoende voorraad",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "BEKIJK BESCHIKBARE CONTRACTEN",
     "IGUI_PZLinux_Contracts_PreviewError": "Contract niet beschikbaar (%s).",
     "IGUI_PZLinux_NeedPower": "Ik heb kracht nodig",
     "IGUI_PZLinux_ATM_Title": "ATM AMERIKAANSE BANK",

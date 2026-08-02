@@ -2,6 +2,8 @@ PZLinux = PZLinux or {}
 PZLinux.darkWebBuySessions = PZLinux.darkWebBuySessions or {}
 PZLinux.darkWebSellSessions = PZLinux.darkWebSellSessions or {}
 
+local PZLINUX_DARK_WEB_MARKET_DATA = "PZLinuxDarkWebMarket"
+
 function PZLinuxDarkWebGetItemIds(itemData)
     if not itemData then return {} end
     if type(itemData.id) == "table" then return itemData.id end
@@ -14,41 +16,122 @@ function PZLinuxDarkWebGetFirstItemId(itemData)
     return ids[1]
 end
 
-function PZLinuxDarkWebBuildBuyOffers(player, requestId)
-    local offers = {}
-    local maxItems = ZombRand(5, 51)
-
-    for _ = 1, maxItems do
-        local itemData = PZLinuxDarkWebItemsTable[ZombRand(#PZLinuxDarkWebItemsTable) + 1]
-        local firstItemId = PZLinuxDarkWebGetFirstItemId(itemData)
-        local price = PZLinuxDarkWebCalculateBuyPrice(player, itemData)
-        if firstItemId and price and getScriptManager():FindItem(firstItemId) then
-            table.insert(offers, {
-                index = #offers + 1,
-                item = { id = PZLinuxDarkWebGetItemIds(itemData) },
-                price = price,
-                transactionType = "Buy",
-                transactionQty = 1,
-            })
+function PZLinuxDarkWebGetStockRange(referencePrice)
+    referencePrice = math.max(0, tonumber(referencePrice) or 0)
+    for _, tier in ipairs((PZLinuxDarkWebMarketConfig or {}).stockTiers or {}) do
+        if not tier.maximumPrice or referencePrice <= tier.maximumPrice then
+            return math.max(1, tonumber(tier.minimumStock) or 1),
+                math.max(1, tonumber(tier.maximumStock) or tonumber(tier.minimumStock) or 1)
         end
     end
+    return 1, 1
+end
 
-    local worldHour = getGameTime and math.ceil(getGameTime():getWorldAgeHours()) or 0
-    if worldHour < 24 then worldHour = 24 end
-    PZLinux.darkWebBuySessions[PZLinuxGetPlayerKey(player)] = { requestId = requestId, offers = offers, worldHour = worldHour }
+local function PZLinuxDarkWebGetMarketState()
+    local market = ModData.getOrCreate(PZLINUX_DARK_WEB_MARKET_DATA)
+    market.offers = market.offers or {}
+    return market
+end
 
+local function PZLinuxDarkWebGetMarketGeneration()
+    local config = PZLinuxDarkWebMarketConfig or {}
+    local refreshHours = math.max(1, tonumber(config.refreshHours) or 24)
+    local worldHour = getGameTime and getGameTime():getWorldAgeHours() or 0
+    return math.floor(math.max(0, worldHour) / refreshHours)
+end
+
+local function PZLinuxDarkWebGetStockReferencePrice(itemData)
+    local scarcity = PZLinuxDarkWebGetHourMultiplier and PZLinuxDarkWebGetHourMultiplier() or 1
+    local purchaseMultiplier = PZLinuxDarkWebGetPurchaseMultiplier and PZLinuxDarkWebGetPurchaseMultiplier() or 1
+    return math.max(1, math.floor((tonumber(itemData and itemData.Price) or 0) * scarcity * purchaseMultiplier))
+end
+
+local function PZLinuxDarkWebTransmitMarket()
+    if isServer and isServer() and ModData.transmit then
+        ModData.transmit(PZLINUX_DARK_WEB_MARKET_DATA)
+    end
+end
+
+local function PZLinuxDarkWebGenerateMarket(market, generation)
+    local config = PZLinuxDarkWebMarketConfig or {}
+    local availableIndexes = {}
+    for itemIndex = 1, #PZLinuxDarkWebItemsTable do
+        table.insert(availableIndexes, itemIndex)
+    end
+    for itemIndex = #availableIndexes, 2, -1 do
+        local swapIndex = ZombRand(1, itemIndex + 1)
+        availableIndexes[itemIndex], availableIndexes[swapIndex] = availableIndexes[swapIndex], availableIndexes[itemIndex]
+    end
+
+    local minimumOffers = math.max(1, tonumber(config.minimumOffers) or 5)
+    local maximumOffers = math.max(minimumOffers, tonumber(config.maximumOffers) or 50)
+    local offerCount = math.min(#availableIndexes, ZombRand(minimumOffers, maximumOffers + 1))
+    local offers = {}
+    for position = 1, offerCount do
+        local sourceIndex = availableIndexes[position]
+        local itemData = PZLinuxDarkWebItemsTable[sourceIndex]
+        local firstItemId = PZLinuxDarkWebGetFirstItemId(itemData)
+        if firstItemId and getScriptManager():FindItem(firstItemId) then
+            local referencePrice = PZLinuxDarkWebGetStockReferencePrice(itemData)
+            local minimumStock, maximumStock = PZLinuxDarkWebGetStockRange(referencePrice)
+            table.insert(offers, {
+                id = tostring(generation) .. ":" .. tostring(sourceIndex),
+                sourceIndex = sourceIndex,
+                item = { id = PZLinuxDarkWebGetItemIds(itemData) },
+                stock = ZombRand(minimumStock, maximumStock + 1),
+                initialStock = nil,
+                referencePrice = referencePrice,
+            })
+            offers[#offers].initialStock = offers[#offers].stock
+        end
+    end
+    market.generation = generation
+    market.offers = offers
+    PZLinuxDarkWebTransmitMarket()
+end
+
+local function PZLinuxDarkWebEnsureMarket()
+    local market = PZLinuxDarkWebGetMarketState()
+    local generation = PZLinuxDarkWebGetMarketGeneration()
+    if tonumber(market.generation) ~= generation or type(market.offers) ~= "table" or #market.offers == 0 then
+        PZLinuxDarkWebGenerateMarket(market, generation)
+        PZLinux.darkWebBuySessions = {}
+    end
+    return market
+end
+
+function PZLinuxDarkWebBuildBuyOffers(player, requestId)
+    local market = PZLinuxDarkWebEnsureMarket()
+    local playerKey = PZLinuxGetPlayerKey(player)
+    local session = PZLinux.darkWebBuySessions[playerKey]
+    if not session or tonumber(session.generation) ~= tonumber(market.generation) then
+        session = { generation = market.generation, prices = {} }
+        PZLinux.darkWebBuySessions[playerKey] = session
+    end
+
+    local offers = {}
+    for index, marketOffer in ipairs(market.offers) do
+        local itemData = PZLinuxDarkWebItemsTable[marketOffer.sourceIndex]
+        local price = session.prices[marketOffer.id]
+        if not price then
+            price = PZLinuxDarkWebCalculateBuyPrice(player, itemData)
+            session.prices[marketOffer.id] = price
+        end
+        offers[index] = {
+            index = index,
+            offerId = marketOffer.id,
+            item = marketOffer.item,
+            price = price,
+            stock = math.max(0, tonumber(marketOffer.stock) or 0),
+            transactionType = "Buy",
+            transactionQty = 1,
+        }
+    end
+    session.offers = offers
     return { ok = true, requestId = requestId, offers = offers, balance = PZLinuxLoadBankBalance(player) }
 end
 
 function PZLinuxDarkWebGetBuyOffers(player, requestId)
-    local worldHour = getGameTime and math.ceil(getGameTime():getWorldAgeHours()) or 0
-    if worldHour < 24 then worldHour = 24 end
-
-    local session = PZLinux.darkWebBuySessions[PZLinuxGetPlayerKey(player)]
-    if session and session.offers and (worldHour - (session.worldHour or 0)) < 24 then
-        return { ok = true, requestId = requestId, offers = session.offers, balance = PZLinuxLoadBankBalance(player) }
-    end
-
     return PZLinuxDarkWebBuildBuyOffers(player, requestId)
 end
 
@@ -70,6 +153,25 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
     local offer = session.offers[offerIndex]
     if not offer or not offer.item then
         return { ok = false, error = "invalid_offer", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local market = PZLinuxDarkWebEnsureMarket()
+    local marketOffer = market.offers[offerIndex]
+    if tonumber(session.generation) ~= tonumber(market.generation)
+    or not marketOffer or tostring(marketOffer.id) ~= tostring(offer.offerId) then
+        return { ok = false, error = "offer_expired", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    local availableStock = math.max(0, tonumber(marketOffer.stock) or 0)
+    if quantity > availableStock then
+        offer.stock = availableStock
+        return {
+            ok = false,
+            error = "not_enough_stock",
+            requestId = requestId,
+            offerIndex = offerIndex,
+            stock = availableStock,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
     end
 
     local itemToAdd = type(offer.item.id) == "table" and offer.item.id[1] or offer.item.id
@@ -94,6 +196,9 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
     modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb or {}
     modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
     table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, { batch })
+    marketOffer.stock = availableStock - quantity
+    offer.stock = marketOffer.stock
+    PZLinuxDarkWebTransmitMarket()
     PZLinuxTransmitPlayerModData(playerObj)
 
     if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
@@ -107,6 +212,7 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
         amount = totalPrice,
         balance = PZLinuxLoadBankBalance(playerObj),
         previousBalance = debit.previousBalance,
+        stock = marketOffer.stock,
     }
 end
 

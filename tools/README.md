@@ -30,6 +30,7 @@ lua5.1 tools/check_release_metadata.lua
 lua5.1 tools/test_contract_authority.lua
 lua5.1 tools/test_contract_world_authority.lua
 lua5.1 tools/test_darkweb_delivery.lua
+lua5.1 tools/test_darkweb_market.lua
 lua5.1 tools/test_hacking_authority.lua
 lua5.1 tools/test_mailbox_proximity.lua
 lua5.1 tools/test_atm_inventory.lua

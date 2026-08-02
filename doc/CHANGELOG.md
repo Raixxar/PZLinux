@@ -22,6 +22,9 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   payments or world mutations after clicks and network retries.
 - Added restart rollback for temporary Blackjack, Hacking, Poker and Zombie Race
   sessions.
+- Added a persistent server-wide Dark Web catalog refreshed every 24 in-game
+  hours, with finite stock tiers from 10-15 common items down to 1-2 items worth
+  $10,000 or more.
 - Added shared, city-aware Build 42.20 location pools: 37 package destinations,
   22 cargo points, 16 manhunt points, 7 protection points and 36 vehicle points.
 - Added 20 synchronized B42 JSON translation catalogs and automated key,
@@ -35,6 +38,8 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   commands with explicit inventory replication.
 - Moved Dark Web offer generation, purchases, sales, pending deliveries and
   mailbox redemption to server-authoritative flows.
+- Made Dark Web stock shared by every player and rejected stale purchases when
+  another player has already bought the remaining quantity.
 - Moved Trading prices, wallets, purchases, sales and the 5% transaction fee to
   a shared server market.
 - Moved contract preview, acceptance, cancellation, world objectives, deposits,
@@ -58,11 +63,17 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   items and requested vehicle keys created or removed by the server.
 - Centralized direct player resolution so multiplayer flows do not implicitly
   mutate player zero.
+- Restored missing Cargo, Manhunt and Protect world objectives after reconnect
+  from their persistent server records, without duplicating tagged entities.
+- Kept killed Manhunt targets in the corpse-interaction state until their proof
+  is collected.
 
 ### Economy
 
 - Rebalanced Dark Web prices for firearms, ammunition, explosives, generators,
   armor, strong melee weapons, books and rare magazines.
+- Displayed the remaining Dark Web stock beside each purchase price and disabled
+  offers that are sold out.
 - Increased Request base prices and capped the Plant Scavenging discount at 15%.
 - Reduced easy contract rewards while retaining stronger payouts for dangerous
   objectives.
@@ -102,8 +113,16 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   synchronized to the owning client.
 - Made contract completion feedback idempotent so repeated context-menu opening
   cannot replay rewards, sounds or mood effects.
+- Made Cargo objectives recoverable after reconnect or chunk loss: the server
+  reuses an existing tagged crate and recreates it only when it is missing.
 - Added persistent unread contract-payment receipts, acknowledged only after the
   Contracts UI displays the authoritative reward amount.
+- Kept contract-payment reports visible until the player explicitly opens the
+  available-contract list, preventing asynchronous board refreshes from hiding
+  the reward summary.
+- Replaced single-line contract dialogue labels with fixed-size wrapped panels,
+  automatic scrolling and controls kept outside the transcript for long
+  translations.
 - Added a 5% reward modifier per absolute Z level for elevated and underground
   mission objectives.
 - Removed the legacy `RetrievePackage.lua` implementation.

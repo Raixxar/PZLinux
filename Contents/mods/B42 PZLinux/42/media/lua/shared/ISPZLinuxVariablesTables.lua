@@ -2046,6 +2046,8 @@ function PZLinuxContractsSyncWorldRecordToPlayer(player, record)
     if record.status == "spawned" then
         if tonumber(record.contractId) == 3 then modData.PZLinuxContractManhunt = 2 end
         if tonumber(record.contractId) == 7 then modData.PZLinuxContractCargo = 2 end
+    elseif record.status == "target_down" then
+        modData.PZLinuxContractManhunt = 2
     elseif record.status == "protect_started" then
         modData.PZLinuxContractProtect = 2
     elseif record.status == "protect_clear" then
@@ -2655,6 +2657,15 @@ function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
     local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
     if not square then return false end
 
+    local objects = square:getObjects()
+    for index = 0, objects:size() - 1 do
+        local existing = objects:get(index)
+        if tostring(PZLinuxContractsGetEntityContractId(existing) or "") == tostring(contractWorldId or "")
+        and PZLinuxContractsGetEntityObjective(existing) == "cargo" then
+            return true
+        end
+    end
+
     local obj = IsoObject.new(square, "carpentry_01_19")
     PZLinuxContractsTagEntity(obj, contractWorldId, "cargo")
     square:AddTileObject(obj)
@@ -2672,20 +2683,64 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     return zombie ~= nil
 end
 
-function PZLinuxContractsSpawnProtectHorde(x, y, z, contractWorldId)
-    local count = ZombRand(50, 200)
-    for _ = 1, count do
+local function PZLinuxContractsCountTaggedZombies(contractWorldId, objectiveType)
+    if not getCell then return 0 end
+    local zombies = getCell():getZombieList()
+    if not zombies then return 0 end
+
+    local count = 0
+    for index = 0, zombies:size() - 1 do
+        local zombie = zombies:get(index)
+        if zombie
+        and (not zombie.isDead or not zombie:isDead())
+        and tostring(PZLinuxContractsGetEntityContractId(zombie) or "") == tostring(contractWorldId or "")
+        and PZLinuxContractsGetEntityObjective(zombie) == objectiveType then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+local function PZLinuxContractsEnsureManhuntZombie(record)
+    if not record then return false, 0 end
+    if PZLinuxContractsCountTaggedZombies(record.id, "manhunt") > 0 then return true, 0 end
+    local created = PZLinuxContractsSpawnZombieAt(
+        record.locationX,
+        record.locationY,
+        record.locationZ,
+        record.id,
+        "manhunt"
+    )
+    return created, created and 1 or 0
+end
+
+local function PZLinuxContractsSpawnProtectZombies(record, count)
+    if not record then return 0 end
+    local spawnedCount = 0
+    for _ = 1, math.max(0, tonumber(count) or 0) do
         local radius = ZombRand(20, 50)
         local direction = ZombRand(1, 5)
-        local spawnX = tonumber(x) or 0
-        local spawnY = tonumber(y) or 0
+        local spawnX = tonumber(record.locationX) or 0
+        local spawnY = tonumber(record.locationY) or 0
         if direction == 1 then spawnX, spawnY = spawnX + radius, spawnY + radius end
         if direction == 2 then spawnX, spawnY = spawnX - radius, spawnY - radius end
         if direction == 3 then spawnX, spawnY = spawnX + radius, spawnY - radius end
         if direction == 4 then spawnX, spawnY = spawnX - radius, spawnY + radius end
-        PZLinuxContractsSpawnZombieAt(spawnX, spawnY, z, contractWorldId, "protect")
+        if PZLinuxContractsSpawnZombieAt(spawnX, spawnY, record.locationZ, record.id, "protect") then
+            spawnedCount = spawnedCount + 1
+        end
     end
-    return count
+    return spawnedCount
+end
+
+function PZLinuxContractsSpawnProtectHorde(x, y, z, contractWorldId)
+    local count = ZombRand(50, 200)
+    return PZLinuxContractsSpawnProtectZombies({
+        id = contractWorldId,
+        locationX = x,
+        locationY = y,
+        locationZ = z,
+    }, count)
 end
 
 function PZLinuxContractsGiveContractCase(playerObj, contractWorldId)
@@ -2904,14 +2959,16 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     if eventName == "zombieKilled" then
         return reject("server_event_only")
     elseif eventName == "spawnManhunt" then
-        local record, recordError = usePlayerRecord(3, "accepted")
+        local record, recordError = usePlayerRecord(3, "accepted", "spawned")
         if recordError then return reject(recordError) end
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
-        if not PZLinuxContractsSpawnZombieAt(record.locationX, record.locationY, record.locationZ, record.id, "manhunt") then return reject("spawn_failed") end
+        local restored
+        restored, spawned = PZLinuxContractsEnsureManhuntZombie(record)
+        if not restored then return reject("spawn_failed") end
         record.spawned = true
         record.status = "spawned"
     elseif eventName == "spawnCargo" then
-        local record, recordError = usePlayerRecord(7, "accepted")
+        local record, recordError = usePlayerRecord(7, "accepted", "spawned")
         if recordError then return reject(recordError) end
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
         if not PZLinuxContractsSpawnCargoObject(record.locationX, record.locationY, record.locationZ, record.id) then return reject("spawn_failed") end
@@ -2928,6 +2985,14 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         record.spawned = true
         record.status = "protect_started"
         record.spawnedCount = spawned
+    elseif eventName == "restoreProtect" then
+        local record, recordError = usePlayerRecord(8, "protect_started")
+        if recordError then return reject(recordError) end
+        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
+        local remaining = math.max(0, 10 - (tonumber(record.zombieCount) or 0))
+        local active = PZLinuxContractsCountTaggedZombies(record.id, "protect")
+        spawned = PZLinuxContractsSpawnProtectZombies(record, math.max(0, remaining - active))
+        record.spawnedCount = (tonumber(record.spawnedCount) or 0) + spawned
     elseif eventName == "finishProtect" then
         local record, recordError = usePlayerRecord(8, "protect_clear")
         if recordError then return reject(recordError) end

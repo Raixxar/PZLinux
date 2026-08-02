@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Acquista",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Esaurito",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Scorte insufficienti",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "VEDI CONTRATTI DISPONIBILI",
     "IGUI_PZLinux_Contracts_PreviewError": "Contratto non disponibile (%s).",
     "IGUI_PZLinux_NeedPower": "Ho bisogno di potere",
     "IGUI_PZLinux_ATM_Title": "BANCOMAT BANCA AMERICANA",

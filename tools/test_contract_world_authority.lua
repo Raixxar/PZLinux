@@ -22,6 +22,21 @@ PZLinuxTestAssert(applyBlock:find('eventName == "zombieKilled".-server_event_onl
     "zombie kills must only be accepted from the server event")
 PZLinuxTestAssert(applyBlock:find('eventName == "clearCargo".-server_event_only'),
     "cargo cleanup must not be client-triggerable")
+local spawnCargoBranch = applyBlock:match('eventName == "spawnCargo"(.-)elseif')
+PZLinuxTestAssert(spawnCargoBranch and spawnCargoBranch:find('"accepted", "spawned"'),
+    "cargo spawn must be recoverable after reconnect without resetting server state")
+PZLinuxTestAssert(variables:find('PZLinuxContractsGetEntityObjective%(existing%) == "cargo"'),
+    "cargo recovery must reuse an existing tagged object instead of duplicating it")
+local spawnManhuntBranch = applyBlock:match('eventName == "spawnManhunt"(.-)elseif')
+PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find('"accepted", "spawned"'),
+    "manhunt spawn must be recoverable after reconnect")
+PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find("PZLinuxContractsEnsureManhuntZombie"),
+    "manhunt recovery must reuse an existing tagged target")
+local restoreProtectBranch = applyBlock:match('eventName == "restoreProtect"(.-)elseif')
+PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(tonumber%(record%.zombieCount%)"),
+    "protect recovery must only restore the number of objective kills still required")
+PZLinuxTestAssert(variables:find('record%.status == "target_down".-PZLinuxContractManhunt = 2'),
+    "a killed manhunt target must remain available for corpse interaction")
 
 for _, eventName in ipairs({ "startProtect", "finishProtect", "takeCargo", "decapitate", "blood", "capture" }) do
     local branch = applyBlock:match('eventName == "' .. eventName .. '"(.-)elseif')
@@ -62,5 +77,9 @@ local events = PZLinuxTestRead(luaRoot .. "/client/Context/World/Events/PZLinuxO
 PZLinuxTestAssert(not events:find('"zombieKilled"'), "the client must not report zombie kills")
 PZLinuxTestAssert(not events:find('"clearCargo"'), "the client must not request cargo deletion")
 PZLinuxTestAssert(not events:find("PZLinuxContractManhunt = 1"), "reconnect must not reset a persistent spawned target")
+PZLinuxTestAssert(events:find("cargoState == 1 or cargoState == 2"),
+    "accepted and previously spawned cargo contracts must both recover on reconnect")
+PZLinuxTestAssert(events:find('PZLinuxRequestContractWorldEvent%(player, "restoreProtect"'),
+    "protect contracts must request server recovery after reconnect")
 
 print("PZLinux contract world authority tests OK")

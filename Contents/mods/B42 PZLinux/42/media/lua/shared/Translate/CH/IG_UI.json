@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "購買",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "售罄",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "庫存不足",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "查看可用合約",
     "IGUI_PZLinux_Contracts_PreviewError": "合約無法使用（%s）。",
     "IGUI_PZLinux_NeedPower": "我需要力量",
     "IGUI_PZLinux_ATM_Title": "美國銀行 ATM",

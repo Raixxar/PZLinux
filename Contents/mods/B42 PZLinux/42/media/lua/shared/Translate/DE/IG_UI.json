@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Kaufen",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Ausverkauft",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Nicht genug Bestand",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "VERFUGBARE AUFTRAGE ANZEIGEN",
     "IGUI_PZLinux_Contracts_PreviewError": "Auftrag nicht verfügbar (%s).",
     "IGUI_PZLinux_NeedPower": "Ich brauche Kraft",
     "IGUI_PZLinux_ATM_Title": "Geldautomat der American Bank",

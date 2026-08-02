@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "ซื้อ",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "สินค้าหมด",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "สินค้าไม่เพียงพอ",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "ดูสัญญาที่มีอยู่",
     "IGUI_PZLinux_Contracts_PreviewError": "ไม่สามารถใช้งานสัญญาได้ (%s)",
     "IGUI_PZLinux_NeedPower": "ฉันต้องการพลัง",
     "IGUI_PZLinux_ATM_Title": "ตู้เอทีเอ็มธนาคารอเมริกัน",

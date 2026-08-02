@@ -1,5 +1,19 @@
 PZLinux = PZLinux or {}
 
+PZLinuxDarkWebMarketConfig = {
+    refreshHours = 24,
+    minimumOffers = 5,
+    maximumOffers = 50,
+    stockTiers = {
+        { maximumPrice = 499, minimumStock = 10, maximumStock = 15 },
+        { maximumPrice = 999, minimumStock = 8, maximumStock = 10 },
+        { maximumPrice = 2499, minimumStock = 6, maximumStock = 8 },
+        { maximumPrice = 4999, minimumStock = 4, maximumStock = 6 },
+        { maximumPrice = 9999, minimumStock = 2, maximumStock = 4 },
+        { minimumStock = 1, maximumStock = 2 },
+    },
+}
+
 PZLinuxDarkWebItemsTable = {
     -- HUNDGUNS
     { id = {"Base.Revolver_Short"}, Price = 375 },

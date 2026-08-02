@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Comprar",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Esgotado",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Estoque insuficiente",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "VER CONTRATOS DISPONIVEIS",
     "IGUI_PZLinux_Contracts_PreviewError": "Contrato indisponível (%s).",
     "IGUI_PZLinux_NeedPower": "Eu preciso de poder",
     "IGUI_PZLinux_ATM_Title": "ATM BANCO AMERICANO",

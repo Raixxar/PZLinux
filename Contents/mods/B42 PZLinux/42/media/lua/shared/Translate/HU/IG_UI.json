@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Vasarlas",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Elfogyott",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Nincs elegendo keszlet",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "ELERHETO SZERZODESEK",
     "IGUI_PZLinux_Contracts_PreviewError": "A szerződés nem érhető el (%s).",
     "IGUI_PZLinux_NeedPower": "hatalomra van szükségem",
     "IGUI_PZLinux_ATM_Title": "ATM AMERICAN BANK",

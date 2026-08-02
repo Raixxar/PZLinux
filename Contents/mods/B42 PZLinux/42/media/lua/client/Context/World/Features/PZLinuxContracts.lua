@@ -17,8 +17,45 @@ local function PZLinuxContractsText(key, fallback, ...)
     return fallback
 end
 
+local function PZLinuxContractsSetRichText(panel, message)
+    if not panel then return end
+    panel.text = "<RGB:0,1,0>" .. tostring(message or "")
+    panel:paginate()
+
+    local maxYScroll = math.max(0, panel:getScrollHeight() - panel:getHeight())
+    if panel.vscroll then panel.vscroll:setVisible(maxYScroll > 0) end
+    panel:setYScroll(-maxYScroll)
+end
+
+local function PZLinuxContractsCreateTextPanel(ui, x, y, width, height)
+    local panel = ISRichTextPanel:new(x, y, width, height)
+    panel.backgroundColor = {r=0, g=0, b=0, a=0}
+    panel.borderColor = {r=0, g=0, b=0, a=0}
+    panel.autosetheight = false
+    panel:setVisible(true)
+    panel:initialise()
+    panel:instantiate()
+    function panel:setName(message)
+        PZLinuxContractsSetRichText(self, message)
+    end
+    ui.topBar:addChild(panel)
+    return panel
+end
+
 local function PZLinuxContractsShowCompletionReceipt(self, receipt)
     if not self or type(receipt) ~= "table" or not receipt.id then return false end
+    if self.completionReceiptVisible
+    and tostring(self.pendingCompletionReceiptId) == tostring(receipt.id) then
+        return true
+    end
+
+    self.completionReceiptVisible = true
+    self.pendingCompletionReceiptId = tostring(receipt.id)
+    for _, contractButton in ipairs(self.contractButtons or {}) do
+        contractButton:setVisible(false)
+    end
+    if self.activeContractMessage then self.activeContractMessage:setVisible(false) end
+    if self.cancelContractButton then self.cancelContractButton:setVisible(false) end
 
     local lines = {
         PZLinuxContractsText(
@@ -54,12 +91,29 @@ local function PZLinuxContractsShowCompletionReceipt(self, receipt)
     self.completeContractMessage:paginate()
     self.topBar:addChild(self.completeContractMessage)
 
+    self.completionReceiptButton = ISButton:new(
+        self.width * 0.20,
+        self.height * 0.52,
+        self.width * 0.57,
+        self.height * 0.05,
+        PZLinuxContractsText(
+            "IGUI_PZLinux_Contracts_ViewAvailable",
+            "VIEW AVAILABLE CONTRACTS"
+        ),
+        self,
+        self.onCompletionReceiptContinue
+    )
+    self.completionReceiptButton.textColor = {r=0, g=1, b=0, a=1}
+    self.completionReceiptButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.completionReceiptButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.completionReceiptButton:initialise()
+    self.topBar:addChild(self.completionReceiptButton)
+
     local playerObj = PZLinuxGetPlayer(self.player)
     if playerObj then
         local globalVolume = getCore():getOptionSoundVolume() / 50
         getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     end
-    PZLinuxRequestContractCompletionAck(self.player, receipt.id)
     return true
 end
 
@@ -114,7 +168,11 @@ function contractsUI:new(x, y, width, height, player)
 end
 
 function contractsUI:showContractsBoard()
+    if self.completionReceiptVisible then return end
     local y = 0.20
+    for _, contractButton in ipairs(self.contractButtons or {}) do
+        self.topBar:removeChild(contractButton)
+    end
     self.contractButtons = {}
     for i = 1, #selectedContracts do
         local contract = selectedContracts[i]
@@ -130,6 +188,49 @@ function contractsUI:showContractsBoard()
         table.insert(self.contractButtons, contractButton)
         y = y + 0.06
     end
+end
+
+function contractsUI:onCompletionReceiptContinue(button)
+    if self.isClosing or self.completionReceiptAckPending then return end
+    local receiptId = self.pendingCompletionReceiptId
+    if not receiptId then return end
+
+    self.completionReceiptAckPending = true
+    if button and button.setEnable then button:setEnable(false) end
+    PZLinuxRequestContractCompletionAck(self.player, receiptId, function(result)
+        self.completionReceiptAckPending = false
+        if self.isClosing then return end
+        if not result or not result.ok then
+            if button and button.setEnable then button:setEnable(true) end
+            return
+        end
+
+        if self.completeContractMessage then
+            self.topBar:removeChild(self.completeContractMessage)
+            self.completeContractMessage = nil
+        end
+        if self.completionReceiptButton then
+            self.topBar:removeChild(self.completionReceiptButton)
+            self.completionReceiptButton = nil
+        end
+        self.completionReceiptVisible = false
+        self.pendingCompletionReceiptId = nil
+
+        PZLinuxRequestContractsBoard(self.player, function(boardResult)
+            if self.isClosing or not boardResult or not boardResult.ok then return end
+            if boardResult.balance then
+                saveAtmBalance(boardResult.balance, self.player)
+                self.titleLabel:setName(PZLinuxContractsText(
+                    "IGUI_PZLinux_Request_Balance",
+                    "Bank Balance: $%s",
+                    tostring(boardResult.balance)
+                ))
+            end
+            PZLinuxContractsApplyBoard(boardResult.contracts)
+            self.contractsBoardReady = true
+            self:showContractsBoard()
+        end)
+    end)
 end
 
 function contractsUI:showSynchronizedContractState(synchronizedState)
@@ -399,15 +500,23 @@ function contractsUI:onContractPreview(contract, contractPreview)
     local player = PZLinuxGetPlayer(self.player)
 
     if not self.typingMessage then
-        self.typingMessage = ISLabel:new(self.width * 0.20, self.height * 0.65, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
-        self.typingMessage:initialise()
-        self.topBar:addChild(self.typingMessage)
+        self.typingMessage = PZLinuxContractsCreateTextPanel(
+            self,
+            self.width * 0.20,
+            self.height * 0.61,
+            self.width * 0.57,
+            self.height * 0.07
+        )
     end
 
     if not self.loadingMessage then
-        self.loadingMessage = ISLabel:new(self.width * 0.20, self.height * 0.45, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
-        self.loadingMessage:initialise()
-        self.topBar:addChild(self.loadingMessage)
+        self.loadingMessage = PZLinuxContractsCreateTextPanel(
+            self,
+            self.width * 0.20,
+            self.height * 0.25,
+            self.width * 0.57,
+            self.height * 0.34
+        )
     end
 
     local function typeText(label, text, callback)
@@ -488,13 +597,13 @@ function contractsUI:onContractPreview(contract, contractPreview)
     end
 
     local function PZLinuxContractsAddChoiceButtons(contractId)
-        self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.65, 80, 25, PZLinuxContractsText("IGUI_PZLinux_Request_Yes", "Yes"), self, self.onYesButton)
+        self.yesButton = ISButton:new(self.width * 0.35, self.height * 0.69, 80, 25, PZLinuxContractsText("IGUI_PZLinux_Request_Yes", "Yes"), self, self.onYesButton)
         self.yesButton.contractId = contractId
         self.yesButton:initialise()
         self.yesButton:instantiate()
         self.topBar:addChild(self.yesButton)
 
-        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.65, 80, 25, PZLinuxContractsText("IGUI_PZLinux_Request_No", "No"), self, self.onMinimizeBack)
+        self.noButton = ISButton:new(self.width * 0.50, self.height * 0.69, 80, 25, PZLinuxContractsText("IGUI_PZLinux_Request_No", "No"), self, self.onMinimizeBack)
         self.noButton:initialise()
         self.noButton:instantiate()
         self.topBar:addChild(self.noButton)

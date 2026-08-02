@@ -377,7 +377,9 @@ function darkWebUI:onBuy()
                     end
 
                     if self.offerPriceLabels[lineIndex] then
-                        self.offerPriceLabels[lineIndex]:setName("$" .. tostring(rowData.price))
+                        self.offerPriceLabels[lineIndex]:setName(
+                            "$" .. tostring(rowData.price) .. " | x" .. tostring(rowData.stock or 0)
+                        )
                     end
 
                     if self.transactionQtys[lineIndex] then
@@ -387,10 +389,14 @@ function darkWebUI:onBuy()
                     if self.transactionBtns[lineIndex] then
                         self.transactionBtns[lineIndex].internal = i
                         if rowData.transactionType == "Buy" then
-                            self.transactionBtns[lineIndex]:setTitle("Buy")
+                            local titleKey = (tonumber(rowData.stock) or 0) > 0
+                                and "IGUI_PZLinux_DarkWeb_Buy"
+                                or "IGUI_PZLinux_DarkWeb_SoldOut"
+                            self.transactionBtns[lineIndex]:setTitle(PZLinuxGetText(titleKey))
                             self.transactionBtns[lineIndex].backgroundColor = {r=0, g=0.6, b=0, a=1}
                         end
                         self.transactionBtns[lineIndex]:setVisible(true)
+                        self.transactionBtns[lineIndex]:setEnable((tonumber(rowData.stock) or 0) > 0)
                     end
 
                     lineIndex = lineIndex + 1
@@ -602,6 +608,11 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
     if not offer then return end
     local transactionQty = tonumber(quantityTrading)
     if not transactionQty or transactionQty < 1 then return end
+    if transactionQty > (tonumber(offer.stock) or 0) then
+        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_DarkWeb_NotEnoughStock"))
+        return
+    end
 
     if button.setEnable then button:setEnable(false) end
     PZLinuxRequestDarkWebBuy(self.player, button.internal, transactionQty, function(result)
@@ -613,12 +624,25 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
             self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
         end
 
+        if result and result.offerIndex and result.stock ~= nil and currentOffers[result.offerIndex] then
+            currentOffers[result.offerIndex].stock = result.stock
+            self:onBuy()
+        end
+
         if result and result.ok then
             getSoundManager():PlayWorldSound("buy", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            HaloTextHelper.addGoodText(playerObj, "Item available in a mailbox")
+            HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_Request_MailboxAvailable"))
         else
             getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            HaloTextHelper.addGoodText(playerObj, "I need money in my bank account")
+            if result and (result.error == "not_enough_stock" or result.error == "offer_expired") then
+                HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_DarkWeb_NotEnoughStock"))
+                if result.error == "offer_expired" then
+                    self.darkWebBuyOffersLoaded = false
+                    self:onBuy()
+                end
+            else
+                HaloTextHelper.addGoodText(playerObj, "I need money in my bank account")
+            end
         end
     end)
 end

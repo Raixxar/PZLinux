@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Купити",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Розпродано",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Недостатньо товару",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "ДОСТУПНІ КОНТРАКТИ",
     "IGUI_PZLinux_Contracts_PreviewError": "Контракт недоступний (%s).",
     "IGUI_PZLinux_NeedPower": "Мені потрібна сила",
     "IGUI_PZLinux_ATM_Title": "АТМ АМЕРИКАНСЬКИЙ БАНК",

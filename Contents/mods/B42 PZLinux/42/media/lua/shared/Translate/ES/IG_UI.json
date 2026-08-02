@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Comprar",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Agotado",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Stock insuficiente",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "VER CONTRATOS DISPONIBLES",
     "IGUI_PZLinux_Contracts_PreviewError": "Contrato no disponible (%s).",
     "IGUI_PZLinux_NeedPower": "necesito poder",
     "IGUI_PZLinux_ATM_Title": "Cajero Automático BANCO AMERICANO",

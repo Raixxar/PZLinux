@@ -60,13 +60,13 @@ Resultats mesures le 2026-08-01 :
 
 | Mesure | Resultat |
 | --- | ---: |
-| Fichiers Lua | 58 |
+| Fichiers Lua | 59 |
 | Lignes Lua | 17 056 |
 | Fichiers media/mod | 122 |
 | Taille du mod | 7,4 MiB |
 | Catalogues `IG_UI.json` | 20 |
-| Cles par catalogue | 299 |
-| Modules de tests Lua | 13 |
+| Cles par catalogue | 314 |
+| Modules de tests Lua | 15 |
 | Warnings Luacheck | 70 |
 | Erreurs Luacheck | 0 |
 | Fonctions/declarations non prefixees (heuristique) | 277 |
@@ -83,13 +83,14 @@ contrats, Requests, Mails et Hacking.
 
 | Controle | Resultat | Commentaire |
 | --- | --- | --- |
-| Syntaxe Lua 5.1, 58 fichiers | OK | Aucun parse error |
+| Syntaxe Lua 5.1, 59 fichiers | OK | Aucun parse error |
 | Luacheck complet | 70 warnings / 0 errors | La commande globale retourne non-zero a cause des warnings |
 | Audit statique P0 historique | OK | `Pric2`, debug force, index contrat 7 et helper Mail duplique absents |
 | Assets ImageMagick/FFprobe | OK | PNG/JPG/OGG/WAV lisibles |
 | Locations B42.20 | OK | IDs, coordonnees et entrees activees valides |
 | Traductions | OK structurel | 20 langues, 310 cles et placeholders identiques |
-| Suite de regression Lua | OK | 14 modules executes avec succes |
+| Suite de regression Lua | OK | 15 modules executes avec succes |
+| Stock Dark Web | OK | Paliers, renouvellement et concurrence sur le dernier exemplaire |
 | Autorite contrats | OK | 12 missions canoniques et dialogues couverts |
 | Autorite objectifs contrats | OK | Evenements interdits et validations monde couverts statiquement |
 | Livraison Dark Web | OK | Creation, synchronisation inventaire et retry |
@@ -181,7 +182,7 @@ Modules partages deja extraits :
 | Ordinateur/Internet | Oui | Player explicite dans les UI | Player ModData | Pause, split-screen, manette |
 | Banque | Oui | Serveur | Player ModData | Crash entre mutation et persistance |
 | ATM | Oui | Serveur, reserve atomique et inventaire synchronise | ATM object + joueur | Concurrence deux joueurs live |
-| Dark Web achats | Oui | Offres/prix/debit/livraison serveur | Pending orders | Reconnexion et concurrence live |
+| Dark Web achats | Oui | Offres/prix/stock/debit/livraison serveur | Marche global + pending orders | Reconnexion et concurrence deux clients live |
 | Dark Web ventes | Oui | Inventaire et credit serveur | Pending sales | Double redemption/concurrence live |
 | Trading/Wallet | Oui | Prix globaux serveur | Global + Player ModData | Reconnexion et restart live |
 | Contrats board | Oui | Board global serveur | Global ModData | Rotation/concurrence live |
@@ -193,7 +194,7 @@ Modules partages deja extraits :
 | Mails | Oui | Generation/retrait/reward serveur | Player ModData | Equilibrage reward et traductions |
 | Hacking | Oui | Secret et transfert serveur | Rollback cartes | Cooldown et restart live |
 | Blackjack | Oui | Deck/payout serveur | Refund mise interrompue | Restart live |
-| Zombie Race | Oui | Calendrier/pool/resultat/payout serveur | Global ModData + tickets | Validation visuelle MP live |
+| Zombie Race | Oui | Calendrier/pool/resultat/payout serveur | Global ModData + tickets | Flux MP valide; simultane/restart a tester |
 | Poker | Oui | Session/IA/actions serveur | Rollback stack/cashout | Deux sessions MP et restart live |
 | Traductions | Partiel | Identique | Fichiers statiques | Textes visibles et relecture native |
 | Split-screen | Partiel | Non garanti | n/a | Routage reponses vers joueur 0 |
@@ -322,6 +323,14 @@ plafonne ou integre explicitement au calcul du reward.
 ### Points positifs
 
 - Les prix Dark Web puissants ont ete releves.
+- Le catalogue Dark Web dispose maintenant d'un stock mondial persistant, commun
+  a tous les joueurs et renouvele toutes les 24 heures de jeu. Deux clients voient
+  les memes articles et les memes quantites; le prix final reste personnalise par
+  la reputation et les autres multiplicateurs du joueur.
+- Les quantites sont tirees selon le prix de reference serveur : 10-15 sous $500,
+  8-10 sous $1 000, 6-8 sous $2 500, 4-6 sous $5 000, 2-4 sous $10 000 et 1-2 a
+  partir de $10 000. Le dernier exemplaire est attribue par le serveur et une vue
+  client obsolete ne peut pas depasser le stock restant.
 - Les Requests sont un service de confort couteux et non une source de loot gratuit.
 - La remise PlantScavenging est plafonnee a 15 %.
 - Trading applique 5 % de fee serveur sur achats et ventes.
@@ -395,8 +404,11 @@ de $500 par joueur.
 La campagne reproductible de 100 000 courses avec pari systematique sur le favori
 mesure **94,50 % de RTP**, **5,50 % d'avantage maison** et **29,73 % de victoires**.
 Aucune position ne s'ecarte de plus de 0,27 point du taux symetrique de 12,50 %.
-Etat : **equilibre statique valide**, validation visuelle et settlement MP live
-encore requis. Voir [RAPPORT_ZOMBIE_RACES.md](RAPPORT_ZOMBIE_RACES.md).
+Etat : **equilibre statique et flux principal MP valides**. Le serveur charge les
+cinq prochains departs, conserve les cinq resultats non lus et credite correctement
+le compte gagnant. Les paris simultanes de deux joueurs et le redemarrage pendant
+des tickets en attente restent a tester. Voir
+[RAPPORT_ZOMBIE_RACES.md](RAPPORT_ZOMBIE_RACES.md).
 
 #### P2 - Reputation
 
@@ -409,7 +421,7 @@ plafonds de remise/surcharge doivent encore etre mesures sur une partie longue.
 ### Infrastructure
 
 - 20 catalogues `IG_UI.json` valides en UTF-8.
-- 299 cles identiques par langue.
+- 314 cles identiques par langue.
 - Controle automatique des doublons, cles et placeholders `%s`/`<name>`.
 - Request utilise un `ISRichTextPanel` fixe, wrappe, scrollable et auto-scroll.
 - Les descriptions de locations utilisent des cles traduisibles et un fallback.
@@ -532,11 +544,33 @@ MP et equilibrage des sections suivantes restent applicables avant publication.
 
 ### MP serveur dedie, deux clients
 
+Progression fonctionnelle des contrats en MP : **2/12 valides**.
+
+- [ ] 1 - Kill zombies.
+- [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
+- [ ] 3 - Eliminate the target.
+- [ ] 4 - Collect zombie blood.
+- [ ] 5 - Send automobile parts.
+- [ ] 6 - Capture a live zombie.
+- [ ] 7 - Prepare the cargo.
+- [ ] 8 - Protect the building.
+- [ ] 9 - Send medical equipment.
+- [ ] 10 - Send weapons.
+- [x] 11 - Send a computer : livraison, retrait et paiement valides en MP.
+- [x] 12 - Send a fridge : livraison, retrait et paiement valides en MP.
+
+- [x] ATM MP : depot/retrait, debit/credit bancaire, reserve persistante, refus a
+  $0 et renflouement au-dela de la reserve initiale de $50 000 valides.
+- [x] Zombie Race MP : cinq prochains departs charges, cinq resultats non lus
+  affiches et gain credite sur le compte bancaire.
+- [x] Dark Web MP : achats simples et multiples, reception des colis, vente,
+  expedition et credit bancaire valides sur serveur heberge.
 - [ ] Meme solde apres sync/reconnexion pour chaque joueur.
 - [ ] Deux depots/retraits simultanes sur le meme ATM.
 - [ ] Meme snapshot/prix Trading pour les deux joueurs.
 - [ ] Trading simultane et fee 5 % apres redemarrage.
-- [ ] Dark Web : achat, reconnexion, livraison et redemption par le bon joueur.
+- [ ] Dark Web : reconnexion avec achat/vente en attente et redemption par le bon
+  joueur; achat simultane du dernier exemplaire avec deux clients.
 - [ ] Commandes mailbox forgees a distance/mauvais Z refusees.
 - [ ] Meme board de contrats pour les deux joueurs.
 - [ ] Offre acceptee simultanement : un seul gagnant, board resynchronise.
@@ -822,10 +856,15 @@ concue comme une machine a etats canonique geree par le serveur.
     ouverte, attendre la synchronisation et survivre au bruit. Une caisse apparait
     seulement apres la fin du timer serveur; le contrat se termine quand cette
     caisse est deposee a un second point.
-12. **Reapprovisionnement ATM** - Retirer une cassette de billets taguee dans un
-    depot securise et l'inserer dans un ATM cible. Le transfert modifie la reserve
-    persistante reelle de cet ATM et ne cree aucun billet libre. Le risque de
-    duplication et la concurrence entre joueurs exigent une transaction atomique.
+12. **Reapprovisionnement ATM** - Un contrat designe un ATM pauvre ou vide et une
+    somme a livrer. Le joueur doit retirer son propre argent, transporter les
+    billets physiquement puis les deposer dans l'ATM cible. Il risque donc de mourir
+    en route et de laisser une somme importante recuperable par les autres joueurs.
+    Le serveur valide les billets retires de l'inventaire et l'identite persistante
+    de l'ATM dans une transaction atomique, augmente sa reserve reelle, puis rembourse
+    le capital engage et verse la reward du contrat. En MP, le cash reste volable et
+    un autre joueur peut renflouer l'ATM; la regle d'attribution de la reward devra
+    etre explicite pour eviter blocage, duplication ou perte du capital.
 
 #### Idees B42 a garder pour 1.2
 

@@ -1,12 +1,37 @@
+local PZLinuxManhuntSpawnRequests = {}
+
+local function PZLinuxContractRestoreNow()
+    local timestampProvider = rawget(_G, "getTimestampMs")
+    if timestampProvider then return math.floor(timestampProvider() / 1000) end
+    return math.floor(getGameTime():getWorldAgeHours() * 3600)
+end
+
+local function PZLinuxCanRequestContractRestore(requests, player, cooldown)
+    local playerKey = tostring(player:getPlayerNum())
+    local now = PZLinuxContractRestoreNow()
+    local lastRequest = requests[playerKey] or -cooldown
+    if now - lastRequest < cooldown then return false end
+    requests[playerKey] = now
+    return true
+end
+
 local function checkAndSpawnZombie(player)
     if not player then return end
     local modData = player:getModData()
-    if modData.PZLinuxActiveContract == 1 and modData.PZLinuxContractManhunt == 1 then
+    local manhuntState = tonumber(modData.PZLinuxContractManhunt) or 0
+    local record = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
+    local recordStatus = record and record.status or nil
+    local canSpawn = manhuntState == 1 or (manhuntState == 2 and recordStatus ~= "target_down")
+    if modData.PZLinuxActiveContract == 1 and canSpawn then
         local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
-        if dist < 50 then
-            PZLinuxRequestContractWorldEvent(player, "spawnManhunt")
+        if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
+            PZLinuxRequestContractWorldEvent(player, "spawnManhunt", {}, function(result)
+                if result and not result.ok and result.error ~= "invalid_contract_state" then
+                    print("[PZLinux Manhunt] restore failed: " .. tostring(result.error or "unknown"))
+                end
+            end)
         end
     end
 end
@@ -30,19 +55,67 @@ local function checkAndSpawnVehicle(player)
 end
 Events.OnPlayerMove.Add(checkAndSpawnVehicle)
 
+local PZLinuxCargoSpawnRequests = {}
+
+local function PZLinuxCargoExists(modData, x, y, z)
+    if not getCell then return false end
+    local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
+    if not square then return false end
+
+    local objects = square:getObjects()
+    for index = 0, objects:size() - 1 do
+        local obj = objects:get(index)
+        local data = obj and obj.getModData and obj:getModData() or nil
+        if data
+        and tostring(data.PZLinuxContractId or "") == tostring(modData.PZLinuxContractId or "")
+        and data.PZLinuxContractObjective == "cargo" then
+            return true
+        end
+    end
+    return false
+end
+
 local function checkAndSpawnBox(player)
     if not player then return end
     local modData = player:getModData()
-    if modData.PZLinuxContractCargo == 1 then
+    local cargoState = tonumber(modData.PZLinuxContractCargo) or 0
+    if cargoState == 1 or cargoState == 2 then
         local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
         if dist < 50 then
-            PZLinuxRequestContractWorldEvent(player, "spawnCargo")
+            if cargoState == 2 and PZLinuxCargoExists(modData, x, y, z) then return end
+
+            if not PZLinuxCanRequestContractRestore(PZLinuxCargoSpawnRequests, player, 5) then return end
+            PZLinuxRequestContractWorldEvent(player, "spawnCargo", {}, function(result)
+                if result and not result.ok then
+                    print("[PZLinux Cargo] restore failed: " .. tostring(result.error or "unknown"))
+                end
+            end)
         end
     end
 end
 Events.OnPlayerMove.Add(checkAndSpawnBox)
+
+local PZLinuxProtectRestoreRequests = {}
+
+local function PZLinuxRestoreProtectContract(player)
+    if not player then return end
+    local modData = player:getModData()
+    if tonumber(modData.PZLinuxContractProtect) ~= 2 then return end
+
+    local x, y = tonumber(modData.PZLinuxContractLocationX), tonumber(modData.PZLinuxContractLocationY)
+    if not x or not y then return end
+    local distance = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
+    if distance >= 50 or not PZLinuxCanRequestContractRestore(PZLinuxProtectRestoreRequests, player, 30) then return end
+
+    PZLinuxRequestContractWorldEvent(player, "restoreProtect", {}, function(result)
+        if result and not result.ok and result.error ~= "invalid_contract_state" then
+            print("[PZLinux Protect] restore failed: " .. tostring(result.error or "unknown"))
+        end
+    end)
+end
+Events.OnPlayerMove.Add(PZLinuxRestoreProtectContract)
 
 PZLinux = PZLinux or {}
 PZLinux.ContractCompletionNotifications = PZLinux.ContractCompletionNotifications or {}

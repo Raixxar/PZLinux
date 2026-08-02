@@ -1,4 +1,8 @@
 {
+    "IGUI_PZLinux_DarkWeb_Buy": "Купить",
+    "IGUI_PZLinux_DarkWeb_SoldOut": "Распродано",
+    "IGUI_PZLinux_DarkWeb_NotEnoughStock": "Недостаточно товара",
+    "IGUI_PZLinux_Contracts_ViewAvailable": "ДОСТУПНЫЕ КОНТРАКТЫ",
     "IGUI_PZLinux_Contracts_PreviewError": "Контракт недоступен (%s).",
     "IGUI_PZLinux_NeedPower": "мне нужна сила",
     "IGUI_PZLinux_ATM_Title": "Банкомат АМЕРИКАНСКОГО БАНК",
