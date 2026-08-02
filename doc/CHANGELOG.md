@@ -35,8 +35,31 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Added local validation tools for Lua syntax, LuaCheck, assets, translations,
   locations, authority boundaries, Poker and server log monitoring.
 
+### User Interface
+
+- Reworked Dark Web offer rows into fixed responsive columns with separate name
+  and price/stock lines, UTF-8-safe truncation and full item tooltips so long
+  item names and translated action labels cannot overlap quantities or buttons.
+- Fixed missing values on translated Reputation lines and rounded all displayed
+  reputation scores, thresholds and modifiers to whole numbers while retaining
+  full server-side precision.
+- Localized contract completion receipts in every shipped language and fixed
+  missing reward and zombie-count values by formatting the authoritative receipt
+  fields directly in Lua.
+- Fixed the initial multiplayer Contracts board schedule, which could postpone
+  its first weekly refresh until day 14; legacy boards now regenerate once on
+  migration and then refresh every configurable 168 world hours.
+
 ### Multiplayer And Security
 
+- Fixed kill-zombie contracts remaining at zero in multiplayer by snapshotting
+  and periodically reconciling the server-side player kill counter; clients still
+  cannot submit zombie kills themselves.
+- Added B42 multiplayer kill attribution through the zombie's server-known
+  network owner when `getAttackedBy()` is empty, with delayed-counter absorption
+  preventing the same death from being credited twice.
+- Removed the legacy empty location header from location-free contract notes,
+  eliminating the stray `:` and `*` lines shown above kill objectives.
 - Moved bank balances, ATM deposits and withdrawals to server-authoritative
   commands with explicit inventory replication.
 - Moved Dark Web offer generation, purchases, sales, pending deliveries and
@@ -68,6 +91,9 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   mutate player zero.
 - Restored missing Cargo, Manhunt and Protect world objectives after reconnect
   from their persistent server records, without duplicating tagged entities.
+- Hardened Cargo restoration so contract type 7 remains actionable when legacy
+  client flags are stale, and replaced invisible pre-fix crates with a fully
+  tagged server object replicated before the interaction begins.
 - Kept killed Manhunt targets in the corpse-interaction state until their proof
   is collected.
 - Broadcast validated live-zombie captures from the authoritative server so the

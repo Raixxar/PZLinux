@@ -61,6 +61,21 @@ Events.OnPlayerMove.Add(checkAndSpawnVehicle)
 
 local PZLinuxCargoSpawnRequests = {}
 
+local function PZLinuxIsCargoContractPending(modData)
+    if not modData then return false end
+
+    local activeState = tonumber(modData.PZLinuxActiveContract) or 0
+    local cargoState = tonumber(modData.PZLinuxContractCargo) or 0
+    local contractType = tonumber(modData.PZLinuxContractTypeId) or 0
+    local record = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
+    local recordIsCargo = record
+        and tonumber(record.contractId) == 7
+        and PZLinuxContractsIsRecordStatus(record, "accepted", "spawned")
+
+    return activeState == 1
+        and (cargoState == 1 or cargoState == 2 or contractType == 7 or recordIsCargo)
+end
+
 local function PZLinuxCargoExists(modData, x, y, z)
     if not getCell then return false end
     local centerX = math.floor(tonumber(x) or 0)
@@ -90,18 +105,25 @@ end
 local function checkAndSpawnBox(player)
     if not player then return end
     local modData = player:getModData()
-    local cargoState = tonumber(modData.PZLinuxContractCargo) or 0
-    if cargoState == 1 or cargoState == 2 then
+    if PZLinuxIsCargoContractPending(modData) then
         local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
         if dist < 50 then
-            if cargoState == 2 and PZLinuxCargoExists(modData, x, y, z) then return end
+            if PZLinuxCargoExists(modData, x, y, z) then return end
 
             if not PZLinuxCanRequestContractRestore(PZLinuxCargoSpawnRequests, player, 5) then return end
             PZLinuxRequestContractWorldEvent(player, "spawnCargo", {}, function(result)
-                if result and not result.ok then
+                if result and result.ok then
+                    print("[PZLinux Cargo] server confirmed cargo at "
+                        .. tostring(result.spawnX or x) .. ","
+                        .. tostring(result.spawnY or y) .. ","
+                        .. tostring(result.spawnZ or z)
+                        .. " created=" .. tostring(tonumber(result.spawned) == 1))
+                elseif result then
                     print("[PZLinux Cargo] restore failed: " .. tostring(result.error or "unknown"))
+                else
+                    print("[PZLinux Cargo] restore failed: empty server response")
                 end
             end)
         end

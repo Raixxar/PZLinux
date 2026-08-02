@@ -116,6 +116,14 @@ PZLinuxTestAssert(darkWebUi:find('rowData%.transactionType == "Buy".-rowData%.st
     "the Dark Web UI must hide exhausted buy offers")
 PZLinuxTestAssert(darkWebUi:find('IGUI_PZLinux_DarkWeb_Stock'),
     "the Dark Web UI must display the available quantity")
+PZLinuxTestAssert(darkWebUi:find("PZLinuxDarkWebFitText")
+    and darkWebUi:find("offerTextWidths"),
+    "Dark Web item names and details must be constrained to their responsive text column")
+PZLinuxTestAssert(darkWebUi:find("labelNameY %+ 15")
+    and darkWebUi:find("quantityX %- labelNameX"),
+    "Dark Web price and stock must use a separate line before the quantity column")
+PZLinuxTestAssert(darkWebUi:find("setTooltip%(offerTooltip%)"),
+    "truncated Dark Web offers must expose their complete name, price and stock in a tooltip")
 PZLinuxTestAssert(darkWebUi:find('tonumber%(item%.count%) or 0'),
     "Dark Web sell offers must display the total inventory quantity")
 

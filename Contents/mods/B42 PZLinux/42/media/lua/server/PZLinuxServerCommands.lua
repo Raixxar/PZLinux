@@ -442,6 +442,10 @@ local function PZLinuxServerForEachOnlinePlayer(callback)
     end
 end
 
+Events.EveryOneMinute.Add(function()
+    PZLinuxServerForEachOnlinePlayer(PZLinuxContractsReconcilePlayerZombieKills)
+end)
+
 Events.EveryTenMinutes.Add(function()
     PZLinuxRaceScheduleTick()
     PZLinuxServerForEachOnlinePlayer(function(playerObj)

@@ -83,7 +83,15 @@ function completeContractMenu_AddContext(player, context, worldobjects)
         math.abs(playerSquare:getY() - targetY)
     ) or math.huge
     local cargoState = tonumber(modData.PZLinuxContractCargo) or 0
-    if (cargoState == 1 or cargoState == 2)
+    local cargoRecordReady = worldRecord
+        and tonumber(worldRecord.contractId) == 7
+        and PZLinuxContractsIsRecordStatus(worldRecord, "accepted", "spawned")
+    local cargoReady = tonumber(modData.PZLinuxActiveContract) == 1
+        and (cargoState == 1
+            or cargoState == 2
+            or tonumber(modData.PZLinuxContractTypeId) == 7
+            or cargoRecordReady)
+    if cargoReady
     and cargoDistance <= packageRadius and packageSameZ then
         context:addOption(
             PZLinuxGetText("IGUI_PZLinux_Context_PrepareCargo"),
@@ -94,6 +102,16 @@ function completeContractMenu_AddContext(player, context, worldobjects)
             targetY,
             targetZ
         )
+    elseif cargoReady and cargoDistance <= 100 then
+        print("[PZLinux Cargo Context] outside interaction radius"
+            .. " state=" .. tostring(cargoState)
+            .. " type=" .. tostring(modData.PZLinuxContractTypeId)
+            .. " worldStatus=" .. tostring(worldRecord and worldRecord.status)
+            .. " player=" .. tostring(playerSquare and playerSquare:getX()) .. "," .. tostring(playerSquare and playerSquare:getY()) .. "," .. tostring(playerSquare and playerSquare:getZ())
+            .. " target=" .. tostring(targetX) .. "," .. tostring(targetY) .. "," .. tostring(targetZ)
+            .. " distance=" .. tostring(cargoDistance)
+            .. " radius=" .. tostring(packageRadius)
+            .. " sameZ=" .. tostring(packageSameZ))
     end
 
     if modData.PZLinuxContractProtect == 1

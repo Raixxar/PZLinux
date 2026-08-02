@@ -178,6 +178,9 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Reputation_StatusKnown = "KNOWN",
     IGUI_PZLinux_Reputation_StatusReliable = "RELIABLE",
     IGUI_PZLinux_Reputation_StatusPreferred = "PREFERRED",
+    IGUI_PZLinux_Contracts_CompletionPaid = "You have been paid for your contract.",
+    IGUI_PZLinux_Contracts_CompletionAmount = "Total money earned: $%s",
+    IGUI_PZLinux_Contracts_CompletionZombies = "Total zombies killed: %s",
 }
 
 function PZLinuxGetText(key)
@@ -1844,7 +1847,8 @@ local function PZLinuxContractsRecordBelongsToBoard(record, generatedHour)
     local acceptedHour = tonumber(record and record.acceptedHour)
     if not acceptedHour then return false end
     if generatedHour == 168 and acceptedHour < 168 then return true end
-    return acceptedHour >= generatedHour - 1 and acceptedHour < generatedHour + 168
+    local refreshHours = math.max(1, tonumber(PZLinux.Config.Contracts.boardRefreshHours) or 168)
+    return acceptedHour >= generatedHour - 1 and acceptedHour < generatedHour + refreshHours
 end
 
 local function PZLinuxContractsPruneConsumedBoardContracts(boardData)
@@ -1871,10 +1875,14 @@ end
 
 function PZLinuxContractsGetBoardData()
     local boardData = ModData.getOrCreate("PZLinuxContractsBoard")
-    local worldHour = getGameTime and math.ceil(getGameTime():getWorldAgeHours()) or 168
-    if worldHour < 168 then worldHour = 168 end
+    local worldHour = getGameTime and math.max(0, math.ceil(getGameTime():getWorldAgeHours())) or 0
+    local refreshHours = math.max(1, tonumber(PZLinux.Config.Contracts.boardRefreshHours) or 168)
+    local scheduleVersion = 2
+    local needsScheduleMigration = tonumber(boardData.scheduleVersion) ~= scheduleVersion
+    local generatedHour = tonumber(boardData.generatedHour)
+    local refreshDue = generatedHour and (worldHour - generatedHour) >= refreshHours
 
-    if type(boardData.contracts) ~= "table" or not boardData.generatedHour or (worldHour - tonumber(boardData.generatedHour)) >= 168 then
+    if type(boardData.contracts) ~= "table" or not generatedHour or refreshDue or needsScheduleMigration then
         PZLinux.contractPreviews = {}
         local pool = {}
         for _, definition in ipairs(PZLinuxContractDefinitions or {}) do
@@ -1893,6 +1901,11 @@ function PZLinuxContractsGetBoardData()
 
         boardData.contracts = selected
         boardData.generatedHour = worldHour
+        boardData.scheduleVersion = scheduleVersion
+        boardData.nextRefreshHour = worldHour + refreshHours
+        print("[PZLinux Contracts] board refreshed at world hour "
+            .. tostring(worldHour) .. ", next refresh at " .. tostring(boardData.nextRefreshHour)
+            .. ", offers=" .. tostring(#selected))
         if isServer and isServer() and ModData and ModData.transmit then
             ModData.transmit("PZLinuxContractsBoard")
         end
@@ -1914,6 +1927,7 @@ function PZLinuxContractsGetBoard(player, requestId)
         balance = PZLinuxLoadBankBalance(player),
         contracts = boardData.contracts or {},
         generatedHour = boardData.generatedHour,
+        nextRefreshHour = boardData.nextRefreshHour,
     }
 end
 
@@ -2044,6 +2058,8 @@ function PZLinuxContractsCreateWorldContract(player, selectedContract, contractI
         targetName = mission.targetName or "",
         zombieToKill = PZLinuxNormalizeMoney(mission.zombieToKill),
         zombieCount = 0,
+        playerZombieKills = playerObj.getZombieKills and tonumber(playerObj:getZombieKills()) or 0,
+        pendingZombieKillCredits = 0,
         spawned = false,
         deliveredBy = "",
         completedBy = "",
@@ -2057,7 +2073,7 @@ end
 
 function PZLinuxContractsBuildNoteText(record)
     if not record then return "" end
-    local noteText = record.fullNote or record.note or ""
+    local noteText = PZLinuxContractsSanitizeNoteText(record.fullNote or record.note or "")
     if tonumber(record.contractId) == 1 then
         noteText = PZLinuxContractsSetKillProgress(noteText, record.zombieCount, record.zombieToKill)
     end
@@ -2177,6 +2193,7 @@ function PZLinuxContractsGetActiveState(player, requestId)
         record = nil
     end
     if record then
+        PZLinuxContractsReconcilePlayerZombieKills(playerObj, record)
         PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record)
         PZLinuxContractsEnsureContractNote(playerObj, record)
     end
@@ -2838,22 +2855,35 @@ function PZLinuxContractsRemoveCargoObject(x, y, z, contractWorldId)
     return true
 end
 
-function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
+function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId, replaceExisting)
     if not getCell or not IsoObject then return false end
-    if PZLinuxContractsFindCargoObject(x, y, z, contractWorldId) then return true end
+    local existingObject, existingSquare = PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
+    if existingObject and not replaceExisting then
+        return true, false, existingSquare:getX(), existingSquare:getY(), existingSquare:getZ()
+    end
+    if existingObject then
+        existingSquare:removeTileObject(existingObject)
+        if existingSquare.transmitRemoveItemFromSquare then
+            existingSquare:transmitRemoveItemFromSquare(existingObject)
+        end
+    end
     local centerX = math.floor(tonumber(x) or 0)
     local centerY = math.floor(tonumber(y) or 0)
     local level = math.floor(tonumber(z) or 0)
     local square
+    local fallbackSquare
 
     for radius = 0, 5 do
         for offsetX = -radius, radius do
             for offsetY = -radius, radius do
                 if radius == 0 or math.abs(offsetX) == radius or math.abs(offsetY) == radius then
                     local candidate = getCell():getGridSquare(centerX + offsetX, centerY + offsetY, level)
-                    if candidate and candidate:isFree(false) then
-                        square = candidate
-                        break
+                    if candidate then
+                        fallbackSquare = fallbackSquare or candidate
+                        if candidate:isFree(false) then
+                            square = candidate
+                            break
+                        end
                     end
                 end
             end
@@ -2861,13 +2891,32 @@ function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
         end
         if square then break end
     end
-    if not square then return false end
+    square = square or fallbackSquare
+    if not square then
+        print("[PZLinux Cargo] spawn failed: no loaded square near "
+            .. tostring(centerX) .. "," .. tostring(centerY) .. "," .. tostring(level)
+            .. " contract=" .. tostring(contractWorldId))
+        return false
+    end
 
-    local obj = IsoObject.new(square, "carpentry_01_19")
+    local obj = IsoObject.new(square, "carpentry_01_19", "PZLinux Cargo")
+    if not obj then
+        print("[PZLinux Cargo] spawn failed: IsoObject creation returned nil"
+            .. " contract=" .. tostring(contractWorldId))
+        return false
+    end
     square:AddTileObject(obj)
+    local data = obj:getModData()
+    data.PZLinuxContractId = contractWorldId
+    data.PZLinuxContractObjective = "cargo"
+    if obj.addToWorld then obj:addToWorld() end
     PZLinuxContractsTransmitSquareObject(square, obj)
-    PZLinuxContractsTagEntity(obj, contractWorldId, "cargo")
-    return true
+    if obj.transmitModData then obj:transmitModData() end
+
+    print("[PZLinux Cargo] spawned at "
+        .. tostring(square:getX()) .. "," .. tostring(square:getY()) .. "," .. tostring(square:getZ())
+        .. " contract=" .. tostring(contractWorldId))
+    return true, true, square:getX(), square:getY(), square:getZ()
 end
 
 local function PZLinuxContractsFindZombieSpawnSquare(x, y, z)
@@ -3104,32 +3153,107 @@ function PZLinuxContractsIsPlayerCharacter(character)
     return character.getUsername ~= nil or character.getPlayerNum ~= nil
 end
 
-function PZLinuxContractsCreditZombieKill(player, record)
+function PZLinuxContractsCreditZombieKill(player, record, amount)
     if not PZLinuxContractsIsPlayerCharacter(player) then return false end
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj or not record then return false end
-    record.zombieCount = (tonumber(record.zombieCount) or 0) + 1
-    if tonumber(record.contractId) == 1 then
+    local contractId = tonumber(record.contractId)
+    local credited = math.max(1, math.floor(tonumber(amount) or 1))
+    local previousCount = tonumber(record.zombieCount) or 0
+    if contractId == 1 then
         local zombieTarget = tonumber(record.zombieToKill) or 0
         if zombieTarget <= 0 then
             zombieTarget = 10
             record.zombieToKill = zombieTarget
         end
+        credited = math.min(credited, math.max(0, zombieTarget - previousCount))
+        if credited <= 0 then return false end
+    elseif contractId == 4 then
+        credited = math.min(credited, math.max(0, 1 - previousCount))
+        if credited <= 0 then return false end
+    end
+    record.zombieCount = previousCount + credited
+    if contractId == 1 then
+        local zombieTarget = tonumber(record.zombieToKill) or 10
         if record.zombieCount >= zombieTarget then
             record.status = "ready_to_complete"
         else
             record.status = "in_progress"
         end
-    elseif tonumber(record.contractId) == 8 and record.zombieCount >= 10 then
+    elseif contractId == 8 and record.zombieCount >= 10 then
         record.status = "protect_clear"
     end
     record.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or record.updatedHour
     PZLinuxContractsSyncRecordToParticipants(record)
-    if tonumber(record.contractId) == 1 then
+    if contractId == 1 then
         PZLinuxContractsUpdateKillNote(playerObj, record)
     end
     PZLinuxContractsTransmitWorldData()
+    print("[PZLinux Contracts] credited " .. tostring(credited)
+        .. " zombie kill(s) to " .. tostring(PZLinuxGetPlayerKey(playerObj))
+        .. " contract=" .. tostring(record.id)
+        .. " progress=" .. tostring(record.zombieCount)
+        .. "/" .. tostring(record.zombieToKill or 0))
     return true
+end
+
+function PZLinuxContractsReconcilePlayerZombieKills(player, suppliedRecord)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj or not playerObj.getZombieKills then return false end
+
+    local record = suppliedRecord
+    if not record then
+        local modData = playerObj:getModData()
+        record = modData and PZLinuxContractsGetWorldContract(modData.PZLinuxContractId) or nil
+    end
+    if not record or not PZLinuxContractsIsRecordStatus(record, "accepted", "in_progress") then
+        return false
+    end
+
+    local contractId = tonumber(record.contractId)
+    if contractId ~= 1 and contractId ~= 4 then return false end
+
+    local currentKills = math.max(0, math.floor(tonumber(playerObj:getZombieKills()) or 0))
+    local previousKills = tonumber(record.playerZombieKills)
+    record.playerZombieKills = currentKills
+    if previousKills == nil or currentKills < previousKills then
+        record.pendingZombieKillCredits = 0
+        PZLinuxContractsTransmitWorldData()
+        return false
+    end
+    if currentKills == previousKills then
+        return false
+    end
+
+    local observedKills = currentKills - previousKills
+    local pendingCredits = math.max(0, math.floor(tonumber(record.pendingZombieKillCredits) or 0))
+    local absorbedKills = math.min(observedKills, pendingCredits)
+    record.pendingZombieKillCredits = pendingCredits - absorbedKills
+    local uncreditedKills = observedKills - absorbedKills
+    if uncreditedKills <= 0 then
+        PZLinuxContractsTransmitWorldData()
+        return false
+    end
+
+    return PZLinuxContractsCreditZombieKill(playerObj, record, uncreditedKills)
+end
+
+function PZLinuxContractsResolveZombieKiller(zombie)
+    if not zombie then return nil, "missing_zombie" end
+
+    local attacker = zombie.getAttackedBy and zombie:getAttackedBy() or nil
+    if PZLinuxContractsIsPlayerCharacter(attacker) then
+        return PZLinuxGetPlayer(attacker), "attacked_by"
+    end
+
+    local ownerOk, authOwnerPlayer = pcall(function()
+        return zombie.authOwnerPlayer
+    end)
+    if ownerOk and PZLinuxContractsIsPlayerCharacter(authOwnerPlayer) then
+        return PZLinuxGetPlayer(authOwnerPlayer), "network_owner"
+    end
+
+    return nil, "unattributed"
 end
 
 function PZLinuxContractsApplyServerZombieDeath(zombie)
@@ -3147,20 +3271,31 @@ function PZLinuxContractsApplyServerZombieDeath(zombie)
         changed = true
     end
 
-    local attacker = zombie.getAttackedBy and zombie:getAttackedBy() or nil
+    local attacker, attackerSource = PZLinuxContractsResolveZombieKiller(zombie)
     if PZLinuxContractsIsPlayerCharacter(attacker) then
         if taggedRecord and objectiveType == "protect" and PZLinuxContractsIsRecordStatus(taggedRecord, "protect_started") then
             changed = PZLinuxContractsCreditZombieKill(attacker, taggedRecord) or changed
         end
 
-        local killRecord = PZLinuxContractsGetPlayerWorldRecord(attacker, 1)
-        if killRecord and PZLinuxContractsIsRecordStatus(killRecord, "accepted", "in_progress") then
-            changed = PZLinuxContractsCreditZombieKill(attacker, killRecord) or changed
+        local activeRecord = PZLinuxContractsGetPlayerWorldRecord(attacker, 1)
+            or PZLinuxContractsGetPlayerWorldRecord(attacker, 4)
+        if activeRecord and tonumber(activeRecord.contractId) == 4
+        and (tonumber(activeRecord.zombieCount) or 0) >= 1 then
+            activeRecord = nil
         end
-
-        local bloodRecord = PZLinuxContractsGetPlayerWorldRecord(attacker, 4)
-        if bloodRecord and PZLinuxContractsIsRecordStatus(bloodRecord, "accepted", "in_progress") then
-            changed = PZLinuxContractsCreditZombieKill(attacker, bloodRecord) or changed
+        if activeRecord and PZLinuxContractsIsRecordStatus(activeRecord, "accepted", "in_progress") then
+            local reconciled = PZLinuxContractsReconcilePlayerZombieKills(attacker, activeRecord)
+            if reconciled then
+                changed = true
+            else
+                activeRecord.pendingZombieKillCredits =
+                    math.max(0, math.floor(tonumber(activeRecord.pendingZombieKillCredits) or 0)) + 1
+                changed = PZLinuxContractsCreditZombieKill(attacker, activeRecord) or changed
+                if changed then
+                    print("[PZLinux Contracts] zombie killer resolved from "
+                        .. tostring(attackerSource) .. " contract=" .. tostring(activeRecord.id))
+                end
+            end
         end
     end
 
@@ -3176,6 +3311,9 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     local worldRecord
     local contractWorldId
     local spawned = 0
+    local spawnX
+    local spawnY
+    local spawnZ
     local function reject(errorCode)
         return { ok = false, error = errorCode, requestId = requestId, event = eventName }
     end
@@ -3203,7 +3341,17 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         local record, recordError = usePlayerRecord(7, "accepted", "spawned")
         if recordError then return reject(recordError) end
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
-        if not PZLinuxContractsSpawnCargoObject(record.locationX, record.locationY, record.locationZ, record.id) then return reject("spawn_failed") end
+        local cargoReady, cargoCreated
+        local replaceExisting = record.status == "spawned"
+        cargoReady, cargoCreated, spawnX, spawnY, spawnZ = PZLinuxContractsSpawnCargoObject(
+            record.locationX,
+            record.locationY,
+            record.locationZ,
+            record.id,
+            replaceExisting
+        )
+        if not cargoReady then return reject("spawn_failed") end
+        spawned = cargoCreated and 1 or 0
         record.spawned = true
         record.status = "spawned"
     elseif eventName == "clearCargo" then
@@ -3292,8 +3440,15 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         requestId = requestId,
         event = eventName,
         worldContractId = contractWorldId,
+        contractId = worldRecord and worldRecord.contractId or nil,
         worldStatus = worldRecord and worldRecord.status or "",
         spawned = spawned,
+        spawnX = spawnX,
+        spawnY = spawnY,
+        spawnZ = spawnZ,
+        locationX = worldRecord and worldRecord.locationX or nil,
+        locationY = worldRecord and worldRecord.locationY or nil,
+        locationZ = worldRecord and worldRecord.locationZ or nil,
         activeContract = modData.PZLinuxActiveContract,
         zombieCount = modData.PZLinuxOnZombieDead,
         contractManhunt = modData.PZLinuxContractManhunt,

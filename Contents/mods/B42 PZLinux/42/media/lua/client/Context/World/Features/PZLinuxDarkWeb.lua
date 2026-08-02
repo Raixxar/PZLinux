@@ -6,6 +6,38 @@ darkWebUI = ISPanel:derive("darkWebUI")
 local ITEMS_MAX = 50
 local currentOffers = {}
 
+local function PZLinuxDarkWebTextWidth(text)
+    local managerProvider = rawget(_G, "getTextManager")
+    local manager = managerProvider and managerProvider() or nil
+    if manager and manager.MeasureStringX then
+        return manager:MeasureStringX(UIFont.Small, tostring(text or ""))
+    end
+    return #tostring(text or "") * 7
+end
+
+local function PZLinuxDarkWebRemoveLastCharacter(text)
+    local lastIndex = #text
+    if lastIndex == 0 then return "" end
+
+    while lastIndex > 1 do
+        local byte = text:byte(lastIndex)
+        if not byte or byte < 128 or byte > 191 then break end
+        lastIndex = lastIndex - 1
+    end
+    return text:sub(1, lastIndex - 1)
+end
+
+local function PZLinuxDarkWebFitText(text, maxWidth)
+    text = tostring(text or "")
+    if maxWidth <= 0 or PZLinuxDarkWebTextWidth(text) <= maxWidth then return text end
+
+    local suffix = "..."
+    while text ~= "" and PZLinuxDarkWebTextWidth(text .. suffix) > maxWidth do
+        text = PZLinuxDarkWebRemoveLastCharacter(text)
+    end
+    return text .. suffix
+end
+
 -- CONSTRUCTOR
 function darkWebUI:new(x, y, width, height, player)
     local o = ISPanel:new(x, y, width, height)
@@ -164,10 +196,11 @@ function darkWebUI:initialise()
     self.offerIcons = {}
     self.offerLabels = {}
     self.offerPriceLabels = {}
+    self.offerTextWidths = {}
     self.transactionBtns = {}
     self.transactionQtys = {}
 
-    local rowHeight = self.height * 0.045
+    local rowHeight = math.max(38, self.height * 0.05)
     local totalHeight = 100 * rowHeight + 10
     self.scrollPanel:setScrollHeight(totalHeight)
     self.scrollPanel.onMouseWheel = function(self, del)
@@ -195,20 +228,27 @@ function darkWebUI:initialise()
         self.offerIcons[i] = iconImg
 
         local labelNameX = 5 + iconSize + 5
-        local labelNameY = (rowHeight - 16) / 2
+        local labelNameY = math.max(0, (rowHeight - 30) / 2)
         local nameLabel  = ISLabel:new(labelNameX, labelNameY, 20, "", 0, 1, 0, 1, UIFont.Small, true)
         nameLabel:initialise()
         offerBackground:addChild(nameLabel)
         self.offerLabels[i] = nameLabel
 
-        local labelPriceX = self.width * 0.355
-        local priceLabel = ISLabel:new(labelPriceX, labelNameY, 20, "", 0, 1, 0, 1, UIFont.Small, true)
+        local priceLabel = ISLabel:new(labelNameX, labelNameY + 15, 20, "", 0, 1, 0, 1, UIFont.Small, true)
         priceLabel:initialise()
         offerBackground:addChild(priceLabel)
         self.offerPriceLabels[i] = priceLabel
 
-        local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
-        local transactionQty = ISTextEntryBox:new("0", self.width * 0.415, (rowHeight - buttonHeight - 2) / 2, self.width * 0.03, self.height * 0.024)
+        local buyWidth = PZLinuxDarkWebTextWidth(PZLinuxGetText("IGUI_PZLinux_DarkWeb_Buy"))
+        local soldOutWidth = PZLinuxDarkWebTextWidth(PZLinuxGetText("IGUI_PZLinux_DarkWeb_SoldOut"))
+        local buttonWidth = math.min(offerBackground.width * 0.25, math.max(58, buyWidth + 16, soldOutWidth + 16))
+        local buttonHeight = self.height * 0.025
+        local quantityWidth = math.max(32, self.width * 0.035)
+        local buttonX = offerBackground.width - buttonWidth - 6
+        local quantityX = buttonX - quantityWidth - 5
+        self.offerTextWidths[i] = math.max(40, quantityX - labelNameX - 8)
+
+        local transactionQty = ISTextEntryBox:new("0", quantityX, (rowHeight - buttonHeight - 2) / 2, quantityWidth, self.height * 0.024)
         transactionQty.backgroundColor = {r=0, g=0, b=0, a=1}
         transactionQty.internal = i
         transactionQty:setVisible(true)
@@ -217,7 +257,7 @@ function darkWebUI:initialise()
         offerBackground:addChild(transactionQty)
         self.transactionQtys[i] = transactionQty
 
-        local transactionBtn = ISButton:new(offerBackground.width - buttonWidth - 10, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
+        local transactionBtn = ISButton:new(buttonX, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
             local quantityTrading = tonumber(transactionQty:getText()) or 0
             self:OnBuyItem(btn, quantityTrading)
         end)
@@ -370,19 +410,22 @@ function darkWebUI:onBuy()
 
                     if self.offerLabels[lineIndex] then
                         local displayName = scriptItem:getDisplayName()
-                        if #displayName > 37 then
-                            displayName = displayName:sub(1, 35) .. "..."
-                        end
-                        self.offerLabels[lineIndex]:setName(displayName)
+                        self.offerLabels[lineIndex]:setName(PZLinuxDarkWebFitText(
+                            displayName,
+                            self.offerTextWidths[lineIndex] or 120
+                        ))
                     end
 
+                    local offerDetails = "$" .. tostring(rowData.price) .. " | " .. string.format(
+                        PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
+                        tonumber(rowData.stock) or 0
+                    )
+                    local offerTooltip = scriptItem:getDisplayName() .. "\n" .. offerDetails
                     if self.offerPriceLabels[lineIndex] then
-                        self.offerPriceLabels[lineIndex]:setName(
-                            "$" .. tostring(rowData.price) .. " | " .. string.format(
-                                PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
-                                tonumber(rowData.stock) or 0
-                            )
-                        )
+                        self.offerPriceLabels[lineIndex]:setName(PZLinuxDarkWebFitText(
+                            offerDetails,
+                            self.offerTextWidths[lineIndex] or 120
+                        ))
                     end
 
                     if self.transactionQtys[lineIndex] then
@@ -400,6 +443,25 @@ function darkWebUI:onBuy()
                         end
                         self.transactionBtns[lineIndex]:setVisible(true)
                         self.transactionBtns[lineIndex]:setEnable((tonumber(rowData.stock) or 0) > 0)
+                        if self.transactionBtns[lineIndex].setTooltip then
+                            self.transactionBtns[lineIndex]:setTooltip(offerTooltip)
+                        end
+                    end
+
+                    if self.offerBackgrounds[lineIndex].setTooltip then
+                        self.offerBackgrounds[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.offerIcons[lineIndex].setTooltip then
+                        self.offerIcons[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.offerLabels[lineIndex].setTooltip then
+                        self.offerLabels[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.offerPriceLabels[lineIndex].setTooltip then
+                        self.offerPriceLabels[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.transactionQtys[lineIndex].setTooltip then
+                        self.transactionQtys[lineIndex]:setTooltip(offerTooltip)
                     end
 
                     lineIndex = lineIndex + 1

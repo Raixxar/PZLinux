@@ -46,8 +46,14 @@ PZLinuxTestAssert(killMission.zombieToKill == 50, "kill count must be generated 
 PZLinuxTestAssert(killMission.reward == 5750, "kill reward must be derived from the generated count")
 PZLinuxTestAssert(killMission.fullNote:find("%* Zombies killed: 0 / 50"),
     "kill contract note must show initial progress and its server-generated target")
+PZLinuxTestAssert(killMission.fullNote:sub(1, 1) == "*"
+    and not killMission.fullNote:find("All around the world", 1, true),
+    "a location-free contract note must not contain the legacy empty location header")
 PZLinuxTestAssert(PZLinuxContractsSetKillProgress(killMission.fullNote, 1, 50):find("%* Zombies killed: 1 / 50"),
     "kill contract note progress must remain readable after the first kill")
+PZLinuxTestAssert(PZLinuxContractsSanitizeNoteText(":\n* \n* [CCC] Kill zombies")
+        == "* [CCC] Kill zombies",
+    "legacy contract notes must lose their stray empty location lines")
 PZLinuxTestAssert(PZLinuxContractsCanonicalActiveState("in_progress") == 1,
     "the first kill must keep the contract active")
 PZLinuxTestAssert(PZLinuxContractsCanonicalActiveState("ready_to_complete") == 9,
@@ -109,10 +115,23 @@ PZLinuxTestAssert(acceptBlock:find("PZLinuxContractsReplaceContractNote%(playerO
     "the server must create the persistent contract note during acceptance")
 PZLinuxTestAssert(variables:find("item:seePage%(1%) == expectedText"),
     "contract synchronization must repair a stale server-owned note")
+PZLinuxTestAssert(variables:find("playerZombieKills = playerObj%.getZombieKills"),
+    "contract acceptance must snapshot the authoritative player zombie-kill counter")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsReconcilePlayerZombieKills"),
+    "the server must reconcile multiplayer zombie kills from the player kill counter")
+PZLinuxTestAssert(variables:find("pendingZombieKillCredits = 0")
+    and variables:find("absorbedKills = math%.min%(observedKills, pendingCredits%)"),
+    "direct server death events and delayed kill-counter updates must not double-credit a zombie")
 PZLinuxTestAssert(variables:find("boardGeneratedHour = tonumber%(mission%.boardGeneratedHour%) or 0"),
     "world contracts must retain the board generation they came from")
 PZLinuxTestAssert(variables:find("PZLinuxContractsPruneConsumedBoardContracts%(boardData%)"),
     "the board must prune offers already consumed during its current generation")
+PZLinuxTestAssert(variables:find("boardRefreshHours")
+    and variables:find("needsScheduleMigration")
+    and variables:find("boardData%.scheduleVersion = scheduleVersion"),
+    "the weekly board must migrate legacy schedules and refresh from the real world hour")
+PZLinuxTestAssert(not variables:find("if worldHour < 168 then worldHour = 168 end", 1, true),
+    "new worlds must not delay their first weekly board refresh until day fourteen")
 
 local contextMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextContractsMenu.lua")
 PZLinuxTestAssert(contextMenu:find('tonumber%(worldRecord%.contractId%) == 2'),
@@ -187,6 +206,13 @@ PZLinuxTestAssert(stateRenderBlock and stateRenderBlock:find("PZLinuxRequestCont
     "the contracts UI may request fresh offers only after checking synchronized active state")
 PZLinuxTestAssert(contractsUi:find("PZLinuxContractsShowCompletionReceipt"),
     "the contracts UI must render the authoritative completion receipt")
+local receiptBlock = contractsUi:match("local function PZLinuxContractsShowCompletionReceipt.-\nend\n\nlocal function PZLinuxContractsStopDialogue")
+PZLinuxTestAssert(receiptBlock and receiptBlock:find("receipt%.amount or 0")
+    and receiptBlock:find("IGUI_PZLinux_Contracts_CompletionAmount"),
+    "the translated completion receipt must display the authoritative credited amount")
+PZLinuxTestAssert(contractsUi:find("getText%(key%)")
+    and contractsUi:find('template:gsub%("%%%%s"'),
+    "contract translations must format values in Lua without losing placeholders")
 PZLinuxTestAssert(contractsUi:find("PZLinuxRequestContractCompletionAck"),
     "the completion receipt must be acknowledged only after rendering")
 PZLinuxTestAssert(variables:find("pzlinux%.contracts%.pendingCompletion = completionReceipt"),
@@ -194,6 +220,9 @@ PZLinuxTestAssert(variables:find("pzlinux%.contracts%.pendingCompletion = comple
 PZLinuxTestAssert(variables:find("function PZLinuxContractsAcknowledgeCompletion"),
     "the server must expose a receipt acknowledgement validator")
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
+PZLinuxTestAssert(serverCommands:find(
+    "PZLinuxServerForEachOnlinePlayer%(PZLinuxContractsReconcilePlayerZombieKills%)"
+), "the server must periodically reconcile kills even when OnZombieDead has no attacker")
 PZLinuxTestAssert(serverCommands:find(
     "PZLinuxContractCompletionAck = PZLinuxServerContractCompletionAck",
     1,

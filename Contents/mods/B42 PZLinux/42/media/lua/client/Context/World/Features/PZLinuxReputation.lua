@@ -1,12 +1,32 @@
 PZLinuxReputationUI = ISPanel:derive("PZLinuxReputationUI")
 
 local function PZLinuxReputationText(key, fallback, ...)
+    local template = fallback
     if getText then
-        local translated = getText(key, ...)
-        if translated and translated ~= key then return translated end
+        local translated = getText(key)
+        if translated and translated ~= key then template = translated end
     end
-    if select("#", ...) > 0 then return string.format(fallback, ...) end
-    return fallback
+    if select("#", ...) == 0 then return template end
+
+    local values = { ... }
+    for index, value in ipairs(values) do
+        local replacement = tostring(value)
+        local substitutions
+        template, substitutions = template:gsub("%%s", function() return replacement end, 1)
+        if substitutions == 0 then
+            template, substitutions = template:gsub("%%" .. tostring(index), function() return replacement end, 1)
+        end
+        if substitutions == 0 then
+            template = template .. " " .. replacement
+        end
+    end
+    return template
+end
+
+local function PZLinuxReputationRoundedNumber(value)
+    value = tonumber(value) or 0
+    if value >= 0 then return math.floor(value + 0.5) end
+    return math.ceil(value - 0.5)
 end
 
 local function PZLinuxReputationStatusText(status)
@@ -33,10 +53,10 @@ local function PZLinuxReputationMailText(frequency)
 end
 
 local function PZLinuxReputationPercent(value)
-    local formatted = string.format("%.2f", math.abs(tonumber(value) or 0))
-    formatted = formatted:gsub("0+$", ""):gsub("%.$", "")
-    if (tonumber(value) or 0) > 0 then return "+" .. formatted .. "%" end
-    if (tonumber(value) or 0) < 0 then return "-" .. formatted .. "%" end
+    local rounded = PZLinuxReputationRoundedNumber(value)
+    local formatted = tostring(math.abs(rounded))
+    if rounded > 0 then return "+" .. formatted .. "%" end
+    if rounded < 0 then return "-" .. formatted .. "%" end
     return "0%"
 end
 
@@ -158,7 +178,9 @@ function PZLinuxReputationUI:refreshSnapshot()
 
         local lines = {
             PZLinuxReputationText("IGUI_PZLinux_Reputation_Score", "Score: %s (range %s to %s)",
-                tostring(snapshot.reputation), tostring(snapshot.minimum), tostring(snapshot.maximum)),
+                PZLinuxReputationRoundedNumber(snapshot.reputation),
+                PZLinuxReputationRoundedNumber(snapshot.minimum),
+                PZLinuxReputationRoundedNumber(snapshot.maximum)),
             PZLinuxReputationText("IGUI_PZLinux_Reputation_Status", "Status: %s",
                 PZLinuxReputationStatusText(snapshot.status)),
             "",
@@ -168,9 +190,9 @@ function PZLinuxReputationUI:refreshSnapshot()
                 PZLinuxReputationMailText(snapshot.mailFrequency)),
             "",
             PZLinuxReputationText("IGUI_PZLinux_Reputation_CompletionGain", "Contract or mail mission completed: +%s",
-                tostring(snapshot.completionReward)),
+                PZLinuxReputationRoundedNumber(snapshot.completionReward)),
             PZLinuxReputationText("IGUI_PZLinux_Reputation_CancelPenalty", "Contract cancelled: -%s",
-                tostring(snapshot.cancellationPenalty)),
+                PZLinuxReputationRoundedNumber(snapshot.cancellationPenalty)),
             PZLinuxReputationText("IGUI_PZLinux_Reputation_Decay", "Without activity, reputation gradually returns to neutral."),
         }
 
@@ -180,7 +202,7 @@ function PZLinuxReputationUI:refreshSnapshot()
                 "IGUI_PZLinux_Reputation_NextStatus",
                 "Next status: %s (%s points)",
                 PZLinuxReputationStatusText(snapshot.nextStatus),
-                tostring(snapshot.pointsToNext)
+                PZLinuxReputationRoundedNumber(snapshot.pointsToNext)
             ))
         else
             table.insert(lines, "")

@@ -58,10 +58,17 @@ PZLinuxTestAssert(takeCargoBranch and takeCargoBranch:find("PZLinuxIsPlayerNearP
     "cargo pickup must validate canonical proximity without trusting a client object")
 local contextMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextContractsMenu.lua")
 local cargoAction = PZLinuxTestRead(luaRoot .. "/shared/TimedActions/ISTakeTheCargoAction.lua")
-PZLinuxTestAssert(contextMenu:find("cargoState == 1 or cargoState == 2")
+PZLinuxTestAssert(contextMenu:find("cargoState == 1")
+    and contextMenu:find("cargoState == 2")
+    and contextMenu:find("PZLinuxContractTypeId")
     and contextMenu:find("cargoDistance <= packageRadius")
     and cargoAction:find('PZLinuxRequestContractWorldEvent%(self%.character, "takeCargo", {}'),
     "cargo pickup must remain available when the replicated crate is missing")
+
+local cargoSpawn = variables:match("function PZLinuxContractsSpawnCargoObject.-\nend\n\nlocal function PZLinuxContractsFindZombieSpawnSquare")
+PZLinuxTestAssert(cargoSpawn and cargoSpawn:find('data%.PZLinuxContractObjective = "cargo"')
+    and cargoSpawn:find("PZLinuxContractsTransmitSquareObject", 1, true),
+    "cargo must be tagged before its complete server object is transmitted")
 
 local pickupBranch = applyBlock:match('eventName == "pickupPackage"(.-)elseif')
 PZLinuxTestAssert(pickupBranch and pickupBranch:find("PZLinuxIsPlayerNearPosition"),
@@ -76,6 +83,12 @@ PZLinuxTestAssert(not requestBlock:find("PZLinuxContractId"), "world-event reque
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
 PZLinuxTestAssert(serverCommands:find("Events%.OnZombieDead%.Add%(PZLinuxServerOnZombieDead%)"),
     "the server must own zombie-death accounting")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsResolveZombieKiller")
+    and variables:find("zombie%.authOwnerPlayer")
+    and variables:find('"network_owner"'),
+    "multiplayer deaths must fall back to the server zombie network owner when attackedBy is empty")
+PZLinuxTestAssert(variables:find("PZLinuxContractsCreditZombieKill%(attacker, activeRecord%)"),
+    "a resolved multiplayer zombie death must be credited directly by the server event")
 PZLinuxTestAssert(serverCommands:find('args%.event == "capture".-PZLinuxServerBroadcast%("PZLinuxContractZombieRemoved"'),
     "a validated capture must broadcast removal of the zombie to every client")
 PZLinuxTestAssert(variables:find('command == "PZLinuxContractZombieRemoved".-PZLinuxRemoveReplicatedZombie'),
@@ -107,6 +120,9 @@ PZLinuxTestAssert(not events:find('"clearCargo"'), "the client must not request 
 PZLinuxTestAssert(not events:find("PZLinuxContractManhunt = 1"), "reconnect must not reset a persistent spawned target")
 PZLinuxTestAssert(events:find("cargoState == 1 or cargoState == 2"),
     "accepted and previously spawned cargo contracts must both recover on reconnect")
+PZLinuxTestAssert(events:find("PZLinuxIsCargoContractPending")
+    and events:find("contractType == 7"),
+    "cargo recovery must use the canonical contract type when legacy flags are stale")
 PZLinuxTestAssert(events:find('PZLinuxRequestContractWorldEvent%(player, "restoreProtect"'),
     "protect contracts must request server recovery after reconnect")
 

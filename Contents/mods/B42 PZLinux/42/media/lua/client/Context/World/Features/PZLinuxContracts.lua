@@ -9,12 +9,24 @@ local contractsCompanyCodes = {}
 local contractsCompanyReward = {}
 
 local function PZLinuxContractsText(key, fallback, ...)
+    local template = fallback
     if getText then
-        local translated = getText(key, ...)
-        if translated and translated ~= key then return translated end
+        local translated = getText(key)
+        if translated and translated ~= key then template = translated end
     end
-    if select("#", ...) > 0 then return string.format(fallback, ...) end
-    return fallback
+    if select("#", ...) == 0 then return template end
+
+    local values = { ... }
+    for index, value in ipairs(values) do
+        local replacement = tostring(value)
+        local substitutions
+        template, substitutions = template:gsub("%%s", function() return replacement end, 1)
+        if substitutions == 0 then
+            template, substitutions = template:gsub("%%" .. tostring(index), function() return replacement end, 1)
+        end
+        if substitutions == 0 then template = template .. " " .. replacement end
+    end
+    return template
 end
 
 local function PZLinuxContractsLocalizedItemName(fullType, fallback)

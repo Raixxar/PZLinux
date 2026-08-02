@@ -111,6 +111,13 @@ local reputationUiSource = reputationUiFile:read("*a")
 reputationUiFile:close()
 assert(reputationUiSource:find("PZLinuxRequestReputationSnapshot", 1, true),
     "the reputation UI must request its values from the server")
+assert(reputationUiSource:find("getText%(key%)")
+    and reputationUiSource:find('template:gsub%("%%%%s"')
+    and reputationUiSource:find('template = template %.%. " " %.%. replacement'),
+    "the reputation UI must preserve values when translated placeholders are missing")
+assert(reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.reputation%)")
+    and reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.pointsToNext%)"),
+    "the reputation UI must display whole reputation values without floating-point noise")
 assert(not reputationUiSource:find("mailDelayMax", 1, true) and not reputationUiSource:find("nextat", 1, true),
     "the reputation UI must keep future mail timing hidden")
 

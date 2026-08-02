@@ -34,6 +34,13 @@ function PZLinuxContractsSetKillProgress(noteText, zombieCount, zombieTarget)
     return note
 end
 
+function PZLinuxContractsSanitizeNoteText(noteText)
+    local note = tostring(noteText or "")
+    note = note:gsub("^:[ \t]*\r?\n%*[ \t]*\r?\n?", "", 1)
+    note = note:gsub("^All around the world:[ \t]*\r?\n", "", 1)
+    return note
+end
+
 function PZLinuxContractsCanonicalActiveState(status)
     if status == "completed" or status == "cancelled" then return 0 end
     if status == "ready_to_complete" or status == "deposited" then return 9 end
@@ -41,12 +48,13 @@ function PZLinuxContractsCanonicalActiveState(status)
 end
 
 local function PZLinuxContractsMissionNote(mission)
-    local locationLine = "All around the world:"
-    if mission.locationCity and mission.locationDescription then
+    local locationLine = ""
+    if mission.locationCity ~= "" and mission.locationDescription ~= "" then
         locationLine = mission.locationCity .. ":\n* " .. mission.locationDescription
     end
     if mission.contractId == 8 then
-        locationLine = locationLine .. "\n* Zombies to kill: 10"
+        if locationLine ~= "" then locationLine = locationLine .. "\n" end
+        locationLine = locationLine .. "* Zombies to kill: 10"
     end
 
     local contractNote = "* [" .. tostring(mission.code) .. "] " .. tostring(mission.questName)
@@ -55,9 +63,12 @@ local function PZLinuxContractsMissionNote(mission)
         contractNote = contractNote .. "\n* " .. tostring(mission.infoCount) .. " " .. mission.infoName
     end
 
-    local fullNote = locationLine .. "\n" .. contractNote .. "\n"
+    local fullNote = contractNote
+    if locationLine ~= "" then
+        fullNote = locationLine .. "\n" .. fullNote
+    end
     if mission.contractId == 1 and mission.zombieToKill > 0 then
-        fullNote = fullNote .. "\n" .. PZLinuxContractsFormatKillProgress(0, mission.zombieToKill)
+        fullNote = fullNote .. "\n\n" .. PZLinuxContractsFormatKillProgress(0, mission.zombieToKill)
     end
     return contractNote, fullNote
 end
