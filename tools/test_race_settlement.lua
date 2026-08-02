@@ -65,8 +65,10 @@ PZLinuxTestAssert(deterministicPool.serverLiquidity == math.floor(deterministicP
     "the server must add its configured liquidity to the prize pool")
 PZLinuxTestAssert(deterministicPool.poolTotal == deterministicPool.marketPool + deterministicPool.serverLiquidity,
     "the displayed prize pool must include server liquidity")
-PZLinuxTestAssert(deterministicPool.maximumBet == math.floor(deterministicPool.marketPool * 0.10 / 5) * 5,
-    "the maximum player bet must follow the configured pool share")
+PZLinuxTestAssert(deterministicPool.maximumBet == math.min(
+    PZLinux.Race.maximumPlayerBet,
+    math.floor(deterministicPool.marketPool * 0.10 / 5) * 5
+), "the maximum player bet must respect both the pool share and the absolute cap")
 local selectedIndex, tiedFavorites, selectedMultiplier = PZLinuxRaceSelectLowestOdds(
     deterministicCard,
     PZLinuxTestMinimumRandom

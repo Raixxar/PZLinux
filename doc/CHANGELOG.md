@@ -128,17 +128,20 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   until the animation reaches the finish.
 - Restored the continuous Zombie Race speed formula, removed finish-position tie
   bias and replaced fixed odds with a server-authoritative pari-mutuel pool.
-- Added 80-200 virtual bettors, proportional payout sharing, a configurable 15%
-  pool commission, estimated multipliers and a per-card maximum player bet.
+- Added 200-800 virtual bettors, proportional payout sharing, a configurable 15%
+  pool commission, estimated multipliers and a $2,000 ordinary-race bet cap.
+- Recalibrated virtual-bettor weighting for the larger crowds so favorites no
+  longer receive systematically underpriced odds.
 - Added 4% server liquidity to each Zombie Race prize pool and restored
   fractional `N/1` odds: final 25/1 odds return the stake plus 25 times its value.
 - Replaced unlimited instant Zombie Races with five shared server departures per
   in-game day at 08:00, 10:00, 12:00, 14:00 and 16:00.
 - Added persistent scheduled tickets, multiple advance bets, automatic server
-  settlement while the UI is closed and a compact latest-result recap.
+  settlement while the UI is closed and a compact recap of up to five unread
+  results.
 - Added automatic cleanup for settled races while retaining races with unpaid
   offline tickets.
-- Added a shared Sunday 16:00 super jackpot race with 500-1,000 virtual bettors
+- Added a shared Sunday 16:00 super jackpot race with 500-1,300 virtual bettors
   and $50,000 of post-commission server liquidity, capped at one $500 ticket per
   player to contain its deliberately positive promotional return.
 - Removed the obsolete SFX toggle from computer interfaces.

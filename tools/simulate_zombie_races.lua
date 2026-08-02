@@ -9,6 +9,7 @@ local options = {
     targetMin = 0.85,
     targetMax = 0.95,
     failOutsideTarget = false,
+    crowdExponent = nil,
 }
 
 local function PZLinuxRaceSimulationUsage()
@@ -22,6 +23,7 @@ Options:
   --output PATH            Markdown report path
   --target-min RATE        Minimum target RTP (default: 0.85)
   --target-max RATE        Maximum target RTP (default: 0.95)
+  --crowd-exponent N       Override virtual-bettor sensitivity for calibration
   --fail-outside-target    Exit non-zero when RTP is outside the target
   --help                    Show this help
 ]])
@@ -45,6 +47,7 @@ while index <= #arg do
         elseif option == "--output" then options.output = value
         elseif option == "--target-min" then options.targetMin = tonumber(value)
         elseif option == "--target-max" then options.targetMax = tonumber(value)
+        elseif option == "--crowd-exponent" then options.crowdExponent = tonumber(value)
         else error("Unknown option: " .. tostring(option)) end
         index = index + 2
     end
@@ -58,6 +61,9 @@ assert(options.targetMin and options.targetMax and options.targetMin <= options.
 PZLinux = {}
 dofile(repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxGamblingData.lua")
 dofile(repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxRaceEngine.lua")
+if options.crowdExponent then
+    PZLinux.Race.crowdSpeedExponent = options.crowdExponent
+end
 
 math.randomseed(options.seed)
 
@@ -302,6 +308,8 @@ PZLinuxRaceSimulationWrite("")
 PZLinuxRaceSimulationWrite("- Courses simulees : **" .. options.runs .. "**")
 PZLinuxRaceSimulationWrite("- Mise fixe : **" .. PZLinuxRaceSimulationMoney(options.stake) .. "**")
 PZLinuxRaceSimulationWrite("- Graine aleatoire : **" .. options.seed .. "**")
+PZLinuxRaceSimulationWrite("- Sensibilite des parieurs : exposant **"
+    .. PZLinux.Race.crowdSpeedExponent .. "**")
 PZLinuxRaceSimulationWrite("- Strategie : choisir la cote pari-mutuel la plus basse; departager les ex aequo au hasard.")
 PZLinuxRaceSimulationWrite("- Reglement : pool pari-mutuel, commission de **"
     .. PZLinuxRaceSimulationPercent(PZLinux.Race.takeoutRate) .. "**, partage proportionnel aux mises gagnantes.")
@@ -522,22 +530,22 @@ PZLinuxRaceSimulationWrite("")
 PZLinuxRaceSimulationWrite("Architecture retenue :")
 PZLinuxRaceSimulationWrite("")
 PZLinuxRaceSimulationWrite("1. Creer une seule course partagee le dimanche du calendrier en jeu a 16:00.")
-PZLinuxRaceSimulationWrite("2. Ouvrir les mises avant la course, avec 500 a 1,000 parieurs virtuels et les mises reelles de tous les joueurs.")
+PZLinuxRaceSimulationWrite("2. Ouvrir les mises avant la course, avec 500 a 1,300 parieurs virtuels et les mises reelles de tous les joueurs.")
 PZLinuxRaceSimulationWrite("3. Fermer les mises a 16:00, verrouiller les cotes, puis calculer un seul vainqueur autoritaire.")
 PZLinuxRaceSimulationWrite("4. Calculer `pool net = mises apres commission + $50,000`, afin que toute la cagnote promotionnelle soit distribuee.")
 PZLinuxRaceSimulationWrite("5. Conserver les tickets dans le ModData serveur et crediter aussi les gagnants deconnectes lors de leur prochaine connexion.")
 PZLinuxRaceSimulationWrite("6. Limiter chaque joueur a un ticket de $500 maximum pour contenir le RTP promotionnel et eviter la manipulation des cotes.")
 PZLinuxRaceSimulationWrite("")
-PZLinuxRaceSimulationWrite("Exemple indicatif avec 750 parieurs a $262 de moyenne :")
+PZLinuxRaceSimulationWrite("Exemple indicatif avec 900 parieurs a $262.50 de moyenne :")
 PZLinuxRaceSimulationWrite("")
 PZLinuxRaceSimulationWrite("| Element | Montant |")
 PZLinuxRaceSimulationWrite("| --- | ---: |")
-PZLinuxRaceSimulationWrite("| Mises virtuelles | $196,500 |")
-PZLinuxRaceSimulationWrite("| Pool apres commission de 15 % | $167,025 |")
+PZLinuxRaceSimulationWrite("| Mises virtuelles | $236,250 |")
+PZLinuxRaceSimulationWrite("| Pool apres commission de 15 % | $200,812 |")
 PZLinuxRaceSimulationWrite("| Cagnote serveur ajoutee | $50,000 |")
-PZLinuxRaceSimulationWrite("| Masse finale a partager | $217,025 |")
+PZLinuxRaceSimulationWrite("| Masse finale a partager | $250,812 |")
 PZLinuxRaceSimulationWrite("")
-PZLinuxRaceSimulationWrite("Une simulation separee de 10 000 super cagnottes mesure environ 164 % de RTP en jouant toujours le favori. Ce rendement promotionnel est volontaire mais justifie le plafond hebdomadaire de $500 par joueur.")
+PZLinuxRaceSimulationWrite("Une simulation separee de 10 000 super cagnottes mesure environ 119 % de RTP en jouant toujours le favori, avec 900 parieurs et $236,326 de mises virtuelles en moyenne. Ce rendement promotionnel est volontaire mais justifie le plafond hebdomadaire de $500 par joueur.")
 PZLinuxRaceSimulationWrite("")
 PZLinuxRaceSimulationWrite("Cette variante est couverte par un test deterministe du calendrier, des tickets multiples, du reglement automatique et du paiement bancaire. Une validation avec deux clients sur serveur dedie reste requise.")
 PZLinuxRaceSimulationWrite("")

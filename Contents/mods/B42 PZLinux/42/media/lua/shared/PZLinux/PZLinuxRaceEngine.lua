@@ -7,12 +7,13 @@ PZLinux.Race.finishPosition = PZLinux.Race.finishPosition or 130
 PZLinux.Race.maxTicks = PZLinux.Race.maxTicks or 120
 PZLinux.Race.baseSpeed = PZLinux.Race.baseSpeed or 5
 PZLinux.Race.takeoutRate = PZLinux.Race.takeoutRate or 0.15
-PZLinux.Race.minimumBettors = PZLinux.Race.minimumBettors or 80
-PZLinux.Race.maximumBettors = PZLinux.Race.maximumBettors or 200
+PZLinux.Race.minimumBettors = PZLinux.Race.minimumBettors or 200
+PZLinux.Race.maximumBettors = PZLinux.Race.maximumBettors or 800
 PZLinux.Race.minimumVirtualStake = PZLinux.Race.minimumVirtualStake or 25
 PZLinux.Race.maximumVirtualStake = PZLinux.Race.maximumVirtualStake or 500
 PZLinux.Race.maximumPlayerPoolShare = PZLinux.Race.maximumPlayerPoolShare or 0.10
-PZLinux.Race.crowdSpeedExponent = PZLinux.Race.crowdSpeedExponent or 8
+PZLinux.Race.maximumPlayerBet = PZLinux.Race.maximumPlayerBet or 2000
+PZLinux.Race.crowdSpeedExponent = PZLinux.Race.crowdSpeedExponent or 39
 PZLinux.Race.serverLiquidityRate = PZLinux.Race.serverLiquidityRate or 0.04
 
 local function PZLinuxRaceDefaultRandom(minimum, maximumExclusive)
@@ -86,6 +87,7 @@ function PZLinuxRaceCreateBettingPool(runners, randomFunction, options)
     local maximumStake = tonumber(options.maximumStake) or PZLinux.Race.maximumVirtualStake
     local maximumPlayerPoolShare = tonumber(options.maximumPlayerPoolShare)
         or PZLinux.Race.maximumPlayerPoolShare
+    local maximumPlayerBet = tonumber(options.maximumPlayerBet) or PZLinux.Race.maximumPlayerBet
     local serverLiquidityRate = options.serverLiquidityRate
     if serverLiquidityRate == nil then serverLiquidityRate = PZLinux.Race.serverLiquidityRate end
     local fixedServerLiquidity = math.max(0, tonumber(options.fixedServerLiquidity) or 0)
@@ -133,6 +135,7 @@ function PZLinuxRaceCreateBettingPool(runners, randomFunction, options)
         runner.crowdWeight = nil
     end
 
+    local poolShareMaximumBet = math.max(5, math.floor(poolTotal * maximumPlayerPoolShare / 5) * 5)
     return {
         bettorCount = bettorCount,
         marketPool = poolTotal,
@@ -140,7 +143,7 @@ function PZLinuxRaceCreateBettingPool(runners, randomFunction, options)
         postCommissionLiquidity = postCommissionLiquidity,
         poolTotal = prizePool,
         takeoutRate = PZLinux.Race.takeoutRate,
-        maximumBet = math.max(5, math.floor(poolTotal * maximumPlayerPoolShare / 5) * 5),
+        maximumBet = math.min(maximumPlayerBet, poolShareMaximumBet),
     }
 end
 

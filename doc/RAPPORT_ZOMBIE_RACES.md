@@ -1,12 +1,13 @@
 # Rapport d'equilibrage Zombie Race
 
-Rapport genere le 2026-08-02 14:58:36 UTC.
+Rapport genere le 2026-08-02 15:24:21 UTC.
 
 ## Scenario
 
 - Courses simulees : **100000**
 - Mise fixe : **$100.00**
 - Graine aleatoire : **42020**
+- Sensibilite des parieurs : exposant **39**
 - Strategie : choisir la cote pari-mutuel la plus basse; departager les ex aequo au hasard.
 - Reglement : pool pari-mutuel, commission de **15.00%**, partage proportionnel aux mises gagnantes.
 - Liquidite serveur ajoutee au pool : **4.00%** des mises virtuelles.
@@ -21,21 +22,21 @@ La simulation charge directement `PZLinuxGamblingData.lua` et `PZLinuxRaceEngine
 | Indicateur | Resultat |
 | --- | ---: |
 | Mises totales | $10000000.00 |
-| Gains verses | $9485003.00 |
-| Resultat net joueur | $-514997.00 |
-| Resultat net maison | $514997.00 |
-| Victoires joueur | 21157 / 100000 |
-| Taux de victoire | 21.16% |
-| RTP joueur | 94.85% |
-| Avantage maison | 5.15% |
-| Intervalle RTP 95 % | 93.70% - 96.00% |
-| Cartes avec favoris ex aequo | 0.51% |
-| Nombre moyen de favoris minimum | 1.01 |
+| Gains verses | $9449793.00 |
+| Resultat net joueur | $-550207.00 |
+| Resultat net maison | $550207.00 |
+| Victoires joueur | 29730 / 100000 |
+| Taux de victoire | 29.73% |
+| RTP joueur | 94.50% |
+| Avantage maison | 5.50% |
+| Intervalle RTP 95 % | 93.57% - 95.42% |
+| Cartes avec favoris ex aequo | 0.41% |
+| Nombre moyen de favoris minimum | 1.00 |
 | Duree moyenne | 20.80 ticks |
-| Parieurs virtuels moyens | 139.81 |
-| Mises virtuelles moyennes | $36697.97 |
-| Liquidite serveur moyenne | $1465.52 |
-| Pool de prix moyen | $38163.49 |
+| Parieurs virtuels moyens | 500.83 |
+| Mises virtuelles moyennes | $131468.88 |
+| Liquidite serveur moyenne | $5256.36 |
+| Pool de prix moyen | $136725.24 |
 | Tranches de cote significatives fortement hors cible | 0 |
 
 ## Distribution des pools
@@ -44,13 +45,13 @@ Les percentiles montrent la variation produite par les parieurs virtuels sur l'e
 
 | Indicateur | Min | P10 | Mediane | Moyenne | P90 | Max |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Parieurs virtuels | 80 | 91 | 140 | 140 | 188 | 200 |
-| Mises virtuelles | $17345.00 | $23985.00 | $36630.00 | $36697.97 | $49435.00 | $58810.00 |
-| Liquidite serveur | $690.00 | $955.00 | $1465.00 | $1465.52 | $1975.00 | $2350.00 |
-| Pool de prix | $18035.00 | $24940.00 | $38095.00 | $38163.49 | $51410.00 | $61160.00 |
-| Pari joueur maximum | $1730.00 | $2395.00 | $3660.00 | $3667.56 | $4940.00 | $5880.00 |
-| Cote finale du favori | 1.30/1 | 2.80/1 | 3.57/1 | 3.56/1 | 4.31/1 | 5.53/1 |
-| Cotes indicatives, tous concurrents | 1.32/1 | 3.81/1 | 5.98/1 | 12.05/1 | 13.26/1 | 1941.25/1 |
+| Parieurs virtuels | 200 | 260 | 502 | 501 | 740 | 800 |
+| Mises virtuelles | $46155.00 | $68280.00 | $131625.00 | $131468.88 | $194300.00 | $222535.00 |
+| Liquidite serveur | $1845.00 | $2730.00 | $5265.00 | $5256.36 | $7770.00 | $8900.00 |
+| Pool de prix | $48000.00 | $71010.00 | $136890.00 | $136725.24 | $202070.00 | $231435.00 |
+| Pari joueur maximum | $2000.00 | $2000.00 | $2000.00 | $2000.00 | $2000.00 | $2000.00 |
+| Cote finale du favori | 0.00/1 | 1.49/1 | 2.28/1 | 2.31/1 | 3.16/1 | 5.20/1 |
+| Cotes indicatives, tous concurrents | 0.00/1 | 2.53/1 | 6.78/1 | 97.88/1 | 185.70/1 | 7495.66/1 |
 
 ### Frequence des grandes cotes
 
@@ -58,12 +59,12 @@ Une carte contient huit concurrents. La cote d'un concurrent est indicative avan
 
 | Seuil | Concurrents concernes | Part des places | Cartes avec au moins un | Part des cartes |
 | ---: | ---: | ---: | ---: | ---: |
-| 10/1 ou plus | 133612 | 16.70% | 85448 | 85.45% |
-| 15/1 ou plus | 65846 | 8.23% | 54059 | 54.06% |
-| 20/1 ou plus | 43776 | 5.47% | 38686 | 38.69% |
-| 25/1 ou plus | 32952 | 4.12% | 30215 | 30.21% |
-| 50/1 ou plus | 14051 | 1.76% | 13607 | 13.61% |
-| 100/1 ou plus | 6232 | 0.78% | 6155 | 6.16% |
+| 10/1 ou plus | 286706 | 35.84% | 99699 | 99.70% |
+| 15/1 ou plus | 200956 | 25.12% | 95490 | 95.49% |
+| 20/1 ou plus | 162411 | 20.30% | 89205 | 89.20% |
+| 25/1 ou plus | 143622 | 17.95% | 84379 | 84.38% |
+| 50/1 ou plus | 115009 | 14.38% | 74435 | 74.44% |
+| 100/1 ou plus | 96057 | 12.01% | 67011 | 67.01% |
 
 ## Grille de gains par cote
 
@@ -86,49 +87,57 @@ Le paiement total inclut le remboursement de la mise. La derniere colonne indiqu
 
 | Cote | Paris | Part | Victoires | Taux victoire | RTP |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1.2/1-1.3/1 | 1 | 0.00% | 1 | 100.00% | 230.00% |
-| 1.4/1-1.5/1 | 9 | 0.01% | 5 | 55.56% | 135.78% |
-| 1.5/1-1.6/1 | 12 | 0.01% | 4 | 33.33% | 85.33% |
-| 1.6/1-1.7/1 | 27 | 0.03% | 9 | 33.33% | 87.81% |
-| 1.7/1-1.8/1 | 45 | 0.04% | 11 | 24.44% | 67.36% |
-| 1.8/1-1.9/1 | 87 | 0.09% | 20 | 22.99% | 65.45% |
-| 1.9/1-2.0/1 | 152 | 0.15% | 50 | 32.89% | 96.85% |
-| 2.0/1-2.1/1 | 235 | 0.24% | 70 | 29.79% | 90.82% |
-| 2.1/1-2.2/1 | 351 | 0.35% | 116 | 33.05% | 104.02% |
-| 2.2/1-2.3/1 | 572 | 0.57% | 154 | 26.92% | 87.42% |
-| 2.3/1-2.4/1 | 828 | 0.83% | 226 | 27.29% | 91.38% |
-| 2.4/1-2.5/1 | 1202 | 1.20% | 306 | 25.46% | 87.74% |
-| 2.5/1-2.6/1 | 1631 | 1.63% | 451 | 27.65% | 98.10% |
-| 2.6/1-2.7/1 | 2100 | 2.10% | 526 | 25.05% | 91.33% |
-| 2.7/1-2.8/1 | 2591 | 2.59% | 643 | 24.82% | 93.00% |
-| 2.8/1-2.9/1 | 3210 | 3.21% | 782 | 24.36% | 93.70% |
-| 2.9/1-3.0/1 | 3876 | 3.88% | 967 | 24.95% | 98.46% |
-| 3.0/1-3.1/1 | 5179 | 5.18% | 1224 | 23.63% | 95.77% |
-| 3.1/1-3.2/1 | 4650 | 4.65% | 1025 | 22.04% | 91.47% |
-| 3.2/1-3.3/1 | 5768 | 5.77% | 1299 | 22.52% | 95.61% |
-| 3.3/1-3.4/1 | 6303 | 6.30% | 1378 | 21.86% | 94.99% |
-| 3.4/1-3.5/1 | 6475 | 6.48% | 1480 | 22.86% | 101.57% |
-| 3.5/1-3.6/1 | 6418 | 6.42% | 1322 | 20.60% | 93.62% |
-| 3.6/1-3.7/1 | 6684 | 6.68% | 1376 | 20.59% | 95.63% |
-| 3.7/1-3.8/1 | 6399 | 6.40% | 1331 | 20.80% | 98.68% |
-| 3.8/1-3.9/1 | 6098 | 6.10% | 1133 | 18.58% | 89.99% |
-| 3.9/1-4.0/1 | 5663 | 5.66% | 1096 | 19.35% | 95.69% |
-| 4.0/1-4.1/1 | 5054 | 5.05% | 919 | 18.18% | 91.71% |
-| 4.1/1-4.2/1 | 4264 | 4.26% | 810 | 19.00% | 97.70% |
-| 4.2/1-4.3/1 | 3652 | 3.65% | 667 | 18.26% | 95.76% |
-| 4.3/1-4.4/1 | 2912 | 2.91% | 513 | 17.62% | 94.11% |
-| 4.4/1-4.5/1 | 2425 | 2.43% | 410 | 16.91% | 92.08% |
-| 4.5/1-4.6/1 | 1800 | 1.80% | 293 | 16.28% | 90.19% |
-| 4.6/1-4.7/1 | 1222 | 1.22% | 195 | 15.96% | 89.99% |
-| 4.7/1-4.8/1 | 871 | 0.87% | 157 | 18.03% | 103.61% |
-| 4.8/1-4.9/1 | 540 | 0.54% | 98 | 18.15% | 105.97% |
-| 4.9/1-5.0/1 | 315 | 0.32% | 37 | 11.75% | 69.78% |
-| 5.0/1-5.1/1 | 209 | 0.21% | 30 | 14.35% | 86.73% |
-| 5.1/1-5.2/1 | 102 | 0.10% | 11 | 10.78% | 66.17% |
-| 5.2/1-5.3/1 | 38 | 0.04% | 10 | 26.32% | 164.05% |
-| 5.3/1-5.4/1 | 19 | 0.02% | 1 | 5.26% | 33.42% |
-| 5.4/1-5.5/1 | 10 | 0.01% | 1 | 10.00% | 64.60% |
-| 5.5/1-5.6/1 | 1 | 0.00% | 0 | 0.00% | 0.00% |
+| 0.0/1-0.1/1 | 1 | 0.00% | 1 | 100.00% | 100.00% |
+| 0.2/1-0.3/1 | 4 | 0.00% | 3 | 75.00% | 94.00% |
+| 0.3/1-0.4/1 | 13 | 0.01% | 10 | 76.92% | 103.38% |
+| 0.4/1-0.5/1 | 27 | 0.03% | 16 | 59.26% | 86.22% |
+| 0.5/1-0.6/1 | 66 | 0.07% | 39 | 59.09% | 91.61% |
+| 0.6/1-0.7/1 | 135 | 0.14% | 76 | 56.30% | 92.98% |
+| 0.7/1-0.8/1 | 227 | 0.23% | 122 | 53.74% | 94.07% |
+| 0.8/1-0.9/1 | 391 | 0.39% | 190 | 48.59% | 89.85% |
+| 0.9/1-1.0/1 | 612 | 0.61% | 297 | 48.53% | 94.51% |
+| 1.0/1-1.1/1 | 890 | 0.89% | 398 | 44.72% | 91.69% |
+| 1.1/1-1.2/1 | 1291 | 1.29% | 579 | 44.85% | 96.34% |
+| 1.2/1-1.3/1 | 1856 | 1.86% | 771 | 41.54% | 93.52% |
+| 1.3/1-1.4/1 | 2002 | 2.00% | 806 | 40.26% | 94.65% |
+| 1.4/1-1.5/1 | 2681 | 2.68% | 1018 | 37.97% | 92.93% |
+| 1.5/1-1.6/1 | 3392 | 3.39% | 1231 | 36.29% | 92.41% |
+| 1.6/1-1.7/1 | 4097 | 4.10% | 1462 | 35.68% | 94.43% |
+| 1.7/1-1.8/1 | 4600 | 4.60% | 1584 | 34.43% | 94.53% |
+| 1.8/1-1.9/1 | 5154 | 5.15% | 1713 | 33.24% | 94.59% |
+| 1.9/1-2.0/1 | 5365 | 5.37% | 1737 | 32.38% | 95.31% |
+| 2.0/1-2.1/1 | 5828 | 5.83% | 1793 | 30.77% | 93.66% |
+| 2.1/1-2.2/1 | 5824 | 5.82% | 1726 | 29.64% | 93.19% |
+| 2.2/1-2.3/1 | 6149 | 6.15% | 1766 | 28.72% | 93.22% |
+| 2.3/1-2.4/1 | 5926 | 5.93% | 1698 | 28.65% | 95.83% |
+| 2.4/1-2.5/1 | 5808 | 5.81% | 1583 | 27.26% | 93.86% |
+| 2.5/1-2.6/1 | 5466 | 5.47% | 1520 | 27.81% | 98.55% |
+| 2.6/1-2.7/1 | 4871 | 4.87% | 1291 | 26.50% | 96.58% |
+| 2.7/1-2.8/1 | 4602 | 4.60% | 1108 | 24.08% | 90.13% |
+| 2.8/1-2.9/1 | 4224 | 4.22% | 1039 | 24.60% | 94.54% |
+| 2.9/1-3.0/1 | 3593 | 3.59% | 892 | 24.83% | 97.93% |
+| 3.0/1-3.1/1 | 3309 | 3.31% | 791 | 23.90% | 96.75% |
+| 3.1/1-3.2/1 | 2368 | 2.37% | 546 | 23.06% | 95.61% |
+| 3.2/1-3.3/1 | 2175 | 2.17% | 520 | 23.91% | 101.44% |
+| 3.3/1-3.4/1 | 1764 | 1.76% | 367 | 20.80% | 90.35% |
+| 3.4/1-3.5/1 | 1439 | 1.44% | 300 | 20.85% | 92.61% |
+| 3.5/1-3.6/1 | 1020 | 1.02% | 214 | 20.98% | 95.38% |
+| 3.6/1-3.7/1 | 802 | 0.80% | 157 | 19.58% | 90.95% |
+| 3.7/1-3.8/1 | 595 | 0.60% | 110 | 18.49% | 87.69% |
+| 3.8/1-3.9/1 | 476 | 0.48% | 93 | 19.54% | 94.59% |
+| 3.9/1-4.0/1 | 317 | 0.32% | 50 | 15.77% | 78.01% |
+| 4.0/1-4.1/1 | 237 | 0.24% | 50 | 21.10% | 106.37% |
+| 4.1/1-4.2/1 | 138 | 0.14% | 17 | 12.32% | 63.36% |
+| 4.2/1-4.3/1 | 103 | 0.10% | 23 | 22.33% | 116.89% |
+| 4.3/1-4.4/1 | 65 | 0.07% | 8 | 12.31% | 65.66% |
+| 4.4/1-4.5/1 | 41 | 0.04% | 8 | 19.51% | 105.98% |
+| 4.5/1-4.6/1 | 22 | 0.02% | 1 | 4.55% | 25.23% |
+| 4.6/1-4.7/1 | 21 | 0.02% | 2 | 9.52% | 53.95% |
+| 4.7/1-4.8/1 | 5 | 0.01% | 1 | 20.00% | 115.80% |
+| 4.8/1-4.9/1 | 4 | 0.00% | 2 | 50.00% | 291.50% |
+| 4.9/1-5.0/1 | 2 | 0.00% | 0 | 0.00% | 0.00% |
+| 5.1/1-5.2/1 | 1 | 0.00% | 1 | 100.00% | 610.00% |
+| 5.2/1-5.3/1 | 1 | 0.00% | 0 | 0.00% | 0.00% |
 
 ## Biais par position sur la carte
 
@@ -136,14 +145,14 @@ Une course parfaitement symetrique donnerait environ 12,50 % de victoires a chaq
 
 | Position | Victoires | Taux | Ecart a 12,50 % |
 | ---: | ---: | ---: | ---: |
-| 1 | 12573 | 12.57% | +0.07 points |
-| 2 | 12552 | 12.55% | +0.05 points |
-| 3 | 12513 | 12.51% | +0.01 points |
-| 4 | 12232 | 12.23% | -0.27 points |
-| 5 | 12515 | 12.52% | +0.02 points |
-| 6 | 12442 | 12.44% | -0.06 points |
-| 7 | 12518 | 12.52% | +0.02 points |
-| 8 | 12655 | 12.65% | +0.15 points |
+| 1 | 12457 | 12.46% | -0.04 points |
+| 2 | 12454 | 12.45% | -0.05 points |
+| 3 | 12347 | 12.35% | -0.15 points |
+| 4 | 12492 | 12.49% | -0.01 points |
+| 5 | 12524 | 12.52% | +0.02 points |
+| 6 | 12618 | 12.62% | +0.12 points |
+| 7 | 12680 | 12.68% | +0.18 points |
+| 8 | 12428 | 12.43% | -0.07 points |
 
 ## Vitesse et cotes du pool
 
@@ -163,50 +172,50 @@ Le rating pilote uniquement la performance. La cote `N/1` est derivee du pool : 
 
 | Coureur | Apparitions | Rating moyen | Victoires | Taux victoire | Paris favori | RTP favori |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Alpha Rot | 20071 | 10.95 | 2689 | 13.40% | 2634 | 95.23% |
-| Ash King | 20003 | 25.97 | 1060 | 5.30% | 1094 | 78.82% |
-| Ash Runner | 19983 | 6.00 | 4264 | 21.34% | 4150 | 113.90% |
-| Backstreet | 19867 | 10.96 | 2674 | 13.46% | 2667 | 97.03% |
-| Bad Omen | 19984 | 8.50 | 3297 | 16.50% | 3390 | 96.95% |
-| Bare Bones | 19828 | 10.93 | 2660 | 13.42% | 2652 | 88.03% |
-| Blue Rot | 19931 | 51.11 | 489 | 2.45% | 543 | 82.06% |
-| Broken Shoes | 19954 | 10.94 | 2688 | 13.47% | 2657 | 93.60% |
-| Cloud Cover | 20028 | 51.07 | 486 | 2.43% | 562 | 76.78% |
-| Cold Track | 19908 | 8.48 | 3333 | 16.74% | 3311 | 101.92% |
-| County Line | 20145 | 8.53 | 3370 | 16.73% | 3460 | 95.22% |
-| Crown Fall | 19922 | 50.91 | 487 | 2.44% | 562 | 87.42% |
-| Dead Sprint | 19999 | 8.49 | 3414 | 17.07% | 3390 | 99.55% |
-| Door Knock | 19909 | 10.97 | 2705 | 13.59% | 2683 | 93.57% |
-| Dust Walker | 19916 | 8.46 | 3419 | 17.17% | 3364 | 101.80% |
-| Fence Jumper | 20165 | 11.10 | 2673 | 13.26% | 2620 | 86.76% |
-| Fever Dream | 20054 | 25.86 | 1085 | 5.41% | 1115 | 98.91% |
-| Final Bite | 19912 | 10.99 | 2707 | 13.59% | 2669 | 94.10% |
-| Grave Pace | 19991 | 8.57 | 3347 | 16.74% | 3325 | 92.29% |
-| Green River | 20181 | 10.95 | 2752 | 13.64% | 2736 | 97.81% |
-| Headwind | 19843 | 26.19 | 981 | 4.94% | 968 | 85.95% |
-| Hungry Road | 20185 | 10.94 | 2672 | 13.24% | 2682 | 85.39% |
-| Last Hour | 20511 | 50.84 | 493 | 2.40% | 536 | 80.44% |
-| Last Turn | 19928 | 8.49 | 3344 | 16.78% | 3318 | 94.88% |
-| Long Road | 20026 | 8.50 | 3291 | 16.43% | 3367 | 92.34% |
-| Lost Arms | 19914 | 11.03 | 2614 | 13.13% | 2692 | 89.01% |
-| Moon Walker | 19933 | 8.46 | 3378 | 16.95% | 3316 | 98.05% |
-| Nameless | 20009 | 10.96 | 2669 | 13.34% | 2683 | 95.57% |
-| Night Signal | 20189 | 8.51 | 3356 | 16.62% | 3376 | 96.63% |
-| No Witness | 19905 | 10.99 | 2614 | 13.13% | 2645 | 87.22% |
-| Old Shambler | 20069 | 11.00 | 2614 | 13.03% | 2686 | 90.45% |
-| Pine Ridge | 19831 | 25.83 | 1097 | 5.53% | 1051 | 79.58% |
-| Raven Creek | 20080 | 6.00 | 4363 | 21.73% | 4247 | 107.11% |
-| Red Mile | 19935 | 8.50 | 3288 | 16.49% | 3304 | 99.51% |
-| Rotten Luck | 19985 | 10.96 | 2780 | 13.91% | 2677 | 94.03% |
-| Sleepless | 20011 | 8.53 | 3346 | 16.72% | 3358 | 95.74% |
-| South Horde | 19980 | 10.99 | 2709 | 13.56% | 2667 | 89.48% |
-| Spark Plug | 19875 | 25.98 | 1038 | 5.22% | 1062 | 83.42% |
-| Storm Rider | 20053 | 11.00 | 2712 | 13.52% | 2720 | 91.18% |
-| Wormwood | 19987 | 25.94 | 1042 | 5.21% | 1061 | 84.73% |
+| Alpha Rot | 19838 | 11.02 | 2649 | 13.35% | 2485 | 92.60% |
+| Ash King | 20106 | 25.93 | 1029 | 5.12% | 949 | 87.55% |
+| Ash Runner | 19980 | 6.05 | 4263 | 21.34% | 5384 | 94.17% |
+| Backstreet | 19986 | 11.06 | 2628 | 13.15% | 2583 | 91.11% |
+| Bad Omen | 19682 | 8.49 | 3315 | 16.84% | 3457 | 94.70% |
+| Bare Bones | 20065 | 10.97 | 2681 | 13.36% | 2512 | 91.98% |
+| Blue Rot | 19965 | 51.08 | 489 | 2.45% | 461 | 87.90% |
+| Broken Shoes | 20248 | 11.02 | 2792 | 13.79% | 2484 | 99.14% |
+| Cloud Cover | 20005 | 50.99 | 517 | 2.58% | 472 | 105.75% |
+| Cold Track | 19948 | 8.53 | 3269 | 16.39% | 3447 | 92.23% |
+| County Line | 20026 | 8.56 | 3389 | 16.92% | 3407 | 97.39% |
+| Crown Fall | 19950 | 51.21 | 500 | 2.51% | 466 | 93.87% |
+| Dead Sprint | 19848 | 8.50 | 3357 | 16.91% | 3362 | 94.20% |
+| Door Knock | 20018 | 10.98 | 2628 | 13.13% | 2501 | 95.43% |
+| Dust Walker | 19915 | 8.48 | 3347 | 16.81% | 3444 | 91.55% |
+| Fence Jumper | 20022 | 11.03 | 2702 | 13.50% | 2529 | 94.91% |
+| Fever Dream | 19851 | 25.84 | 1041 | 5.24% | 956 | 91.55% |
+| Final Bite | 20043 | 10.96 | 2670 | 13.32% | 2481 | 94.74% |
+| Grave Pace | 20063 | 8.49 | 3390 | 16.90% | 3461 | 92.69% |
+| Green River | 19861 | 10.94 | 2698 | 13.58% | 2551 | 97.99% |
+| Headwind | 20169 | 26.12 | 991 | 4.91% | 941 | 92.40% |
+| Hungry Road | 20221 | 10.96 | 2758 | 13.64% | 2604 | 96.33% |
+| Last Hour | 20512 | 50.75 | 531 | 2.59% | 495 | 98.60% |
+| Last Turn | 20032 | 8.52 | 3405 | 17.00% | 3436 | 97.05% |
+| Long Road | 20088 | 8.54 | 3383 | 16.84% | 3467 | 94.81% |
+| Lost Arms | 20157 | 11.07 | 2647 | 13.13% | 2464 | 88.38% |
+| Moon Walker | 19793 | 8.47 | 3335 | 16.85% | 3377 | 95.50% |
+| Nameless | 20083 | 10.91 | 2706 | 13.47% | 2524 | 97.64% |
+| Night Signal | 19774 | 8.49 | 3352 | 16.95% | 3478 | 92.53% |
+| No Witness | 20137 | 11.01 | 2646 | 13.14% | 2539 | 93.52% |
+| Old Shambler | 20038 | 11.00 | 2656 | 13.25% | 2553 | 94.14% |
+| Pine Ridge | 19942 | 25.98 | 1015 | 5.09% | 927 | 97.81% |
+| Raven Creek | 19853 | 6.00 | 4296 | 21.64% | 5337 | 97.54% |
+| Red Mile | 19965 | 8.53 | 3425 | 17.16% | 3444 | 94.97% |
+| Rotten Luck | 19741 | 10.87 | 2695 | 13.65% | 2551 | 100.68% |
+| Sleepless | 19992 | 8.50 | 3391 | 16.96% | 3478 | 95.84% |
+| South Horde | 19957 | 10.97 | 2620 | 13.13% | 2518 | 89.34% |
+| Spark Plug | 20088 | 26.15 | 1012 | 5.04% | 980 | 90.59% |
+| Storm Rider | 20083 | 11.00 | 2699 | 13.44% | 2540 | 94.81% |
+| Wormwood | 19955 | 26.02 | 1083 | 5.43% | 955 | 87.54% |
 
 ## Diagnostic automatique
 
-- La frequence des favoris de pool ex aequo est de 0.51%.
+- La frequence des favoris de pool ex aequo est de 0.41%.
 - Aucun biais de position superieur a 1 point n'est visible dans cet echantillon.
 - Le RTP de la strategie favorite se situe dans la plage cible.
 - Le payout inclut la mise retournee et depend du pool final : `pool net x mise joueur / mises gagnantes`.
@@ -218,22 +227,22 @@ La course hebdomadaire avec **$50,000 ajoutes par le serveur** est implementee c
 Architecture retenue :
 
 1. Creer une seule course partagee le dimanche du calendrier en jeu a 16:00.
-2. Ouvrir les mises avant la course, avec 500 a 1,000 parieurs virtuels et les mises reelles de tous les joueurs.
+2. Ouvrir les mises avant la course, avec 500 a 1,300 parieurs virtuels et les mises reelles de tous les joueurs.
 3. Fermer les mises a 16:00, verrouiller les cotes, puis calculer un seul vainqueur autoritaire.
 4. Calculer `pool net = mises apres commission + $50,000`, afin que toute la cagnote promotionnelle soit distribuee.
 5. Conserver les tickets dans le ModData serveur et crediter aussi les gagnants deconnectes lors de leur prochaine connexion.
 6. Limiter chaque joueur a un ticket de $500 maximum pour contenir le RTP promotionnel et eviter la manipulation des cotes.
 
-Exemple indicatif avec 750 parieurs a $262 de moyenne :
+Exemple indicatif avec 900 parieurs a $262.50 de moyenne :
 
 | Element | Montant |
 | --- | ---: |
-| Mises virtuelles | $196,500 |
-| Pool apres commission de 15 % | $167,025 |
+| Mises virtuelles | $236,250 |
+| Pool apres commission de 15 % | $200,812 |
 | Cagnote serveur ajoutee | $50,000 |
-| Masse finale a partager | $217,025 |
+| Masse finale a partager | $250,812 |
 
-Une simulation separee de 10 000 super cagnottes mesure environ 164 % de RTP en jouant toujours le favori. Ce rendement promotionnel est volontaire mais justifie le plafond hebdomadaire de $500 par joueur.
+Une simulation separee de 10 000 super cagnottes mesure environ 119 % de RTP en jouant toujours le favori, avec 900 parieurs et $236,326 de mises virtuelles en moyenne. Ce rendement promotionnel est volontaire mais justifie le plafond hebdomadaire de $500 par joueur.
 
 Cette variante est couverte par un test deterministe du calendrier, des tickets multiples, du reglement automatique et du paiement bancaire. Une validation avec deux clients sur serveur dedie reste requise.
 

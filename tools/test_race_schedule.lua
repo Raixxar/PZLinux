@@ -41,6 +41,10 @@ local playerTwo = { modData = { PZLinuxBank = 10000 } }
 function playerTwo:getUsername() return "schedule-test-two" end
 function playerTwo:getModData() return self.modData end
 function playerTwo:transmitModData() end
+local playerThree = { modData = { PZLinuxBank = 10000 } }
+function playerThree:getUsername() return "schedule-test-three" end
+function playerThree:getModData() return self.modData end
+function playerThree:transmitModData() end
 
 PZLinux = {}
 function PZLinuxGetPlayer(candidate) return candidate or player end
@@ -78,8 +82,23 @@ PZLinuxTestAssert(firstSnapshot.races[5].jackpot and firstSnapshot.races[5].jack
     "Sunday 16:00 must be the super jackpot race")
 PZLinuxTestAssert(firstSnapshot.races[5].pool.bettorCount >= 500,
     "the jackpot race must use the larger virtual crowd")
+PZLinuxTestAssert(firstSnapshot.races[5].pool.bettorCount <= 1300,
+    "the jackpot virtual crowd must remain inside its configured range")
 PZLinuxTestAssert(firstSnapshot.races[5].pool.maximumBet == 500,
     "the positive-expectation jackpot must cap each player ticket at $500")
+PZLinuxTestAssert(firstSnapshot.races[1].pool.bettorCount >= 200
+    and firstSnapshot.races[1].pool.bettorCount <= 800,
+    "ordinary races must draw between 200 and 800 virtual bettors")
+PZLinuxTestAssert(firstSnapshot.races[1].pool.maximumBet <= 2000,
+    "ordinary races must cap each player ticket at $2,000")
+local ordinaryBettorCounts = {}
+for raceIndex = 1, 4 do
+    ordinaryBettorCounts[firstSnapshot.races[raceIndex].pool.bettorCount] = true
+end
+local distinctOrdinaryBettorCounts = 0
+for _ in pairs(ordinaryBettorCounts) do distinctOrdinaryBettorCounts = distinctOrdinaryBettorCounts + 1 end
+PZLinuxTestAssert(distinctOrdinaryBettorCounts > 1,
+    "each ordinary race must generate its own virtual crowd")
 
 local firstRaceId = firstSnapshot.races[1].id
 local secondRaceId = firstSnapshot.races[2].id
@@ -94,6 +113,12 @@ PZLinuxTestAssert(sharedSnapshot.races[1].id == firstRaceId,
 local sharedBet = PZLinuxRaceSchedulePlaceBet(playerTwo, firstRaceId, 1, 200, "bet-shared")
 PZLinuxTestAssert(sharedBet.ok and playerTwo.modData.PZLinuxBank == 9800,
     "another player must be able to join the same global pool")
+PZLinuxTestAssert(PZLinuxRaceSchedulePlaceBet(playerThree, firstRaceId, 1, 100, "bet-unread-1").ok,
+    "the unread-results player must place the 08:00 ticket")
+PZLinuxTestAssert(PZLinuxRaceSchedulePlaceBet(playerThree, secondRaceId, 1, 100, "bet-unread-2").ok,
+    "the unread-results player must place the 10:00 ticket")
+PZLinuxTestAssert(PZLinuxRaceSchedulePlaceBet(playerThree, firstSnapshot.races[3].id, 1, 100, "bet-unread-3").ok,
+    "the unread-results player must place the 12:00 ticket")
 
 local duplicate = PZLinuxRaceSchedulePlaceBet(player, firstRaceId, 1, 100, "bet-duplicate")
 PZLinuxTestAssert(not duplicate.ok and duplicate.error == "ticket_exists", "only one ticket per player and race is allowed")
@@ -124,6 +149,19 @@ clock.minute = 6
 local afterSecondRace = PZLinuxRaceScheduleSnapshot(player, "snapshot-3")
 PZLinuxTestAssert(afterSecondRace.latestResult and afterSecondRace.latestResult.raceId == secondRaceId,
     "the newest settled race must replace the previous recap")
+
+clock.worldHour = 5.1
+clock.hour = 12
+clock.minute = 6
+local unreadSnapshot = PZLinuxRaceScheduleSnapshot(playerThree, "snapshot-unread")
+PZLinuxTestAssert(#unreadSnapshot.unreadResults == 3,
+    "the next visit must return every unseen result, not only the latest race")
+PZLinuxTestAssert(unreadSnapshot.unreadResults[1].raceId == firstRaceId
+    and unreadSnapshot.unreadResults[3].raceId == firstSnapshot.races[3].id,
+    "unseen race results must be returned in chronological order")
+local readAgain = PZLinuxRaceScheduleSnapshot(playerThree, "snapshot-read-again")
+PZLinuxTestAssert(#readAgain.unreadResults == 0,
+    "race results must be marked as read after they are returned to the terminal")
 
 clock.worldHour = 243.1
 clock.day = 20

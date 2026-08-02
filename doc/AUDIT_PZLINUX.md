@@ -102,7 +102,7 @@ contrats, Requests, Mails et Hacking.
 | Trading fee | OK | Commission serveur de 5 % |
 | Poker engine | OK | Evaluation, actions, side pots et sessions |
 | Zombie Race settlement | OK | Cinq departs/jour, tickets persistants et paiement automatique |
-| Zombie Race balance | OK | RTP favori 94,85 %, avantage maison 5,15 % sur 100 000 courses |
+| Zombie Race balance | OK | RTP favori 94,50 %, avantage maison 5,50 % sur 100 000 courses |
 | Typing | OK | UTF-8, profils et timing partage |
 
 Ces tests sont des tests Lua hors-jeu et des assertions statiques. Ils ne remplacent
@@ -363,7 +363,7 @@ rendement decroissant documente.
 
 La formule de vitesse continue historique est restauree et les egalites a
 l'arrivee sont departagees aleatoirement. Les anciennes cotes fixes ont ete
-remplacees par un pool pari-mutuel serveur : 80 a 200 parieurs virtuels misent des
+remplacees par un pool pari-mutuel serveur : 200 a 800 parieurs virtuels misent des
 montants variables, une commission configurable de 15 % est retiree, puis le pool
 net est partage proportionnellement entre les mises gagnantes. Le serveur ajoute
 4 % des mises virtuelles comme liquidite pour soutenir les gains des outsiders.
@@ -372,11 +372,12 @@ Les cotes sont affichees en `N/1` et incluent cette somme.
 Les courses sont maintenant des rendez-vous globaux a **08:00, 10:00, 12:00,
 14:00 et 16:00** selon l'horloge du monde. Un joueur peut programmer un ticket
 sur plusieurs departs; le serveur simule et paie les courses meme lorsque
-l'interface est fermee. Le dernier recap est remplace au prochain resultat et
-efface des qu'un nouveau ticket est place. Le dimanche du calendrier en jeu a
-16:00 utilise 500 a 1 000 parieurs virtuels et ajoute $50 000 apres commission.
+l'interface est fermee. Jusqu'a cinq resultats non lus sont conserves par joueur,
+affiches dans l'ordre lors de la prochaine visite puis marques comme consultes.
+Le dimanche du calendrier en jeu a
+16:00 utilise 500 a 1 300 parieurs virtuels et ajoute $50 000 apres commission.
 Son ticket est plafonne a $500 par joueur : une simulation dediee de 10 000
-cagnottes mesure environ 164 % de RTP sur le favori, rendement promotionnel
+cagnottes mesure environ 119 % de RTP sur le favori, rendement promotionnel
 positif mais limite a un seul rendez-vous hebdomadaire.
 Les courses reglees sans ticket en attente sont purgees apres 48 heures en jeu;
 une course due a un joueur hors ligne reste conservee jusqu'au paiement.
@@ -389,7 +390,7 @@ super cagnotte reste limitee a un rendez-vous par semaine en jeu et a un ticket
 de $500 par joueur.
 
 La campagne reproductible de 100 000 courses avec pari systematique sur le favori
-mesure **94,85 % de RTP**, **5,15 % d'avantage maison** et **21,16 % de victoires**.
+mesure **94,50 % de RTP**, **5,50 % d'avantage maison** et **29,73 % de victoires**.
 Aucune position ne s'ecarte de plus de 0,27 point du taux symetrique de 12,50 %.
 Etat : **equilibre statique valide**, validation visuelle et settlement MP live
 encore requis. Voir [RAPPORT_ZOMBIE_RACES.md](RAPPORT_ZOMBIE_RACES.md).
@@ -577,7 +578,7 @@ MP et equilibrage des sections suivantes restent applicables avant publication.
 - [ ] Tester puis durcir les fenetres de crash des paiements critiques.
 - [ ] Refaire les rewards Mail avec tiers/allowlists.
 - [ ] Supprimer ou plafonner le revolver/cash du contrat Package.
-- [x] Recalibrer Zombie Race : pool pari-mutuel, RTP favori de 94,85 % sur
+- [x] Recalibrer Zombie Race : pool pari-mutuel, RTP favori de 94,50 % sur
   100 000 courses et aucun biais de position significatif.
 - [x] Remplacer les Zombie Races relancables sans limite par cinq departs serveur
   quotidiens et une super cagnotte hebdomadaire plafonnee a $500 par joueur.
@@ -597,7 +598,7 @@ MP et equilibrage des sections suivantes restent applicables avant publication.
 - [x] Corriger les deux W431, dont la resolution implicite du joueur dans Wallet.
 - [x] Ajouter tests directs ATM, Requests, inventaire autoritaire et economie.
 - [ ] Ajouter tests metier directs banque, Blackjack et Mail hors inventaire.
-- [x] Simuler 100 000 Zombie Races : RTP favori 94,85 %, dans la cible 85-95 %.
+- [x] Simuler 100 000 Zombie Races : RTP favori 94,50 %, dans la cible 85-95 %.
 - [ ] Ajouter cooldown ou rendement decroissant Hacking.
 
 ### P3 - Traductions, namespace et accessibilite

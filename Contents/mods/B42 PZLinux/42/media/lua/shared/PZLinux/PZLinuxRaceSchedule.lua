@@ -4,6 +4,7 @@ PZLinux.RaceSchedule = PZLinux.RaceSchedule or {}
 local PZLINUX_RACE_SCHEDULE_DATA = "PZLinuxRaceSchedule"
 local PZLINUX_RACE_HOURS = { 8, 10, 12, 14, 16 }
 local PZLINUX_RACE_VISIBLE_SLOTS = 5
+local PZLINUX_RACE_MAXIMUM_UNREAD_RESULTS = 5
 local PZLINUX_RACE_JACKPOT_HOUR = 16
 local PZLINUX_RACE_JACKPOT_AMOUNT = 50000
 local PZLINUX_RACE_JACKPOT_MAXIMUM_BET = 500
@@ -21,6 +22,7 @@ local function PZLinuxRaceScheduleGetState()
     state.races = state.races or {}
     state.tickets = state.tickets or {}
     state.latestResults = state.latestResults or {}
+    state.unreadResults = state.unreadResults or {}
     return state
 end
 
@@ -84,7 +86,7 @@ local function PZLinuxRaceScheduleCreateRace(state, year, month, day, dayStartWo
     if isJackpot then
         poolOptions = {
             minimumBettors = 500,
-            maximumBettors = 1000,
+            maximumBettors = 1300,
             maximumPlayerPoolShare = 0.02,
             serverLiquidityRate = 0,
             fixedServerLiquidity = PZLINUX_RACE_JACKPOT_AMOUNT,
@@ -236,7 +238,7 @@ local function PZLinuxRaceScheduleProcessPlayerTickets(state, player)
             race.postCommissionLiquidity
         )
         if PZLinuxRaceScheduleCreditOnce(player, race.id, payout) then
-            state.latestResults[playerKey] = {
+            local result = {
                 raceId = race.id,
                 label = race.label,
                 jackpot = race.jackpot,
@@ -249,6 +251,13 @@ local function PZLinuxRaceScheduleProcessPlayerTickets(state, player)
                 profit = payout - ticket.amount,
                 won = won,
             }
+            state.latestResults[playerKey] = result
+            local unreadResults = state.unreadResults[playerKey] or {}
+            table.insert(unreadResults, result)
+            while #unreadResults > PZLINUX_RACE_MAXIMUM_UNREAD_RESULTS do
+                table.remove(unreadResults, 1)
+            end
+            state.unreadResults[playerKey] = unreadResults
             tickets[race.id] = nil
         end
     end
@@ -320,11 +329,14 @@ function PZLinuxRaceScheduleSnapshot(player, requestId)
         local race = future[index]
         races[index] = PZLinuxRaceScheduleBuildRaceSnapshot(race, tickets[race.id])
     end
+    local unreadResults = state.unreadResults[playerKey] or {}
+    state.unreadResults[playerKey] = {}
     return {
         ok = true,
         requestId = requestId,
         races = races,
-        latestResult = state.latestResults[playerKey],
+        latestResult = unreadResults[#unreadResults],
+        unreadResults = unreadResults,
         balance = PZLinuxLoadBankBalance(player),
     }
 end

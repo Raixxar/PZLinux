@@ -709,20 +709,42 @@ function PZLinuxBettingUI:showRaceSchedule(result)
     self.topBar:addChild(title)
     table.insert(self.raceControls, title)
 
-    local latest = result.latestResult
-    local resultText = PZLinuxGetText("IGUI_PZLinux_Betting_RaceNoResult")
-    if latest then
-        local outcome = latest.won
-            and string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceResultWin"), latest.payout or 0)
-            or string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceResultLose"), latest.amount or 0)
-        resultText = tostring(latest.label) .. " | " .. tostring(latest.winnerName) .. " | " .. outcome
+    local resultLines = {}
+    local unreadResults = result.unreadResults or {}
+    if #unreadResults == 0 and result.latestResult then unreadResults = { result.latestResult } end
+    for _, raceResult in ipairs(unreadResults) do
+        local outcome = raceResult.won
+            and string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceResultWin"), raceResult.payout or 0)
+            or string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceResultLose"), raceResult.amount or 0)
+        table.insert(resultLines, PZLinuxBettingShortText(
+            tostring(raceResult.label) .. " | " .. tostring(raceResult.winnerName) .. " | " .. outcome,
+            68
+        ))
     end
-    local resultLabel = ISLabel:new(self.width * 0.20, self.height * 0.27, self.height * 0.020, PZLinuxBettingShortText(resultText, 58), 1, 1, 0, 1, UIFont.Small, true)
-    resultLabel:initialise()
-    self.topBar:addChild(resultLabel)
-    table.insert(self.raceControls, resultLabel)
+    if #resultLines == 0 then
+        resultLines[1] = PZLinuxGetText("IGUI_PZLinux_Betting_RaceNoResult")
+    end
 
-    local yOffset = self.height * 0.33
+    local resultPanel = ISRichTextPanel:new(
+        self.width * 0.20,
+        self.height * 0.26,
+        self.width * 0.57,
+        self.height * 0.115
+    )
+    resultPanel.backgroundColor = {r=0, g=0, b=0, a=0}
+    resultPanel.borderColor = {r=0, g=0, b=0, a=0}
+    resultPanel.autosetheight = false
+    resultPanel.text = "<RGB:1,1,0>" .. table.concat(resultLines, "<LINE>")
+    resultPanel:initialise()
+    resultPanel:instantiate()
+    resultPanel:paginate()
+    if resultPanel.vscroll then
+        resultPanel.vscroll:setVisible(resultPanel:getScrollHeight() > resultPanel:getHeight())
+    end
+    self.topBar:addChild(resultPanel)
+    table.insert(self.raceControls, resultPanel)
+
+    local yOffset = self.height * 0.40
     for _, race in ipairs(result.races or {}) do
         local text = tostring(race.label)
         if race.jackpot then
