@@ -74,4 +74,25 @@ assert(darkWebRedeem:find("PZLinuxRemoveInventoryItem", 1, true), "redeemed Dark
 local darkWebDelivery = PZLinuxTestFunction(darkWeb, "PZLinuxDarkWebApplyDeliverOrders", "PZLinuxRequestDarkWebOffers")
 assert(darkWebDelivery:find('error = "parcel_sync_failed"', 1, true), "Dark Web delivery must preserve orders on synchronization failure")
 
+local mailboxState = PZLinuxTestFunction(shared, "PZLinuxMailboxGetActionState", "PZLinuxContractsApplyDeposit")
+assert(mailboxState:find("PZLinuxValidateMailboxInteraction", 1, true),
+    "mailbox action state must be validated by the server at the real mailbox")
+assert(mailboxState:find("hasPickup", 1, true) and mailboxState:find("hasContractDeposit", 1, true),
+    "mailbox action state must distinguish item pickup from contract deposit")
+
+local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
+assert(serverCommands:find("PZLinuxMailboxState = PZLinuxServerMailboxState", 1, true),
+    "the authoritative mailbox-state command must be registered")
+
+for _, relativePath in ipairs({
+    "/client/Context/World/ISContextMailBox.lua",
+    "/client/Context/World/ISContextStreetMailBox.lua",
+}) do
+    local mailboxUi = PZLinuxTestRead(luaRoot .. relativePath)
+    assert(mailboxUi:find("PZLinuxRequestMailboxActionState", 1, true),
+        relativePath .. " must request its action label from the server")
+    assert(not mailboxUi:find("SEND/TAKE THE PACKAGE", 1, true),
+        relativePath .. " must not expose the ambiguous legacy action label")
+end
+
 print("PZLinux authoritative inventory tests OK")

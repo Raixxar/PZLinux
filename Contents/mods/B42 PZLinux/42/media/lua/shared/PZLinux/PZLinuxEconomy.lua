@@ -36,6 +36,21 @@ function PZLinux.Economy.contractCancelPenalty()
     return math.max(0, tonumber(config.contractCancelPenalty) or 10)
 end
 
+function PZLinux.Economy.contractCompleteReward()
+    local config = PZLinux.Config and PZLinux.Config.Reputation or {}
+    return math.max(0, tonumber(config.contractCompleteReward) or 10)
+end
+
+function PZLinux.Economy.reputationTier(reputation)
+    reputation = tonumber(reputation) or 1
+    if reputation <= -50 then return "blacklisted", -49, "distrusted" end
+    if reputation < 1 then return "distrusted", 1, "neutral" end
+    if reputation == 1 then return "neutral", 2, "known" end
+    if reputation < 41 then return "known", 41, "reliable" end
+    if reputation < 101 then return "reliable", 101, "preferred" end
+    return "preferred", nil, nil
+end
+
 function PZLinux.Economy.reputationPurchaseMultiplier(reputation)
     local config = PZLinux.Config and PZLinux.Config.Reputation or {}
     local baseline = tonumber(config.baseline) or 1

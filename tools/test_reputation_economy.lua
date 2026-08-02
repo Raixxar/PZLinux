@@ -31,6 +31,7 @@ local player = {
 PZLinuxGetPlayer = function(value) return value end
 
 PZLinuxTestAssertEqual(PZLinux.Economy.contractCancelPenalty(), 10, "contract cancellation penalty")
+PZLinuxTestAssertEqual(PZLinux.Economy.contractCompleteReward(), 10, "contract completion reputation")
 PZLinuxTestAssertEqual(PZLinux.Economy.applyReputationDelta(1, -10), -9, "neutral cancellation reputation")
 PZLinuxTestAssertEqual(PZLinux.Economy.applyReputationDelta(-95, -10), -99, "minimum reputation clamp")
 PZLinuxTestAssertEqual(PZLinux.Economy.applyReputationDelta(195, 10), 200, "maximum reputation clamp")
@@ -43,6 +44,10 @@ PZLinuxTestAssertEqual(PZLinux.Economy.reputationPurchaseMultiplier(1), 1, "neut
 PZLinuxTestAssertEqual(PZLinux.Economy.reputationPurchaseMultiplier(-9), 1.1, "one cancellation surcharge")
 PZLinuxTestAssertEqual(PZLinux.Economy.reputationPurchaseMultiplier(101), 0.75, "maximum reputation discount")
 PZLinuxTestAssertEqual(PZLinux.Economy.reputationPurchaseMultiplier(-99), 2, "maximum reputation surcharge")
+PZLinuxTestAssertEqual(PZLinux.Economy.reputationTier(-50), "blacklisted", "blacklisted reputation tier")
+PZLinuxTestAssertEqual(PZLinux.Economy.reputationTier(1), "neutral", "neutral reputation tier")
+PZLinuxTestAssertEqual(PZLinux.Economy.reputationTier(41), "reliable", "reliable reputation tier")
+PZLinuxTestAssertEqual(PZLinux.Economy.reputationTier(101), "preferred", "preferred reputation tier")
 
 PZLinuxTestAssertEqual(PZLinux.Economy.scarcityMultiplier(0), 1, "new world scarcity")
 PZLinuxTestAssertEqual(PZLinux.Economy.scarcityMultiplier(2189), 1, "first quarter scarcity")
@@ -89,6 +94,25 @@ assert(cancelBlock and cancelBlock:find('error = "no_active_contract"'), "forged
 assert(cancelBlock and cancelBlock:find("PZLinuxApplyReputationDelta%(playerObj, %-reputationPenalty%)"),
     "contract cancellation must apply its penalty on the server")
 assert(cancelBlock and cancelBlock:find("reputation = reputation"), "the authoritative reputation must be returned to the client")
+local snapshotBlock = runtimeSource:match("function PZLinuxReputationGetSnapshot.-\nend")
+assert(snapshotBlock and snapshotBlock:find("reputationPurchaseMultiplier", 1, true),
+    "the reputation screen must use the authoritative economy multiplier")
+assert(snapshotBlock and not snapshotBlock:find("mailDelayMax", 1, true),
+    "the reputation snapshot must not reveal the randomized mail delay")
+
+local serverFile = assert(io.open(luaRoot .. "/server/PZLinuxServerCommands.lua", "rb"))
+local serverSource = serverFile:read("*a")
+serverFile:close()
+assert(serverSource:find("PZLinuxReputationSnapshot = PZLinuxServerReputationSnapshot", 1, true),
+    "the authoritative reputation snapshot command must be registered")
+
+local reputationUiFile = assert(io.open(luaRoot .. "/client/Context/World/Features/PZLinuxReputation.lua", "rb"))
+local reputationUiSource = reputationUiFile:read("*a")
+reputationUiFile:close()
+assert(reputationUiSource:find("PZLinuxRequestReputationSnapshot", 1, true),
+    "the reputation UI must request its values from the server")
+assert(not reputationUiSource:find("mailDelayMax", 1, true) and not reputationUiSource:find("nextat", 1, true),
+    "the reputation UI must keep future mail timing hidden")
 
 local contractPriceBlock = runtimeSource:match("function PZLinuxContractsBuildContract.-\nend")
 assert(contractPriceBlock and not contractPriceBlock:find("scarcityMultiplier", 1, true),

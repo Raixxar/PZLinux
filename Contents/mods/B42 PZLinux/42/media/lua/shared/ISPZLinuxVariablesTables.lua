@@ -150,6 +150,34 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Context_CaptureZombie = "Capture a zombie",
     IGUI_PZLinux_Context_RepairComputer = "Repair the computer",
     IGUI_PZLinux_Context_ATM = "ATM",
+    IGUI_PZLinux_Mailbox_Leave = "LEAVE",
+    IGUI_PZLinux_Mailbox_Check = "CHECK MAILBOX",
+    IGUI_PZLinux_Mailbox_TakeItems = "COLLECT ITEMS",
+    IGUI_PZLinux_Mailbox_SendContract = "SEND AND COMPLETE CONTRACT",
+    IGUI_PZLinux_Mailbox_TakeAndSend = "COLLECT ITEMS + SEND CONTRACT",
+    IGUI_PZLinux_Reputation_Button = "REPUTATION",
+    IGUI_PZLinux_Reputation_Title = "NETWORK REPUTATION",
+    IGUI_PZLinux_Reputation_Loading = "Loading reputation...",
+    IGUI_PZLinux_Reputation_Unavailable = "Reputation service unavailable.",
+    IGUI_PZLinux_Reputation_Score = "Score: %s (range %s to %s)",
+    IGUI_PZLinux_Reputation_Status = "Status: %s",
+    IGUI_PZLinux_Reputation_PriceModifier = "Purchase prices: %s",
+    IGUI_PZLinux_Reputation_MailFrequency = "Mail frequency: %s",
+    IGUI_PZLinux_Reputation_MailReduced = "REDUCED",
+    IGUI_PZLinux_Reputation_MailNormal = "NORMAL",
+    IGUI_PZLinux_Reputation_MailImproved = "IMPROVED",
+    IGUI_PZLinux_Reputation_CompletionGain = "Contract or mail mission completed: +%s",
+    IGUI_PZLinux_Reputation_CancelPenalty = "Contract cancelled: -%s",
+    IGUI_PZLinux_Reputation_Decay = "Without activity, reputation gradually returns to neutral.",
+    IGUI_PZLinux_Reputation_NextStatus = "Next status: %s (%s points)",
+    IGUI_PZLinux_Reputation_MaxStatus = "Highest reputation status reached.",
+    IGUI_PZLinux_Reputation_Back = "BACK",
+    IGUI_PZLinux_Reputation_StatusBlacklisted = "BLACKLISTED",
+    IGUI_PZLinux_Reputation_StatusDistrusted = "DISTRUSTED",
+    IGUI_PZLinux_Reputation_StatusNeutral = "NEUTRAL",
+    IGUI_PZLinux_Reputation_StatusKnown = "KNOWN",
+    IGUI_PZLinux_Reputation_StatusReliable = "RELIABLE",
+    IGUI_PZLinux_Reputation_StatusPreferred = "PREFERRED",
 }
 
 function PZLinuxGetText(key)
@@ -1076,6 +1104,8 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxRequestOrderResult"
         or command == "PZLinuxRequestDeliverResult"
         or command == "PZLinuxRequestSpawnVehicleResult"
+        or command == "PZLinuxMailboxStateResult"
+        or command == "PZLinuxReputationSnapshotResult"
         or command == "PZLinuxMailAcceptResult"
         or command == "PZLinuxMailDeleteResult"
         or command == "PZLinuxMailCompleteResult"
@@ -1405,6 +1435,16 @@ function PZLinuxRequestDeliver(player, mailboxRef, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId))
+    return requestId
+end
+
+function PZLinuxRequestMailboxActionState(player, mailboxRef, callback)
+    local requestId = PZLinuxNextRequestId("mailbox-state")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxMailboxState", { requestId = requestId, mailbox = mailboxRef }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxMailboxGetActionState(player, mailboxRef, requestId))
     return requestId
 end
 
@@ -2404,7 +2444,6 @@ function PZLinuxContractsApplyCancel(player, requestId)
     PZLinuxContractsMarkWorldContract(modData.PZLinuxContractId, "cancelled", playerObj)
     PZLinuxContractsRemoveContractNote(playerObj)
     PZLinuxContractsClearState(modData)
-    modData.PZLinuxUIOpenMenu = 7
     PZLinuxTransmitPlayerModData(playerObj)
 
     return {
@@ -2510,6 +2549,56 @@ function PZLinuxContractsItemMatchesDelivery(item, modData, totalCountForContrac
     return false
 end
 
+function PZLinuxContractsHasDepositItems(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    local inventory = playerObj and playerObj:getInventory()
+    local modData = playerObj and playerObj:getModData()
+    if not inventory or not modData or (tonumber(modData.PZLinuxActiveContract) or 0) ~= 1 then return false end
+
+    local items = inventory:getItems()
+    local requiredType = modData.PZLinuxContractInfo
+    local itemCount = 0
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and requiredType and item:getFullType() == requiredType then itemCount = itemCount + 1 end
+    end
+
+    local requiredCount = tonumber(modData.PZLinuxContractInfoCount) or 0
+    local totalCountForContract = requiredCount > 0 and itemCount >= requiredCount
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        local itemContractId = PZLinuxContractsGetEntityContractId(item)
+        local sameWorldContract = not modData.PZLinuxContractId or modData.PZLinuxContractId == ""
+            or not itemContractId or itemContractId == modData.PZLinuxContractId
+        if sameWorldContract and PZLinuxContractsItemMatchesDelivery(item, modData, totalCountForContract) then
+            return true
+        end
+    end
+    return false
+end
+
+function PZLinuxMailboxGetActionState(player, mailboxRef, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
+    if mailboxError then return { ok = false, error = mailboxError, requestId = requestId } end
+
+    local modData = playerObj:getModData()
+    local hasDarkWebPickup = modData.PZLinuxOnItemBuyOnDarkWebStatus == 1
+        and type(modData.PZLinuxOnItemBuyOnDarkWeb) == "table"
+        and #modData.PZLinuxOnItemBuyOnDarkWeb > 0
+    local hasRequestPickup = modData.PZLinuxActiveRequest == 1
+        and type(modData.PZLinuxOnItemRequest) == "table"
+        and #modData.PZLinuxOnItemRequest > 0
+
+    return {
+        ok = true,
+        requestId = requestId,
+        hasPickup = hasDarkWebPickup or hasRequestPickup,
+        hasContractDeposit = PZLinuxContractsHasDepositItems(playerObj),
+    }
+end
+
 function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
@@ -2613,8 +2702,7 @@ function PZLinuxContractsApplyComplete(player, _state, requestId)
     PZLinuxContractsMarkWorldContract(completedWorldContractId, "completed", playerObj)
     PZLinuxContractsRemoveContractNote(playerObj)
     PZLinuxContractsClearState(modData)
-    modData.PZLinuxUIOpenMenu = 7
-    PZLinuxApplyReputationDelta(playerObj, 10)
+    PZLinuxApplyReputationDelta(playerObj, PZLinux.Economy.contractCompleteReward())
     PZLinuxTransmitPlayerModData(playerObj)
 
     return {
@@ -2665,6 +2753,49 @@ function PZLinuxApplyReputationDecay(player, amount)
     pzlinux.player.reputation = PZLinux.Economy.decayReputation(pzlinux.player.reputation, amount)
     PZLinuxTransmitPlayerModData(playerObj)
     return pzlinux.player.reputation
+end
+
+function PZLinuxReputationGetSnapshot(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    local config = PZLinux.Config and PZLinux.Config.Reputation or {}
+    local reputation = tonumber(pzlinux and pzlinux.player and pzlinux.player.reputation)
+        or tonumber(config.baseline) or 1
+    local baseline = tonumber(config.baseline) or 1
+    local multiplier = PZLinux.Economy.reputationPurchaseMultiplier(reputation)
+    local status, nextThreshold, nextStatus = PZLinux.Economy.reputationTier(reputation)
+
+    local mailFrequency = "normal"
+    if reputation < baseline then mailFrequency = "reduced"
+    elseif reputation > baseline then mailFrequency = "improved" end
+
+    return {
+        ok = true,
+        requestId = requestId,
+        reputation = reputation,
+        minimum = tonumber(config.minimum) or -99,
+        maximum = tonumber(config.maximum) or 200,
+        baseline = baseline,
+        purchaseMultiplier = multiplier,
+        purchaseModifierPercent = (multiplier - 1) * 100,
+        status = status,
+        nextStatus = nextStatus,
+        nextThreshold = nextThreshold,
+        pointsToNext = nextThreshold and math.max(0, nextThreshold - reputation) or nil,
+        mailFrequency = mailFrequency,
+        completionReward = PZLinux.Economy.contractCompleteReward(),
+        cancellationPenalty = PZLinux.Economy.contractCancelPenalty(),
+    }
+end
+
+function PZLinuxRequestReputationSnapshot(player, callback)
+    local requestId = PZLinuxNextRequestId("reputation-snapshot")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxReputationSnapshot", { requestId = requestId }) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxReputationGetSnapshot(player, requestId))
+    return requestId
 end
 
 function PZLinuxContractsTransmitSquareObject(square, obj)
@@ -3684,7 +3815,7 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
         return { ok = false, error = "remove_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, removed = removed }
     end
 
-    local reputation = PZLinuxApplyReputationDelta(playerObj, 10)
+    local reputation = PZLinuxApplyReputationDelta(playerObj, PZLinux.Economy.contractCompleteReward())
     mail.status = 10
     PZLinuxTransmitPlayerModData(playerObj)
     return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardItems = rewardItems, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }

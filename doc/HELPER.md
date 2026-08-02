@@ -23,3 +23,5 @@
 [STAT FITNESS           ] min=-1.0000 max=1.0000 (start=0.0000).
 
 getPlayer():getStats():add(CharacterStat.BOREDOM, -2)
+
+/setaccesslevel "Raixxar" admin

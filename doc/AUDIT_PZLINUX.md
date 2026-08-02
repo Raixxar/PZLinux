@@ -550,7 +550,7 @@ Progression fonctionnelle des contrats en MP : **3/12 valides**.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
 - [ ] 3 - Eliminate the target.
 - [ ] 4 - Collect zombie blood.
-- [ ] 5 - Send automobile parts.
+- [x] 5 - Send automobile parts.
 - [ ] 6 - Capture a live zombie.
 - [ ] 7 - Prepare the cargo.
 - [ ] 8 - Protect the building.

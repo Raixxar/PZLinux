@@ -7,6 +7,9 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 
 ### Added
 
+- Added a translated Network Reputation screen showing the authoritative score,
+  status, purchase-price modifier and qualitative mail frequency without
+  revealing future mail timing.
 - Added Blackjack with a real 52-card deck, dealer rules, server-side settlement
   and mood effects based on the size and outcome of a bet.
 - Added six-seat Texas Hold'em Poker with configurable lobbies, AI opponents,
@@ -83,6 +86,10 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
   with canonical proximity checks, nearby free-square selection, synchronized
   key rollback on failure and throttled client retry requests.
+- Prevented contract completion and cancellation responses from opening a
+  second Contracts window over the existing payment receipt.
+- Localized both mailbox interfaces and selected their action label from the
+  authoritative pending pickup and contract-delivery state.
 
 ### Economy
 

@@ -302,6 +302,18 @@ local function PZLinuxServerRequestDeliver(player, args)
     end)
 end
 
+local function PZLinuxServerMailboxState(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxMailboxState", args, "PZLinuxMailboxStateResult", function()
+        return PZLinuxMailboxGetActionState(player, args and args.mailbox, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerReputationSnapshot(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxReputationSnapshot", args, "PZLinuxReputationSnapshotResult", function()
+        return PZLinuxReputationGetSnapshot(player, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerRequestSpawnVehicle(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxRequestSpawnVehicle", args, "PZLinuxRequestSpawnVehicleResult", function()
         return PZLinuxRequestsApplySpawnVehicle(player, args and args.requestId)
@@ -390,6 +402,8 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxContractWorldEvent = PZLinuxServerContractWorldEvent,
     PZLinuxRequestOrder = PZLinuxServerRequestOrder,
     PZLinuxRequestDeliver = PZLinuxServerRequestDeliver,
+    PZLinuxMailboxState = PZLinuxServerMailboxState,
+    PZLinuxReputationSnapshot = PZLinuxServerReputationSnapshot,
     PZLinuxRequestSpawnVehicle = PZLinuxServerRequestSpawnVehicle,
     PZLinuxMailAccept = PZLinuxServerMailAccept,
     PZLinuxMailDelete = PZLinuxServerMailDelete,

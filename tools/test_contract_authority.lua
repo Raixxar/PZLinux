@@ -82,6 +82,12 @@ local variablesPath = luaRoot .. "/shared/ISPZLinuxVariablesTables.lua"
 local variables = PZLinuxTestRead(variablesPath)
 local acceptBlock = variables:match("function PZLinuxContractsApplyAccept.-\nend\n\nfunction PZLinuxContractsApplyCancel")
 PZLinuxTestAssert(acceptBlock ~= nil, "could not inspect PZLinuxContractsApplyAccept")
+local cancelBlock = variables:match("function PZLinuxContractsApplyCancel.-\nend\n\nfunction PZLinuxContractsBagContainsCorpse")
+local completeBlock = variables:match("function PZLinuxContractsApplyComplete.-\nend\n\nfunction PZLinuxContractsAcknowledgeCompletion")
+PZLinuxTestAssert(cancelBlock and not cancelBlock:find("PZLinuxUIOpenMenu", 1, true),
+    "server-side contract cancellation must not open or replace a client UI")
+PZLinuxTestAssert(completeBlock and not completeBlock:find("PZLinuxUIOpenMenu", 1, true),
+    "server-side contract completion must not open a second contracts UI")
 
 local forbiddenFields = {
     "reward", "code", "questName", "cityId", "locationX", "locationY", "locationZ",

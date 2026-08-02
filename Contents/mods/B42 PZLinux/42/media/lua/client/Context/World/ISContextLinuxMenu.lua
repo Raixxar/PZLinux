@@ -32,31 +32,31 @@ function linuxUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(_x, _y)
-        self.parent.isDragging = true
-        self.parent.initialX = self.parent:getX()
-        self.parent.initialY = self.parent:getY()
-        self.parent.mouseStartX = getMouseX()
-        self.parent.mouseStartY = getMouseY()
+    function self.topBar.onMouseDown(topBar, _x, _y)
+        topBar.parent.isDragging = true
+        topBar.parent.initialX = topBar.parent:getX()
+        topBar.parent.initialY = topBar.parent:getY()
+        topBar.parent.mouseStartX = getMouseX()
+        topBar.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(_x, _y)
-        if self.parent.isDragging then
+    function self.topBar.onMouseMove(topBar, _x, _y)
+        if topBar.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
-            local dx = curMouseX - self.parent.mouseStartX
-            local dy = curMouseY - self.parent.mouseStartY
-            self.parent:setX(self.parent.initialX + dx)
-            self.parent:setY(self.parent.initialY + dy)
+            local dx = curMouseX - topBar.parent.mouseStartX
+            local dy = curMouseY - topBar.parent.mouseStartY
+            topBar.parent:setX(topBar.parent.initialX + dx)
+            topBar.parent:setY(topBar.parent.initialY + dy)
         end
     end
 
-    function self.topBar:onMouseUp(_x, _y)
-        self.parent.isDragging = false
-        local modData = PZLinuxGetModData(self.parent.player)
+    function self.topBar.onMouseUp(topBar, _x, _y)
+        topBar.parent.isDragging = false
+        local modData = PZLinuxGetModData(topBar.parent.player)
         if modData then
-            modData.PZLinuxUIX = self.parent:getX()
-            modData.PZLinuxUIY = self.parent:getY()
+            modData.PZLinuxUIX = topBar.parent:getX()
+            modData.PZLinuxUIY = topBar.parent:getY()
         end
     end
 
@@ -188,7 +188,15 @@ function linuxUI:initialise()
     self.mailButton:initialise()
     self.topBar:addChild(self.mailButton)
 
-    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
+    self.reputationButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Reputation_Button"), self, self.onReputation)
+    self.reputationButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.reputationButton.textColor = {r=0, g=1, b=0, a=1}
+    self.reputationButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.reputationButton:setVisible(false)
+    self.reputationButton:initialise()
+    self.topBar:addChild(self.reputationButton)
+
+    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.53, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
     self.conditionButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -323,6 +331,7 @@ function linuxUI:onPrompt()
     self.requestButton:setVisible(true)
     self.bettingButton:setVisible(true)
     self.mailButton:setVisible(true)
+    self.reputationButton:setVisible(true)
     self.conditionButton:setVisible(true)
 end
 
@@ -453,6 +462,20 @@ function linuxUI:onMail()
     end
 end
 
+function linuxUI:onReputation()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
+        modData.PZLinuxUIOpenMenu = 11
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
 function linuxUI:onCondition()
     self.promptLabel:setVisible(false)
     self.helpLabel:setVisible(false)
@@ -540,11 +563,11 @@ function linuxMenu_AddContext(player, context, worldobjects)
             if sprite and sprite:getName() then
                 if string.find(sprite:getName(), "appliances_com_01_75")
                 or string.find(sprite:getName(), "appliances_com_01_74")
-                or string.find(sprite:getName(), "appliances_com_01_73") 
+                or string.find(sprite:getName(), "appliances_com_01_73")
                 or string.find(sprite:getName(), "appliances_com_01_72") then
                     local square = obj:getSquare()
-                    if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or 
-                     (getSandboxOptions():getElecShutModifier() > -1 and 
+                    if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or
+                     (getSandboxOptions():getElecShutModifier() > -1 and
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
                         if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
@@ -571,7 +594,7 @@ function linuxMenu_OnUse(obj, player, x, y, z, sprite, _square)
     if not playerObj then return end
 
     local playerSquare = playerObj:getSquare()
-    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
         local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
             ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
@@ -586,7 +609,7 @@ function linuxMenu_OnRepare(obj, player, x, y, z, sprite, _square)
     if not playerObj then return end
 
     local playerSquare = playerObj:getSquare()
-    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
         local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
             ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))

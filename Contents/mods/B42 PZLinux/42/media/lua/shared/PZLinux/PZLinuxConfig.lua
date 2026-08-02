@@ -14,6 +14,7 @@ PZLinux.Config.Reputation = PZLinux.Config.Reputation or {
     baseline = 1,
     minimum = -99,
     maximum = 200,
+    contractCompleteReward = 10,
     contractCancelPenalty = 10,
     purchaseSurchargePerPoint = 0.01,
     maximumPurchaseSurcharge = 1.00,

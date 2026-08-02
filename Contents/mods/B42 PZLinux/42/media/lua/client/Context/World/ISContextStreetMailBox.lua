@@ -3,6 +3,19 @@
 
 StreetMailBoxUI = ISPanel:derive("StreetMailBoxUI")
 
+local function PZLinuxStreetMailBoxActionText(state)
+    if state and state.hasPickup and state.hasContractDeposit then
+        return PZLinuxGetText("IGUI_PZLinux_Mailbox_TakeAndSend")
+    end
+    if state and state.hasContractDeposit then
+        return PZLinuxGetText("IGUI_PZLinux_Mailbox_SendContract")
+    end
+    if state and state.hasPickup then
+        return PZLinuxGetText("IGUI_PZLinux_Mailbox_TakeItems")
+    end
+    return PZLinuxGetText("IGUI_PZLinux_Mailbox_Check")
+end
+
 -- CONSTRUCTOR
 function StreetMailBoxUI:new(x, y, width, height, player, mailboxObject)
     local o = ISPanel:new(x, y, width, height)
@@ -34,27 +47,27 @@ function StreetMailBoxUI:showLoginMenu()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(_x, _y)
-        self.parent.isDragging = true
-        self.parent.initialX = self.parent:getX()
-        self.parent.initialY = self.parent:getY()
-        self.parent.mouseStartX = getMouseX()
-        self.parent.mouseStartY = getMouseY()
+    function self.topBar.onMouseDown(topBar, _x, _y)
+        topBar.parent.isDragging = true
+        topBar.parent.initialX = topBar.parent:getX()
+        topBar.parent.initialY = topBar.parent:getY()
+        topBar.parent.mouseStartX = getMouseX()
+        topBar.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(_x, _y)
-        if self.parent.isDragging then
+    function self.topBar.onMouseMove(topBar, _x, _y)
+        if topBar.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
-            local dx = curMouseX - self.parent.mouseStartX
-            local dy = curMouseY - self.parent.mouseStartY
-            self.parent:setX(self.parent.initialX + dx)
-            self.parent:setY(self.parent.initialY + dy)
+            local dx = curMouseX - topBar.parent.mouseStartX
+            local dy = curMouseY - topBar.parent.mouseStartY
+            topBar.parent:setX(topBar.parent.initialX + dx)
+            topBar.parent:setY(topBar.parent.initialY + dy)
         end
     end
 
-    function self.topBar:onMouseUp(_x, _y)
-        self.parent.isDragging = false
+    function self.topBar.onMouseUp(topBar, _x, _y)
+        topBar.parent.isDragging = false
     end
 
     self.titleLabel = ISLabel:new(self.width * 0.225, self.width * 0.43, self.width * 0.1, "", 0.8, 1, 0.8, 1, UIFont.Small, true)
@@ -62,28 +75,47 @@ function StreetMailBoxUI:showLoginMenu()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    self.closeButton = ISButton:new(self.width * 0.443, self.height * 0.467, self.width * 0.1, self.height * 0.055, "LEAVE", self, self.onClose)
+    self.closeButton = ISButton:new(self.width * 0.443, self.height * 0.467, self.width * 0.1, self.height * 0.055, PZLinuxGetText("IGUI_PZLinux_Mailbox_Leave"), self, self.onClose)
     self.closeButton.backgroundColor = {r=0.5, g=0.5, b=0.5, a=1}
     self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    local loginButtonName = "SEND/TAKE THE PACKAGE"
-    self.loginButton = ISButton:new(self.width * 0.195, self.height * 0.375, self.width * 0.6, self.height * 0.027, loginButtonName, self, self.onSendPackage)
+    self.loginButton = ISButton:new(self.width * 0.195, self.height * 0.375, self.width * 0.6, self.height * 0.027, PZLinuxGetText("IGUI_PZLinux_Mailbox_Check"), self, self.onSendPackage)
     self.loginButton:setVisible(true)
+    self.loginButton:setEnable(false)
     self.loginButton:initialise()
     self.topBar:addChild(self.loginButton)
+    self:refreshActionState()
+end
+
+function StreetMailBoxUI:refreshActionState()
+    if not self.loginButton or self.isClosing then return end
+    self.loginButton:setEnable(false)
+    PZLinuxRequestMailboxActionState(self.player, self.mailbox, function(result)
+        if self.isClosing or not self.loginButton then return end
+        self.loginButton:setTitle(PZLinuxStreetMailBoxActionText(result and result.ok and result or nil))
+        self.loginButton:setEnable(true)
+    end)
 end
 
 function StreetMailBoxUI:onSendPackage()
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
+    self.loginButton:setEnable(false)
+    local pendingActions = 4
+    local function PZLinuxStreetMailBoxActionFinished()
+        pendingActions = pendingActions - 1
+        if pendingActions <= 0 then self:refreshActionState() end
+    end
+
     PZLinuxRequestDarkWebRedeemSales(playerObj, self.mailbox, function(result)
         if result and result.ok and result.amount and result.amount > 0 then
             saveAtmBalance(result.balance, playerObj)
             HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.amount) .. " transferred to your bank account")
         end
+        PZLinuxStreetMailBoxActionFinished()
     end)
 
     PZLinuxRequestDarkWebDeliverOrders(playerObj, self.mailbox, function(result)
@@ -94,12 +126,14 @@ function StreetMailBoxUI:onSendPackage()
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Dark web order delivered")
         end
+        PZLinuxStreetMailBoxActionFinished()
     end)
 
     PZLinuxRequestContractDeposit(playerObj, self.mailbox, function(result)
         if result and result.ok and result.removed and result.removed > 0 then
             HaloTextHelper.addGoodText(playerObj, "Contract package sent")
         end
+        PZLinuxStreetMailBoxActionFinished()
     end)
 
     PZLinuxRequestDeliver(playerObj, self.mailbox, function(result)
@@ -110,6 +144,7 @@ function StreetMailBoxUI:onSendPackage()
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Request package delivered")
         end
+        PZLinuxStreetMailBoxActionFinished()
     end)
 
 end
@@ -180,7 +215,7 @@ function StreetMailBoxMenu_OnUse(obj, player, x, y, z, sprite)
     if not playerObj then return end
 
     local playerSquare = playerObj:getSquare()
-    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
+    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
         local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
             ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))

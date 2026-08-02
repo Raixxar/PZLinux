@@ -13,7 +13,7 @@ function ISPZLinuxAction:update()
     self.character:faceThisObject(self.item)
     local modData = self.character:getModData()
 
-    if modData.PZLinuxUIOpenMenu == 1 then 
+    if modData.PZLinuxUIOpenMenu == 1 then
         self.ui = linuxMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
     end
@@ -60,6 +60,11 @@ function ISPZLinuxAction:update()
 
     if modData.PZLinuxUIOpenMenu == 10 then
         self.ui = mailMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
+
+    if modData.PZLinuxUIOpenMenu == 11 then
+        self.ui = reputationMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
     end
 
