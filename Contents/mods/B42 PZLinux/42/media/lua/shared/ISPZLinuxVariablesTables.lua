@@ -3356,10 +3356,11 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     return true, zombie, square, spawnMethod
 end
 
-local function PZLinuxContractsFindTaggedZombie(contractWorldId, objectiveType)
-    if not getCell then return nil end
+local function PZLinuxContractsFindTaggedZombies(contractWorldId, objectiveType)
+    local matches = {}
+    if not getCell then return matches end
     local zombies = getCell():getZombieList()
-    if not zombies then return nil end
+    if not zombies then return matches end
 
     for index = 0, zombies:size() - 1 do
         local zombie = zombies:get(index)
@@ -3367,10 +3368,10 @@ local function PZLinuxContractsFindTaggedZombie(contractWorldId, objectiveType)
         and (not zombie.isDead or not zombie:isDead())
         and tostring(PZLinuxContractsGetEntityContractId(zombie) or "") == tostring(contractWorldId or "")
         and PZLinuxContractsGetEntityObjective(zombie) == objectiveType then
-            return zombie
+            table.insert(matches, zombie)
         end
     end
-    return nil
+    return matches
 end
 
 local function PZLinuxContractsCountTaggedZombies(contractWorldId, objectiveType)
@@ -3393,35 +3394,34 @@ end
 
 local function PZLinuxContractsEnsureManhuntZombie(record)
     if not record then return false, 0 end
-    local existingZombie = PZLinuxContractsFindTaggedZombie(record.id, "manhunt")
-    if existingZombie then
-        local existingData = existingZombie:getModData()
-        local existingVersion = tonumber(existingData.PZLinuxManhuntVersion) or 0
-        local distanceFromTarget = math.max(
-            math.abs(existingZombie:getX() - (tonumber(record.locationX) or 0)),
-            math.abs(existingZombie:getY() - (tonumber(record.locationY) or 0))
+    local existingTargets = PZLinuxContractsFindTaggedZombies(record.id, "manhunt")
+    local existingZombie
+    local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
+    for _, candidate in ipairs(existingTargets) do
+        local candidateData = candidate:getModData()
+        local candidateDistance = math.max(
+            math.abs(candidate:getX() - (tonumber(record.locationX) or 0)),
+            math.abs(candidate:getY() - (tonumber(record.locationY) or 0))
         )
-        local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
-        local existingOnlineId = PZLinuxContractsGetZombieOnlineId(existingZombie)
-        local requiresOnlineId = isServer and isServer()
-        local isNetworkReady = not requiresOnlineId or existingOnlineId >= 0
-        if existingVersion == PZLinuxManhuntTargetVersion
-        and distanceFromTarget <= searchRadius
-        and isNetworkReady then
-            PZLinuxContractsConfigureManhuntZombie(existingZombie)
-            print("[PZLinux Manhunt][server] reused network target v3 onlineId="
-                .. tostring(existingOnlineId)
-                .. " at " .. tostring(existingZombie:getX()) .. ","
-                .. tostring(existingZombie:getY()) .. "," .. tostring(existingZombie:getZ())
-                .. " contract=" .. tostring(record.id))
-            return true, 0, existingZombie:getX(), existingZombie:getY(), existingZombie:getZ(),
-                existingOnlineId
+        if not existingZombie
+        and tonumber(candidateData.PZLinuxManhuntVersion) == PZLinuxManhuntTargetVersion
+        and candidateDistance <= searchRadius then
+            existingZombie = candidate
+        else
+            PZLinuxContractsRemoveWorldEntity(candidate)
         end
-        PZLinuxContractsRemoveWorldEntity(existingZombie)
-        print("[PZLinux Manhunt][server] replaced invalid target version="
-            .. tostring(existingVersion) .. " distance=" .. tostring(math.floor(distanceFromTarget))
-            .. " onlineId=" .. tostring(existingOnlineId)
+    end
+    if existingZombie then
+        local existingOnlineId = PZLinuxContractsGetZombieOnlineId(existingZombie)
+        PZLinuxContractsConfigureManhuntZombie(existingZombie)
+        print("[PZLinux Manhunt][server] reused canonical target v3 onlineId="
+            .. tostring(existingOnlineId)
+            .. " removedDuplicates=" .. tostring(math.max(0, #existingTargets - 1))
+            .. " at " .. tostring(existingZombie:getX()) .. ","
+            .. tostring(existingZombie:getY()) .. "," .. tostring(existingZombie:getZ())
             .. " contract=" .. tostring(record.id))
+        return true, 0, existingZombie:getX(), existingZombie:getY(), existingZombie:getZ(),
+            existingOnlineId
     end
     local created, zombie, square, spawnMethod = PZLinuxContractsSpawnZombieAt(
         record.locationX,
@@ -3564,6 +3564,35 @@ function PZLinuxContractsValidateCanonicalInteraction(player, record, targetRef,
     )
     if distance > 5 then return nil, "wrong_contract_location" end
     return object, nil
+end
+
+local function PZLinuxContractsFindManhuntRecordForBody(body)
+    if not body or not body.getSquare then return nil end
+    local square = body:getSquare()
+    if not square then return nil end
+
+    local taggedRecord = PZLinuxContractsGetWorldContract(PZLinuxContractsGetEntityContractId(body))
+    if taggedRecord
+    and tonumber(taggedRecord.contractId) == 3
+    and PZLinuxContractsIsRecordStatus(taggedRecord, "target_down") then
+        return taggedRecord
+    end
+
+    local worldData = PZLinuxContractsGetWorldData()
+    for _, record in pairs(worldData.active or {}) do
+        if tonumber(record.contractId) == 3
+        and PZLinuxContractsIsRecordStatus(record, "target_down") then
+            local targetX = tonumber(record.targetDeathX) or tonumber(record.locationX) or 0
+            local targetY = tonumber(record.targetDeathY) or tonumber(record.locationY) or 0
+            local targetZ = tonumber(record.targetDeathZ) or tonumber(record.locationZ) or 0
+            local distance = math.max(
+                math.abs(square:getX() - targetX),
+                math.abs(square:getY() - targetY)
+            )
+            if square:getZ() == targetZ and distance <= 2 then return record end
+        end
+    end
+    return nil
 end
 
 function PZLinuxContractsRemoveWorldEntity(entity)
@@ -3720,6 +3749,9 @@ function PZLinuxContractsApplyServerZombieDeath(zombie)
     if taggedRecord and objectiveType == "manhunt" and PZLinuxContractsIsRecordStatus(taggedRecord, "spawned") then
         taggedRecord.status = "target_down"
         taggedRecord.targetKilled = true
+        taggedRecord.targetDeathX = zombie:getX()
+        taggedRecord.targetDeathY = zombie:getY()
+        taggedRecord.targetDeathZ = zombie:getZ()
         taggedRecord.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or taggedRecord.updatedHour
         PZLinuxContractsSyncRecordToParticipants(taggedRecord)
         changed = true
@@ -3876,10 +3908,10 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     elseif eventName == "decapitate" then
         local body, targetError = PZLinuxValidateWorldInteraction(playerObj, args.target, "body", 2)
         if targetError then return reject(targetError) end
-        contractWorldId = PZLinuxContractsGetEntityContractId(body)
-        worldRecord = PZLinuxContractsGetWorldContract(contractWorldId)
-        if not worldRecord or tonumber(worldRecord.contractId) ~= 3 or PZLinuxContractsGetEntityObjective(body) ~= "manhunt" then return reject("invalid_contract_target") end
-        if not PZLinuxContractsIsRecordStatus(worldRecord, "target_down") then return reject("invalid_contract_state") end
+        if body.isZombie and not body:isZombie() then return reject("invalid_contract_target") end
+        worldRecord = PZLinuxContractsFindManhuntRecordForBody(body)
+        if not worldRecord then return reject("invalid_contract_target") end
+        contractWorldId = worldRecord.id
         PZLinuxContractsSyncWorldRecordToPlayer(playerObj, worldRecord)
         if not PZLinuxContractsGiveMailCorpseBag(playerObj, "Cut target", worldRecord.id) then return reject("item_creation_failed") end
         PZLinuxContractsRemoveWorldEntity(body)

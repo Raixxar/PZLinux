@@ -125,9 +125,15 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   radius and returned the authoritative spawn coordinates for MP diagnostics.
 - Reworked Manhunt spawning as a three-stage fallback which prefers the native
   `addZombieSitting` helper, then the population outfit helper and finally direct
-  creation. The server no longer reuses a target with an invalid multiplayer
-  `onlineId`, v2 targets migrate to v3, and server/client logs expose every spawn
-  method and rejection while the client retries until the target is visible.
+  creation. B42.20 can replicate a visible target while retaining `onlineId=-1`,
+  so v3 targets are also matched by their server-confirmed spawn position. The
+  server keeps one canonical target, removes duplicate retries, and logs every
+  spawn method and rejection.
+- Made Manhunt corpse validation independent from unreliable corpse ModData in
+  multiplayer: the server records the canonical target death position and only
+  accepts a zombie body at that position while the contract is `target_down`.
+- Restricted package-context diagnostics to package contracts so Manhunt right
+  clicks no longer flood the client log with misleading `option missing` lines.
 - Added a once-per-second world-objective recovery poll for Manhunt, Cargo,
   Protect and requested vehicles. Manhunt now waits for its client chunk before
   requesting creation, and retries continue even after the player stops moving.

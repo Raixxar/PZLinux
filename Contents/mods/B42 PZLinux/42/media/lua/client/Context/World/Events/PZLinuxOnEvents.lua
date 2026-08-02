@@ -35,12 +35,15 @@ local function PZLinuxCanRequestContractRestore(requests, player, cooldown)
     return true
 end
 
-local function PZLinuxFindVisibleManhuntTarget(modData, expectedOnlineId)
+local function PZLinuxFindVisibleManhuntTarget(modData, expectedState)
     if not getCell then return nil end
     local zombies = getCell():getZombieList()
     if not zombies then return nil end
     local contractWorldId = tostring(modData.PZLinuxContractId or "")
-    local onlineId = tonumber(expectedOnlineId) or -1
+    local onlineId = tonumber(expectedState and expectedState.onlineId) or -1
+    local spawnX = tonumber(expectedState and expectedState.x)
+    local spawnY = tonumber(expectedState and expectedState.y)
+    local spawnZ = tonumber(expectedState and expectedState.z)
 
     for index = 0, zombies:size() - 1 do
         local zombie = zombies:get(index)
@@ -51,7 +54,12 @@ local function PZLinuxFindVisibleManhuntTarget(modData, expectedOnlineId)
             and tostring(data.PZLinuxContractId or "") == contractWorldId
             and data.PZLinuxContractObjective == "manhunt"
             and tonumber(data.PZLinuxManhuntVersion) == 3
-        if zombie and (not zombie.isDead or not zombie:isDead()) and (matchesNetworkId or matchesTag) then
+        local matchesConfirmedPosition = spawnX and spawnY and spawnZ
+            and math.abs(zombie:getX() - spawnX) <= 2
+            and math.abs(zombie:getY() - spawnY) <= 2
+            and math.abs(zombie:getZ() - spawnZ) <= 0.1
+        if zombie and (not zombie.isDead or not zombie:isDead())
+        and (matchesNetworkId or matchesTag or matchesConfirmedPosition) then
             return zombie
         end
     end
@@ -73,13 +81,18 @@ local function checkAndSpawnZombie(player)
         ) or nil
         if dist < 50 and not targetSquare then return end
         local targetState = PZLinuxManhuntTargetState[playerKey]
-        if dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState and targetState.onlineId) then
+        if dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState) then
             return
         end
         if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
             PZLinuxRequestContractWorldEvent(player, "spawnManhunt", {}, function(result)
                 if result and result.ok then
-                    PZLinuxManhuntTargetState[playerKey] = { onlineId = result.spawnEntityId }
+                    PZLinuxManhuntTargetState[playerKey] = {
+                        onlineId = result.spawnEntityId,
+                        x = tonumber(result.spawnX) or tonumber(x),
+                        y = tonumber(result.spawnY) or tonumber(y),
+                        z = tonumber(result.spawnZ) or tonumber(z),
+                    }
                     print("[PZLinux Manhunt] server confirmed target at "
                         .. tostring(result.spawnX or x) .. ","
                         .. tostring(result.spawnY or y) .. ","

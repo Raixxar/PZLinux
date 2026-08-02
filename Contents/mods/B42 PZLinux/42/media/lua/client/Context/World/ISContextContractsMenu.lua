@@ -63,7 +63,7 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     local packageSameZ = playerSquare and targetZ and playerSquare:getZ() == targetZ
     if packageReady and packageDistance <= packageRadius and packageSameZ then
         context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_TakeContractPackage"), nil, completeContractMenu_OnUse, player)
-    elseif tonumber(modData.PZLinuxActiveContract) == 1 and packageDistance <= 100 then
+    elseif packageReady and packageDistance <= 100 then
         print("[PZLinux Contracts Context] option missing"
             .. " active=" .. tostring(modData.PZLinuxActiveContract)
             .. " type=" .. tostring(modData.PZLinuxContractTypeId)

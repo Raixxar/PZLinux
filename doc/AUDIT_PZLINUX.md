@@ -550,11 +550,14 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
 - [ ] 3 - Eliminate the target : cible serveur de nouveau assise et immobilisee,
   recherche de case libre elargie. La cible v3 utilise en priorite le helper natif
-  `addZombieSitting`, puis deux methodes de repli. En MP, une cible sans `onlineId`
-  valide n'est plus acceptee ni reutilisee comme un faux succes. Des diagnostics
-  serveur/client couvrent maintenant chaque demande, rejet et methode de spawn.
+  `addZombieSitting`, puis deux methodes de repli. Les tests B42.20 MP ont montre
+  qu'une cible visible peut conserver `onlineId=-1` : elle est donc reconnue par
+  ses coordonnees confirmees et reutilisee, tandis que les doublons sont supprimes.
+  Des diagnostics serveur/client couvrent chaque demande, rejet et methode de spawn.
   La restauration attend que le chunk client soit charge et est relancee chaque
-  seconde meme si le joueur s'arrete apres son arrivee sur place ;
+  seconde meme si le joueur s'arrete apres son arrivee sur place. A la mort, le
+  serveur memorise la position de la cible afin que la decapitation reste valide
+  meme si les tags ne sont pas recopies sur le cadavre en MP ;
   re-test visuel, mort et decoupe en MP requis.
 - [x] 4 - Collect zombie blood.
 - [x] 5 - Send automobile parts.
