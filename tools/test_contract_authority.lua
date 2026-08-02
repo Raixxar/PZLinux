@@ -120,6 +120,8 @@ PZLinuxTestAssert(syncBlock and syncBlock:find('record.status == "completed"'),
     "completed world-contract history must not be restored as an active player contract")
 PZLinuxTestAssert(syncBlock and syncBlock:find('record.status == "cancelled"'),
     "cancelled world-contract history must not be restored as an active player contract")
+PZLinuxTestAssert(syncBlock and syncBlock:find("completionReceipt = pzlinux%.contracts"),
+    "contract synchronization must expose a persistent unread completion receipt")
 local linuxMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextLinuxMenu.lua")
 local closeBlock = linuxMenu:match("function linuxUI:onCloseX.-\nend")
 PZLinuxTestAssert(closeBlock and closeBlock:find("PZLinuxRequestContractSync"),
@@ -171,6 +173,20 @@ PZLinuxTestAssert(stateRenderBlock and stateRenderBlock:find("activeContract == 
     "the contracts UI must expose payment for a server-completed contract")
 PZLinuxTestAssert(stateRenderBlock and stateRenderBlock:find("PZLinuxRequestContractsBoard"),
     "the contracts UI may request fresh offers only after checking synchronized active state")
+PZLinuxTestAssert(contractsUi:find("PZLinuxContractsShowCompletionReceipt"),
+    "the contracts UI must render the authoritative completion receipt")
+PZLinuxTestAssert(contractsUi:find("PZLinuxRequestContractCompletionAck"),
+    "the completion receipt must be acknowledged only after rendering")
+PZLinuxTestAssert(variables:find("pzlinux%.contracts%.pendingCompletion = completionReceipt"),
+    "the server must persist a completion receipt before clearing contract state")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsAcknowledgeCompletion"),
+    "the server must expose a receipt acknowledgement validator")
+local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
+PZLinuxTestAssert(serverCommands:find(
+    "PZLinuxContractCompletionAck = PZLinuxServerContractCompletionAck",
+    1,
+    true
+), "the prefixed completion-receipt acknowledgement command must be registered")
 local initialiseBlock = contractsUi:match("function contractsUI:initialise.-\nend\n\nfunction contractsUI:onCancelContract")
 PZLinuxTestAssert(initialiseBlock and initialiseBlock:find("PZLinuxRequestContractSync"),
     "opening the contracts UI must synchronize with the server before rendering")

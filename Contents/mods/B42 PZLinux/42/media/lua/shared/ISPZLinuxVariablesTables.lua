@@ -1056,6 +1056,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxContractCancelResult"
         or command == "PZLinuxContractDepositResult"
         or command == "PZLinuxContractCompleteResult"
+        or command == "PZLinuxContractCompletionAckResult"
         or command == "PZLinuxContractWorldEventResult"
         or command == "PZLinuxRequestOrderResult"
         or command == "PZLinuxRequestDeliverResult"
@@ -2066,7 +2067,7 @@ function PZLinuxContractsGetActiveState(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
-    local modData = playerObj:getModData()
+    local modData, pzlinux = PZLinuxGetModData(playerObj)
     local worldData = PZLinuxContractsGetWorldData()
     local playerKey = PZLinuxGetPlayerKey(playerObj)
     local worldContractId = modData.PZLinuxContractId
@@ -2118,6 +2119,8 @@ function PZLinuxContractsGetActiveState(player, requestId)
         contractWeapon = modData.PZLinuxContractWeapon,
         contractSendComputer = modData.PZLinuxContractSendComputer,
         contractSendFridge = modData.PZLinuxContractSendFridge,
+        completionReceipt = pzlinux.contracts and pzlinux.contracts.pendingCompletion or nil,
+        balance = PZLinuxLoadBankBalance(playerObj),
     }
 end
 
@@ -2541,10 +2544,25 @@ function PZLinuxContractsApplyComplete(player, _state, requestId)
     local zombieCount = PZLinuxNormalizeMoney(modData.PZLinuxOnZombieDead)
     local reward = PZLinuxNormalizeMoney(modData.PZLinuxOnReward)
     local moneyEarned = reward + zombieCount * 5
+    local completedContractTypeId = tonumber(modData.PZLinuxContractTypeId) or 0
     local credit = PZLinuxApplyBankCredit(playerObj, moneyEarned, "contract-complete", requestId)
     if not credit.ok then return credit end
 
     local completedWorldContractId = modData.PZLinuxContractId
+    local completionReceiptId = completedWorldContractId
+    if not completionReceiptId or completionReceiptId == "" then
+        completionReceiptId = "legacy:" .. tostring(requestId)
+    end
+    pzlinux.contracts = pzlinux.contracts or {}
+    local completionReceipt = {
+        id = tostring(completionReceiptId),
+        worldContractId = completedWorldContractId,
+        contractId = completedContractTypeId,
+        amount = moneyEarned,
+        zombieCount = zombieCount,
+        completedHour = getGameTime and getGameTime():getWorldAgeHours() or 0,
+    }
+    pzlinux.contracts.pendingCompletion = completionReceipt
     PZLinuxContractsUpdateCompanyPrice(modData.PZLinuxContractCompanyUp, "up")
     PZLinuxContractsMarkWorldContract(completedWorldContractId, "completed", playerObj)
     PZLinuxContractsRemoveContractNote(playerObj)
@@ -2560,9 +2578,24 @@ function PZLinuxContractsApplyComplete(player, _state, requestId)
         zombieCount = zombieCount,
         balance = PZLinuxLoadBankBalance(playerObj),
         reputation = pzlinux.player.reputation,
-        worldContractId = completedWorldContractId,
+        completionReceipt = completionReceipt,
         tradingSnapshot = PZLinuxTradingBuildSnapshot(playerObj),
     }
+end
+
+function PZLinuxContractsAcknowledgeCompletion(player, receiptId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    pzlinux.contracts = pzlinux.contracts or {}
+    local receipt = pzlinux.contracts.pendingCompletion
+    if receipt and tostring(receipt.id) ~= tostring(receiptId or "") then
+        return { ok = false, error = "receipt_mismatch", requestId = requestId }
+    end
+    pzlinux.contracts.pendingCompletion = nil
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, receiptId = receiptId }
 end
 
 function PZLinuxApplyReputationDelta(player, amount)
@@ -3062,6 +3095,17 @@ function PZLinuxRequestContractComplete(player, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxContractsApplyComplete(player, state, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractCompletionAck(player, receiptId, callback)
+    local requestId = PZLinuxNextRequestId("contract-completion-ack")
+    PZLinuxRegisterCallback(requestId, callback)
+    local state = { requestId = requestId, receiptId = tostring(receiptId or "") }
+    if PZLinuxSendClientCommand("PZLinuxContractCompletionAck", state) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsAcknowledgeCompletion(player, state.receiptId, requestId))
     return requestId
 end
 

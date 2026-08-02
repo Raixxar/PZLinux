@@ -265,6 +265,16 @@ local function PZLinuxServerContractComplete(player, args)
     end)
 end
 
+local function PZLinuxServerContractCompletionAck(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxContractCompletionAck", args, "PZLinuxContractCompletionAckResult", function()
+        return PZLinuxContractsAcknowledgeCompletion(
+            player,
+            args and args.receiptId,
+            args and args.requestId
+        )
+    end)
+end
+
 local function PZLinuxServerContractWorldEvent(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractWorldEvent", args, "PZLinuxContractWorldEventResult", function()
         return PZLinuxContractsApplyWorldEvent(player, args and args.event, args, args and args.requestId)
@@ -367,6 +377,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxContractCancel = PZLinuxServerContractCancel,
     PZLinuxContractDeposit = PZLinuxServerContractDeposit,
     PZLinuxContractComplete = PZLinuxServerContractComplete,
+    PZLinuxContractCompletionAck = PZLinuxServerContractCompletionAck,
     PZLinuxContractWorldEvent = PZLinuxServerContractWorldEvent,
     PZLinuxRequestOrder = PZLinuxServerRequestOrder,
     PZLinuxRequestDeliver = PZLinuxServerRequestDeliver,

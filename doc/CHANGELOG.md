@@ -102,6 +102,8 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   synchronized to the owning client.
 - Made contract completion feedback idempotent so repeated context-menu opening
   cannot replay rewards, sounds or mood effects.
+- Added persistent unread contract-payment receipts, acknowledged only after the
+  Contracts UI displays the authoritative reward amount.
 - Added a 5% reward modifier per absolute Z level for elevated and underground
   mission objectives.
 - Removed the legacy `RetrievePackage.lua` implementation.

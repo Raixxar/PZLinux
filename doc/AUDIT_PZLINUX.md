@@ -187,7 +187,7 @@ Modules partages deja extraits :
 | Contrats board | Oui | Board global serveur | Global ModData | Rotation/concurrence live |
 | Contrats preview/accept | Oui | Mission canonique serveur | Cache + World ModData | Reconnexion et offre prise par autre joueur |
 | Objectifs contrats | Oui | Entites/tags/proximite serveur | Monde + Global ModData | Streaming chunk et vol live |
-| Completion contrats | Oui | Reward et reputation serveur | Player + World ModData | Crash consistency et commandes forgees live |
+| Completion contrats | Oui | Reward, reputation et recu serveur | Player + World ModData | Crash consistency et affichage MP live |
 | Requests items | Oui | Prix/debit/livraison serveur | Pending Player ModData | Reconnexion/double clic live |
 | Requests vehicules | Oui | Spawn serveur | Pending puis monde | Chunk indisponible/double spawn live |
 | Mails | Oui | Generation/retrait/reward serveur | Player ModData | Equilibrage reward et traductions |

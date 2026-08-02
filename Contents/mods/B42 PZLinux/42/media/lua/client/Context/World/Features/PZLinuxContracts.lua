@@ -17,6 +17,52 @@ local function PZLinuxContractsText(key, fallback, ...)
     return fallback
 end
 
+local function PZLinuxContractsShowCompletionReceipt(self, receipt)
+    if not self or type(receipt) ~= "table" or not receipt.id then return false end
+
+    local lines = {
+        PZLinuxContractsText(
+            "IGUI_PZLinux_Contracts_CompletionPaid",
+            "You have been paid for your contract."
+        ),
+        PZLinuxContractsText(
+            "IGUI_PZLinux_Contracts_CompletionAmount",
+            "Total money earned: $%s",
+            tostring(receipt.amount or 0)
+        ),
+    }
+    if (tonumber(receipt.zombieCount) or 0) > 0 then
+        table.insert(lines, PZLinuxContractsText(
+            "IGUI_PZLinux_Contracts_CompletionZombies",
+            "Total zombies killed: %s",
+            tostring(receipt.zombieCount)
+        ))
+    end
+
+    self.completeContractMessage = ISRichTextPanel:new(
+        self.width * 0.20,
+        self.height * 0.28,
+        self.width * 0.57,
+        self.height * 0.20
+    )
+    self.completeContractMessage.backgroundColor = {r=0, g=0, b=0, a=0}
+    self.completeContractMessage.borderColor = {r=0, g=0, b=0, a=0}
+    self.completeContractMessage.autosetheight = false
+    self.completeContractMessage.text = "<RGB:0,1,0>" .. table.concat(lines, "<LINE>")
+    self.completeContractMessage:initialise()
+    self.completeContractMessage:instantiate()
+    self.completeContractMessage:paginate()
+    self.topBar:addChild(self.completeContractMessage)
+
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if playerObj then
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    end
+    PZLinuxRequestContractCompletionAck(self.player, receipt.id)
+    return true
+end
+
 local function PZLinuxContractsStopDialogue(self)
     if self.contractDialogueRegistered and self.contractDialogueEvent and self.updateCoroutineFunc then
         self.contractDialogueEvent.Remove(self.updateCoroutineFunc)
@@ -86,7 +132,7 @@ function contractsUI:showContractsBoard()
     end
 end
 
-function contractsUI:showSynchronizedContractState()
+function contractsUI:showSynchronizedContractState(synchronizedState)
     if self.isClosing or self.contractStateRendered then return end
     self.contractStateRendered = true
 
@@ -94,6 +140,21 @@ function contractsUI:showSynchronizedContractState()
     if not playerObj then return end
     local modData = playerObj:getModData()
     local activeContract = tonumber(modData.PZLinuxActiveContract) or 0
+
+    if synchronizedState and synchronizedState.balance then
+        saveAtmBalance(synchronizedState.balance, self.player)
+        self.titleLabel:setName(PZLinuxContractsText(
+            "IGUI_PZLinux_Request_Balance",
+            "Bank Balance: $%s",
+            tostring(synchronizedState.balance)
+        ))
+    end
+    if synchronizedState and PZLinuxContractsShowCompletionReceipt(
+        self,
+        synchronizedState.completionReceipt
+    ) then
+        return
+    end
 
     if activeContract == 1 then
         local logging = ""
@@ -208,8 +269,8 @@ function contractsUI:initialise()
     self.topBar:addChild(self.closeButton)
 
     self.contractStateRendered = false
-    PZLinuxRequestContractSync(self.player, function()
-        self:showSynchronizedContractState()
+    PZLinuxRequestContractSync(self.player, function(result)
+        self:showSynchronizedContractState(result)
     end)
 end
 
@@ -271,19 +332,12 @@ function contractsUI:onContractComplete()
     end
 
     PZLinuxRequestContractComplete(self.player, function(result)
-        if not result or not result.ok then return end
+        if self.isClosing or not result or not result.ok then return end
 
         saveAtmBalance(result.balance, playerObj)
         self.titleLabel:setName(PZLinuxContractsText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", tostring(result.balance)))
 
-        local logMessage = "You have been paid for your contract.\nTotal zombies killed: " .. tostring(result.zombieCount or 0) .. "\nTotal money earned: $" .. tostring(result.amount or 0)
-        self.completeContractMessage = ISLabel:new(self.width * 0.20, self.height * 0.30, self.height * 0.025, logMessage, 0, 1, 0, 1, UIFont.Small, true)
-        self.completeContractMessage:setVisible(true)
-        self.completeContractMessage:initialise()
-        self.topBar:addChild(self.completeContractMessage)
-
-        local globalVolume = getCore():getOptionSoundVolume() / 50
-        getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        PZLinuxContractsShowCompletionReceipt(self, result.completionReceipt or result)
     end)
 end
 
