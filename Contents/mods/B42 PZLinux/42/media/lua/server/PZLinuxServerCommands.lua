@@ -133,21 +133,21 @@ local function PZLinuxServerBlackjackStand(player, args)
     end)
 end
 
-local function PZLinuxServerRaceCard(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxRaceCard", args, "PZLinuxRaceCardResult", function()
-        return PZLinuxRaceCreateCard(player, args and args.requestId)
+local function PZLinuxServerRaceSchedule(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxRaceSchedule", args, "PZLinuxRaceScheduleResult", function()
+        return PZLinuxRaceScheduleSnapshot(player, args and args.requestId)
     end)
 end
 
-local function PZLinuxServerRaceStart(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxRaceStart", args, "PZLinuxRaceStartResult", function()
-        return PZLinuxRaceStart(player, args and args.selectedRunner, args and args.amount, args and args.requestId)
-    end)
-end
-
-local function PZLinuxServerRaceFinish(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxRaceFinish", args, "PZLinuxRaceFinishResult", function()
-        return PZLinuxRaceFinish(player, args and args.raceId, args and args.requestId)
+local function PZLinuxServerRaceScheduleBet(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxRaceScheduleBet", args, "PZLinuxRaceScheduleResult", function()
+        return PZLinuxRaceSchedulePlaceBet(
+            player,
+            args and args.raceId,
+            args and args.selectedRunner,
+            args and args.amount,
+            args and args.requestId
+        )
     end)
 end
 
@@ -346,9 +346,8 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxBlackjackStart = PZLinuxServerBlackjackStart,
     PZLinuxBlackjackHit = PZLinuxServerBlackjackHit,
     PZLinuxBlackjackStand = PZLinuxServerBlackjackStand,
-    PZLinuxRaceCard = PZLinuxServerRaceCard,
-    PZLinuxRaceStart = PZLinuxServerRaceStart,
-    PZLinuxRaceFinish = PZLinuxServerRaceFinish,
+    PZLinuxRaceSchedule = PZLinuxServerRaceSchedule,
+    PZLinuxRaceScheduleBet = PZLinuxServerRaceScheduleBet,
     PZLinuxPokerStart = PZLinuxServerPokerStart,
     PZLinuxPokerAction = PZLinuxServerPokerAction,
     PZLinuxPokerCashOut = PZLinuxServerPokerCashOut,
@@ -410,7 +409,9 @@ local function PZLinuxServerForEachOnlinePlayer(callback)
 end
 
 Events.EveryTenMinutes.Add(function()
+    PZLinuxRaceScheduleTick()
     PZLinuxServerForEachOnlinePlayer(function(playerObj)
+        PZLinuxRaceScheduleProcessPlayer(playerObj)
         PZLinuxApplyReputationDecay(playerObj, 0.001)
         if isServer and isServer() then
             PZLinuxMailTickPlayer(playerObj)

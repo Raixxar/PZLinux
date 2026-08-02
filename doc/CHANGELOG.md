@@ -126,6 +126,21 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   green color.
 - Replaced Zombie Race progress text with moving runner icons and delayed payout
   until the animation reaches the finish.
+- Restored the continuous Zombie Race speed formula, removed finish-position tie
+  bias and replaced fixed odds with a server-authoritative pari-mutuel pool.
+- Added 80-200 virtual bettors, proportional payout sharing, a configurable 15%
+  pool commission, estimated multipliers and a per-card maximum player bet.
+- Added 4% server liquidity to each Zombie Race prize pool and restored
+  fractional `N/1` odds: final 25/1 odds return the stake plus 25 times its value.
+- Replaced unlimited instant Zombie Races with five shared server departures per
+  in-game day at 08:00, 10:00, 12:00, 14:00 and 16:00.
+- Added persistent scheduled tickets, multiple advance bets, automatic server
+  settlement while the UI is closed and a compact latest-result recap.
+- Added automatic cleanup for settled races while retaining races with unpaid
+  offline tickets.
+- Added a shared Sunday 16:00 super jackpot race with 500-1,000 virtual bettors
+  and $50,000 of post-commission server liquidity, capped at one $500 ticket per
+  player to contain its deliberately positive promotional return.
 - Removed the obsolete SFX toggle from computer interfaces.
 - Reworked the ATM layout to show ATM cash and player balance without overlap.
 
@@ -173,11 +188,39 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 
 - Split static configuration and domain data into modules for economy, Dark Web,
   Trading, requests, contracts, mission locations, mail, gambling and Poker.
+- Centralized the Trading initialization and refresh wrappers in shared runtime
+  code, removing client redefinitions and Lua load-order dependent behavior.
 - Kept existing public table and helper names where required for save, UI and
   server compatibility.
 - Prefixed sensitive network commands and results with `PZLinux`.
 - Added Project Zomboid-aware LuaCheck configuration and removed the unsafe
   undefined-global warning class from the migration backlog.
+- Removed the 12 remaining W211 unused-local warnings from Condition, Dark Web
+  and Mail without changing runtime behavior; LuaCheck now reports 98 warnings
+  and 0 errors.
+- Fixed the Wallet W411 local-variable redefinition by assigning distinct names
+  to the Quantity and Price column controls; LuaCheck now reports 97 warnings and
+  0 errors.
+- Removed the unused Mail layout assignment reported as W311 without changing
+  list positioning; LuaCheck now reports 96 warnings and 0 errors.
+- Removed both W431 upvalue shadowing cases. Mail now distinguishes its header
+  coordinate from mouse coordinates, and the Wallet chart captures the explicit
+  UI player instead of resolving player zero implicitly; LuaCheck now reports 94
+  warnings and 0 errors.
+- Removed all 20 whitespace-only W611 warnings and all 4 comment-whitespace W614
+  warnings without changing W613 dialogue strings; LuaCheck now reports 70
+  warnings and 0 errors.
+- Added cross-platform live log monitoring with a native Windows PowerShell
+  watcher and automatic `/pz-logs` detection for Windows-hosted dev containers.
+- Extracted the authoritative Zombie Race card, winner and payout calculations to
+  a shared pure Lua engine, then added a reproducible balance simulator and
+  Markdown report for the lowest-odds betting strategy.
+- Calibrated the pari-mutuel crowd model over 100,000 deterministic races: the
+  favorite strategy records 21.16% wins, 94.85% RTP and no position bias above
+  one percentage point.
+- Added deterministic schedule regression coverage for Sunday detection, daily
+  slots, multiple tickets, duplicate rejection, recap replacement and automatic
+  bank settlement.
 - Final release validation still requires an updated full-repository metrics run
   and the documented two-client dedicated-server campaign.
 

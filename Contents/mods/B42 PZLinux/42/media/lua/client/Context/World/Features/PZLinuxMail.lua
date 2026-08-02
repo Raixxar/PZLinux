@@ -1,15 +1,7 @@
--- Mails UI - by Raixxar 
+-- Mails UI - by Raixxar
 -- Updated : 13/12/25
 
 mailUI = ISPanel:derive("mailUI")
-
-local LAST_CONNECTION_TIME = 0
-local STAY_CONNECTED_TIME = 0
-local PZLinuxOnItemMailName = ""
-local ZLinuxOnItemMailPriceDelta = 1
-local PZLinuxOnItemMail = {}
-local PZLinuxOnItemMailCount = 0
-local MONTH_HOURS = 30 * 24
 
 -- CONSTRUCTOR
 function mailUI:new(x, y, width, height, player)
@@ -109,16 +101,14 @@ function mailUI:initialise()
     self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
-   
+
     local startX   = self.width * 0.20
-    local y        = 0.20
+    local headerBaseY = 0.20
     local rowH     = self.height * 0.03
     local colDateW = self.width * 0.19
     local colFromW = self.width * 0.20
-    local colObjW  = self.width * 0.21
-
     local headerX = self.width * 0.20
-    local headerY = self.height * (y + 0.010)
+    local headerY = self.height * (headerBaseY + 0.010)
 
     local headerDate = ISLabel:new(headerX, headerY, rowH, "Date", 0, 1, 0, 1, UIFont.Small, true)
     headerDate:initialise()
@@ -138,7 +128,6 @@ function mailUI:initialise()
     sep.borderColor     = { r=0, g=0, b=0, a=0 }
     sep:initialise()
     self.topBar:addChild(sep)
-    y = y + 0.02
 
     local listX = self.width * 0.20
     local listY = self.height * 0.24
@@ -375,7 +364,7 @@ function mailMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
+
     local modData = PZLinuxGetModData(player)
     if not modData then return end
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
@@ -392,6 +381,6 @@ function mailMenu_ShowUI(player)
     ui.centeredImage = centeredImage
     ui:initialise()
     ui:addToUIManager()
- 
+
     return ui
 end

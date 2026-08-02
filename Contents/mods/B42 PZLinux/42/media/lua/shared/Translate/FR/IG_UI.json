@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "The target was last seen near <place>.",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "Protect the building at <place>.",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "Ammo drop at <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Medical drop at <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Medical drop at <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d parieurs | Cagnotte $%d | Pari max. $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "Pari maximum : $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "COURSES - CINQ DEPARTS PAR JOUR",
+    "IGUI_PZLinux_Betting_RaceNoResult": "Aucun resultat recent",
+    "IGUI_PZLinux_Betting_RaceResultWin": "GAIN +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "PERDU $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "CAGNOTTE +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "PARI $%d SUR N°%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "PARIER",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "PROGRAMME",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "Enregistrement du ticket..."
 }

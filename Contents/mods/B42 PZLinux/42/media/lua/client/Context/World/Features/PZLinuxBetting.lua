@@ -98,8 +98,16 @@ end
 local function PZLinuxBettingShortText(text, maxLength)
     text = tostring(text or "")
     maxLength = tonumber(maxLength) or 34
-    if string.len(text) <= maxLength then return text end
-    return string.sub(text, 1, maxLength - 3) .. "..."
+    local characters = {}
+    for character in text:gmatch("([%z\1-\127\194-\244][\128-\191]*)") do
+        table.insert(characters, character)
+    end
+    if #characters <= maxLength then return text end
+    local shortened = {}
+    for index = 1, math.max(1, maxLength - 3) do
+        shortened[index] = characters[index]
+    end
+    return table.concat(shortened) .. "..."
 end
 
 local function PZLinuxBettingAddDisplayControl(ui, controls, control)
@@ -667,23 +675,92 @@ function PZLinuxBettingUI:showPokerCashOut(result)
     self:addPokerControl(ISLabel:new(self.width * 0.20, self.height * 0.35, self.height * 0.025, text, 0, 1, 0, 1, UIFont.Small, true))
 end
 
-function PZLinuxBettingUI:showRaceLoading()
+function PZLinuxBettingUI:clearRaceControls()
+    PZLinuxBettingClearDisplayControls(self.raceControls)
     self.raceControls = {}
+    self.errorLabel = nil
+    self.loadingLabel = nil
+    self.raceScheduleId = nil
+end
+
+function PZLinuxBettingUI:showRaceLoading()
+    self:clearRaceControls()
     self.loadingLabel = ISLabel:new(self.width * 0.20, self.height * 0.25, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Betting_LoadingRace"), 0, 1, 0, 1, UIFont.Small, true)
     self.loadingLabel:initialise()
     self.topBar:addChild(self.loadingLabel)
     table.insert(self.raceControls, self.loadingLabel)
 
-    PZLinuxRequestRaceCard(self.player, function(result)
+    PZLinuxRequestRaceSchedule(self.player, function(result)
         if self.isClosing then return end
-        if self.loadingLabel then
-            self.loadingLabel:setVisible(false)
-        end
-        self:showRaceCard(result)
+        self:showRaceSchedule(result)
     end)
 end
 
+function PZLinuxBettingUI:showRaceSchedule(result)
+    self:clearRaceControls()
+    if not result or not result.ok then
+        self:showError(PZLinuxGetText("IGUI_PZLinux_Betting_Error"))
+        return
+    end
+    self:updateBalanceLabel(result.balance)
+
+    local title = ISLabel:new(self.width * 0.20, self.height * 0.225, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Betting_RaceScheduleTitle"), 0, 1, 0, 1, UIFont.Small, true)
+    title:initialise()
+    self.topBar:addChild(title)
+    table.insert(self.raceControls, title)
+
+    local latest = result.latestResult
+    local resultText = PZLinuxGetText("IGUI_PZLinux_Betting_RaceNoResult")
+    if latest then
+        local outcome = latest.won
+            and string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceResultWin"), latest.payout or 0)
+            or string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceResultLose"), latest.amount or 0)
+        resultText = tostring(latest.label) .. " | " .. tostring(latest.winnerName) .. " | " .. outcome
+    end
+    local resultLabel = ISLabel:new(self.width * 0.20, self.height * 0.27, self.height * 0.020, PZLinuxBettingShortText(resultText, 58), 1, 1, 0, 1, UIFont.Small, true)
+    resultLabel:initialise()
+    self.topBar:addChild(resultLabel)
+    table.insert(self.raceControls, resultLabel)
+
+    local yOffset = self.height * 0.33
+    for _, race in ipairs(result.races or {}) do
+        local text = tostring(race.label)
+        if race.jackpot then
+            text = text .. " | " .. string.format(PZLinuxGetText("IGUI_PZLinux_Betting_RaceJackpot"), race.jackpotAmount or 0)
+        end
+        if race.ticket then
+            text = text .. " | " .. string.format(
+                PZLinuxGetText("IGUI_PZLinux_Betting_RaceTicket"),
+                race.ticket.amount or 0,
+                race.ticket.selectedRunner or 0
+            )
+        end
+        local button = ISButton:new(self.width * 0.20, yOffset, self.width * 0.57, self.height * 0.043, PZLinuxBettingShortText(text, 52), self, self.onSelectScheduledRace)
+        button.raceSchedule = race
+        button.textColor = race.jackpot and {r=1, g=1, b=0, a=1} or {r=0, g=1, b=0, a=1}
+        button.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        button.borderColor = {r=0, g=1, b=0, a=0.5}
+        button:initialise()
+        self.topBar:addChild(button)
+        table.insert(self.raceControls, button)
+        yOffset = yOffset + self.height * 0.052
+    end
+end
+
+function PZLinuxBettingUI:onSelectScheduledRace(button)
+    local race = button and button.raceSchedule
+    if not race then return end
+    self:showRaceCard({
+        ok = true,
+        runners = race.runners,
+        pool = race.pool,
+        schedule = race,
+        balance = self.balance,
+    })
+end
+
 function PZLinuxBettingUI:showRaceCard(result)
+    self:clearRaceControls()
     if not result or not result.ok then
         self:showError(PZLinuxGetText("IGUI_PZLinux_Betting_Error"))
         return
@@ -694,15 +771,48 @@ function PZLinuxBettingUI:showRaceCard(result)
     self.raceSettlementInProgress = false
     self.raceSettlementCallbacks = {}
     self.selectedZombies = result.runners or {}
+    self.racePool = result.pool or {}
+    self.raceSchedule = result.schedule
+    self.raceScheduleId = self.raceSchedule and self.raceSchedule.id or nil
+    self.raceTicket = self.raceSchedule and self.raceSchedule.ticket or nil
     self:updateBalanceLabel(result.balance)
 
     self.zombieLabels = {}
     self.zombieIcons = {}
-    local yOffset = self.height * 0.25
+    local scheduleText = self.raceSchedule and self.raceSchedule.label or ""
+    if self.raceSchedule and self.raceSchedule.jackpot then
+        scheduleText = scheduleText .. " | " .. string.format(
+            PZLinuxGetText("IGUI_PZLinux_Betting_RaceJackpot"),
+            self.raceSchedule.jackpotAmount or 0
+        )
+    end
+    self.raceScheduleLabel = ISLabel:new(self.width * 0.20, self.height * 0.205, self.height * 0.020, scheduleText, 1, 1, 0, 1, UIFont.Small, true)
+    self.raceScheduleLabel:initialise()
+    self.topBar:addChild(self.raceScheduleLabel)
+    table.insert(self.raceControls, self.raceScheduleLabel)
+
+    local poolText = string.format(
+        PZLinuxGetText("IGUI_PZLinux_Betting_RacePool"),
+        self.racePool.bettorCount or 0,
+        self.racePool.poolTotal or 0,
+        self.racePool.maximumBet or 0
+    )
+    self.racePoolLabel = ISLabel:new(self.width * 0.20, self.height * 0.235, self.height * 0.025, poolText, 1, 1, 0, 1, UIFont.Small, true)
+    self.racePoolLabel:initialise()
+    self.topBar:addChild(self.racePoolLabel)
+    table.insert(self.raceControls, self.racePoolLabel)
+
+    local yOffset = self.height * 0.275
     local zombieTexture = getTexture(PZLINUX_BETTING_ZOMBIE_TEXTURE)
     local iconSize = math.max(18, math.floor(self.height * 0.028))
     for index, zomb in ipairs(self.selectedZombies) do
-        local labelText = string.format("%d. %s - %d/1", index, zomb.name, zomb.rating)
+        local labelText = string.format(
+            "%d. %s - %.2f/1 (%d)",
+            index,
+            zomb.name,
+            tonumber(zomb.odds) or math.max(0, (tonumber(zomb.multiplier) or 1) - 1),
+            tonumber(zomb.bettorCount) or 0
+        )
         if zombieTexture then
             local icon = ISImage:new(self.width * 0.20, yOffset + 1, iconSize, iconSize, zombieTexture)
             icon:initialise()
@@ -733,7 +843,7 @@ function PZLinuxBettingUI:showRaceCard(result)
     self.topBar:addChild(self.amountInput)
     table.insert(self.raceControls, self.amountInput)
 
-    self.startButton = ISButton:new(self.width * 0.20, self.height * 0.625, self.width * 0.57, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Betting_StartRace"), self, self.onSelectStart)
+    self.startButton = ISButton:new(self.width * 0.20, self.height * 0.625, self.width * 0.37, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Betting_RacePlaceBet"), self, self.onSelectStart)
     self.startButton.textColor = {r=0, g=1, b=0, a=1}
     self.startButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.startButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -741,6 +851,15 @@ function PZLinuxBettingUI:showRaceCard(result)
     self.startButton:initialise()
     self.topBar:addChild(self.startButton)
     table.insert(self.raceControls, self.startButton)
+    self.startButton:setEnable(not self.raceTicket)
+
+    self.scheduleBackButton = ISButton:new(self.width * 0.58, self.height * 0.625, self.width * 0.19, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Betting_RaceBackSchedule"), self, self.showRaceLoading)
+    self.scheduleBackButton.textColor = {r=0, g=1, b=0, a=1}
+    self.scheduleBackButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.scheduleBackButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.scheduleBackButton:initialise()
+    self.topBar:addChild(self.scheduleBackButton)
+    table.insert(self.raceControls, self.scheduleBackButton)
 end
 
 function PZLinuxBettingUI:onSelectStart()
@@ -752,13 +871,27 @@ function PZLinuxBettingUI:onSelectStart()
         self:showError(PZLinuxGetText("IGUI_PZLinux_Betting_InvalidBet"))
         return
     end
+    if self.racePool and amount > (tonumber(self.racePool.maximumBet) or 0) then
+        PZLinuxBettingPlaySound(self, "error")
+        self:showError(string.format(
+            PZLinuxGetText("IGUI_PZLinux_Betting_RaceBetLimit"),
+            self.racePool.maximumBet or 0
+        ))
+        return
+    end
 
+    if not self.raceScheduleId or self.raceTicket then return end
     self.startButton:setEnable(false)
-    self:showError(PZLinuxGetText("IGUI_PZLinux_Betting_StartingRace"))
+    self:showError(PZLinuxGetText("IGUI_PZLinux_Betting_RaceSavingBet"))
 
-    PZLinuxRequestRaceStart(self.player, selectedRunner, amount, function(result)
+    PZLinuxRequestRaceScheduleBet(self.player, self.raceScheduleId, selectedRunner, amount, function(result)
         if self.isClosing then return end
-        self:startRaceFromResult(result)
+        if not result or not result.ok then
+            self.startButton:setEnable(true)
+            self:showError(PZLinuxGetText("IGUI_PZLinux_Betting_Error"))
+            return
+        end
+        self:showRaceSchedule(result)
     end)
 end
 
@@ -774,6 +907,12 @@ function PZLinuxBettingUI:startRaceFromResult(result)
 
     self.raceResult = result
     self.selectedZombies = result.runners
+    local selectedZombie = self.selectedZombies[result.selectedRunner]
+    if selectedZombie then
+        selectedZombie.odds = result.finalOdds or selectedZombie.odds
+        selectedZombie.multiplier = (selectedZombie.odds or 0) + 1
+        selectedZombie.bettorCount = (tonumber(selectedZombie.bettorCount) or 0) + 1
+    end
     self:updateBalanceLabel(result.balance)
 
     local playerObj = PZLinuxBettingGetPlayer(self)
@@ -798,9 +937,7 @@ function PZLinuxBettingUI:runRace()
     if self.raceFinished or not self.raceResult then return end
 
     for index, runner in ipairs(self.raceProgress) do
-        local rating = runner.zombie.rating
-        local bonus = math.max(1, math.floor((100 - rating) / 25))
-        local speed = 5 + ZombRand(0, bonus + 1)
+        local speed = PZLinuxRaceGetSpeed(runner.zombie.rating)
         if index == self.raceResult.winnerId then
             speed = speed + 2
         end
@@ -843,6 +980,8 @@ function PZLinuxBettingUI:updateRaceDisplay()
         .. tostring(self.raceResult.amount)
         .. "$ #"
         .. tostring(self.raceResult.selectedRunner)
+        .. " @ "
+        .. string.format("%.2f/1", tonumber(self.raceResult.finalOdds) or 0)
 
     for rank, data in ipairs(sortedRunners) do
         local progress = math.max(0, math.min(PZLINUX_BETTING_RACE_DISTANCE, data.runner.position))
@@ -853,7 +992,13 @@ function PZLinuxBettingUI:updateRaceDisplay()
             icon:setX(trackStart + trackWidth * progress / PZLINUX_BETTING_RACE_DISTANCE)
         end
         if rank <= 6 then
-            labelText = labelText .. "\n[" .. rank .. "] -> " .. data.id .. ": " .. data.runner.zombie.name .. " odds: " .. data.runner.zombie.rating .. "/1"
+            labelText = labelText .. "\n[" .. rank .. "] -> " .. data.id .. ": "
+                .. data.runner.zombie.name .. " "
+                .. string.format(
+                    "%.2f/1",
+                    tonumber(data.runner.zombie.odds)
+                        or math.max(0, (tonumber(data.runner.zombie.multiplier) or 1) - 1)
+                )
         end
     end
 

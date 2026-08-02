@@ -457,22 +457,6 @@ function tradingUI:onTradingBuy(code, _lastPrice, quantityTrading)
     end)
 end
 
-function PZLinuxUpdateTradingPrices(player)
-    if isClient and isClient() then
-        PZLinuxRequestTradingSnapshot(player or PZLinuxGetPlayer(), nil)
-        return
-    end
-    PZLinuxTradingUpdatePrices()
-end
-
-function PZLinuxTrading_initializePrices(player)
-    if isClient and isClient() then
-        PZLinuxRequestTradingSnapshot(player or PZLinuxGetPlayer(), nil)
-        return
-    end
-    PZLinuxTradingInitializePrices()
-end
-
 -- LOGOUT
 function tradingUI:onMinimizeTrading(_button)
     self.isClosing = true

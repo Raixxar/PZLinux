@@ -11,7 +11,7 @@ economy accessed through computers, ATMs and mailboxes.
 
 **Workshop ID:** `3414468585`
 
-**Documentation:** [1.0.0 release notes](RELEASE.md) | [detailed changelog](CHANGELOG.md)
+**Documentation:** [1.0.0 release notes](doc/RELEASE.md) | [detailed changelog](doc/CHANGELOG.md)
 
 ## Features
 

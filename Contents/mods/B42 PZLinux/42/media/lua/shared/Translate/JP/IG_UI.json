@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "ターゲットは最後に <place> 付近で確認されました。",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "<place> の建物を保護してください。",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "弾薬ドロップ: <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "<place> での医療ドロップ"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "<place> での医療ドロップ",
+    "IGUI_PZLinux_Betting_RacePool": "%d人 | プール $%d | 最大ベット $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "最大ベット: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "レース - 1日5回開催",
+    "IGUI_PZLinux_Betting_RaceNoResult": "最近の結果はありません",
+    "IGUI_PZLinux_Betting_RaceResultWin": "勝利 +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "損失 $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "ジャックポット +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "$%d ベット、#%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "ベットする",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "スケジュール",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "チケットを保存中..."
 }

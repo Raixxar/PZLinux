@@ -1,4 +1,4 @@
--- Dark Web UI - by Raixxar 
+-- Dark Web UI - by Raixxar
 -- Updated : 25/01/25
 
 darkWebUI = ISPanel:derive("darkWebUI")
@@ -206,7 +206,7 @@ function darkWebUI:initialise()
         priceLabel:initialise()
         offerBackground:addChild(priceLabel)
         self.offerPriceLabels[i] = priceLabel
-        
+
         local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
         local transactionQty = ISTextEntryBox:new("0", self.width * 0.415, (rowHeight - buttonHeight - 2) / 2, self.width * 0.03, self.height * 0.024)
         transactionQty.backgroundColor = {r=0, g=0, b=0, a=1}
@@ -216,7 +216,7 @@ function darkWebUI:initialise()
         transactionQty:setOnlyNumbers(true)
         offerBackground:addChild(transactionQty)
         self.transactionQtys[i] = transactionQty
-       
+
         local transactionBtn = ISButton:new(offerBackground.width - buttonWidth - 10, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
             local quantityTrading = tonumber(transactionQty:getText()) or 0
             self:OnBuyItem(btn, quantityTrading)
@@ -259,7 +259,7 @@ function darkWebUI:onStop(_button)
         self.centeredImage:removeFromUIManager()
         self.centeredImage = nil
     end
-    
+
     self:removeFromUIManager()
     self.terminalCoroutine = nil
 end
@@ -508,7 +508,6 @@ function darkWebUI:onSell()
             self.scrollPanel:addChild(itemIcon)
         end
 
-        local iconSize = 28
         local itemSellLabel = ISLabel:new(self.width * 0.059, yOffset, 20, item.name, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(itemSellLabel)
 
@@ -551,7 +550,7 @@ function darkWebUI:FilterMatch(rowData)
         if not scriptItem then
             return false
         end
-        
+
         local itemName = scriptItem:getDisplayName()
         if type(itemName) ~= "string" then
             return false
@@ -693,7 +692,6 @@ function darkWebUI:onHelp()
     local yOffset = 0
     for _, itemData in ipairs(PZLinuxDarkWebItemsTable) do
         local itemIds = itemData.id
-        local itemPrice = itemData.Price
         local firstItemId = type(itemIds) == "table" and itemIds[1] or itemIds
 
         local scriptItem = getScriptManager():FindItem(firstItemId)
@@ -729,7 +727,7 @@ function darkWebMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
+
     local modData = PZLinuxGetModData(player)
     if not modData then return end
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
@@ -747,6 +745,6 @@ function darkWebMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
     ui:startUI()
-    
+
     return ui 
 end

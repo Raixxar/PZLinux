@@ -333,7 +333,7 @@ function linuxUI:onInternet()
         self.helpLabel:setVisible(false)
         self:onClose()
         self.isConnected = true
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 2
@@ -360,7 +360,7 @@ function linuxUI:onTrading()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 4
@@ -374,7 +374,7 @@ function linuxUI:onWallet()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 5
@@ -388,7 +388,7 @@ function linuxUI:onHackingId()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 6
@@ -402,7 +402,7 @@ function linuxUI:onContracts()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 7
@@ -416,7 +416,7 @@ function linuxUI:onRequest()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 8
@@ -430,7 +430,7 @@ function linuxUI:onBetting()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 9
@@ -444,7 +444,7 @@ function linuxUI:onMail()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
+
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 10
@@ -457,7 +457,7 @@ function linuxUI:onCondition()
     self.promptLabel:setVisible(false)
     self.helpLabel:setVisible(false)
     self:onClose()
-    
+
     local modData = PZLinuxGetModData(self.player)
     if not modData then return end
     modData.PZLinuxUIOpenMenu = 20
@@ -494,7 +494,7 @@ function linuxMenu_ShowUI(player)
 
     local ui = linuxUI:new(uiX, uiY, finalW, finalH, playerObj)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
-    
+
     centeredImage.scaled = true
     centeredImage.scaledWidth = finalW
     centeredImage.scaledHeight = finalH
@@ -548,7 +548,7 @@ function linuxMenu_AddContext(player, context, worldobjects)
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
                         if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
-                            
+
                             if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
                             if obj:getModData().statusCondition < 15 then
                                 context:addOption("Fix the computer", obj, linuxMenu_OnRepare, playerObj, x, y, z, sprite:getName())

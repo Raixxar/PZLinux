@@ -1,0 +1,139 @@
+local luaRoot = "Contents/mods/B42 PZLinux/42/media/lua"
+
+local function PZLinuxTestAssert(condition, message)
+    if not condition then error(message, 2) end
+end
+
+math.randomseed(42020)
+function ZombRand(minimum, maximumExclusive)
+    return math.random(minimum, maximumExclusive - 1)
+end
+
+local clock = {
+    worldHour = 0,
+    year = 1993,
+    month = 6,
+    day = 10,
+    hour = 7,
+    minute = 0,
+}
+local gameTime = {}
+function gameTime:getWorldAgeHours() return clock.worldHour end
+function gameTime:getYear() return clock.year end
+function gameTime:getMonth() return clock.month end
+function gameTime:getDayPlusOne() return clock.day + 1 end
+function gameTime:getHour() return clock.hour end
+function gameTime:getMinutes() return clock.minute end
+function getGameTime() return gameTime end
+
+local globalData = {}
+ModData = {}
+function ModData.getOrCreate(key)
+    globalData[key] = globalData[key] or {}
+    return globalData[key]
+end
+
+local player = { modData = { PZLinuxBank = 10000 } }
+function player:getUsername() return "schedule-test" end
+function player:getModData() return self.modData end
+function player:transmitModData() end
+local playerTwo = { modData = { PZLinuxBank = 10000 } }
+function playerTwo:getUsername() return "schedule-test-two" end
+function playerTwo:getModData() return self.modData end
+function playerTwo:transmitModData() end
+
+PZLinux = {}
+function PZLinuxGetPlayer(candidate) return candidate or player end
+function PZLinuxGetPlayerKey(candidate) return (candidate or player):getUsername() end
+function PZLinuxGetModData(candidate)
+    local playerObj = candidate or player
+    local modData = playerObj:getModData()
+    modData.pzlinux = modData.pzlinux or {}
+    return modData, modData.pzlinux, playerObj
+end
+function PZLinuxTransmitPlayerModData() end
+function PZLinuxNormalizeMoney(amount) return math.max(0, math.floor(tonumber(amount) or 0)) end
+function PZLinuxLoadBankBalance(candidate) return (candidate or player):getModData().PZLinuxBank end
+function PZLinuxApplyBankDebit(candidate, amount, reason, requestId)
+    local playerObj = candidate or player
+    amount = PZLinuxNormalizeMoney(amount)
+    local previous = playerObj:getModData().PZLinuxBank
+    if amount <= 0 then return { ok = false, error = "invalid_amount", balance = previous } end
+    if previous < amount then return { ok = false, error = "not_enough_money", balance = previous } end
+    playerObj:getModData().PZLinuxBank = previous - amount
+    return { ok = true, amount = amount, previousBalance = previous, balance = previous - amount, reason = reason, requestId = requestId }
+end
+
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxGamblingData.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxRaceEngine.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxRaceSchedule.lua")
+
+PZLinuxTestAssert(PZLinuxRaceScheduleDayOfWeek(1993, 7, 11) == 0, "1993-07-11 must be detected as Sunday")
+
+local firstSnapshot = PZLinuxRaceScheduleSnapshot(player, "snapshot-1")
+PZLinuxTestAssert(firstSnapshot.ok and #firstSnapshot.races == 5, "the morning schedule must expose five races")
+PZLinuxTestAssert(firstSnapshot.races[1].hour == 8 and firstSnapshot.races[5].hour == 16,
+    "daily departures must run from 08:00 to 16:00 every two hours")
+PZLinuxTestAssert(firstSnapshot.races[5].jackpot and firstSnapshot.races[5].jackpotAmount == 50000,
+    "Sunday 16:00 must be the super jackpot race")
+PZLinuxTestAssert(firstSnapshot.races[5].pool.bettorCount >= 500,
+    "the jackpot race must use the larger virtual crowd")
+PZLinuxTestAssert(firstSnapshot.races[5].pool.maximumBet == 500,
+    "the positive-expectation jackpot must cap each player ticket at $500")
+
+local firstRaceId = firstSnapshot.races[1].id
+local secondRaceId = firstSnapshot.races[2].id
+local firstBet = PZLinuxRaceSchedulePlaceBet(player, firstRaceId, 1, 100, "bet-1")
+PZLinuxTestAssert(firstBet.ok and firstBet.placed, "the first scheduled ticket must be accepted")
+local secondBet = PZLinuxRaceSchedulePlaceBet(player, secondRaceId, 2, 150, "bet-2")
+PZLinuxTestAssert(secondBet.ok and secondBet.placed, "the player must be able to program several races")
+PZLinuxTestAssert(player.modData.PZLinuxBank == 9750, "scheduled stakes must be debited immediately")
+local sharedSnapshot = PZLinuxRaceScheduleSnapshot(playerTwo, "snapshot-shared")
+PZLinuxTestAssert(sharedSnapshot.races[1].id == firstRaceId,
+    "all multiplayer clients must receive the same scheduled race")
+local sharedBet = PZLinuxRaceSchedulePlaceBet(playerTwo, firstRaceId, 1, 200, "bet-shared")
+PZLinuxTestAssert(sharedBet.ok and playerTwo.modData.PZLinuxBank == 9800,
+    "another player must be able to join the same global pool")
+
+local duplicate = PZLinuxRaceSchedulePlaceBet(player, firstRaceId, 1, 100, "bet-duplicate")
+PZLinuxTestAssert(not duplicate.ok and duplicate.error == "ticket_exists", "only one ticket per player and race is allowed")
+
+clock.worldHour = 1.1
+clock.hour = 8
+clock.minute = 6
+local afterFirstRace = PZLinuxRaceScheduleSnapshot(player, "snapshot-2")
+PZLinuxTestAssert(afterFirstRace.latestResult and afterFirstRace.latestResult.raceId == firstRaceId,
+    "the server must settle the first ticket without opening the betting UI")
+local secondPlayerResult = PZLinuxRaceScheduleSnapshot(playerTwo, "snapshot-shared-result")
+PZLinuxTestAssert(secondPlayerResult.latestResult
+    and secondPlayerResult.latestResult.winnerId == afterFirstRace.latestResult.winnerId,
+    "every player must receive the same authoritative winner")
+if afterFirstRace.latestResult.won then
+    PZLinuxTestAssert(secondPlayerResult.latestResult.payout >= afterFirstRace.latestResult.payout * 2 - 1,
+        "shared-pool payouts must remain proportional to each winning stake")
+end
+
+local thirdRaceId = afterFirstRace.races[2].id
+local thirdBet = PZLinuxRaceSchedulePlaceBet(player, thirdRaceId, 1, 100, "bet-3")
+PZLinuxTestAssert(thirdBet.ok and thirdBet.latestResult == nil,
+    "placing a new ticket must clear the previous recap")
+
+clock.worldHour = 3.1
+clock.hour = 10
+clock.minute = 6
+local afterSecondRace = PZLinuxRaceScheduleSnapshot(player, "snapshot-3")
+PZLinuxTestAssert(afterSecondRace.latestResult and afterSecondRace.latestResult.raceId == secondRaceId,
+    "the newest settled race must replace the previous recap")
+
+clock.worldHour = 243.1
+clock.day = 20
+clock.hour = 10
+clock.minute = 6
+PZLinuxRaceScheduleSnapshot(player, "snapshot-prune-player")
+PZLinuxRaceScheduleTick()
+local storedRaceCount = 0
+for _ in pairs(globalData.PZLinuxRaceSchedule.races) do storedRaceCount = storedRaceCount + 1 end
+PZLinuxTestAssert(storedRaceCount <= 10,
+    "settled races without pending offline tickets must not accumulate forever")
+
+print("Zombie Race schedule tests OK")

@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "Het doel is voor het laatst gezien nabij <place>.",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "Bescherm het gebouw op <place>.",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "Munitie droppen bij <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Medische drop bij <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Medische drop bij <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d gokkers | Pot $%d | Max. inzet $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "Maximale inzet: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "RACES - VIJF STARTS PER DAG",
+    "IGUI_PZLinux_Betting_RaceNoResult": "Geen recent resultaat",
+    "IGUI_PZLinux_Betting_RaceResultWin": "WINST +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "VERLOREN $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "JACKPOT +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "INZET $%d OP #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "INZET PLAATSEN",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "PROGRAMMA",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "Ticket opslaan..."
 }

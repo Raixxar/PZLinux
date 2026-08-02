@@ -1,4 +1,4 @@
--- StreetMailBox UI - by Raixxar 
+-- StreetMailBox UI - by Raixxar
 -- Updated : 25/01/26
 
 StreetMailBoxUI = ISPanel:derive("StreetMailBoxUI")

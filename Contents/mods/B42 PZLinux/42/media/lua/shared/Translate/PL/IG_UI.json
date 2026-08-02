@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "Cel był ostatnio widziany w pobliżu <place>.",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "Chroń budynek pod adresem <place>.",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "Spadek amunicji przy <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Spadek medyczny w <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Spadek medyczny w <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d graczy | Pula $%d | Maks. zakład $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "Maksymalny zakład: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "WYŚCIGI - PIĘĆ STARTÓW DZIENNIE",
+    "IGUI_PZLinux_Betting_RaceNoResult": "Brak ostatnich wyników",
+    "IGUI_PZLinux_Betting_RaceResultWin": "WYGRANA +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "STRATA $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "PULA +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "ZAKŁAD $%d NA #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "POSTAW",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "PROGRAM",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "Zapisywanie kuponu..."
 }

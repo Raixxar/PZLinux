@@ -13,13 +13,16 @@ end
 
 local readme = PZLinuxReleaseRead("README.md")
 local workshop = PZLinuxReleaseRead("workshop.txt")
-local overview = PZLinuxReleaseRead("doc/overview.md")
+local overview = PZLinuxReleaseRead("doc/OVERVIEW.md")
+local releaseNotes = PZLinuxReleaseRead("doc/RELEASE.md")
+PZLinuxReleaseRead("doc/CHANGELOG.md")
 local modInfo = PZLinuxReleaseRead("Contents/mods/B42 PZLinux/42/mod.info")
 
 for path, content in pairs({
     ["README.md"] = readme,
     ["workshop.txt"] = workshop,
-    ["doc/overview.md"] = overview,
+    ["doc/OVERVIEW.md"] = overview,
+    ["doc/RELEASE.md"] = releaseNotes,
     ["42/mod.info"] = modInfo,
 }) do
     PZLinuxReleaseAssert(not content:upper():find("BETA", 1, true), path .. " still contains BETA")
@@ -27,6 +30,8 @@ for path, content in pairs({
 end
 
 PZLinuxReleaseAssert(readme:find("%*%*Release:%*%* 1%.0%.0"), "README release is not 1.0.0")
+PZLinuxReleaseAssert(readme:find("%(%s*doc/RELEASE%.md%s*%)"), "README release-notes link is invalid")
+PZLinuxReleaseAssert(readme:find("%(%s*doc/CHANGELOG%.md%s*%)"), "README changelog link is invalid")
 PZLinuxReleaseAssert(overview:find("^version=1%.0%.0"), "overview release is not 1.0.0")
 PZLinuxReleaseAssert(workshop:find("^version=1\n"), "workshop format version must remain 1")
 PZLinuxReleaseAssert(workshop:find("\nvisibility=0\n?$"), "Workshop visibility must use public value 0")

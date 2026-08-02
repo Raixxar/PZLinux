@@ -245,10 +245,8 @@ function conditionUI:onCheckCondition()
         }
     end
 
-    local messages = {}
     self.terminalCoroutine = coroutine.create(function()
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        local initialDelay = elapsed + 1
 
         for _, line in ipairs(self.bootMessages) do
             if self.isClosing then return end

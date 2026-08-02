@@ -5,6 +5,8 @@ require "PZLinux/PZLinuxTyping"
 require "PZLinux/PZLinuxWorldInteractions"
 require "PZLinux/PZLinuxMissionLocations"
 require "PZLinux/PZLinuxGamblingData"
+require "PZLinux/PZLinuxRaceEngine"
+require "PZLinux/PZLinuxRaceSchedule"
 require "PZLinux/PZLinuxRequestsData"
 require "PZLinux/PZLinuxContractsData"
 require "PZLinux/PZLinuxContractRequestData"
@@ -126,6 +128,17 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Betting_PokerHandTwoPair = "Two pair",
     IGUI_PZLinux_Betting_PokerHandPair = "Pair",
     IGUI_PZLinux_Betting_PokerHandHighCard = "High card",
+    IGUI_PZLinux_Betting_RacePool = "%d bettors | Pool $%d | Max bet $%d",
+    IGUI_PZLinux_Betting_RaceBetLimit = "Maximum bet: $%d",
+    IGUI_PZLinux_Betting_RaceScheduleTitle = "RACES - FIVE DEPARTURES PER DAY",
+    IGUI_PZLinux_Betting_RaceNoResult = "No recent result",
+    IGUI_PZLinux_Betting_RaceResultWin = "WIN +$%d",
+    IGUI_PZLinux_Betting_RaceResultLose = "LOST $%d",
+    IGUI_PZLinux_Betting_RaceJackpot = "JACKPOT +$%d",
+    IGUI_PZLinux_Betting_RaceTicket = "BET $%d ON #%d",
+    IGUI_PZLinux_Betting_RacePlaceBet = "PLACE BET",
+    IGUI_PZLinux_Betting_RaceBackSchedule = "SCHEDULE",
+    IGUI_PZLinux_Betting_RaceSavingBet = "Saving ticket...",
 }
 
 function PZLinuxGetText(key)
@@ -829,55 +842,19 @@ function PZLinuxRaceCreateCard(player, requestId)
         return { ok = false, error = "race_in_progress", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
     end
 
-    local pool = {}
-    for _, runner in ipairs(PZLinuxRaceRunnerPool) do
-        table.insert(pool, { name = runner.name, rating = ZombRand(runner.rating, runner.maxRating + 1) })
-    end
+    local runners = PZLinuxRaceGenerateCard(PZLinuxRaceRunnerPool, PZLinux.Race.runnerCount)
+    local pool = PZLinuxRaceCreateBettingPool(runners)
 
-    for i = #pool, 2, -1 do
-        local j = ZombRand(1, i + 1)
-        pool[i], pool[j] = pool[j], pool[i]
-    end
-
-    local runners = {}
-    for i = 1, 8 do
-        table.insert(runners, pool[i])
-    end
-
-    local session = { requestId = requestId, runners = runners }
+    local session = { requestId = requestId, runners = runners, pool = pool }
     PZLinux.raceSessions[playerKey] = session
 
-    return { ok = true, requestId = requestId, runners = runners, balance = PZLinuxLoadBankBalance(player) }
-end
-
-function PZLinuxRaceSimulateWinner(runners)
-    local progress = {}
-    for i, runner in ipairs(runners or {}) do
-        progress[i] = { runner = runner, position = -15 }
-    end
-
-    for _ = 1, 120 do
-        for _, data in ipairs(progress) do
-            local rating = tonumber(data.runner.rating) or 2
-            local bonus = math.max(1, math.floor((100 - rating) / 25))
-            data.position = data.position + 5 + ZombRand(0, bonus + 1)
-        end
-
-        local bestPosition = -math.huge
-        local winnerId = 1
-        for index, data in ipairs(progress) do
-            if data.position > bestPosition then
-                bestPosition = data.position
-                winnerId = index
-            end
-        end
-
-        if bestPosition >= 130 then
-            return winnerId
-        end
-    end
-
-    return 1
+    return {
+        ok = true,
+        requestId = requestId,
+        runners = runners,
+        pool = pool,
+        balance = PZLinuxLoadBankBalance(player),
+    }
 end
 
 function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
@@ -892,6 +869,15 @@ function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
     if not selectedRunner or selectedRunner < 1 or selectedRunner > #session.runners then
         return { ok = false, error = "invalid_runner", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
     end
+    if not session.pool or amount > (tonumber(session.pool.maximumBet) or 0) then
+        return {
+            ok = false,
+            error = "bet_above_pool_limit",
+            requestId = requestId,
+            maximumBet = session.pool and session.pool.maximumBet or 0,
+            balance = PZLinuxLoadBankBalance(player),
+        }
+    end
 
     local debit = PZLinuxApplyBankDebit(player, amount, "zombie-race", requestId)
     if not debit.ok then
@@ -902,10 +888,20 @@ function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
 
     local winnerId = PZLinuxRaceSimulateWinner(session.runners)
     local winner = session.runners[winnerId]
-    local payout = 0
-    if winnerId == selectedRunner then
-        payout = amount * (tonumber(winner.rating) or 2)
-    end
+    local selected = session.runners[selectedRunner]
+    local finalOdds = PZLinuxRaceCalculateFinalOdds(
+        amount,
+        session.pool.poolTotal,
+        selected.poolStake,
+        session.pool.takeoutRate
+    )
+    local payout = PZLinuxRaceCalculatePayout(
+        amount,
+        session.pool.poolTotal,
+        winner.poolStake,
+        winnerId == selectedRunner,
+        session.pool.takeoutRate
+    )
 
     session.raceId = tostring(requestId or PZLinuxNextRequestId("race"))
     session.requestId = requestId
@@ -913,6 +909,7 @@ function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
     session.amount = amount
     session.previousBalance = debit.previousBalance
     session.winnerId = winnerId
+    session.finalOdds = finalOdds
     session.payout = payout
     session.outcome = payout > 0 and "win" or "lose"
     session.status = "running"
@@ -930,6 +927,8 @@ function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
         previousBalance = debit.previousBalance,
         balance = debit.balance,
         runners = session.runners,
+        pool = session.pool,
+        finalOdds = finalOdds,
         winnerId = winnerId,
         status = session.status,
     }
@@ -961,6 +960,7 @@ function PZLinuxRaceFinish(player, raceId, requestId)
         previousBalance = session.previousBalance,
         balance = PZLinuxLoadBankBalance(player),
         winnerId = session.winnerId,
+        finalOdds = session.finalOdds,
         payout = session.payout,
         outcome = session.outcome,
         status = session.status,
@@ -1038,6 +1038,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxRaceCardResult"
         or command == "PZLinuxRaceStartResult"
         or command == "PZLinuxRaceFinishResult"
+        or command == "PZLinuxRaceScheduleResult"
         or command == "PZLinuxPokerState"
         or command == "PZLinuxDarkWebOffersResult"
         or command == "PZLinuxDarkWebBuyResult"
@@ -1684,11 +1685,19 @@ function PZLinuxRequestTradingSell(player, code, quantity, callback)
     return requestId
 end
 
-function PZLinuxUpdateTradingPrices()
+function PZLinuxUpdateTradingPrices(player)
+    if isClient and isClient() then
+        PZLinuxRequestTradingSnapshot(player or PZLinuxGetPlayer(), nil)
+        return
+    end
     PZLinuxTradingUpdatePrices()
 end
 
-function PZLinuxTrading_initializePrices()
+function PZLinuxTrading_initializePrices(player)
+    if isClient and isClient() then
+        PZLinuxRequestTradingSnapshot(player or PZLinuxGetPlayer(), nil)
+        return
+    end
     PZLinuxTradingInitializePrices()
 end
 

@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "Hedef en son <place> yakınlarında görüldü.",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "<place> adresindeki binayı koruyun.",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "<place> noktasında cephane düşüşü",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "<place> numaralı telefona tıbbi müdahale"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "<place> numaralı telefona tıbbi müdahale",
+    "IGUI_PZLinux_Betting_RacePool": "%d bahisçi | Havuz $%d | Azami bahis $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "Azami bahis: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "YARIŞLAR - GÜNDE BEŞ BAŞLANGIÇ",
+    "IGUI_PZLinux_Betting_RaceNoResult": "Yeni sonuç yok",
+    "IGUI_PZLinux_Betting_RaceResultWin": "KAZANÇ +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "KAYIP $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "BÜYÜK İKRAMİYE +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "BAHİS $%d, #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "BAHİS YAP",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "PROGRAM",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "Kupon kaydediliyor..."
 }

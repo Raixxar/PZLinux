@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "В последний раз цель видели вблизи <place>.",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "Защитите здание по адресу <place>.",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "Пачка боеприпасов в <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Медицинский пункт в <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Медицинский пункт в <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d игроков | Банк $%d | Макс. ставка $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "Максимальная ставка: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "ГОНКИ - ПЯТЬ СТАРТОВ В ДЕНЬ",
+    "IGUI_PZLinux_Betting_RaceNoResult": "Нет свежих результатов",
+    "IGUI_PZLinux_Betting_RaceResultWin": "ВЫИГРЫШ +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "ПРОИГРЫШ $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "ДЖЕКПОТ +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "СТАВКА $%d НА #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "СДЕЛАТЬ СТАВКУ",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "РАСПИСАНИЕ",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "Сохранение билета..."
 }

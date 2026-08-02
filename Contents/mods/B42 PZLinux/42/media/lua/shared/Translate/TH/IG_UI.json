@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "เป้าหมายถูกพบเห็นครั้งสุดท้ายใกล้กับ <place>",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "ปกป้องอาคารที่ <place>",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "กระสุนดรอปที่ <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "ค่ารักษาพยาบาลลดลงที่ <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "ค่ารักษาพยาบาลลดลงที่ <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d ผู้เดิมพัน | เงินกองกลาง $%d | เดิมพันสูงสุด $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "เดิมพันสูงสุด: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "การแข่งขัน - ห้ารอบต่อวัน",
+    "IGUI_PZLinux_Betting_RaceNoResult": "ไม่มีผลล่าสุด",
+    "IGUI_PZLinux_Betting_RaceResultWin": "ชนะ +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "เสีย $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "แจ็กพอต +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "เดิมพัน $%d ที่ #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "วางเดิมพัน",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "ตารางแข่ง",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "กำลังบันทึกตั๋ว..."
 }

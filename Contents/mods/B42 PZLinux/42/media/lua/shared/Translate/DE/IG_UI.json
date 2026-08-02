@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "Das Ziel wurde zuletzt in der Nähe von <place> gesehen.",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "Schützen Sie das Gebäude bei <place>.",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "Munitionsabwurf bei <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Medizinische Abgabe bei <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "Medizinische Abgabe bei <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d Wettende | Pool $%d | Max. Einsatz $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "Maximaler Einsatz: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "RENNEN - FÜNF STARTS PRO TAG",
+    "IGUI_PZLinux_Betting_RaceNoResult": "Kein aktuelles Ergebnis",
+    "IGUI_PZLinux_Betting_RaceResultWin": "GEWINN +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "VERLOREN $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "JACKPOT +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "WETTE $%d AUF #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "WETTE PLATZIEREN",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "ZEITPLAN",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "Ticket wird gespeichert..."
 }

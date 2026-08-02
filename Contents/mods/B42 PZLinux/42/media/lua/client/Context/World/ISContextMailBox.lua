@@ -1,4 +1,4 @@
--- MailBox UI - by Raixxar 
+-- MailBox UI - by Raixxar
 -- Updated : 25/01/26
 
 MailBoxUI = ISPanel:derive("MailBoxUI")

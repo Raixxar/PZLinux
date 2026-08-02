@@ -152,13 +152,13 @@ function walletUI:startWallet()
     tradingMenuCodeLabel:initialise()
     self.topBar:addChild(tradingMenuCodeLabel)
 
-    local tradingMenuNameLabel = ISButton:new(self.width * 0.31, self.height * 0.22, self.width * 0.12, self.height * 0.025, "QUANTITY", self, self.onFilter)
-    tradingMenuNameLabel:initialise()
-    self.topBar:addChild(tradingMenuNameLabel)
+    local tradingMenuQuantityLabel = ISButton:new(self.width * 0.31, self.height * 0.22, self.width * 0.12, self.height * 0.025, "QUANTITY", self, self.onFilter)
+    tradingMenuQuantityLabel:initialise()
+    self.topBar:addChild(tradingMenuQuantityLabel)
 
-    local tradingMenuNameLabel = ISButton:new(self.width * 0.425, self.height * 0.22, self.width * 0.12, self.height * 0.025, "PRICE", self, self.onFilter)
-    tradingMenuNameLabel:initialise()
-    self.topBar:addChild(tradingMenuNameLabel)
+    local tradingMenuPriceLabel = ISButton:new(self.width * 0.425, self.height * 0.22, self.width * 0.12, self.height * 0.025, "PRICE", self, self.onFilter)
+    tradingMenuPriceLabel:initialise()
+    self.topBar:addChild(tradingMenuPriceLabel)
 
     local tradingMenuH1Label = ISButton:new(self.width * 0.543, self.height * 0.22, self.width * 0.12, self.height * 0.025, "H1", self, self.onFilter)
     tradingMenuH1Label:initialise()
@@ -170,11 +170,11 @@ function walletUI:startWallet()
 
     local tokens = {}
     local totalWalletBalance = 0
-    local player = PZLinuxGetPlayer(self.player)
+    local walletPlayer = PZLinuxGetPlayer(self.player)
     for i, company in ipairs(PZLinuxTradingCompanyNameTable) do
         local snapshotCompany = PZLinuxWalletUIFindCompany(self.tradingSnapshot, company.code)
         local playerWallet = PZLinuxTradingGetWalletKey(company.code)
-        local totalTokenQuantity = snapshotCompany and snapshotCompany.quantity or player:getModData()[playerWallet] or 0
+        local totalTokenQuantity = snapshotCompany and snapshotCompany.quantity or walletPlayer:getModData()[playerWallet] or 0
         local priceHistory = snapshotCompany and snapshotCompany.history or ModData.getOrCreate("PZLinuxTrading" .. company.code).dataName or {}
         local firstPrice = snapshotCompany and snapshotCompany.firstPrice or priceHistory[24] or priceHistory[1] or 0
         local lastPrice = snapshotCompany and snapshotCompany.price or priceHistory[#priceHistory] or 0
@@ -247,10 +247,9 @@ function walletUI:startWallet()
     self.walletChart:initialise()
 
     function  self.walletChart:render()
-        local player = PZLinuxGetPlayer()
-        if not player then return end
+        if not walletPlayer then return end
 
-        local values = player:getModData().playerWallet or {}
+        local values = walletPlayer:getModData().playerWallet or {}
         local numPoints = #values
         if numPoints < 2 then return end
 

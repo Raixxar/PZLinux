@@ -297,5 +297,16 @@
     "IGUI_PZLinux_Location_target_city_place_01_Description": "最后一次看到目标是在 <place> 附近。",
     "IGUI_PZLinux_Location_protect_city_place_01_Description": "保护 <place> 的建筑物。",
     "IGUI_PZLinux_Location_mail_ammo_city_place_01_Name": "弹药掉落于 <place>",
-    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "医疗空投 <place>"
+    "IGUI_PZLinux_Location_mail_medical_city_place_01_Name": "医疗空投 <place>",
+    "IGUI_PZLinux_Betting_RacePool": "%d名投注者 | 奖池 $%d | 最高投注 $%d",
+    "IGUI_PZLinux_Betting_RaceBetLimit": "最高投注: $%d",
+    "IGUI_PZLinux_Betting_RaceScheduleTitle": "比赛 - 每天五场",
+    "IGUI_PZLinux_Betting_RaceNoResult": "暂无最近结果",
+    "IGUI_PZLinux_Betting_RaceResultWin": "获胜 +$%d",
+    "IGUI_PZLinux_Betting_RaceResultLose": "损失 $%d",
+    "IGUI_PZLinux_Betting_RaceJackpot": "大奖池 +$%d",
+    "IGUI_PZLinux_Betting_RaceTicket": "投注 $%d 于 #%d",
+    "IGUI_PZLinux_Betting_RacePlaceBet": "下注",
+    "IGUI_PZLinux_Betting_RaceBackSchedule": "赛程",
+    "IGUI_PZLinux_Betting_RaceSavingBet": "正在保存投注..."
 }
