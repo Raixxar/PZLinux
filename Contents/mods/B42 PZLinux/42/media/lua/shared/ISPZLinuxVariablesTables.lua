@@ -1328,29 +1328,58 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
     if not x or not y or not z then
         return { ok = false, error = "missing_vehicle_location", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
-    local dist = math.sqrt((playerObj:getX() - x)^2 + (playerObj:getY() - y)^2)
-    if dist >= 50 then
+    if not PZLinuxIsPlayerNearPosition(playerObj, x, y, z, 50) then
         return { ok = true, requestId = requestId, spawned = false, tooFar = true, balance = PZLinuxLoadBankBalance(playerObj) }
     end
-    local square = getCell():getGridSquare(x, y, z)
+
+    local centerX = math.floor(tonumber(x) or 0)
+    local centerY = math.floor(tonumber(y) or 0)
+    local level = math.floor(tonumber(z) or 0)
+    local square
+    for radius = 0, 5 do
+        for offsetX = -radius, radius do
+            for offsetY = -radius, radius do
+                if radius == 0 or math.abs(offsetX) == radius or math.abs(offsetY) == radius then
+                    local candidate = getCell():getGridSquare(centerX + offsetX, centerY + offsetY, level)
+                    if candidate and candidate:isFree(false) then
+                        square = candidate
+                        break
+                    end
+                end
+            end
+            if square then break end
+        end
+        if square then break end
+    end
     if not square then
         return { ok = false, error = "missing_square", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
-    local vehicle = addVehicle(modData.PZLinuxOnItemRequestCarName, x, y, z)
-    if not vehicle then
-        return { ok = false, error = "vehicle_spawn_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
 
     local key = instanceItem("Base.Key_Blank")
+    local inventory = playerObj:getInventory()
+    if not key or not inventory then
+        return { ok = false, error = "key_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
     local uniqueKeyId = ZombRand(1, 10000)
     key:setKeyId(uniqueKeyId)
     key:setName("Pirated Key #" .. uniqueKeyId)
+    local keyItem = inventory:AddItem(key)
+    if not keyItem or not PZLinuxSyncAddedInventoryItem(playerObj, keyItem) then
+        if keyItem then inventory:Remove(keyItem) end
+        return { ok = false, error = "key_sync_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local vehicle
+    if addVehicleDebug then
+        vehicle = addVehicleDebug(modData.PZLinuxOnItemRequestCarName, IsoDirections.S, nil, square)
+    end
+    if not vehicle then
+        PZLinuxRemoveInventoryItem(playerObj, keyItem)
+        return { ok = false, error = "vehicle_spawn_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
     vehicle:setKeyId(uniqueKeyId)
     vehicle:repair()
-    local keyItem = playerObj:getInventory():AddItem(key)
-    if keyItem then
-        PZLinuxSyncAddedInventoryItem(playerObj, keyItem)
-    end
     modData.PZLinuxOnItemRequestCar = 0
     modData.PZLinuxActiveRequest = 0
     PZLinuxTransmitPlayerModData(playerObj)
@@ -2639,52 +2668,74 @@ function PZLinuxApplyReputationDecay(player, amount)
 end
 
 function PZLinuxContractsTransmitSquareObject(square, obj)
-    if obj and obj.transmitCompleteItemToClients then
-        obj:transmitCompleteItemToClients()
-    end
     if square and square.transmitAddObjectToSquare then
-        square:transmitAddObjectToSquare(obj, -1)
+        local objectIndex = obj and obj.getObjectIndex and obj:getObjectIndex() or -1
+        square:transmitAddObjectToSquare(obj, objectIndex)
     end
+    if obj and obj.transmitCompleteItemToClients then obj:transmitCompleteItemToClients() end
+    if square and square.transmitModdata then square:transmitModdata() end
+end
+
+local function PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
+    if not getCell then return false end
+    local centerX = math.floor(tonumber(x) or 0)
+    local centerY = math.floor(tonumber(y) or 0)
+    local level = math.floor(tonumber(z) or 0)
+
+    for offsetX = -5, 5 do
+        for offsetY = -5, 5 do
+            local square = getCell():getGridSquare(centerX + offsetX, centerY + offsetY, level)
+            if square then
+                for index = square:getObjects():size() - 1, 0, -1 do
+                    local obj = square:getObjects():get(index)
+                    if tostring(PZLinuxContractsGetEntityContractId(obj) or "") == tostring(contractWorldId or "")
+                    and PZLinuxContractsGetEntityObjective(obj) == "cargo" then
+                        return obj, square
+                    end
+                end
+            end
+        end
+    end
+    return nil, nil
 end
 
 function PZLinuxContractsRemoveCargoObject(x, y, z, contractWorldId)
-    if not getCell then return false end
-    local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
-    if not square then return false end
-
-    for index = square:getObjects():size() - 1, 0, -1 do
-        local obj = square:getObjects():get(index)
-        local objectContractId = PZLinuxContractsGetEntityContractId(obj)
-        local matchesContract = not contractWorldId or not objectContractId or objectContractId == contractWorldId
-        if matchesContract and obj and obj:getSprite() and obj:getSprite():getName() == "carpentry_01_19" then
-            square:removeTileObject(obj)
-            if square.transmitRemoveItemFromSquare then
-                square:transmitRemoveItemFromSquare(obj)
-            end
-            return true
-        end
-    end
-    return false
+    local obj, square = PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
+    if not obj or not square then return false end
+    square:removeTileObject(obj)
+    if square.transmitRemoveItemFromSquare then square:transmitRemoveItemFromSquare(obj) end
+    return true
 end
 
 function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
     if not getCell or not IsoObject then return false end
-    local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
+    if PZLinuxContractsFindCargoObject(x, y, z, contractWorldId) then return true end
+    local centerX = math.floor(tonumber(x) or 0)
+    local centerY = math.floor(tonumber(y) or 0)
+    local level = math.floor(tonumber(z) or 0)
+    local square
+
+    for radius = 0, 5 do
+        for offsetX = -radius, radius do
+            for offsetY = -radius, radius do
+                if radius == 0 or math.abs(offsetX) == radius or math.abs(offsetY) == radius then
+                    local candidate = getCell():getGridSquare(centerX + offsetX, centerY + offsetY, level)
+                    if candidate and candidate:isFree(false) then
+                        square = candidate
+                        break
+                    end
+                end
+            end
+            if square then break end
+        end
+        if square then break end
+    end
     if not square then return false end
 
-    local objects = square:getObjects()
-    for index = 0, objects:size() - 1 do
-        local existing = objects:get(index)
-        if tostring(PZLinuxContractsGetEntityContractId(existing) or "") == tostring(contractWorldId or "")
-        and PZLinuxContractsGetEntityObjective(existing) == "cargo" then
-            return true
-        end
-    end
-
     local obj = IsoObject.new(square, "carpentry_01_19")
-    PZLinuxContractsTagEntity(obj, contractWorldId, "cargo")
     square:AddTileObject(obj)
     PZLinuxContractsTransmitSquareObject(square, obj)
+    PZLinuxContractsTagEntity(obj, contractWorldId, "cargo")
     return true
 end
 
@@ -3059,16 +3110,13 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         if not PZLinuxContractsGiveContractCase(playerObj, record.id) then return reject("item_creation_failed") end
         record.status = "objective_taken"
     elseif eventName == "takeCargo" then
-        local cargo, targetError = PZLinuxValidateWorldInteraction(playerObj, args.target, "object", 2)
-        if targetError then return reject(targetError) end
-        contractWorldId = PZLinuxContractsGetEntityContractId(cargo)
-        worldRecord = PZLinuxContractsGetWorldContract(contractWorldId)
-        if not worldRecord or tonumber(worldRecord.contractId) ~= 7 or PZLinuxContractsGetEntityObjective(cargo) ~= "cargo" then return reject("invalid_contract_target") end
-        if not PZLinuxContractsIsRecordStatus(worldRecord, "spawned") then return reject("invalid_contract_state") end
-        PZLinuxContractsSyncWorldRecordToPlayer(playerObj, worldRecord)
-        if not PZLinuxContractsRemoveCargoObject(worldRecord.locationX, worldRecord.locationY, worldRecord.locationZ, worldRecord.id) then
-            return reject("target_removal_failed")
+        local record, recordError = usePlayerRecord(7, "accepted", "spawned")
+        if recordError then return reject(recordError) end
+        local cargoRadius = tonumber(PZLinux.Config.Contracts.packageInteractionRadius) or 5
+        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, cargoRadius) then
+            return reject("too_far_from_contract")
         end
+        PZLinuxContractsRemoveCargoObject(record.locationX, record.locationY, record.locationZ, record.id)
         worldRecord.status = "ready_to_complete"
     elseif eventName == "decapitate" then
         local body, targetError = PZLinuxValidateWorldInteraction(playerObj, args.target, "body", 2)

@@ -74,6 +74,15 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   is obstructed.
 - Localized contract, mail, mailbox, computer-repair and ATM context-menu actions
   across every language catalog shipped with the mod.
+- Restored visible IRC-style sender names in every contract conversation after
+  the rich-text migration, using bracketed names that cannot be parsed as tags.
+- Fixed Cargo objectives in multiplayer by replicating their world object after
+  insertion with its real square index, finding a nearby free spawn tile and
+  validating pickup from the authoritative contract location even if the visual
+  crate is missing on a client.
+- Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
+  with canonical proximity checks, nearby free-square selection, synchronized
+  key rollback on failure and throttled client retry requests.
 
 ### Economy
 

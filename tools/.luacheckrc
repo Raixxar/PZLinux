@@ -5,6 +5,7 @@ max_line_length = false
 read_globals = {
     "addXp",
     "addVehicle",
+    "addVehicleDebug",
     "addZombiesInOutfit",
     "CharacterStat",
     "CONNECTED_TO_INTERNET_TIME",
@@ -133,6 +134,7 @@ globals = {
     "PZLinuxFindWorldObject",
     "PZLinuxFindDeadBody",
     "PZLinuxFindZombie",
+    "PZLinuxFormatIRCName",
     "PZLinuxRemoveReplicatedZombie",
     "PZLinuxIsPlayerNearPosition",
     "PZLinuxValidateWorldInteraction",

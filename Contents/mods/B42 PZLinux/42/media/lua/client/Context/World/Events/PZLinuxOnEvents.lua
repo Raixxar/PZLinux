@@ -37,6 +37,8 @@ local function checkAndSpawnZombie(player)
 end
 Events.OnPlayerMove.Add(checkAndSpawnZombie)
 
+local PZLinuxVehicleSpawnRequests = {}
+
 local function checkAndSpawnVehicle(player)
     if not player then return end
     local modData = player:getModData()
@@ -44,10 +46,12 @@ local function checkAndSpawnVehicle(player)
         local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
-        if dist < 50 then
+        if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxVehicleSpawnRequests, player, 5) then
             PZLinuxRequestSpawnVehicle(player, function(result)
                 if result and result.ok and result.spawned then
                     HaloTextHelper.addGoodText(player, "Requested vehicle delivered")
+                elseif result and not result.ok then
+                    print("[PZLinux Vehicle] spawn failed: " .. tostring(result.error or "unknown"))
                 end
             end)
         end
@@ -59,17 +63,25 @@ local PZLinuxCargoSpawnRequests = {}
 
 local function PZLinuxCargoExists(modData, x, y, z)
     if not getCell then return false end
-    local square = getCell():getGridSquare(tonumber(x), tonumber(y), tonumber(z))
-    if not square then return false end
+    local centerX = math.floor(tonumber(x) or 0)
+    local centerY = math.floor(tonumber(y) or 0)
+    local level = math.floor(tonumber(z) or 0)
 
-    local objects = square:getObjects()
-    for index = 0, objects:size() - 1 do
-        local obj = objects:get(index)
-        local data = obj and obj.getModData and obj:getModData() or nil
-        if data
-        and tostring(data.PZLinuxContractId or "") == tostring(modData.PZLinuxContractId or "")
-        and data.PZLinuxContractObjective == "cargo" then
-            return true
+    for offsetX = -5, 5 do
+        for offsetY = -5, 5 do
+            local square = getCell():getGridSquare(centerX + offsetX, centerY + offsetY, level)
+            local objects = square and square:getObjects() or nil
+            if objects then
+                for index = 0, objects:size() - 1 do
+                    local obj = objects:get(index)
+                    local data = obj and obj.getModData and obj:getModData() or nil
+                    if data
+                    and tostring(data.PZLinuxContractId or "") == tostring(modData.PZLinuxContractId or "")
+                    and data.PZLinuxContractObjective == "cargo" then
+                        return true
+                    end
+                end
+            end
         end
     end
     return false

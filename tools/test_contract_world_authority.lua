@@ -25,7 +25,7 @@ PZLinuxTestAssert(applyBlock:find('eventName == "clearCargo".-server_event_only'
 local spawnCargoBranch = applyBlock:match('eventName == "spawnCargo"(.-)elseif')
 PZLinuxTestAssert(spawnCargoBranch and spawnCargoBranch:find('"accepted", "spawned"'),
     "cargo spawn must be recoverable after reconnect without resetting server state")
-PZLinuxTestAssert(variables:find('PZLinuxContractsGetEntityObjective%(existing%) == "cargo"'),
+PZLinuxTestAssert(variables:find('PZLinuxContractsGetEntityObjective%(obj%) == "cargo"'),
     "cargo recovery must reuse an existing tagged object instead of duplicating it")
 local spawnManhuntBranch = applyBlock:match('eventName == "spawnManhunt"(.-)elseif')
 PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find('"accepted", "spawned"'),
@@ -44,11 +44,24 @@ PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(to
 PZLinuxTestAssert(variables:find('record%.status == "target_down".-PZLinuxContractManhunt = 2'),
     "a killed manhunt target must remain available for corpse interaction")
 
-for _, eventName in ipairs({ "startProtect", "finishProtect", "takeCargo", "decapitate", "blood", "capture" }) do
+for _, eventName in ipairs({ "startProtect", "finishProtect", "decapitate", "blood", "capture" }) do
     local branch = applyBlock:match('eventName == "' .. eventName .. '"(.-)elseif')
         or applyBlock:match('eventName == "' .. eventName .. '"(.-)else')
     PZLinuxTestAssert(branch and branch:find("args%.target"), eventName .. " must resolve a real world target")
 end
+
+local takeCargoBranch = applyBlock:match('eventName == "takeCargo"(.-)elseif')
+PZLinuxTestAssert(takeCargoBranch and takeCargoBranch:find('usePlayerRecord%(7, "accepted", "spawned"%)'),
+    "cargo pickup must resolve the authoritative active contract")
+PZLinuxTestAssert(takeCargoBranch and takeCargoBranch:find("PZLinuxIsPlayerNearPosition")
+    and not takeCargoBranch:find("args%.target"),
+    "cargo pickup must validate canonical proximity without trusting a client object")
+local contextMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextContractsMenu.lua")
+local cargoAction = PZLinuxTestRead(luaRoot .. "/shared/TimedActions/ISTakeTheCargoAction.lua")
+PZLinuxTestAssert(contextMenu:find("cargoState == 1 or cargoState == 2")
+    and contextMenu:find("cargoDistance <= packageRadius")
+    and cargoAction:find('PZLinuxRequestContractWorldEvent%(self%.character, "takeCargo", {}'),
+    "cargo pickup must remain available when the replicated crate is missing")
 
 local pickupBranch = applyBlock:match('eventName == "pickupPackage"(.-)elseif')
 PZLinuxTestAssert(pickupBranch and pickupBranch:find("PZLinuxIsPlayerNearPosition"),

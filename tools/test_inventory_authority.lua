@@ -33,6 +33,15 @@ assert(requestDelivery:find("PZLinuxSyncAddedInventoryItem", 1, true), "Request 
 PZLinuxTestAssertOrdered(requestDelivery, "PZLinuxSyncAddedInventoryItem", "table.remove(modData.PZLinuxOnItemRequest",
     "Request state must clear only after parcel synchronization")
 
+local vehicleSpawn = PZLinuxTestFunction(shared, "PZLinuxRequestsApplySpawnVehicle", "PZLinuxRequestOrder")
+assert(vehicleSpawn:find("addVehicleDebug", 1, true), "requested vehicles must use the positioned B42 spawn API")
+assert(not vehicleSpawn:find("addVehicle(modData.PZLinuxOnItemRequestCarName, x, y, z)", 1, true),
+    "requested vehicles must not use the removed coordinate overload")
+assert(vehicleSpawn:find("candidate:isFree(false)", 1, true),
+    "requested vehicles must search for a nearby free square")
+PZLinuxTestAssertOrdered(vehicleSpawn, "PZLinuxSyncAddedInventoryItem", "modData.PZLinuxOnItemRequestCar = 0",
+    "vehicle request state must clear only after its key is synchronized")
+
 local mailRemove = PZLinuxTestFunction(shared, "PZLinuxMailRemoveInventoryItems", "PZLinuxMailGiveReward")
 assert(mailRemove:find("PZLinuxRemoveInventoryItem", 1, true), "Mail mission items must use synchronized removal")
 assert(not mailRemove:find("inventory:Remove(item)", 1, true), "Mail mission items must not use raw server removal")

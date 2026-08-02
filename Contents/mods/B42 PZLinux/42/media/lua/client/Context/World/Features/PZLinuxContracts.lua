@@ -566,8 +566,8 @@ function contractsUI:onContractPreview(contract, contractPreview)
             playerObj = playerObj,
             modData = modData,
             globalVolume = getCore():getOptionSoundVolume() / 50,
-            playerName = generatePseudo(string.lower(playerObj:getUsername())),
-            sellerName = "<" .. companyCode .. "> ",
+            playerName = PZLinuxFormatIRCName(generatePseudo(string.lower(playerObj:getUsername()))),
+            sellerName = PZLinuxFormatIRCName(companyCode),
             reward = reward,
             message = nil,
         }

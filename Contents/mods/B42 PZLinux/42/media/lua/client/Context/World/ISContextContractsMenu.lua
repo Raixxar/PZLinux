@@ -78,22 +78,32 @@ function completeContractMenu_AddContext(player, context, worldobjects)
             .. " sameZ=" .. tostring(packageSameZ))
     end
 
-    if modData.PZLinuxContractCargo == 2
-    or modData.PZLinuxContractProtect == 1
+    local cargoDistance = playerSquare and targetX and targetY and math.max(
+        math.abs(playerSquare:getX() - targetX),
+        math.abs(playerSquare:getY() - targetY)
+    ) or math.huge
+    local cargoState = tonumber(modData.PZLinuxContractCargo) or 0
+    if (cargoState == 1 or cargoState == 2)
+    and cargoDistance <= packageRadius and packageSameZ then
+        context:addOption(
+            PZLinuxGetText("IGUI_PZLinux_Context_PrepareCargo"),
+            nil,
+            completeContractMenu_OnCargo,
+            player,
+            targetX,
+            targetY,
+            targetZ
+        )
+    end
+
+    if modData.PZLinuxContractProtect == 1
     or modData.PZLinuxContractProtect == 3 then
         for _, obj in ipairs(worldobjects) do
             if instanceof(obj, "IsoObject") then
                 local square = obj:getSquare()
                 if square then
                     local x, y, z = square:getX(), square:getY(), square:getZ()
-                    local objectContractId = PZLinuxContractsGetEntityContractId(obj)
-                    local objectWorldRecord = PZLinuxContractsGetWorldContract(objectContractId)
-                    if objectWorldRecord and tonumber(objectWorldRecord.contractId) == 7 and objectWorldRecord.status == "spawned" then
-                        context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_PrepareCargo"), obj, completeContractMenu_OnCargo, player, x, y, z)
-                        break
-                    end
                     if targetX and targetY and targetZ and isNearTarget(x, y, z, targetX, targetY, targetZ) then
-                        if modData.PZLinuxContractCargo == 2 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_PrepareCargo"), obj, completeContractMenu_OnCargo, player, x, y, z); break end
                         if modData.PZLinuxContractProtect == 1 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_ProtectBuilding"), obj, completeContractMenu_OnProtect, player, x, y, z); break end
                         if modData.PZLinuxContractProtect == 3 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_MarkSectorClear"), obj, completeContractMenu_OnProtect, player, x, y, z); break end
                     end
@@ -197,7 +207,7 @@ function completeContractMenu_OnCargo(obj, player, x, y, z)
             ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISTakeTheCargoAction:new(playerObj, obj))
+    ISTimedActionQueue.add(ISTakeTheCargoAction:new(playerObj, obj, x, y, z))
 end
 
 function completeContractMenu_OnProtect(obj, player, x, y, z)

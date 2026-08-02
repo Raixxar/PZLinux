@@ -59,6 +59,11 @@ function generatePseudo(playerName)
     return "<" .. reversedName .. "> "
 end
 
+function PZLinuxFormatIRCName(value)
+    local name = tostring(value or ""):gsub("[<>]", ""):gsub("^%s+", ""):gsub("%s+$", "")
+    return "[" .. name .. "] "
+end
+
 function bagContainsCorpse(bag)
     if not bag then return false end
     local inv = bag:getInventory()

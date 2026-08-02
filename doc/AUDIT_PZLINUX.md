@@ -525,26 +525,26 @@ MP et equilibrage des sections suivantes restent applicables avant publication.
 
 ### Solo B42.20
 
-- [ ] Nouvelle sauvegarde : ordinateur, Internet, fermeture et reouverture.
-- [ ] Sauvegarde existante pre-v1 : migration sans perte banque/contrat/mail.
-- [ ] ATM : depot, retrait, reserve, manque de cash et reload save.
-- [ ] Dark Web : achat, perte, livraison, vente, redemption et reconnexion.
-- [ ] Trading : snapshot, achat, vente, Wallet et progression sur plusieurs jours.
+- [x] Nouvelle sauvegarde : ordinateur, Internet, fermeture et reouverture.
+- [x] Sauvegarde existante pre-v1 : migration sans perte banque/contrat/mail.
+- [x] ATM : depot, retrait, reserve, manque de cash et reload save.
+- [x] Dark Web : achat, perte, livraison, vente, redemption et reconnexion.
+- [x] Trading : snapshot, achat, vente, Wallet et progression sur plusieurs jours.
 - [ ] Jouer, annuler et completer les 12 contrats.
 - [ ] Verifier qu'une sync/clic droit ne rejoue plus la completion d'un contrat.
 - [ ] Echantillonner packages, cargo, manhunt, protect et vehicules B42.20.
 - [ ] Requests item/vehicule, double clic et chunk temporairement indisponible.
 - [ ] Mails ammo/medical, accept/delete/complete et inventaire insuffisant.
-- [ ] Hacking manuel/auto, lock, transfert et restart.
-- [ ] Blackjack win/lose/push/blackjack et fermeture en cours de partie.
-- [ ] Zombie Race : programmer plusieurs departs, fermer l'UI, verifier les
+- [x] Hacking manuel/auto, lock, transfert et restart.
+- [x] Blackjack win/lose/push/blackjack et fermeture en cours de partie.
+- [x] Zombie Race : programmer plusieurs departs, fermer l'UI, verifier les
   paiements automatiques, le dernier recap et la super cagnotte du dimanche 16:00.
-- [ ] Poker : six sieges, eliminations, duel final, side pot et cashout.
-- [ ] Tester EN, FR, DE, RU, TH, JP, KO, CN et CH sur les UI principales.
+- [x] Poker : six sieges, eliminations, duel final, side pot et cashout.
+- [x] Tester EN, FR, DE, RU, TH, JP, KO, CN et CH sur les UI principales.
 
 ### MP serveur dedie, deux clients
 
-Progression fonctionnelle des contrats en MP : **2/12 valides**.
+Progression fonctionnelle des contrats en MP : **3/12 valides**.
 
 - [ ] 1 - Kill zombies.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
@@ -565,25 +565,25 @@ Progression fonctionnelle des contrats en MP : **2/12 valides**.
   affiches et gain credite sur le compte bancaire.
 - [x] Dark Web MP : achats simples et multiples, reception des colis, vente,
   expedition et credit bancaire valides sur serveur heberge.
-- [ ] Meme solde apres sync/reconnexion pour chaque joueur.
-- [ ] Deux depots/retraits simultanes sur le meme ATM.
-- [ ] Meme snapshot/prix Trading pour les deux joueurs.
-- [ ] Trading simultane et fee 5 % apres redemarrage.
+- [x] Meme solde apres sync/reconnexion pour chaque joueur.
+- [x] Deux depots/retraits simultanes sur le meme ATM.
+- [x] Meme snapshot/prix Trading pour les deux joueurs.
+- [x] Trading simultane et fee 5 % apres redemarrage.
 - [ ] Dark Web : reconnexion avec achat/vente en attente et redemption par le bon
   joueur; achat simultane du dernier exemplaire avec deux clients.
 - [ ] Commandes mailbox forgees a distance/mauvais Z refusees.
-- [ ] Meme board de contrats pour les deux joueurs.
-- [ ] Offre acceptee simultanement : un seul gagnant, board resynchronise.
-- [ ] Objectif Package/Cargo/Manhunt vole et livre par un autre joueur.
+- [x] Meme board de contrats pour les deux joueurs.
+- [x] Offre acceptee simultanement : un seul gagnant, board resynchronise.
+- [x] Objectif Package/Cargo/Manhunt vole et livre par un autre joueur.
 - [ ] Unload/reload chunk conserve tags et statut d'objectif.
 - [ ] ContractAccept forge avec location/Z/reward/info ignores.
 - [ ] ContractComplete forge refuse sans credit.
 - [ ] Chaque event monde forge a distance/mauvaise entite refuse.
-- [ ] Request vehicule ne spawn qu'une fois apres double commande/reconnexion.
+- [x] Request vehicule ne spawn qu'une fois apres double commande/reconnexion.
 - [ ] Mail complete simultane ne retire/reward qu'une fois.
 - [ ] Deux Blackjack/Race/Poker simultanes sans fuite d'etat.
-- [ ] Restart pendant Blackjack/Race/Hacking/Poker applique un rollback exact.
-- [ ] Arret brutal pendant ContractComplete et cashout ne duplique pas le credit.
+- [x] Restart pendant Blackjack/Race/Hacking/Poker applique un rollback exact.
+- [x] Arret brutal pendant ContractComplete et cashout ne duplique pas le credit.
 
 ### Controller et split-screen
 

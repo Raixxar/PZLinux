@@ -204,6 +204,16 @@ PZLinuxTestAssert(not contractsUi:find("table%.remove%(selectedContracts"),
     "previewing a contract must not consume the client-side offer")
 PZLinuxTestAssert(contractsUi:find("PZLinux contract preview error:"),
     "contract preview failures must not leave a silent empty screen")
+PZLinuxTestAssert(contractsUi:find("playerName = PZLinuxFormatIRCName")
+    and contractsUi:find("sellerName = PZLinuxFormatIRCName"),
+    "inline contract dialogues must use rich-text-safe IRC sender names")
+local contractDialogue = PZLinuxTestRead(luaRoot .. "/client/Context/World/Contracts/PZLinuxContractDialogue.lua")
+PZLinuxTestAssert(contractDialogue:find("playerName = PZLinuxFormatIRCName")
+    and contractDialogue:find("sellerName = PZLinuxFormatIRCName"),
+    "external contract dialogues must use rich-text-safe IRC sender names")
+local utils = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxUtils.lua")
+PZLinuxTestAssert(utils:find('return "%[" %.%. name %.%. "%] "'),
+    "IRC sender names must use visible brackets instead of rich-text tags")
 
 local boardRefreshBlock = variables:match("function PZLinuxContractsGetBoardData.-\nend\n\nfunction PZLinuxContractsGetBoard")
 PZLinuxTestAssert(boardRefreshBlock and not boardRefreshBlock:find("PZLinuxContractsClearState"),

@@ -31,11 +31,6 @@ local function PZLinuxRequestFormatText(key, ...)
     return ok and result or template
 end
 
-local function PZLinuxRequestChatName(value)
-    local name = tostring(value or ""):gsub("[<>]", ""):gsub("^%s+", ""):gsub("%s+$", "")
-    return "[" .. name .. "] "
-end
-
 local function PZLinuxRequestSetConversation(ui, message)
     local panel = ui and ui.loadingMessage
     if not panel then return end
@@ -243,11 +238,11 @@ function requestUI:onContractId(contract)
 
         getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         local sellerName = generateUsername()
-        local playerName = PZLinuxRequestChatName(generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername())))
+        local playerName = PZLinuxFormatIRCName(generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername())))
 
         message = PZLinuxRequestFormatText("IGUI_PZLinux_Request_UserJoined", sellerName)
         PZLinuxRequestSetConversation(self, message)
-        sellerName = PZLinuxRequestChatName(sellerName)
+        sellerName = PZLinuxFormatIRCName(sellerName)
 
         if not PZLinux.Typing.waitProfile(self, "message") then return end
 
