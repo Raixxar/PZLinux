@@ -33,14 +33,27 @@ assert(requestDelivery:find("PZLinuxSyncAddedInventoryItem", 1, true), "Request 
 PZLinuxTestAssertOrdered(requestDelivery, "PZLinuxSyncAddedInventoryItem", "table.remove(modData.PZLinuxOnItemRequest",
     "Request state must clear only after parcel synchronization")
 
-local vehicleSpawn = PZLinuxTestFunction(shared, "PZLinuxRequestsApplySpawnVehicle", "PZLinuxRequestOrder")
+local vehicleSpawn = PZLinuxTestFunction(shared, "PZLinuxRequestsApplySpawnVehicle", "PZLinuxRequestsApplyConfirmVehicle")
 assert(vehicleSpawn:find("addVehicleDebug", 1, true), "requested vehicles must use the positioned B42 spawn API")
 assert(not vehicleSpawn:find("addVehicle(modData.PZLinuxOnItemRequestCarName, x, y, z)", 1, true),
     "requested vehicles must not use the removed coordinate overload")
 assert(vehicleSpawn:find("candidate:isFree(false)", 1, true),
     "requested vehicles must search for a nearby free square")
-PZLinuxTestAssertOrdered(vehicleSpawn, "PZLinuxSyncAddedInventoryItem", "modData.PZLinuxOnItemRequestCar = 0",
-    "vehicle request state must clear only after its key is synchronized")
+assert(vehicleSpawn:find("PZLinuxRequestsFindDeliveredVehicle", 1, true)
+    and vehicleSpawn:find("PZLinuxRequestsRefreshVehicleNetwork", 1, true),
+    "vehicle spawn retries must reuse and refresh the tagged server vehicle")
+assert(not vehicleSpawn:find("modData.PZLinuxOnItemRequestCar = 0", 1, true),
+    "vehicle request state must remain pending until the client sees the vehicle")
+assert(vehicleSpawn:find("PZLinuxRequestVehicleDeliveryId", 1, true)
+    and vehicleSpawn:find("vehicleData.PZLinuxRequestVehicleDeliveryId", 1, true),
+    "requested vehicles must carry a persistent delivery id")
+
+local vehicleConfirm = PZLinuxTestFunction(shared, "PZLinuxRequestsApplyConfirmVehicle", "PZLinuxRequestOrder")
+assert(vehicleConfirm:find("PZLinuxRequestsFindDeliveredVehicle", 1, true)
+    and vehicleConfirm:find("PZLinuxIsPlayerNearPosition", 1, true),
+    "vehicle confirmation must validate the tagged server vehicle and player proximity")
+assert(vehicleConfirm:find("modData.PZLinuxOnItemRequestCar = 0", 1, true),
+    "vehicle request state must clear only after validated client visibility")
 
 local mailRemove = PZLinuxTestFunction(shared, "PZLinuxMailRemoveInventoryItems", "PZLinuxMailGiveReward")
 assert(mailRemove:find("PZLinuxRemoveInventoryItem", 1, true), "Mail mission items must use synchronized removal")
@@ -83,6 +96,13 @@ assert(mailboxState:find("hasPickup", 1, true) and mailboxState:find("hasContrac
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
 assert(serverCommands:find("PZLinuxMailboxState = PZLinuxServerMailboxState", 1, true),
     "the authoritative mailbox-state command must be registered")
+assert(serverCommands:find("PZLinuxRequestConfirmVehicle = PZLinuxServerRequestConfirmVehicle", 1, true),
+    "the authoritative vehicle confirmation command must be registered")
+
+local clientEvents = PZLinuxTestRead(luaRoot .. "/client/Context/World/Events/PZLinuxOnEvents.lua")
+assert(clientEvents:find("PZLinuxFindVisibleDeliveredVehicle", 1, true)
+    and clientEvents:find("PZLinuxRequestConfirmVehicle", 1, true),
+    "the client must acknowledge a delivery only after the vehicle is visible locally")
 
 for _, relativePath in ipairs({
     "/client/Context/World/ISContextMailBox.lua",

@@ -320,6 +320,17 @@ local function PZLinuxServerRequestSpawnVehicle(player, args)
     end)
 end
 
+local function PZLinuxServerRequestConfirmVehicle(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxRequestConfirmVehicle", args, "PZLinuxRequestConfirmVehicleResult", function()
+        return PZLinuxRequestsApplyConfirmVehicle(
+            player,
+            args and args.deliveryId,
+            args and args.vehicleId,
+            args and args.requestId
+        )
+    end)
+end
+
 local function PZLinuxServerMailAccept(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxMailAccept", args, "PZLinuxMailAcceptResult", function()
         return PZLinuxMailApplyAccept(player, args and args.mailId, args and args.requestId)
@@ -405,6 +416,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxMailboxState = PZLinuxServerMailboxState,
     PZLinuxReputationSnapshot = PZLinuxServerReputationSnapshot,
     PZLinuxRequestSpawnVehicle = PZLinuxServerRequestSpawnVehicle,
+    PZLinuxRequestConfirmVehicle = PZLinuxServerRequestConfirmVehicle,
     PZLinuxMailAccept = PZLinuxServerMailAccept,
     PZLinuxMailDelete = PZLinuxServerMailDelete,
     PZLinuxMailComplete = PZLinuxServerMailComplete,

@@ -97,15 +97,14 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Restored missing Cargo, Manhunt and Protect world objectives after reconnect
   from their persistent server records, without duplicating tagged entities.
 - Hardened Cargo restoration so contract type 7 remains actionable when legacy
-  client flags are stale, and replaced invisible pre-fix crates with a fully
-  tagged server object replicated before the interaction begins.
+  client flags are stale, and replaced invisible legacy objects with a tagged
+  `IsoThumpable` crate registered as a special world object before replication.
 - Kept killed Manhunt targets in the corpse-interaction state until their proof
   is collected.
 - Broadcast validated live-zombie captures from the authoritative server so the
   captured zombie is neutralized and removed from every connected client.
-- Spawn Manhunt targets and protection hordes through the multiplayer-aware game
-  population helper, using a nearby free square when the mission marker itself
-  is obstructed.
+- Spawn Manhunt targets and protection hordes through the game population helper,
+  using a nearby free square when the mission marker itself is obstructed.
 - Localized contract, mail, mailbox, computer-repair and ATM context-menu actions
   across every language catalog shipped with the mod.
 - Restored visible IRC-style sender names in every contract conversation after
@@ -117,11 +116,23 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Made Cargo restoration idempotent: repeated client recovery requests now
   reuse and retransmit the same tagged server crate instead of deleting and
   recreating it every five seconds.
+- Added a one-time Cargo visual migration from v2 to v3 and explicit sprite
+  replication, so contracts already in progress replace their old invisible
+  object without creating duplicate crates.
+- Fixed Cargo removal ordering so the server broadcasts and removes the world
+  object atomically instead of attempting to transmit an object already gone.
 - Restored stationary seated Manhunt targets, expanded their free-square search
   radius and returned the authoritative spawn coordinates for MP diagnostics.
+- Replaced Manhunt's tutorial-only `setUseless(true)` target with a network-active,
+  seated and immobile v2 zombie. Existing targets migrate once, and clients keep
+  requesting restoration until the authoritative zombie ID is actually visible;
+  each restoration also forces one immediate `NetworkZombieAI` update.
 - Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
   with canonical proximity checks, nearby free-square selection, synchronized
   key rollback on failure and throttled client retry requests.
+- Changed requested vehicles to a two-phase MP delivery: paid state remains
+  pending until the client sees the tagged server vehicle, retries retransmit
+  the same vehicle and forged confirmations cannot consume the order.
 - Prevented contract completion and cancellation responses from opening a
   second Contracts window over the existing payment receipt.
 - Localized both mailbox interfaces and selected their action label from the

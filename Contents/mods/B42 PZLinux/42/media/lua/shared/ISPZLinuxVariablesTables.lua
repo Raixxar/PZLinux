@@ -1145,6 +1145,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxRequestOrderResult"
         or command == "PZLinuxRequestDeliverResult"
         or command == "PZLinuxRequestSpawnVehicleResult"
+        or command == "PZLinuxRequestConfirmVehicleResult"
         or command == "PZLinuxMailboxStateResult"
         or command == "PZLinuxReputationSnapshotResult"
         or command == "PZLinuxMailAcceptResult"
@@ -1312,6 +1313,13 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         modData.PZLinuxRequestLocationX = order.locationX
         modData.PZLinuxRequestLocationY = order.locationY
         modData.PZLinuxRequestLocationZ = order.locationZ
+        modData.PZLinuxRequestVehicleDeliveryId = table.concat({
+            "PZLinuxVehicle",
+            PZLinuxGetPlayerKey(playerObj),
+            tostring(getGameTime and math.floor(getGameTime():getWorldAgeHours() * 3600) or 0),
+            tostring(ZombRand(100000, 1000000)),
+        }, "-")
+        modData.PZLinuxRequestVehicleKeyId = 0
         modData.PZLinuxOnItemRequest = {}
     else
         modData.PZLinuxOnItemRequestCar = 0
@@ -1387,6 +1395,61 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
     return { ok = true, requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
 end
 
+local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
+    if not deliveryId or deliveryId == "" or not getCell then return nil end
+    local vehicles = getCell():getVehicles()
+    if not vehicles then return nil end
+
+    for index = 0, vehicles:size() - 1 do
+        local vehicle = vehicles:get(index)
+        local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
+        if data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId) then
+            return vehicle
+        end
+    end
+    return nil
+end
+
+local function PZLinuxRequestsFindVehicleKey(inventory, keyId)
+    if not inventory or not keyId or keyId <= 0 then return nil end
+    local items = inventory:getItems()
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and item.getKeyId and tonumber(item:getKeyId()) == tonumber(keyId) then return item end
+    end
+    return nil
+end
+
+local function PZLinuxRequestsEnsureVehicleKey(playerObj, keyId)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory then return nil, "missing_inventory" end
+    local existingKey = PZLinuxRequestsFindVehicleKey(inventory, keyId)
+    if existingKey then return existingKey end
+
+    local key = instanceItem("Base.Key_Blank")
+    if not key then return nil, "key_creation_failed" end
+    key:setKeyId(keyId)
+    key:setName("Pirated Key #" .. tostring(keyId))
+    local keyItem = inventory:AddItem(key)
+    if not keyItem or not PZLinuxSyncAddedInventoryItem(playerObj, keyItem) then
+        if keyItem then inventory:Remove(keyItem) end
+        return nil, "key_sync_failed"
+    end
+    return keyItem
+end
+
+local function PZLinuxRequestsRefreshVehicleNetwork(vehicle)
+    if not vehicle then return end
+    if vehicle.isExistInTheWorld and not vehicle:isExistInTheWorld() and vehicle.addToWorld then
+        vehicle:addToWorld()
+    end
+    if vehicle.transmitModData then vehicle:transmitModData() end
+    if vehicle.updateParts then vehicle:updateParts() end
+    local managerClass = rawget(_G, "VehicleManager")
+    local manager = managerClass and managerClass.instance or nil
+    if manager and manager.serverUpdate and isServer and isServer() then manager:serverUpdate() end
+end
+
 function PZLinuxRequestsApplySpawnVehicle(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
@@ -1401,6 +1464,36 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
     end
     if not PZLinuxIsPlayerNearPosition(playerObj, x, y, z, 50) then
         return { ok = true, requestId = requestId, spawned = false, tooFar = true, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local deliveryId = tostring(modData.PZLinuxRequestVehicleDeliveryId or "")
+    if deliveryId == "" then
+        deliveryId = table.concat({
+            "PZLinuxVehicle",
+            PZLinuxGetPlayerKey(playerObj),
+            tostring(getGameTime and math.floor(getGameTime():getWorldAgeHours() * 3600) or 0),
+            tostring(ZombRand(100000, 1000000)),
+        }, "-")
+        modData.PZLinuxRequestVehicleDeliveryId = deliveryId
+    end
+
+    local existingVehicle = PZLinuxRequestsFindDeliveredVehicle(deliveryId)
+    if existingVehicle then
+        PZLinuxRequestsRefreshVehicleNetwork(existingVehicle)
+        print("[PZLinux Vehicle] reused delivery=" .. deliveryId
+            .. " vehicleId=" .. tostring(existingVehicle:getId()))
+        return {
+            ok = true,
+            requestId = requestId,
+            spawned = true,
+            existing = true,
+            deliveryId = deliveryId,
+            vehicleId = existingVehicle:getId(),
+            spawnX = existingVehicle:getX(),
+            spawnY = existingVehicle:getY(),
+            spawnZ = existingVehicle:getZ(),
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
     end
 
     local centerX = math.floor(tonumber(x) or 0)
@@ -1426,18 +1519,15 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
         return { ok = false, error = "missing_square", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local key = instanceItem("Base.Key_Blank")
-    local inventory = playerObj:getInventory()
-    if not key or not inventory then
-        return { ok = false, error = "key_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    local uniqueKeyId = tonumber(modData.PZLinuxRequestVehicleKeyId) or 0
+    if uniqueKeyId <= 0 then
+        uniqueKeyId = ZombRand(100000, 1000000)
+        modData.PZLinuxRequestVehicleKeyId = uniqueKeyId
+        PZLinuxTransmitPlayerModData(playerObj)
     end
-    local uniqueKeyId = ZombRand(1, 10000)
-    key:setKeyId(uniqueKeyId)
-    key:setName("Pirated Key #" .. uniqueKeyId)
-    local keyItem = inventory:AddItem(key)
-    if not keyItem or not PZLinuxSyncAddedInventoryItem(playerObj, keyItem) then
-        if keyItem then inventory:Remove(keyItem) end
-        return { ok = false, error = "key_sync_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    local keyItem, keyError = PZLinuxRequestsEnsureVehicleKey(playerObj, uniqueKeyId)
+    if not keyItem then
+        return { ok = false, error = keyError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     local vehicle
@@ -1451,10 +1541,53 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
 
     vehicle:setKeyId(uniqueKeyId)
     vehicle:repair()
+    local vehicleData = vehicle:getModData()
+    vehicleData.PZLinuxRequestVehicleDeliveryId = deliveryId
+    vehicleData.PZLinuxRequestVehicleOwner = PZLinuxGetPlayerKey(playerObj)
+    vehicleData.PZLinuxRequestVehicleScript = modData.PZLinuxOnItemRequestCarName
+    PZLinuxRequestsRefreshVehicleNetwork(vehicle)
+    PZLinuxTransmitPlayerModData(playerObj)
+    print("[PZLinux Vehicle] spawned delivery=" .. deliveryId
+        .. " vehicleId=" .. tostring(vehicle:getId())
+        .. " at " .. tostring(vehicle:getX()) .. "," .. tostring(vehicle:getY()) .. "," .. tostring(vehicle:getZ()))
+    return {
+        ok = true,
+        requestId = requestId,
+        spawned = true,
+        deliveryId = deliveryId,
+        vehicleId = vehicle:getId(),
+        spawnX = vehicle:getX(),
+        spawnY = vehicle:getY(),
+        spawnZ = vehicle:getZ(),
+        balance = PZLinuxLoadBankBalance(playerObj),
+    }
+end
+
+function PZLinuxRequestsApplyConfirmVehicle(player, deliveryId, vehicleId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local modData = playerObj:getModData()
+    if modData.PZLinuxOnItemRequestCar ~= 1 then
+        return { ok = true, requestId = requestId, confirmed = true, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    if tostring(deliveryId or "") ~= tostring(modData.PZLinuxRequestVehicleDeliveryId or "") then
+        return { ok = false, error = "invalid_vehicle_delivery", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local vehicle = PZLinuxRequestsFindDeliveredVehicle(deliveryId)
+    if not vehicle or tonumber(vehicle:getId()) ~= tonumber(vehicleId) then
+        return { ok = false, error = "vehicle_not_found", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    if not PZLinuxIsPlayerNearPosition(playerObj, vehicle:getX(), vehicle:getY(), vehicle:getZ(), 50) then
+        return { ok = false, error = "too_far_from_vehicle", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
     modData.PZLinuxOnItemRequestCar = 0
     modData.PZLinuxActiveRequest = 0
+    modData.PZLinuxRequestVehicleDeliveryId = nil
+    modData.PZLinuxRequestVehicleKeyId = 0
     PZLinuxTransmitPlayerModData(playerObj)
-    return { ok = true, requestId = requestId, spawned = true, balance = PZLinuxLoadBankBalance(playerObj) }
+    return { ok = true, requestId = requestId, confirmed = true, balance = PZLinuxLoadBankBalance(playerObj) }
 end
 
 function PZLinuxRequestOrder(player, state, callback)
@@ -1496,6 +1629,15 @@ function PZLinuxRequestSpawnVehicle(player, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxRequestsApplySpawnVehicle(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestConfirmVehicle(player, deliveryId, vehicleId, callback)
+    local requestId = PZLinuxNextRequestId("request-vehicle-confirm")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, deliveryId = deliveryId, vehicleId = vehicleId }
+    if PZLinuxSendClientCommand("PZLinuxRequestConfirmVehicle", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxRequestsApplyConfirmVehicle(player, deliveryId, vehicleId, requestId))
     return requestId
 end
 
@@ -2860,8 +3002,12 @@ function PZLinuxContractsTransmitSquareObject(square, obj)
         square:transmitAddObjectToSquare(obj, objectIndex)
     end
     if obj and obj.transmitCompleteItemToClients then obj:transmitCompleteItemToClients() end
+    if obj and obj.transmitUpdatedSpriteToClients then obj:transmitUpdatedSpriteToClients() end
     if square and square.transmitModdata then square:transmitModdata() end
 end
+
+local PZLinuxCargoObjectVersion = 3
+local PZLinuxManhuntTargetVersion = 2
 
 local function PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
     if not getCell then return false end
@@ -2886,28 +3032,41 @@ local function PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
     return nil, nil
 end
 
-function PZLinuxContractsRemoveCargoObject(x, y, z, contractWorldId)
-    local obj, square = PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
+local function PZLinuxContractsRemoveCargoObjectFromSquare(obj, square)
     if not obj or not square then return false end
-    square:removeTileObject(obj)
-    if square.transmitRemoveItemFromSquare then square:transmitRemoveItemFromSquare(obj) end
+    if square.transmitRemoveItemFromSquare then
+        square:transmitRemoveItemFromSquare(obj)
+    else
+        square:removeTileObject(obj)
+    end
     return true
 end
 
+function PZLinuxContractsRemoveCargoObject(x, y, z, contractWorldId)
+    local obj, square = PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
+    return PZLinuxContractsRemoveCargoObjectFromSquare(obj, square)
+end
+
 function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
-    if not getCell or not IsoObject then return false end
+    if not getCell or not IsoThumpable then return false end
     local existingObject, existingSquare = PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
     if existingObject then
         local existingData = existingObject:getModData()
-        existingData.PZLinuxContractId = contractWorldId
-        existingData.PZLinuxContractObjective = "cargo"
-        existingData.PZLinuxCargoVersion = 2
-        PZLinuxContractsTransmitSquareObject(existingSquare, existingObject)
-        if existingObject.transmitModData then existingObject:transmitModData() end
-        print("[PZLinux Cargo] reused and retransmitted at "
-            .. tostring(existingSquare:getX()) .. "," .. tostring(existingSquare:getY()) .. "," .. tostring(existingSquare:getZ())
+        if tonumber(existingData.PZLinuxCargoVersion) == PZLinuxCargoObjectVersion then
+            existingData.PZLinuxContractId = contractWorldId
+            existingData.PZLinuxContractObjective = "cargo"
+            PZLinuxContractsTransmitSquareObject(existingSquare, existingObject)
+            if existingObject.transmitModData then existingObject:transmitModData() end
+            print("[PZLinux Cargo] reused and retransmitted v3 crate at "
+                .. tostring(existingSquare:getX()) .. "," .. tostring(existingSquare:getY()) .. "," .. tostring(existingSquare:getZ())
+                .. " contract=" .. tostring(contractWorldId))
+            return true, false, existingSquare:getX(), existingSquare:getY(), existingSquare:getZ()
+        end
+
+        PZLinuxContractsRemoveCargoObjectFromSquare(existingObject, existingSquare)
+        print("[PZLinux Cargo] replaced legacy crate version="
+            .. tostring(existingData.PZLinuxCargoVersion or 0)
             .. " contract=" .. tostring(contractWorldId))
-        return true, false, existingSquare:getX(), existingSquare:getY(), existingSquare:getZ()
     end
     local centerX = math.floor(tonumber(x) or 0)
     local centerY = math.floor(tonumber(y) or 0)
@@ -2941,22 +3100,30 @@ function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
         return false
     end
 
-    local obj = IsoObject.new(square, "carpentry_01_19", "PZLinux Cargo")
+    local cargoSprite = tostring(PZLinux.Config.Contracts.cargoSprite or "carpentry_01_19")
+    local obj = IsoThumpable.new(getCell(), square, cargoSprite, false, {})
     if not obj then
-        print("[PZLinux Cargo] spawn failed: IsoObject creation returned nil"
+        print("[PZLinux Cargo] spawn failed: IsoThumpable creation returned nil"
             .. " contract=" .. tostring(contractWorldId))
         return false
     end
+    obj:setName("PZLinux Cargo")
+    obj:setAlphaAndTarget(1.0)
+    obj:setIsThumpable(false)
+    obj:setIsDismantable(false)
+    obj:setCanBarricade(false)
+    obj:setCanPassThrough(true)
+    obj:setBlockAllTheSquare(false)
     local data = obj:getModData()
     data.PZLinuxContractId = contractWorldId
     data.PZLinuxContractObjective = "cargo"
-    data.PZLinuxCargoVersion = 2
-    square:AddTileObject(obj)
+    data.PZLinuxCargoVersion = PZLinuxCargoObjectVersion
+    square:AddSpecialObject(obj)
     if obj.addToWorld then obj:addToWorld() end
     PZLinuxContractsTransmitSquareObject(square, obj)
     if obj.transmitModData then obj:transmitModData() end
 
-    print("[PZLinux Cargo] spawned at "
+    print("[PZLinux Cargo] spawned v3 crate sprite=" .. cargoSprite .. " at "
         .. tostring(square:getX()) .. "," .. tostring(square:getY()) .. "," .. tostring(square:getZ())
         .. " contract=" .. tostring(contractWorldId))
     return true, true, square:getX(), square:getY(), square:getZ()
@@ -2988,6 +3155,30 @@ local function PZLinuxContractsFirstSpawnedZombie(spawned)
     return spawned[1]
 end
 
+local function PZLinuxContractsGetZombieOnlineId(zombie)
+    if not zombie then return -1 end
+    if zombie.getOnlineID then return tonumber(zombie:getOnlineID()) or -1 end
+    return tonumber(zombie.OnlineID) or -1
+end
+
+local function PZLinuxContractsConfigureManhuntZombie(zombie)
+    if not zombie then return false end
+    local data = zombie:getModData()
+    data.PZLinuxManhuntVersion = PZLinuxManhuntTargetVersion
+    if zombie.setTarget then zombie:setTarget(nil) end
+    -- setUseless is intended for local tutorial actors and may exclude a zombie
+    -- from normal multiplayer updates. Keep the target active but immobile.
+    if zombie.setUseless then zombie:setUseless(false) end
+    if zombie.setCanWalk then zombie:setCanWalk(false) end
+    if zombie.setAlwaysKnockedDown then zombie:setAlwaysKnockedDown(true) end
+    if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
+    if zombie.resetModelNextFrame then zombie:resetModelNextFrame() end
+    if zombie.transmitModData then zombie:transmitModData() end
+    local networkAI = zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
+    if networkAI and networkAI.extraUpdate then networkAI:extraUpdate() end
+    return true
+end
+
 function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     local square = PZLinuxContractsFindZombieSpawnSquare(x, y, z)
     if not square then return false end
@@ -3002,12 +3193,12 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     end
     if not zombie then return false end
 
+    if zombie.isExistInTheWorld and not zombie:isExistInTheWorld() and zombie.addToWorld then
+        zombie:addToWorld()
+    end
     PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie")
     if objectiveType == "manhunt" then
-        if zombie.setTarget then zombie:setTarget(nil) end
-        if zombie.setUseless then zombie:setUseless(true) end
-        if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
-        if zombie.transmitModData then zombie:transmitModData() end
+        PZLinuxContractsConfigureManhuntZombie(zombie)
     end
     return true, zombie, square
 end
@@ -3051,20 +3242,27 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
     if not record then return false, 0 end
     local existingZombie = PZLinuxContractsFindTaggedZombie(record.id, "manhunt")
     if existingZombie then
+        local existingData = existingZombie:getModData()
+        local existingVersion = tonumber(existingData.PZLinuxManhuntVersion) or 0
         local distanceFromTarget = math.max(
             math.abs(existingZombie:getX() - (tonumber(record.locationX) or 0)),
             math.abs(existingZombie:getY() - (tonumber(record.locationY) or 0))
         )
         local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
-        if distanceFromTarget <= searchRadius then
-            if existingZombie.setTarget then existingZombie:setTarget(nil) end
-            if existingZombie.setUseless then existingZombie:setUseless(true) end
-            if existingZombie.setSitAgainstWall then existingZombie:setSitAgainstWall(true) end
-            return true, 0, existingZombie:getX(), existingZombie:getY(), existingZombie:getZ()
+        if existingVersion == PZLinuxManhuntTargetVersion and distanceFromTarget <= searchRadius then
+            PZLinuxContractsConfigureManhuntZombie(existingZombie)
+            print("[PZLinux Manhunt] reused network target v2 onlineId="
+                .. tostring(PZLinuxContractsGetZombieOnlineId(existingZombie))
+                .. " at " .. tostring(existingZombie:getX()) .. ","
+                .. tostring(existingZombie:getY()) .. "," .. tostring(existingZombie:getZ())
+                .. " contract=" .. tostring(record.id))
+            return true, 0, existingZombie:getX(), existingZombie:getY(), existingZombie:getZ(),
+                PZLinuxContractsGetZombieOnlineId(existingZombie)
         end
         PZLinuxContractsRemoveWorldEntity(existingZombie)
-        print("[PZLinux Manhunt] removed stale target at distance "
-            .. tostring(math.floor(distanceFromTarget)) .. " contract=" .. tostring(record.id))
+        print("[PZLinux Manhunt] replaced legacy/stale target version="
+            .. tostring(existingVersion) .. " distance=" .. tostring(math.floor(distanceFromTarget))
+            .. " contract=" .. tostring(record.id))
     end
     local created, zombie, square = PZLinuxContractsSpawnZombieAt(
         record.locationX,
@@ -3074,10 +3272,19 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
         "manhunt"
     )
     if not created then return false, 0 end
+    local onlineId = PZLinuxContractsGetZombieOnlineId(zombie)
+    local inWorld = not zombie.isExistInTheWorld or zombie:isExistInTheWorld()
+    print("[PZLinux Manhunt] spawned network target v2 onlineId=" .. tostring(onlineId)
+        .. " inWorld=" .. tostring(inWorld)
+        .. " at " .. tostring(square and square:getX() or zombie:getX()) .. ","
+        .. tostring(square and square:getY() or zombie:getY()) .. ","
+        .. tostring(square and square:getZ() or zombie:getZ())
+        .. " contract=" .. tostring(record.id))
     return true, 1,
         square and square:getX() or zombie:getX(),
         square and square:getY() or zombie:getY(),
-        square and square:getZ() or zombie:getZ()
+        square and square:getZ() or zombie:getZ(),
+        onlineId
 end
 
 local function PZLinuxContractsSpawnProtectZombies(record, count)
@@ -3401,6 +3608,7 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     local spawnX
     local spawnY
     local spawnZ
+    local spawnEntityId
     local function reject(errorCode)
         return { ok = false, error = errorCode, requestId = requestId, event = eventName }
     end
@@ -3420,7 +3628,7 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         if recordError then return reject(recordError) end
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
         local restored
-        restored, spawned, spawnX, spawnY, spawnZ = PZLinuxContractsEnsureManhuntZombie(record)
+        restored, spawned, spawnX, spawnY, spawnZ, spawnEntityId = PZLinuxContractsEnsureManhuntZombie(record)
         if not restored then return reject("spawn_failed") end
         record.spawned = true
         record.status = "spawned"
@@ -3537,6 +3745,7 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         spawnX = spawnX,
         spawnY = spawnY,
         spawnZ = spawnZ,
+        spawnEntityId = spawnEntityId,
         locationX = worldRecord and worldRecord.locationX or nil,
         locationY = worldRecord and worldRecord.locationY or nil,
         locationZ = worldRecord and worldRecord.locationZ or nil,

@@ -1,4 +1,5 @@
 local PZLinuxManhuntSpawnRequests = {}
+local PZLinuxManhuntTargetState = {}
 
 local function PZLinuxContractRestoreNow()
     local timestampProvider = rawget(_G, "getTimestampMs")
@@ -15,9 +16,33 @@ local function PZLinuxCanRequestContractRestore(requests, player, cooldown)
     return true
 end
 
+local function PZLinuxFindVisibleManhuntTarget(modData, expectedOnlineId)
+    if not getCell then return nil end
+    local zombies = getCell():getZombieList()
+    if not zombies then return nil end
+    local contractWorldId = tostring(modData.PZLinuxContractId or "")
+    local onlineId = tonumber(expectedOnlineId) or -1
+
+    for index = 0, zombies:size() - 1 do
+        local zombie = zombies:get(index)
+        local data = zombie and zombie.getModData and zombie:getModData() or nil
+        local zombieOnlineId = zombie and zombie.getOnlineID and tonumber(zombie:getOnlineID()) or -1
+        local matchesNetworkId = onlineId >= 0 and zombieOnlineId == onlineId
+        local matchesTag = data
+            and tostring(data.PZLinuxContractId or "") == contractWorldId
+            and data.PZLinuxContractObjective == "manhunt"
+            and tonumber(data.PZLinuxManhuntVersion) == 2
+        if zombie and (not zombie.isDead or not zombie:isDead()) and (matchesNetworkId or matchesTag) then
+            return zombie
+        end
+    end
+    return nil
+end
+
 local function checkAndSpawnZombie(player)
     if not player then return end
     local modData = player:getModData()
+    local playerKey = tostring(player:getPlayerNum())
     local manhuntState = tonumber(modData.PZLinuxContractManhunt) or 0
     local record = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
     local recordStatus = record and record.status or nil
@@ -26,36 +51,92 @@ local function checkAndSpawnZombie(player)
         local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
+        local targetState = PZLinuxManhuntTargetState[playerKey]
+        if dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState and targetState.onlineId) then
+            return
+        end
         if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
             PZLinuxRequestContractWorldEvent(player, "spawnManhunt", {}, function(result)
                 if result and result.ok then
+                    PZLinuxManhuntTargetState[playerKey] = { onlineId = result.spawnEntityId }
                     print("[PZLinux Manhunt] server confirmed target at "
                         .. tostring(result.spawnX or x) .. ","
                         .. tostring(result.spawnY or y) .. ","
                         .. tostring(result.spawnZ or z)
+                        .. " onlineId=" .. tostring(result.spawnEntityId or -1)
                         .. " created=" .. tostring(tonumber(result.spawned) == 1))
                 elseif result and result.error ~= "invalid_contract_state" then
                     print("[PZLinux Manhunt] restore failed: " .. tostring(result.error or "unknown"))
                 end
             end)
         end
+    else
+        PZLinuxManhuntTargetState[playerKey] = nil
     end
 end
 Events.OnPlayerMove.Add(checkAndSpawnZombie)
 
 local PZLinuxVehicleSpawnRequests = {}
+local PZLinuxVehicleDeliveryState = {}
+
+local function PZLinuxFindVisibleDeliveredVehicle(vehicleId, deliveryId)
+    if not getCell then return nil end
+    local vehicles = getCell():getVehicles()
+    if not vehicles then return nil end
+    for index = 0, vehicles:size() - 1 do
+        local vehicle = vehicles:get(index)
+        local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
+        if vehicle and ((vehicleId and tonumber(vehicle:getId()) == tonumber(vehicleId))
+        or (data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId or ""))) then
+            return vehicle
+        end
+    end
+    return nil
+end
+
+local function PZLinuxConfirmVisibleVehicle(player, state)
+    if not state then return false end
+    if state.confirming then return true end
+    local vehicle = PZLinuxFindVisibleDeliveredVehicle(state.vehicleId, state.deliveryId)
+    if not vehicle then return false end
+    state.confirming = true
+    PZLinuxRequestConfirmVehicle(player, state.deliveryId, vehicle:getId(), function(result)
+        state.confirming = false
+        if result and result.ok and result.confirmed then
+            local modData = player:getModData()
+            modData.PZLinuxOnItemRequestCar = 0
+            modData.PZLinuxActiveRequest = 0
+            PZLinuxVehicleDeliveryState[tostring(player:getPlayerNum())] = nil
+            HaloTextHelper.addGoodText(player, "Requested vehicle delivered")
+        elseif result then
+            print("[PZLinux Vehicle] confirmation failed: " .. tostring(result.error or "unknown"))
+        end
+    end)
+    return true
+end
 
 local function checkAndSpawnVehicle(player)
     if not player then return end
     local modData = player:getModData()
     if modData.PZLinuxOnItemRequestCar == 1 then
+        local playerKey = tostring(player:getPlayerNum())
+        local deliveryState = PZLinuxVehicleDeliveryState[playerKey]
+        if PZLinuxConfirmVisibleVehicle(player, deliveryState) then return end
         local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
         if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxVehicleSpawnRequests, player, 5) then
             PZLinuxRequestSpawnVehicle(player, function(result)
                 if result and result.ok and result.spawned then
-                    HaloTextHelper.addGoodText(player, "Requested vehicle delivered")
+                    PZLinuxVehicleDeliveryState[playerKey] = {
+                        deliveryId = result.deliveryId,
+                        vehicleId = result.vehicleId,
+                    }
+                    print("[PZLinux Vehicle] server confirmed vehicleId="
+                        .. tostring(result.vehicleId) .. " delivery=" .. tostring(result.deliveryId)
+                        .. " at " .. tostring(result.spawnX) .. ","
+                        .. tostring(result.spawnY) .. "," .. tostring(result.spawnZ))
+                    PZLinuxConfirmVisibleVehicle(player, PZLinuxVehicleDeliveryState[playerKey])
                 elseif result and not result.ok then
                     print("[PZLinux Vehicle] spawn failed: " .. tostring(result.error or "unknown"))
                 end
@@ -98,7 +179,8 @@ local function PZLinuxCargoExists(modData, x, y, z)
                     local data = obj and obj.getModData and obj:getModData() or nil
                     if data
                     and tostring(data.PZLinuxContractId or "") == tostring(modData.PZLinuxContractId or "")
-                    and data.PZLinuxContractObjective == "cargo" then
+                    and data.PZLinuxContractObjective == "cargo"
+                    and tonumber(data.PZLinuxCargoVersion) == 3 then
                         return true
                     end
                 end

@@ -544,17 +544,21 @@ MP et equilibrage des sections suivantes restent applicables avant publication.
 
 ### MP serveur dedie, deux clients
 
-Progression fonctionnelle des contrats en MP : **10/12 valides**.
+Progression fonctionnelle des contrats en MP : **11/12 valides**.
 
 - [x] 1 - Kill zombies.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
 - [ ] 3 - Eliminate the target : cible serveur de nouveau assise et immobilisee,
-  recherche de case libre elargie; re-test MP requis.
+  recherche de case libre elargie. La cible v2 reste active dans le reseau, utilise
+  le gestionnaire de population B42 et remplace automatiquement les anciennes cibles
+  marquees `useless`; re-test visuel, mort et decoupe en MP requis.
 - [x] 4 - Collect zombie blood.
 - [x] 5 - Send automobile parts.
 - [x] 6 - Capture a live zombie.
-- [ ] 7 - Prepare the cargo : restauration serveur rendue idempotente et caisse
-  canonique retransmise sans recreation en boucle; re-test MP requis.
+- [x] 7 - Prepare the cargo : interaction, evenement et validation testes en MP.
+  La caisse v3 utilise desormais un `IsoThumpable` special avec sprite transmis.
+- [ ] Visibilite Cargo : confirmer sur le client Windows que la migration v2 vers
+  v3 affiche bien la caisse classique, puis verifier unload/reload du chunk.
 - [x] 8 - Protect the building.
 - [x] 9 - Send medical equipment.
 - [x] 10 - Send weapons.
@@ -581,7 +585,9 @@ Progression fonctionnelle des contrats en MP : **10/12 valides**.
 - [ ] ContractAccept forge avec location/Z/reward/info ignores.
 - [ ] ContractComplete forge refuse sans credit.
 - [ ] Chaque event monde forge a distance/mauvaise entite refuse.
-- [x] Request vehicule ne spawn qu'une fois apres double commande/reconnexion.
+- [ ] Request vehicule : livraison en deux phases ajoutee (tag persistant,
+  retransmission, cle unique et confirmation de visibilite client); re-test MP
+  apres double commande/reconnexion requis.
 - [ ] Mail complete simultane ne retire/reward qu'une fois.
 - [ ] Deux Blackjack/Race/Poker simultanes sans fuite d'etat.
 - [x] Restart pendant Blackjack/Race/Hacking/Poker applique un rollback exact.
