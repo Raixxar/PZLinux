@@ -3095,7 +3095,7 @@ function PZLinuxContractsTransmitSquareObject(square, obj)
 end
 
 local PZLinuxCargoObjectVersion = 3
-local PZLinuxManhuntTargetVersion = 2
+local PZLinuxManhuntTargetVersion = 3
 
 local function PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
     if not getCell then return false end
@@ -3243,6 +3243,34 @@ local function PZLinuxContractsFirstSpawnedZombie(spawned)
     return spawned[1]
 end
 
+local function PZLinuxContractsSnapshotZombies()
+    local snapshot = {}
+    if not getCell then return snapshot end
+    local zombies = getCell():getZombieList()
+    if not zombies then return snapshot end
+    for index = 0, zombies:size() - 1 do
+        snapshot[zombies:get(index)] = true
+    end
+    return snapshot
+end
+
+local function PZLinuxContractsFindNewZombie(snapshot, x, y, z)
+    if not getCell then return nil end
+    local zombies = getCell():getZombieList()
+    if not zombies then return nil end
+    for index = zombies:size() - 1, 0, -1 do
+        local zombie = zombies:get(index)
+        if zombie and not snapshot[zombie]
+        and (not zombie.isDead or not zombie:isDead())
+        and math.abs(zombie:getX() - x) <= 2
+        and math.abs(zombie:getY() - y) <= 2
+        and math.abs(zombie:getZ() - z) <= 0.1 then
+            return zombie
+        end
+    end
+    return nil
+end
+
 local function PZLinuxContractsGetZombieOnlineId(zombie)
     if not zombie then return -1 end
     if zombie.getOnlineID then return tonumber(zombie:getOnlineID()) or -1 end
@@ -3269,17 +3297,54 @@ end
 
 function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     local square = PZLinuxContractsFindZombieSpawnSquare(x, y, z)
-    if not square then return false end
+    if not square then
+        print("[PZLinux Manhunt][server] no loaded free square near "
+            .. tostring(x) .. "," .. tostring(y) .. "," .. tostring(z)
+            .. " objective=" .. tostring(objectiveType)
+            .. " contract=" .. tostring(contractWorldId))
+        return false
+    end
 
     local zombie
-    if addZombiesInOutfit then
-        zombie = PZLinuxContractsFirstSpawnedZombie(addZombiesInOutfit(
-            square:getX(), square:getY(), square:getZ(), 1, nil, nil
-        ))
-    elseif createZombie then
-        zombie = createZombie(square:getX(), square:getY(), square:getZ(), nil, 0, IsoDirections.S)
+    local spawnMethod = "none"
+    if objectiveType == "manhunt" and addZombieSitting then
+        local snapshot = PZLinuxContractsSnapshotZombies()
+        local ok, spawnError = pcall(addZombieSitting, square:getX(), square:getY(), square:getZ())
+        if ok then
+            zombie = PZLinuxContractsFindNewZombie(
+                snapshot,
+                square:getX(),
+                square:getY(),
+                square:getZ()
+            )
+            if zombie then spawnMethod = "addZombieSitting" end
+        else
+            print("[PZLinux Manhunt][server] addZombieSitting failed: " .. tostring(spawnError))
+        end
     end
-    if not zombie then return false end
+    if not zombie and addZombiesInOutfit then
+        local ok, spawnedOrError = pcall(
+            addZombiesInOutfit,
+            square:getX(), square:getY(), square:getZ(), 1, nil, nil,
+            false, false, false, objectiveType == "manhunt", 1
+        )
+        if ok then
+            zombie = PZLinuxContractsFirstSpawnedZombie(spawnedOrError)
+            if zombie then spawnMethod = "addZombiesInOutfit" end
+        else
+            print("[PZLinux Manhunt][server] addZombiesInOutfit failed: " .. tostring(spawnedOrError))
+        end
+    end
+    if not zombie and createZombie then
+        zombie = createZombie(square:getX(), square:getY(), square:getZ(), nil, 0, IsoDirections.S)
+        if zombie then spawnMethod = "createZombie" end
+    end
+    if not zombie then
+        print("[PZLinux Manhunt][server] no spawn helper created a zombie at "
+            .. tostring(square:getX()) .. "," .. tostring(square:getY()) .. "," .. tostring(square:getZ())
+            .. " contract=" .. tostring(contractWorldId))
+        return false
+    end
 
     if zombie.isExistInTheWorld and not zombie:isExistInTheWorld() and zombie.addToWorld then
         zombie:addToWorld()
@@ -3288,7 +3353,7 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     if objectiveType == "manhunt" then
         PZLinuxContractsConfigureManhuntZombie(zombie)
     end
-    return true, zombie, square
+    return true, zombie, square, spawnMethod
 end
 
 local function PZLinuxContractsFindTaggedZombie(contractWorldId, objectiveType)
@@ -3337,22 +3402,28 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
             math.abs(existingZombie:getY() - (tonumber(record.locationY) or 0))
         )
         local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
-        if existingVersion == PZLinuxManhuntTargetVersion and distanceFromTarget <= searchRadius then
+        local existingOnlineId = PZLinuxContractsGetZombieOnlineId(existingZombie)
+        local requiresOnlineId = isServer and isServer()
+        local isNetworkReady = not requiresOnlineId or existingOnlineId >= 0
+        if existingVersion == PZLinuxManhuntTargetVersion
+        and distanceFromTarget <= searchRadius
+        and isNetworkReady then
             PZLinuxContractsConfigureManhuntZombie(existingZombie)
-            print("[PZLinux Manhunt] reused network target v2 onlineId="
-                .. tostring(PZLinuxContractsGetZombieOnlineId(existingZombie))
+            print("[PZLinux Manhunt][server] reused network target v3 onlineId="
+                .. tostring(existingOnlineId)
                 .. " at " .. tostring(existingZombie:getX()) .. ","
                 .. tostring(existingZombie:getY()) .. "," .. tostring(existingZombie:getZ())
                 .. " contract=" .. tostring(record.id))
             return true, 0, existingZombie:getX(), existingZombie:getY(), existingZombie:getZ(),
-                PZLinuxContractsGetZombieOnlineId(existingZombie)
+                existingOnlineId
         end
         PZLinuxContractsRemoveWorldEntity(existingZombie)
-        print("[PZLinux Manhunt] replaced legacy/stale target version="
+        print("[PZLinux Manhunt][server] replaced invalid target version="
             .. tostring(existingVersion) .. " distance=" .. tostring(math.floor(distanceFromTarget))
+            .. " onlineId=" .. tostring(existingOnlineId)
             .. " contract=" .. tostring(record.id))
     end
-    local created, zombie, square = PZLinuxContractsSpawnZombieAt(
+    local created, zombie, square, spawnMethod = PZLinuxContractsSpawnZombieAt(
         record.locationX,
         record.locationY,
         record.locationZ,
@@ -3362,7 +3433,8 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
     if not created then return false, 0 end
     local onlineId = PZLinuxContractsGetZombieOnlineId(zombie)
     local inWorld = not zombie.isExistInTheWorld or zombie:isExistInTheWorld()
-    print("[PZLinux Manhunt] spawned network target v2 onlineId=" .. tostring(onlineId)
+    print("[PZLinux Manhunt][server] spawned network target v3 method=" .. tostring(spawnMethod)
+        .. " onlineId=" .. tostring(onlineId)
         .. " inWorld=" .. tostring(inWorld)
         .. " at " .. tostring(square and square:getX() or zombie:getX()) .. ","
         .. tostring(square and square:getY() or zombie:getY()) .. ","
@@ -3712,12 +3784,29 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
     if eventName == "zombieKilled" then
         return reject("server_event_only")
     elseif eventName == "spawnManhunt" then
+        local playerModData = playerObj:getModData()
+        print("[PZLinux Manhunt][server] spawn request player="
+            .. tostring(playerObj.getUsername and playerObj:getUsername() or "unknown")
+            .. " active=" .. tostring(playerModData.PZLinuxActiveContract)
+            .. " flag=" .. tostring(playerModData.PZLinuxContractManhunt)
+            .. " worldContract=" .. tostring(playerModData.PZLinuxContractId))
         local record, recordError = usePlayerRecord(3, "accepted", "spawned")
-        if recordError then return reject(recordError) end
-        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
+        if recordError then
+            print("[PZLinux Manhunt][server] rejected: " .. tostring(recordError))
+            return reject(recordError)
+        end
+        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then
+            print("[PZLinux Manhunt][server] rejected: too_far_from_contract player="
+                .. tostring(math.floor(playerObj:getX())) .. "," .. tostring(math.floor(playerObj:getY()))
+                .. " target=" .. tostring(record.locationX) .. "," .. tostring(record.locationY))
+            return reject("too_far_from_contract")
+        end
         local restored
         restored, spawned, spawnX, spawnY, spawnZ, spawnEntityId = PZLinuxContractsEnsureManhuntZombie(record)
-        if not restored then return reject("spawn_failed") end
+        if not restored then
+            print("[PZLinux Manhunt][server] rejected: spawn_failed contract=" .. tostring(record.id))
+            return reject("spawn_failed")
+        end
         record.spawned = true
         record.status = "spawned"
         record.spawnX = spawnX

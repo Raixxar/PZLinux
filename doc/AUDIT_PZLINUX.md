@@ -549,9 +549,13 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
 - [x] 1 - Kill zombies.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
 - [ ] 3 - Eliminate the target : cible serveur de nouveau assise et immobilisee,
-  recherche de case libre elargie. La cible v2 reste active dans le reseau, utilise
-  le gestionnaire de population B42 et remplace automatiquement les anciennes cibles
-  marquees `useless`; re-test visuel, mort et decoupe en MP requis.
+  recherche de case libre elargie. La cible v3 utilise en priorite le helper natif
+  `addZombieSitting`, puis deux methodes de repli. En MP, une cible sans `onlineId`
+  valide n'est plus acceptee ni reutilisee comme un faux succes. Des diagnostics
+  serveur/client couvrent maintenant chaque demande, rejet et methode de spawn.
+  La restauration attend que le chunk client soit charge et est relancee chaque
+  seconde meme si le joueur s'arrete apres son arrivee sur place ;
+  re-test visuel, mort et decoupe en MP requis.
 - [x] 4 - Collect zombie blood.
 - [x] 5 - Send automobile parts.
 - [x] 6 - Capture a live zombie.

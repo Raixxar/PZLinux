@@ -1,6 +1,25 @@
 local PZLinuxManhuntSpawnRequests = {}
 local PZLinuxManhuntTargetState = {}
 
+local function PZLinuxIsManhuntContractPending(modData)
+    if not modData then return false end
+
+    local activeState = tonumber(modData.PZLinuxActiveContract) or 0
+    local manhuntState = tonumber(modData.PZLinuxContractManhunt) or 0
+    local contractType = tonumber(modData.PZLinuxContractTypeId) or 0
+    local record = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
+    local recordIsManhunt = record
+        and tonumber(record.contractId) == 3
+        and PZLinuxContractsIsRecordStatus(record, "accepted", "spawned")
+
+    if record and tonumber(record.contractId) == 3 then
+        return activeState == 1 and recordIsManhunt
+    end
+
+    return activeState == 1
+        and (manhuntState == 1 or manhuntState == 2 or contractType == 3 or recordIsManhunt)
+end
+
 local function PZLinuxContractRestoreNow()
     local timestampProvider = rawget(_G, "getTimestampMs")
     if timestampProvider then return math.floor(timestampProvider() / 1000) end
@@ -31,7 +50,7 @@ local function PZLinuxFindVisibleManhuntTarget(modData, expectedOnlineId)
         local matchesTag = data
             and tostring(data.PZLinuxContractId or "") == contractWorldId
             and data.PZLinuxContractObjective == "manhunt"
-            and tonumber(data.PZLinuxManhuntVersion) == 2
+            and tonumber(data.PZLinuxManhuntVersion) == 3
         if zombie and (not zombie.isDead or not zombie:isDead()) and (matchesNetworkId or matchesTag) then
             return zombie
         end
@@ -43,14 +62,16 @@ local function checkAndSpawnZombie(player)
     if not player then return end
     local modData = player:getModData()
     local playerKey = tostring(player:getPlayerNum())
-    local manhuntState = tonumber(modData.PZLinuxContractManhunt) or 0
-    local record = PZLinuxContractsGetWorldContract(modData.PZLinuxContractId)
-    local recordStatus = record and record.status or nil
-    local canSpawn = manhuntState == 1 or (manhuntState == 2 and recordStatus ~= "target_down")
-    if modData.PZLinuxActiveContract == 1 and canSpawn then
+    if PZLinuxIsManhuntContractPending(modData) then
         local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
+        local targetSquare = getCell and getCell():getGridSquare(
+            math.floor(tonumber(x) or 0),
+            math.floor(tonumber(y) or 0),
+            math.floor(tonumber(z) or 0)
+        ) or nil
+        if dist < 50 and not targetSquare then return end
         local targetState = PZLinuxManhuntTargetState[playerKey]
         if dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState and targetState.onlineId) then
             return
@@ -65,8 +86,12 @@ local function checkAndSpawnZombie(player)
                         .. tostring(result.spawnZ or z)
                         .. " onlineId=" .. tostring(result.spawnEntityId or -1)
                         .. " created=" .. tostring(tonumber(result.spawned) == 1))
-                elseif result and result.error ~= "invalid_contract_state" then
-                    print("[PZLinux Manhunt] restore failed: " .. tostring(result.error or "unknown"))
+                else
+                    print("[PZLinux Manhunt][client] restore failed: "
+                        .. tostring(result and result.error or "no_server_response")
+                        .. " active=" .. tostring(modData.PZLinuxActiveContract)
+                        .. " flag=" .. tostring(modData.PZLinuxContractManhunt)
+                        .. " worldContract=" .. tostring(modData.PZLinuxContractId))
                 end
             end)
         end
@@ -259,6 +284,25 @@ local function PZLinuxRestoreProtectContract(player)
     end)
 end
 Events.OnPlayerMove.Add(PZLinuxRestoreProtectContract)
+
+local PZLinuxWorldObjectiveLastPoll = -1
+
+local function PZLinuxPollWorldObjectiveRestores()
+    local now = PZLinuxContractRestoreNow()
+    if now <= PZLinuxWorldObjectiveLastPoll then return end
+    PZLinuxWorldObjectiveLastPoll = now
+
+    for playerIndex = 0, 3 do
+        local player = getSpecificPlayer(playerIndex)
+        if player then
+            checkAndSpawnZombie(player)
+            checkAndSpawnVehicle(player)
+            checkAndSpawnBox(player)
+            PZLinuxRestoreProtectContract(player)
+        end
+    end
+end
+Events.OnTick.Add(PZLinuxPollWorldObjectiveRestores)
 
 PZLinux = PZLinux or {}
 PZLinux.ContractCompletionNotifications = PZLinux.ContractCompletionNotifications or {}

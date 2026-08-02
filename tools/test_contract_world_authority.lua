@@ -40,9 +40,15 @@ PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find("PZLinuxContrac
 PZLinuxTestAssert(variables:find("function PZLinuxContractsFindZombieSpawnSquare")
     and variables:find("square:isFree%(false%)"),
     "contract zombies must use a nearby loaded free square")
-PZLinuxTestAssert(variables:find("addZombiesInOutfit%(")
+PZLinuxTestAssert(variables:find("addZombiesInOutfit", 1, true)
     and variables:find("PZLinuxContractsFirstSpawnedZombie"),
     "contract zombies must use the multiplayer-aware game spawn helper")
+PZLinuxTestAssert(variables:find('objectiveType == "manhunt" and addZombieSitting', 1, true)
+    and variables:find('spawnMethod = "addZombieSitting"', 1, true),
+    "manhunt must prefer the game's dedicated sitting-zombie helper")
+PZLinuxTestAssert(variables:find("if not zombie and addZombiesInOutfit", 1, true)
+    and variables:find("if not zombie and createZombie", 1, true),
+    "zombie spawning must fall back when an available helper returns no zombie")
 PZLinuxTestAssert(variables:find("PZLinuxContractsConfigureManhuntZombie"),
     "manhunt must apply its network-safe target configuration")
 local manhuntConfig = variables:match("local function PZLinuxContractsConfigureManhuntZombie.-\nend")
@@ -52,12 +58,15 @@ PZLinuxTestAssert(manhuntConfig and manhuntConfig:find("zombie:setUseless%(false
     and manhuntConfig:find("zombie:setSitAgainstWall%(true%)")
     and manhuntConfig:find("networkAI:extraUpdate%(%)"),
     "the manhunt target must stay network-active while seated and unable to wander away")
-PZLinuxTestAssert(variables:find("replaced legacy/stale target", 1, true)
+PZLinuxTestAssert(variables:find("isNetworkReady", 1, true)
+    and variables:find("existingOnlineId >= 0", 1, true),
+    "a dedicated server must not reuse a manhunt zombie that has no network id")
+PZLinuxTestAssert(variables:find("replaced invalid target", 1, true)
     and variables:find("PZLinuxContractsRemoveWorldEntity%(existingZombie%)"),
-    "a legacy or displaced manhunt target must be replaced near the canonical marker")
-PZLinuxTestAssert(variables:find("local PZLinuxManhuntTargetVersion = 2", 1, true)
+    "a legacy, displaced, or unregistered manhunt target must be replaced")
+PZLinuxTestAssert(variables:find("local PZLinuxManhuntTargetVersion = 3", 1, true)
     and variables:find("PZLinuxManhuntVersion = PZLinuxManhuntTargetVersion", 1, true),
-    "legacy tutorial-style targets must migrate once to the network-safe v2 target")
+    "legacy manhunt targets must migrate once to the network-safe v3 target")
 local restoreProtectBranch = applyBlock:match('eventName == "restoreProtect"(.-)elseif')
 PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(tonumber%(record%.zombieCount%)"),
     "protect recovery must only restore the number of objective kills still required")
@@ -146,13 +155,25 @@ for _, path in ipairs({
 end
 
 local events = PZLinuxTestRead(luaRoot .. "/client/Context/World/Events/PZLinuxOnEvents.lua")
+local manhuntEvents = events:match("local function PZLinuxFindVisibleManhuntTarget.-Events%.OnPlayerMove%.Add%(checkAndSpawnZombie%)")
+PZLinuxTestAssert(manhuntEvents ~= nil, "could not inspect client manhunt recovery")
 PZLinuxTestAssert(not events:find('"zombieKilled"'), "the client must not report zombie kills")
 PZLinuxTestAssert(not events:find('"clearCargo"'), "the client must not request cargo deletion")
 PZLinuxTestAssert(not events:find("PZLinuxContractManhunt = 1"), "reconnect must not reset a persistent spawned target")
-PZLinuxTestAssert(events:find("PZLinuxFindVisibleManhuntTarget")
-    and events:find("result%.spawnEntityId")
-    and events:find("tonumber%(data%.PZLinuxManhuntVersion%) == 2"),
-    "the client must verify that the authoritative v2 manhunt target is actually visible")
+PZLinuxTestAssert(manhuntEvents:find("PZLinuxFindVisibleManhuntTarget")
+    and manhuntEvents:find("result%.spawnEntityId")
+    and manhuntEvents:find("tonumber%(data%.PZLinuxManhuntVersion%) == 3"),
+    "the client must verify that the authoritative v3 manhunt target is actually visible")
+PZLinuxTestAssert(events:find("local function PZLinuxIsManhuntContractPending")
+    and events:find("contractType == 3")
+    and events:find("return activeState == 1 and recordIsManhunt", 1, true),
+    "manhunt recovery must survive a stale legacy type flag after reconnect")
+PZLinuxTestAssert(manhuntEvents:find("getGridSquare")
+    and manhuntEvents:find("if dist < 50 and not targetSquare then return end", 1, true),
+    "manhunt must wait until the objective chunk is loaded on the client")
+PZLinuxTestAssert(manhuntEvents:find("[PZLinux Manhunt][client] restore failed", 1, true)
+    and not manhuntEvents:find('result%.error ~= "invalid_contract_state"'),
+    "manhunt recovery must log every server rejection, including invalid state")
 PZLinuxTestAssert(events:find("cargoState == 1 or cargoState == 2"),
     "accepted and previously spawned cargo contracts must both recover on reconnect")
 PZLinuxTestAssert(events:find("tonumber%(data%.PZLinuxCargoVersion%) == 3"),
@@ -162,5 +183,15 @@ PZLinuxTestAssert(events:find("PZLinuxIsCargoContractPending")
     "cargo recovery must use the canonical contract type when legacy flags are stale")
 PZLinuxTestAssert(events:find('PZLinuxRequestContractWorldEvent%(player, "restoreProtect"'),
     "protect contracts must request server recovery after reconnect")
+PZLinuxTestAssert(events:find("local function PZLinuxPollWorldObjectiveRestores")
+    and events:find("Events%.OnTick%.Add%(PZLinuxPollWorldObjectiveRestores%)")
+    and events:find("checkAndSpawnZombie%(player%)")
+    and events:find("checkAndSpawnVehicle%(player%)")
+    and events:find("checkAndSpawnBox%(player%)"),
+    "world objectives must retry periodically after chunk streaming even when the player stops moving")
+
+local contractsUI = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua")
+PZLinuxTestAssert(contractsUI:find("PZLinuxContractTypeId = tonumber%(result%.contractId%) or 0"),
+    "contract acceptance must retain the canonical contract type for world-event recovery")
 
 print("PZLinux contract world authority tests OK")

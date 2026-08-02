@@ -123,10 +123,14 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   object atomically instead of attempting to transmit an object already gone.
 - Restored stationary seated Manhunt targets, expanded their free-square search
   radius and returned the authoritative spawn coordinates for MP diagnostics.
-- Replaced Manhunt's tutorial-only `setUseless(true)` target with a network-active,
-  seated and immobile v2 zombie. Existing targets migrate once, and clients keep
-  requesting restoration until the authoritative zombie ID is actually visible;
-  each restoration also forces one immediate `NetworkZombieAI` update.
+- Reworked Manhunt spawning as a three-stage fallback which prefers the native
+  `addZombieSitting` helper, then the population outfit helper and finally direct
+  creation. The server no longer reuses a target with an invalid multiplayer
+  `onlineId`, v2 targets migrate to v3, and server/client logs expose every spawn
+  method and rejection while the client retries until the target is visible.
+- Added a once-per-second world-objective recovery poll for Manhunt, Cargo,
+  Protect and requested vehicles. Manhunt now waits for its client chunk before
+  requesting creation, and retries continue even after the player stops moving.
 - Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
   with canonical model/location/proximity checks, nearby free-square selection,
   synchronized key rollback on failure and throttled client retry requests.

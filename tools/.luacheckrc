@@ -6,6 +6,7 @@ read_globals = {
     "addXp",
     "addVehicle",
     "addVehicleDebug",
+    "addZombieSitting",
     "addZombiesInOutfit",
     "CharacterStat",
     "CONNECTED_TO_INTERNET_TIME",

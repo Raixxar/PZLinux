@@ -931,6 +931,7 @@ function contractsUI:onYesButton(button)
         local updatedModData = playerObj:getModData()
         updatedModData.PZLinuxActiveContract = result.activeContract
         updatedModData.PZLinuxContractId = result.worldContractId
+        updatedModData.PZLinuxContractTypeId = tonumber(result.contractId) or 0
         updatedModData.PZLinuxOnReward = result.reward
         updatedModData.PZLinuxContractLocationX = tonumber(result.locationX) or 0
         updatedModData.PZLinuxContractLocationY = tonumber(result.locationY) or 0
