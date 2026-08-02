@@ -83,13 +83,13 @@ contrats, Requests, Mails et Hacking.
 
 | Controle | Resultat | Commentaire |
 | --- | --- | --- |
-| Syntaxe Lua 5.1, 59 fichiers | OK | Aucun parse error |
-| Luacheck complet | 70 warnings / 0 errors | La commande globale retourne non-zero a cause des warnings |
+| Syntaxe Lua 5.1, 60 fichiers | OK | Aucun parse error |
+| Luacheck complet | 52 warnings / 0 errors | La commande globale retourne non-zero a cause des warnings historiques hors fichiers modifies |
 | Audit statique P0 historique | OK | `Pric2`, debug force, index contrat 7 et helper Mail duplique absents |
 | Assets ImageMagick/FFprobe | OK | PNG/JPG/OGG/WAV lisibles |
 | Locations B42.20 | OK | IDs, coordonnees et entrees activees valides |
 | Traductions | OK structurel | 20 langues, 310 cles et placeholders identiques |
-| Suite de regression Lua | OK | 15 modules executes avec succes |
+| Suite de regression Lua | OK | 16 modules executes avec succes |
 | Stock Dark Web | OK | Paliers, renouvellement et concurrence sur le dernier exemplaire |
 | Autorite contrats | OK | 12 missions canoniques et dialogues couverts |
 | Autorite objectifs contrats | OK | Evenements interdits et validations monde couverts statiquement |
@@ -97,7 +97,7 @@ contrats, Requests, Mails et Hacking.
 | Proximite Mailbox | OK | Objet, distance et niveau Z |
 | Inventaire autoritaire | OK | Ajouts/retraits et paquets conteneur MP couverts |
 | Inventaire ATM | OK | Sacs imbriques, bundles, monnaie et rollback couverts |
-| Livraison Request | OK | Colis/cle, synchronisation MP et retry couverts |
+| Livraison Request | OK | Colis/cle, anti-ecrasement, enregistrement reseau MP et retry sans duplication couverts |
 | Secret Hacking | OK | Mot de passe absent des reponses client |
 | Economie/reputation | OK | Penurie, reputation et arrondis par palier couverts |
 | Trading fee | OK | Commission serveur de 5 % |
@@ -190,7 +190,7 @@ Modules partages deja extraits :
 | Objectifs contrats | Oui | Entites/tags/proximite serveur | Monde + Global ModData | Streaming chunk et vol live |
 | Completion contrats | Oui | Reward, reputation et recu serveur | Player + World ModData | Crash consistency et affichage MP live |
 | Requests items | Oui | Prix/debit/livraison serveur | Pending Player ModData | Reconnexion/double clic live |
-| Requests vehicules | Oui | Spawn serveur | Pending puis monde | Chunk indisponible/double spawn live |
+| Requests vehicules | Oui | Spawn et validation reseau serveur | Pending puis monde tague | Streaming/reconnexion live |
 | Mails | Oui | Generation/retrait/reward serveur | Player ModData | Equilibrage reward et traductions |
 | Hacking | Oui | Secret et transfert serveur | Rollback cartes | Cooldown et restart live |
 | Blackjack | Oui | Deck/payout serveur | Refund mise interrompue | Restart live |
@@ -585,9 +585,10 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
 - [ ] ContractAccept forge avec location/Z/reward/info ignores.
 - [ ] ContractComplete forge refuse sans credit.
 - [ ] Chaque event monde forge a distance/mauvaise entite refuse.
-- [ ] Request vehicule : livraison en deux phases ajoutee (tag persistant,
-  retransmission, cle unique et confirmation de visibilite client); re-test MP
-  apres double commande/reconnexion requis.
+- [ ] Request vehicule : livraison en deux phases ajoutee (une voiture par devis,
+  modele/location canoniques, tag persistant, ID reseau valide, retransmission,
+  cle unique, anti-ecrasement et confirmation de visibilite client); re-test MP
+  apres double commande/reconnexion et unload/reload du chunk requis.
 - [ ] Mail complete simultane ne retire/reward qu'une fois.
 - [ ] Deux Blackjack/Race/Poker simultanes sans fuite d'etat.
 - [x] Restart pendant Blackjack/Race/Hacking/Poker applique un rollback exact.

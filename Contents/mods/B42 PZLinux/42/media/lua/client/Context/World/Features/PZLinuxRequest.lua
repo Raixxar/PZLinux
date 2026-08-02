@@ -282,14 +282,22 @@ function requestUI:onContractId(contract)
         local selectedVehicleOffer = nil
         PZLinuxRequestPriceDelta = 1
 
-        while weightPackage <= 9.5 and itemCount < maxItems do
-            local itemIdRand = ZombRand(1, #quests + 1)
-            local offer = quests[itemIdRand]
+        if contract == 9 then
+            local offer = quests[ZombRand(1, #quests + 1)]
             if offer then
+                selectedVehicleOffer = offer
                 table.insert(batch.items, { name = offer.baseName })
-                weightPackage = weightPackage + offer.weight
-                itemCount = itemCount + 1
-                if contract == 9 then selectedVehicleOffer = offer end
+                itemCount = 1
+            end
+        else
+            while weightPackage <= 9.5 and itemCount < maxItems do
+                local itemIdRand = ZombRand(1, #quests + 1)
+                local offer = quests[itemIdRand]
+                if offer then
+                    table.insert(batch.items, { name = offer.baseName })
+                    weightPackage = weightPackage + offer.weight
+                    itemCount = itemCount + 1
+                end
             end
         end
 
@@ -458,6 +466,13 @@ function requestUI:onYesButton(button)
         self:removeFromUIManager()
 
         if result.contractId == 9 then
+            modData.PZLinuxActiveRequest = 1
+            modData.PZLinuxOnItemRequestCar = 1
+            modData.PZLinuxOnItemRequestCarName = result.vehicleName
+            modData.PZLinuxRequestLocationX = result.locationX
+            modData.PZLinuxRequestLocationY = result.locationY
+            modData.PZLinuxRequestLocationZ = result.locationZ
+            modData.PZLinuxRequestVehicleDeliveryId = result.deliveryId
             contractsDrawOnMap(result.locationX, result.locationY, PZLinuxRequestText("IGUI_PZLinux_Request_CarRequested"))
             requestMenu_ShowUI(playerObj)
             return

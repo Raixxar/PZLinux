@@ -128,11 +128,16 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   requesting restoration until the authoritative zombie ID is actually visible;
   each restoration also forces one immediate `NetworkZombieAI` update.
 - Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
-  with canonical proximity checks, nearby free-square selection, synchronized
-  key rollback on failure and throttled client retry requests.
+  with canonical model/location/proximity checks, nearby free-square selection,
+  synchronized key rollback on failure and throttled client retry requests.
 - Changed requested vehicles to a two-phase MP delivery: paid state remains
-  pending until the client sees the tagged server vehicle, retries retransmit
-  the same vehicle and forged confirmations cannot consume the order.
+  pending until the tagged vehicle has a valid server network registration and
+  the client sees it. Retries retransmit the same vehicle, empty/stale IDs cannot
+  match another car and forged confirmations cannot consume the order.
+- Fixed vehicle Request quotes selecting several cars while the server delivered
+  only one. Each quote now contains one vehicle at the authoritative price, and
+  conflicting vehicle/item deliveries are rejected before debit instead of
+  overwriting an already-paid pending order.
 - Prevented contract completion and cancellation responses from opening a
   second Contracts window over the existing payment receipt.
 - Localized both mailbox interfaces and selected their action label from the

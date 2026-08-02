@@ -1299,13 +1299,26 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
     local order = PZLinuxRequestsBuildOrder(playerObj, state, requestId)
     if not order.ok then return order end
 
+    local modData = playerObj:getModData()
+    local hasPendingVehicle = tonumber(modData.PZLinuxOnItemRequestCar) == 1
+    local hasPendingItems = type(modData.PZLinuxOnItemRequest) == "table" and #modData.PZLinuxOnItemRequest > 0
+    if (order.contractId == 9 and (hasPendingVehicle or hasPendingItems))
+    or (order.contractId ~= 9 and hasPendingVehicle) then
+        return {
+            ok = false,
+            error = "request_delivery_pending",
+            requestId = requestId,
+            contractId = order.contractId,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+
     local debit = PZLinuxApplyBankDebit(playerObj, order.amount, "request-order", requestId)
     if not debit.ok then
         debit.contractId = order.contractId
         return debit
     end
 
-    local modData = playerObj:getModData()
     modData.PZLinuxActiveRequest = 1
     if order.contractId == 9 then
         modData.PZLinuxOnItemRequestCar = 1
@@ -1321,6 +1334,7 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         }, "-")
         modData.PZLinuxRequestVehicleKeyId = 0
         modData.PZLinuxOnItemRequest = {}
+        order.deliveryId = modData.PZLinuxRequestVehicleDeliveryId
     else
         modData.PZLinuxOnItemRequestCar = 0
         modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest or {}
@@ -1410,6 +1424,20 @@ local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
     return nil
 end
 
+local function PZLinuxRequestsGetVehicleNetworkId(vehicle)
+    local vehicleId = vehicle and vehicle.getId and tonumber(vehicle:getId()) or nil
+    if vehicleId == nil then return nil end
+    if not (isServer and isServer()) then return vehicleId end
+    if vehicleId < 0 then return nil end
+
+    local managerClass = rawget(_G, "VehicleManager")
+    local manager = managerClass and managerClass.instance or nil
+    if manager and manager.getVehicleByID and not manager:getVehicleByID(vehicleId) then
+        return nil
+    end
+    return vehicleId
+end
+
 local function PZLinuxRequestsFindVehicleKey(inventory, keyId)
     if not inventory or not keyId or keyId <= 0 then return nil end
     local items = inventory:getItems()
@@ -1438,6 +1466,24 @@ local function PZLinuxRequestsEnsureVehicleKey(playerObj, keyId)
     return keyItem
 end
 
+local function PZLinuxRequestsEnsureDeliveryVehicleKey(playerObj, modData, vehicle)
+    local keyId = tonumber(modData.PZLinuxRequestVehicleKeyId) or 0
+    local vehicleKeyId = vehicle and vehicle.getKeyId and tonumber(vehicle:getKeyId()) or 0
+    if keyId <= 0 and vehicleKeyId > 0 then keyId = vehicleKeyId end
+    if keyId <= 0 then keyId = ZombRand(100000, 1000000) end
+
+    if tonumber(modData.PZLinuxRequestVehicleKeyId) ~= keyId then
+        modData.PZLinuxRequestVehicleKeyId = keyId
+        PZLinuxTransmitPlayerModData(playerObj)
+    end
+    if vehicle and vehicle.setKeyId and vehicleKeyId ~= keyId then
+        vehicle:setKeyId(keyId)
+    end
+
+    local keyItem, keyError = PZLinuxRequestsEnsureVehicleKey(playerObj, keyId)
+    return keyItem, keyError, keyId
+end
+
 local function PZLinuxRequestsRefreshVehicleNetwork(vehicle)
     if not vehicle then return end
     if vehicle.isExistInTheWorld and not vehicle:isExistInTheWorld() and vehicle.addToWorld then
@@ -1458,10 +1504,21 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
         return { ok = true, requestId = requestId, spawned = false, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
-    if not x or not y or not z then
+    local vehicleScript = tostring(modData.PZLinuxOnItemRequestCarName or "")
+    local definition = PZLinuxRequestsGetDefinition(9)
+    if not definition or not PZLinuxRequestsContains(definition.vehicles, vehicleScript) then
+        return { ok = false, error = "invalid_pending_vehicle", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local location = PZLinuxRequestsFindVehicleLocation(
+        modData.PZLinuxRequestLocationX,
+        modData.PZLinuxRequestLocationY,
+        modData.PZLinuxRequestLocationZ
+    )
+    if not location then
         return { ok = false, error = "missing_vehicle_location", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
+    local x, y, z = tonumber(location.x), tonumber(location.y), tonumber(location.z) or 0
     if not PZLinuxIsPlayerNearPosition(playerObj, x, y, z, 50) then
         return { ok = true, requestId = requestId, spawned = false, tooFar = true, balance = PZLinuxLoadBankBalance(playerObj) }
     end
@@ -1479,16 +1536,32 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
 
     local existingVehicle = PZLinuxRequestsFindDeliveredVehicle(deliveryId)
     if existingVehicle then
+        local keyItem, keyError = PZLinuxRequestsEnsureDeliveryVehicleKey(playerObj, modData, existingVehicle)
+        if not keyItem then
+            return { ok = false, error = keyError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+        end
         PZLinuxRequestsRefreshVehicleNetwork(existingVehicle)
+        local vehicleId = PZLinuxRequestsGetVehicleNetworkId(existingVehicle)
+        if vehicleId == nil then
+            print("[PZLinux Vehicle] waiting for network registration delivery=" .. deliveryId)
+            return {
+                ok = false,
+                error = "vehicle_not_networked",
+                retry = true,
+                requestId = requestId,
+                deliveryId = deliveryId,
+                balance = PZLinuxLoadBankBalance(playerObj),
+            }
+        end
         print("[PZLinux Vehicle] reused delivery=" .. deliveryId
-            .. " vehicleId=" .. tostring(existingVehicle:getId()))
+            .. " vehicleId=" .. tostring(vehicleId))
         return {
             ok = true,
             requestId = requestId,
             spawned = true,
             existing = true,
             deliveryId = deliveryId,
-            vehicleId = existingVehicle:getId(),
+            vehicleId = vehicleId,
             spawnX = existingVehicle:getX(),
             spawnY = existingVehicle:getY(),
             spawnZ = existingVehicle:getZ(),
@@ -1519,20 +1592,14 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
         return { ok = false, error = "missing_square", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local uniqueKeyId = tonumber(modData.PZLinuxRequestVehicleKeyId) or 0
-    if uniqueKeyId <= 0 then
-        uniqueKeyId = ZombRand(100000, 1000000)
-        modData.PZLinuxRequestVehicleKeyId = uniqueKeyId
-        PZLinuxTransmitPlayerModData(playerObj)
-    end
-    local keyItem, keyError = PZLinuxRequestsEnsureVehicleKey(playerObj, uniqueKeyId)
+    local keyItem, keyError, uniqueKeyId = PZLinuxRequestsEnsureDeliveryVehicleKey(playerObj, modData, nil)
     if not keyItem then
         return { ok = false, error = keyError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     local vehicle
     if addVehicleDebug then
-        vehicle = addVehicleDebug(modData.PZLinuxOnItemRequestCarName, IsoDirections.S, nil, square)
+        vehicle = addVehicleDebug(vehicleScript, IsoDirections.S, nil, square)
     end
     if not vehicle then
         PZLinuxRemoveInventoryItem(playerObj, keyItem)
@@ -1544,18 +1611,30 @@ function PZLinuxRequestsApplySpawnVehicle(player, requestId)
     local vehicleData = vehicle:getModData()
     vehicleData.PZLinuxRequestVehicleDeliveryId = deliveryId
     vehicleData.PZLinuxRequestVehicleOwner = PZLinuxGetPlayerKey(playerObj)
-    vehicleData.PZLinuxRequestVehicleScript = modData.PZLinuxOnItemRequestCarName
+    vehicleData.PZLinuxRequestVehicleScript = vehicleScript
     PZLinuxRequestsRefreshVehicleNetwork(vehicle)
     PZLinuxTransmitPlayerModData(playerObj)
+    local vehicleId = PZLinuxRequestsGetVehicleNetworkId(vehicle)
+    if vehicleId == nil then
+        print("[PZLinux Vehicle] spawned but waiting for network registration delivery=" .. deliveryId)
+        return {
+            ok = false,
+            error = "vehicle_not_networked",
+            retry = true,
+            requestId = requestId,
+            deliveryId = deliveryId,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
     print("[PZLinux Vehicle] spawned delivery=" .. deliveryId
-        .. " vehicleId=" .. tostring(vehicle:getId())
+        .. " vehicleId=" .. tostring(vehicleId)
         .. " at " .. tostring(vehicle:getX()) .. "," .. tostring(vehicle:getY()) .. "," .. tostring(vehicle:getZ()))
     return {
         ok = true,
         requestId = requestId,
         spawned = true,
         deliveryId = deliveryId,
-        vehicleId = vehicle:getId(),
+        vehicleId = vehicleId,
         spawnX = vehicle:getX(),
         spawnY = vehicle:getY(),
         spawnZ = vehicle:getZ(),
@@ -1570,12 +1649,21 @@ function PZLinuxRequestsApplyConfirmVehicle(player, deliveryId, vehicleId, reque
     if modData.PZLinuxOnItemRequestCar ~= 1 then
         return { ok = true, requestId = requestId, confirmed = true, balance = PZLinuxLoadBankBalance(playerObj) }
     end
-    if tostring(deliveryId or "") ~= tostring(modData.PZLinuxRequestVehicleDeliveryId or "") then
+    local canonicalDeliveryId = tostring(modData.PZLinuxRequestVehicleDeliveryId or "")
+    local requestedDeliveryId = tostring(deliveryId or "")
+    if canonicalDeliveryId == "" or requestedDeliveryId == "" or requestedDeliveryId ~= canonicalDeliveryId then
         return { ok = false, error = "invalid_vehicle_delivery", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local vehicle = PZLinuxRequestsFindDeliveredVehicle(deliveryId)
-    if not vehicle or tonumber(vehicle:getId()) ~= tonumber(vehicleId) then
+    local vehicle = PZLinuxRequestsFindDeliveredVehicle(canonicalDeliveryId)
+    if not vehicle then
+        return { ok = false, error = "vehicle_not_found", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    local canonicalVehicleId = PZLinuxRequestsGetVehicleNetworkId(vehicle)
+    if canonicalVehicleId == nil then
+        return { ok = false, error = "vehicle_not_networked", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    if tonumber(vehicleId) == nil or canonicalVehicleId ~= tonumber(vehicleId) then
         return { ok = false, error = "vehicle_not_found", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
     if not PZLinuxIsPlayerNearPosition(playerObj, vehicle:getX(), vehicle:getY(), vehicle:getZ(), 50) then

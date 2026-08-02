@@ -81,13 +81,22 @@ local PZLinuxVehicleDeliveryState = {}
 
 local function PZLinuxFindVisibleDeliveredVehicle(vehicleId, deliveryId)
     if not getCell then return nil end
+    local expectedVehicleId = tonumber(vehicleId)
+    local expectedDeliveryId = tostring(deliveryId or "")
+    local canMatchVehicleId = expectedVehicleId ~= nil and expectedVehicleId >= 0
+    local canMatchDeliveryId = expectedDeliveryId ~= ""
+    if not canMatchVehicleId and not canMatchDeliveryId then return nil end
+
     local vehicles = getCell():getVehicles()
     if not vehicles then return nil end
     for index = 0, vehicles:size() - 1 do
         local vehicle = vehicles:get(index)
         local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
-        if vehicle and ((vehicleId and tonumber(vehicle:getId()) == tonumber(vehicleId))
-        or (data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId or ""))) then
+        local matchesVehicleId = canMatchVehicleId and tonumber(vehicle:getId()) == expectedVehicleId
+        local matchesDeliveryId = canMatchDeliveryId
+            and data
+            and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == expectedDeliveryId
+        if vehicle and (matchesVehicleId or matchesDeliveryId) then
             return vehicle
         end
     end
@@ -95,7 +104,7 @@ local function PZLinuxFindVisibleDeliveredVehicle(vehicleId, deliveryId)
 end
 
 local function PZLinuxConfirmVisibleVehicle(player, state)
-    if not state then return false end
+    if not state or tostring(state.deliveryId or "") == "" then return false end
     if state.confirming then return true end
     local vehicle = PZLinuxFindVisibleDeliveredVehicle(state.vehicleId, state.deliveryId)
     if not vehicle then return false end
@@ -110,6 +119,10 @@ local function PZLinuxConfirmVisibleVehicle(player, state)
             HaloTextHelper.addGoodText(player, "Requested vehicle delivered")
         elseif result then
             print("[PZLinux Vehicle] confirmation failed: " .. tostring(result.error or "unknown"))
+            local playerKey = tostring(player:getPlayerNum())
+            if PZLinuxVehicleDeliveryState[playerKey] == state then
+                PZLinuxVehicleDeliveryState[playerKey] = nil
+            end
         end
     end)
     return true
@@ -118,9 +131,15 @@ end
 local function checkAndSpawnVehicle(player)
     if not player then return end
     local modData = player:getModData()
+    local playerKey = tostring(player:getPlayerNum())
     if modData.PZLinuxOnItemRequestCar == 1 then
-        local playerKey = tostring(player:getPlayerNum())
         local deliveryState = PZLinuxVehicleDeliveryState[playerKey]
+        local canonicalDeliveryId = tostring(modData.PZLinuxRequestVehicleDeliveryId or "")
+        if deliveryState and canonicalDeliveryId ~= ""
+        and tostring(deliveryState.deliveryId or "") ~= canonicalDeliveryId then
+            PZLinuxVehicleDeliveryState[playerKey] = nil
+            deliveryState = nil
+        end
         if PZLinuxConfirmVisibleVehicle(player, deliveryState) then return end
         local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
         if not x or not y or not z then return end
@@ -142,6 +161,8 @@ local function checkAndSpawnVehicle(player)
                 end
             end)
         end
+    else
+        PZLinuxVehicleDeliveryState[playerKey] = nil
     end
 end
 Events.OnPlayerMove.Add(checkAndSpawnVehicle)
