@@ -135,6 +135,7 @@ globals = {
     "PZLinuxFindDeadBody",
     "PZLinuxFindZombie",
     "PZLinuxFormatIRCName",
+    "PZLinuxFormatText",
     "PZLinuxRemoveReplicatedZombie",
     "PZLinuxIsPlayerNearPosition",
     "PZLinuxValidateWorldInteraction",

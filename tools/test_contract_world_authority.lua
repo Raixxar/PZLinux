@@ -27,6 +27,11 @@ PZLinuxTestAssert(spawnCargoBranch and spawnCargoBranch:find('"accepted", "spawn
     "cargo spawn must be recoverable after reconnect without resetting server state")
 PZLinuxTestAssert(variables:find('PZLinuxContractsGetEntityObjective%(obj%) == "cargo"'),
     "cargo recovery must reuse an existing tagged object instead of duplicating it")
+PZLinuxTestAssert(not spawnCargoBranch:find("replaceExisting"),
+    "cargo retries must never remove and recreate an already spawned server object")
+PZLinuxTestAssert(variables:find("reused and retransmitted", 1, true)
+    and variables:find("PZLinuxCargoVersion = 2", 1, true),
+    "cargo retries must idempotently retransmit the canonical server object")
 local spawnManhuntBranch = applyBlock:match('eventName == "spawnManhunt"(.-)elseif')
 PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find('"accepted", "spawned"'),
     "manhunt spawn must be recoverable after reconnect")
@@ -38,6 +43,13 @@ PZLinuxTestAssert(variables:find("function PZLinuxContractsFindZombieSpawnSquare
 PZLinuxTestAssert(variables:find("addZombiesInOutfit%(")
     and variables:find("PZLinuxContractsFirstSpawnedZombie"),
     "contract zombies must use the multiplayer-aware game spawn helper")
+PZLinuxTestAssert(variables:find('objectiveType == "manhunt"')
+    and variables:find("zombie:setUseless%(true%)")
+    and variables:find("zombie:setSitAgainstWall%(true%)"),
+    "the manhunt target must remain seated and unable to wander away")
+PZLinuxTestAssert(variables:find("removed stale target", 1, true)
+    and variables:find("PZLinuxContractsRemoveWorldEntity%(existingZombie%)"),
+    "a legacy manhunt target that wandered away must be replaced near the canonical marker")
 local restoreProtectBranch = applyBlock:match('eventName == "restoreProtect"(.-)elseif')
 PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(tonumber%(record%.zombieCount%)"),
     "protect recovery must only restore the number of objective kills still required")

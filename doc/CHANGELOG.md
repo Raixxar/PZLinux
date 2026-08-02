@@ -43,9 +43,14 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Fixed missing values on translated Reputation lines and rounded all displayed
   reputation scores, thresholds and modifiers to whole numbers while retaining
   full server-side precision.
+- Centralized translated UI formatting around temporary value markers so native
+  `getText` cannot erase Reputation or Contract values before Lua renders them.
 - Localized contract completion receipts in every shipped language and fixed
   missing reward and zombie-count values by formatting the authoritative receipt
   fields directly in Lua.
+- Kept the completion reward visible in rich-text panels by rendering the
+  authoritative amount before the dollar suffix and persisting an explicit
+  `moneyEarned` receipt field.
 - Fixed the initial multiplayer Contracts board schedule, which could postpone
   its first weekly refresh until day 14; legacy boards now regenerate once on
   migration and then refresh every configurable 168 world hours.
@@ -109,6 +114,11 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   insertion with its real square index, finding a nearby free spawn tile and
   validating pickup from the authoritative contract location even if the visual
   crate is missing on a client.
+- Made Cargo restoration idempotent: repeated client recovery requests now
+  reuse and retransmit the same tagged server crate instead of deleting and
+  recreating it every five seconds.
+- Restored stationary seated Manhunt targets, expanded their free-square search
+  radius and returned the authoritative spawn coordinates for MP diagnostics.
 - Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
   with canonical proximity checks, nearby free-square selection, synchronized
   key rollback on failure and throttled client retry requests.

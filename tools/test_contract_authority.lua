@@ -207,16 +207,19 @@ PZLinuxTestAssert(stateRenderBlock and stateRenderBlock:find("PZLinuxRequestCont
 PZLinuxTestAssert(contractsUi:find("PZLinuxContractsShowCompletionReceipt"),
     "the contracts UI must render the authoritative completion receipt")
 local receiptBlock = contractsUi:match("local function PZLinuxContractsShowCompletionReceipt.-\nend\n\nlocal function PZLinuxContractsStopDialogue")
-PZLinuxTestAssert(receiptBlock and receiptBlock:find("receipt%.amount or 0")
-    and receiptBlock:find("IGUI_PZLinux_Contracts_CompletionAmount"),
+PZLinuxTestAssert(receiptBlock and receiptBlock:find("PZLinuxContractsCompletionAmountText%(receipt%)"),
     "the translated completion receipt must display the authoritative credited amount")
-PZLinuxTestAssert(contractsUi:find("getText%(key%)")
-    and contractsUi:find('template:gsub%("%%%%s"'),
-    "contract translations must format values in Lua without losing placeholders")
+PZLinuxTestAssert(contractsUi:find("receipt%.moneyEarned or receipt%.amount")
+    and contractsUi:find('return label %.%. " " %.%. tostring%(amount%) %.%. " %$"'),
+    "the receipt amount must remain visible outside the rich-text dollar prefix")
+PZLinuxTestAssert(contractsUi:find("PZLinuxFormatText%(key, fallback, %.%.%.%)"),
+    "contract translations must use the shared placeholder-safe formatter")
 PZLinuxTestAssert(contractsUi:find("PZLinuxRequestContractCompletionAck"),
     "the completion receipt must be acknowledged only after rendering")
 PZLinuxTestAssert(variables:find("pzlinux%.contracts%.pendingCompletion = completionReceipt"),
     "the server must persist a completion receipt before clearing contract state")
+PZLinuxTestAssert(variables:find("moneyEarned = moneyEarned"),
+    "the persisted completion receipt must expose an unambiguous earned-money field")
 PZLinuxTestAssert(variables:find("function PZLinuxContractsAcknowledgeCompletion"),
     "the server must expose a receipt acknowledgement validator")
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")

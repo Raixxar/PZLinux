@@ -28,7 +28,13 @@ local function checkAndSpawnZombie(player)
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
         if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
             PZLinuxRequestContractWorldEvent(player, "spawnManhunt", {}, function(result)
-                if result and not result.ok and result.error ~= "invalid_contract_state" then
+                if result and result.ok then
+                    print("[PZLinux Manhunt] server confirmed target at "
+                        .. tostring(result.spawnX or x) .. ","
+                        .. tostring(result.spawnY or y) .. ","
+                        .. tostring(result.spawnZ or z)
+                        .. " created=" .. tostring(tonumber(result.spawned) == 1))
+                elseif result and result.error ~= "invalid_contract_state" then
                     print("[PZLinux Manhunt] restore failed: " .. tostring(result.error or "unknown"))
                 end
             end)

@@ -193,6 +193,44 @@ function PZLinuxGetText(key)
     return PZLinux.TextFallbacks[key] or key
 end
 
+function PZLinuxFormatText(key, fallback, ...)
+    local argumentCount = select("#", ...)
+    local values = { ... }
+    local markers = {}
+    local template = fallback or key
+
+    if getText then
+        local translated
+        if argumentCount > 0 then
+            for index = 1, argumentCount do
+                markers[index] = "__PZLINUX_VALUE_" .. tostring(index) .. "__"
+            end
+            local translatedOk
+            translatedOk, translated = pcall(getText, key, unpack(markers, 1, argumentCount))
+            if not translatedOk then translated = getText(key) end
+        else
+            translated = getText(key)
+        end
+        if translated and translated ~= key then template = translated end
+    end
+
+    for index = 1, argumentCount do
+        local replacement = tostring(values[index] or "")
+        local substitutions = 0
+        if markers[index] then
+            template, substitutions = template:gsub(markers[index], function() return replacement end, 1)
+        end
+        if substitutions == 0 then
+            template, substitutions = template:gsub("%%s", function() return replacement end, 1)
+        end
+        if substitutions == 0 then
+            template, substitutions = template:gsub("%%" .. tostring(index), function() return replacement end, 1)
+        end
+        if substitutions == 0 then template = template .. " " .. replacement end
+    end
+    return template
+end
+
 PZLinux.callbacks = PZLinux.callbacks or {}
 PZLinux.blackjackSessions = PZLinux.blackjackSessions or {}
 PZLinux.raceSessions = PZLinux.raceSessions or {}
@@ -2711,6 +2749,7 @@ function PZLinuxContractsApplyComplete(player, _state, requestId)
         worldContractId = completedWorldContractId,
         contractId = completedContractTypeId,
         amount = moneyEarned,
+        moneyEarned = moneyEarned,
         zombieCount = zombieCount,
         completedHour = getGameTime and getGameTime():getWorldAgeHours() or 0,
     }
@@ -2855,17 +2894,20 @@ function PZLinuxContractsRemoveCargoObject(x, y, z, contractWorldId)
     return true
 end
 
-function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId, replaceExisting)
+function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
     if not getCell or not IsoObject then return false end
     local existingObject, existingSquare = PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
-    if existingObject and not replaceExisting then
-        return true, false, existingSquare:getX(), existingSquare:getY(), existingSquare:getZ()
-    end
     if existingObject then
-        existingSquare:removeTileObject(existingObject)
-        if existingSquare.transmitRemoveItemFromSquare then
-            existingSquare:transmitRemoveItemFromSquare(existingObject)
-        end
+        local existingData = existingObject:getModData()
+        existingData.PZLinuxContractId = contractWorldId
+        existingData.PZLinuxContractObjective = "cargo"
+        existingData.PZLinuxCargoVersion = 2
+        PZLinuxContractsTransmitSquareObject(existingSquare, existingObject)
+        if existingObject.transmitModData then existingObject:transmitModData() end
+        print("[PZLinux Cargo] reused and retransmitted at "
+            .. tostring(existingSquare:getX()) .. "," .. tostring(existingSquare:getY()) .. "," .. tostring(existingSquare:getZ())
+            .. " contract=" .. tostring(contractWorldId))
+        return true, false, existingSquare:getX(), existingSquare:getY(), existingSquare:getZ()
     end
     local centerX = math.floor(tonumber(x) or 0)
     local centerY = math.floor(tonumber(y) or 0)
@@ -2905,10 +2947,11 @@ function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId, replaceExist
             .. " contract=" .. tostring(contractWorldId))
         return false
     end
-    square:AddTileObject(obj)
     local data = obj:getModData()
     data.PZLinuxContractId = contractWorldId
     data.PZLinuxContractObjective = "cargo"
+    data.PZLinuxCargoVersion = 2
+    square:AddTileObject(obj)
     if obj.addToWorld then obj:addToWorld() end
     PZLinuxContractsTransmitSquareObject(square, obj)
     if obj.transmitModData then obj:transmitModData() end
@@ -2925,7 +2968,8 @@ local function PZLinuxContractsFindZombieSpawnSquare(x, y, z)
     local centerY = math.floor(tonumber(y) or 0)
     local level = math.floor(tonumber(z) or 0)
 
-    for radius = 0, 5 do
+    local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
+    for radius = 0, math.max(5, math.floor(searchRadius)) do
         for offsetX = -radius, radius do
             for offsetY = -radius, radius do
                 if radius == 0 or math.abs(offsetX) == radius or math.abs(offsetY) == radius then
@@ -2959,7 +3003,30 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     if not zombie then return false end
 
     PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie")
-    return true
+    if objectiveType == "manhunt" then
+        if zombie.setTarget then zombie:setTarget(nil) end
+        if zombie.setUseless then zombie:setUseless(true) end
+        if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
+        if zombie.transmitModData then zombie:transmitModData() end
+    end
+    return true, zombie, square
+end
+
+local function PZLinuxContractsFindTaggedZombie(contractWorldId, objectiveType)
+    if not getCell then return nil end
+    local zombies = getCell():getZombieList()
+    if not zombies then return nil end
+
+    for index = 0, zombies:size() - 1 do
+        local zombie = zombies:get(index)
+        if zombie
+        and (not zombie.isDead or not zombie:isDead())
+        and tostring(PZLinuxContractsGetEntityContractId(zombie) or "") == tostring(contractWorldId or "")
+        and PZLinuxContractsGetEntityObjective(zombie) == objectiveType then
+            return zombie
+        end
+    end
+    return nil
 end
 
 local function PZLinuxContractsCountTaggedZombies(contractWorldId, objectiveType)
@@ -2982,15 +3049,35 @@ end
 
 local function PZLinuxContractsEnsureManhuntZombie(record)
     if not record then return false, 0 end
-    if PZLinuxContractsCountTaggedZombies(record.id, "manhunt") > 0 then return true, 0 end
-    local created = PZLinuxContractsSpawnZombieAt(
+    local existingZombie = PZLinuxContractsFindTaggedZombie(record.id, "manhunt")
+    if existingZombie then
+        local distanceFromTarget = math.max(
+            math.abs(existingZombie:getX() - (tonumber(record.locationX) or 0)),
+            math.abs(existingZombie:getY() - (tonumber(record.locationY) or 0))
+        )
+        local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
+        if distanceFromTarget <= searchRadius then
+            if existingZombie.setTarget then existingZombie:setTarget(nil) end
+            if existingZombie.setUseless then existingZombie:setUseless(true) end
+            if existingZombie.setSitAgainstWall then existingZombie:setSitAgainstWall(true) end
+            return true, 0, existingZombie:getX(), existingZombie:getY(), existingZombie:getZ()
+        end
+        PZLinuxContractsRemoveWorldEntity(existingZombie)
+        print("[PZLinux Manhunt] removed stale target at distance "
+            .. tostring(math.floor(distanceFromTarget)) .. " contract=" .. tostring(record.id))
+    end
+    local created, zombie, square = PZLinuxContractsSpawnZombieAt(
         record.locationX,
         record.locationY,
         record.locationZ,
         record.id,
         "manhunt"
     )
-    return created, created and 1 or 0
+    if not created then return false, 0 end
+    return true, 1,
+        square and square:getX() or zombie:getX(),
+        square and square:getY() or zombie:getY(),
+        square and square:getZ() or zombie:getZ()
 end
 
 local function PZLinuxContractsSpawnProtectZombies(record, count)
@@ -3333,27 +3420,31 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         if recordError then return reject(recordError) end
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
         local restored
-        restored, spawned = PZLinuxContractsEnsureManhuntZombie(record)
+        restored, spawned, spawnX, spawnY, spawnZ = PZLinuxContractsEnsureManhuntZombie(record)
         if not restored then return reject("spawn_failed") end
         record.spawned = true
         record.status = "spawned"
+        record.spawnX = spawnX
+        record.spawnY = spawnY
+        record.spawnZ = spawnZ
     elseif eventName == "spawnCargo" then
         local record, recordError = usePlayerRecord(7, "accepted", "spawned")
         if recordError then return reject(recordError) end
         if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then return reject("too_far_from_contract") end
         local cargoReady, cargoCreated
-        local replaceExisting = record.status == "spawned"
         cargoReady, cargoCreated, spawnX, spawnY, spawnZ = PZLinuxContractsSpawnCargoObject(
             record.locationX,
             record.locationY,
             record.locationZ,
-            record.id,
-            replaceExisting
+            record.id
         )
         if not cargoReady then return reject("spawn_failed") end
         spawned = cargoCreated and 1 or 0
         record.spawned = true
         record.status = "spawned"
+        record.spawnX = spawnX
+        record.spawnY = spawnY
+        record.spawnZ = spawnZ
     elseif eventName == "clearCargo" then
         return reject("server_event_only")
     elseif eventName == "startProtect" then

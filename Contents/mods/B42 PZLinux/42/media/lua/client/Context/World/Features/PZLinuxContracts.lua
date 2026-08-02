@@ -9,24 +9,7 @@ local contractsCompanyCodes = {}
 local contractsCompanyReward = {}
 
 local function PZLinuxContractsText(key, fallback, ...)
-    local template = fallback
-    if getText then
-        local translated = getText(key)
-        if translated and translated ~= key then template = translated end
-    end
-    if select("#", ...) == 0 then return template end
-
-    local values = { ... }
-    for index, value in ipairs(values) do
-        local replacement = tostring(value)
-        local substitutions
-        template, substitutions = template:gsub("%%s", function() return replacement end, 1)
-        if substitutions == 0 then
-            template, substitutions = template:gsub("%%" .. tostring(index), function() return replacement end, 1)
-        end
-        if substitutions == 0 then template = template .. " " .. replacement end
-    end
-    return template
+    return PZLinuxFormatText(key, fallback, ...)
 end
 
 local function PZLinuxContractsLocalizedItemName(fullType, fallback)
@@ -45,6 +28,23 @@ local function PZLinuxContractsLocalizedItemName(fullType, fallback)
         if displayName and displayName ~= "" then return displayName end
     end
     return tostring(fallback or itemType)
+end
+
+local function PZLinuxContractsCompletionAmountText(receipt)
+    local amount = math.max(0, math.floor(tonumber(
+        receipt and (receipt.moneyEarned or receipt.amount)
+    ) or 0))
+    local label = PZLinuxContractsText(
+        "IGUI_PZLinux_Contracts_CompletionAmount",
+        "Total money earned: $%s"
+    )
+    label = label:gsub("%$[ \t]*%%s", "")
+    label = label:gsub("%%s", "")
+    label = label:gsub("%$[ \t]*%%1", "")
+    label = label:gsub("%%1", "")
+    label = label:gsub("[ \t]*%$[ \t]*$", "")
+    label = label:gsub("[ \t]+$", "")
+    return label .. " " .. tostring(amount) .. " $"
 end
 
 local function PZLinuxContractsFormatItemRequest(contractPreview)
@@ -99,11 +99,7 @@ local function PZLinuxContractsShowCompletionReceipt(self, receipt)
             "IGUI_PZLinux_Contracts_CompletionPaid",
             "You have been paid for your contract."
         ),
-        PZLinuxContractsText(
-            "IGUI_PZLinux_Contracts_CompletionAmount",
-            "Total money earned: $%s",
-            tostring(receipt.amount or 0)
-        ),
+        PZLinuxContractsCompletionAmountText(receipt),
     }
     if (tonumber(receipt.zombieCount) or 0) > 0 then
         table.insert(lines, PZLinuxContractsText(

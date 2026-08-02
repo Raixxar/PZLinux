@@ -544,18 +544,20 @@ MP et equilibrage des sections suivantes restent applicables avant publication.
 
 ### MP serveur dedie, deux clients
 
-Progression fonctionnelle des contrats en MP : **3/12 valides**.
+Progression fonctionnelle des contrats en MP : **10/12 valides**.
 
-- [ ] 1 - Kill zombies.
+- [x] 1 - Kill zombies.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
-- [ ] 3 - Eliminate the target.
+- [ ] 3 - Eliminate the target : cible serveur de nouveau assise et immobilisee,
+  recherche de case libre elargie; re-test MP requis.
 - [x] 4 - Collect zombie blood.
 - [x] 5 - Send automobile parts.
-- [ ] 6 - Capture a live zombie.
-- [ ] 7 - Prepare the cargo.
+- [x] 6 - Capture a live zombie.
+- [ ] 7 - Prepare the cargo : restauration serveur rendue idempotente et caisse
+  canonique retransmise sans recreation en boucle; re-test MP requis.
 - [x] 8 - Protect the building.
 - [x] 9 - Send medical equipment.
-- [ ] 10 - Send weapons.
+- [x] 10 - Send weapons.
 - [x] 11 - Send a computer : livraison, retrait et paiement valides en MP.
 - [x] 12 - Send a fridge : livraison, retrait et paiement valides en MP.
 

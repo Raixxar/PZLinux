@@ -8,9 +8,12 @@ PZLinux.Config.ATM = PZLinux.Config.ATM or {
 
 PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
     packageInteractionRadius = 5,
+    objectiveSpawnSearchRadius = 15,
     boardRefreshHours = 168,
 }
 PZLinux.Config.Contracts.boardRefreshHours = tonumber(PZLinux.Config.Contracts.boardRefreshHours) or 168
+PZLinux.Config.Contracts.objectiveSpawnSearchRadius =
+    tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
 
 PZLinux.Config.Reputation = PZLinux.Config.Reputation or {
     baseline = 1,

@@ -89,6 +89,28 @@ PZLinuxTestAssertEqual(PZLinuxRequestsCalculateUnitPrice(player, request), 7950,
 local runtimeFile = assert(io.open(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua", "rb"))
 local runtimeSource = runtimeFile:read("*a")
 runtimeFile:close()
+local formatterSource = runtimeSource:match("(function PZLinuxFormatText.-\nend)\n\nPZLinux%.callbacks")
+assert(formatterSource and loadstring(formatterSource))()
+local nativeTemplates = {
+    score = "Score : %s (de %s à %s)",
+}
+getText = function(key, ...)
+    local template = nativeTemplates[key] or key
+    local arguments = { ... }
+    for index = 1, select("#", ...) do
+        template = template:gsub("%%s", tostring(arguments[index]), 1)
+    end
+    return template
+end
+PZLinuxTestAssertEqual(PZLinuxFormatText("score", "Score: %s (%s/%s)", 31, -99, 200),
+    "Score : 31 (de -99 à 200)", "native translated reputation values")
+getText = function(key, value)
+    if value ~= nil then error("unsupported translated arguments") end
+    if key == "status" then return "Statut :" end
+    return key
+end
+PZLinuxTestAssertEqual(PZLinuxFormatText("status", "Status: %s", "FIABLE"),
+    "Statut : FIABLE", "fallback reputation value")
 local cancelBlock = runtimeSource:match("function PZLinuxContractsApplyCancel.-\nend")
 assert(cancelBlock and cancelBlock:find('error = "no_active_contract"'), "forged cancellation without an active contract must be rejected")
 assert(cancelBlock and cancelBlock:find("PZLinuxApplyReputationDelta%(playerObj, %-reputationPenalty%)"),
@@ -111,10 +133,12 @@ local reputationUiSource = reputationUiFile:read("*a")
 reputationUiFile:close()
 assert(reputationUiSource:find("PZLinuxRequestReputationSnapshot", 1, true),
     "the reputation UI must request its values from the server")
-assert(reputationUiSource:find("getText%(key%)")
-    and reputationUiSource:find('template:gsub%("%%%%s"')
-    and reputationUiSource:find('template = template %.%. " " %.%. replacement'),
-    "the reputation UI must preserve values when translated placeholders are missing")
+assert(reputationUiSource:find("PZLinuxFormatText%(key, fallback, %.%.%.%)"),
+    "the reputation UI must use the shared placeholder-safe formatter")
+assert(runtimeSource:find("function PZLinuxFormatText")
+    and runtimeSource:find("__PZLINUX_VALUE_")
+    and runtimeSource:find("pcall%(getText, key, unpack%(markers, 1, argumentCount%)%)"),
+    "translated values must survive native getText formatting through explicit markers")
 assert(reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.reputation%)")
     and reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.pointsToNext%)"),
     "the reputation UI must display whole reputation values without floating-point noise")
