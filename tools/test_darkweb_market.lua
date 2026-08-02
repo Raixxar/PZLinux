@@ -106,6 +106,25 @@ PZLinuxTestAssert(not stalePurchase.ok and stalePurchase.error == "not_enough_st
     and stalePurchase.stock == 0,
     "a second client must not buy stock already consumed by another player")
 
+local darkWebUiFile = assert(io.open(
+    luaRoot .. "/client/Context/World/Features/PZLinuxDarkWeb.lua",
+    "rb"
+))
+local darkWebUi = darkWebUiFile:read("*a")
+darkWebUiFile:close()
+PZLinuxTestAssert(darkWebUi:find('rowData%.transactionType == "Buy".-rowData%.stock.-<= 0'),
+    "the Dark Web UI must hide exhausted buy offers")
+PZLinuxTestAssert(darkWebUi:find('IGUI_PZLinux_DarkWeb_Stock'),
+    "the Dark Web UI must display the available quantity")
+PZLinuxTestAssert(darkWebUi:find('tonumber%(item%.count%) or 0'),
+    "Dark Web sell offers must display the total inventory quantity")
+
+local darkWebSharedFile = assert(io.open(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua", "rb"))
+local darkWebShared = darkWebSharedFile:read("*a")
+darkWebSharedFile:close()
+PZLinuxTestAssert(darkWebShared:find("if count > 0 and firstItemId"),
+    "Dark Web sell offers with no available inventory must remain hidden")
+
 worldHour = 24
 local refreshed = PZLinuxDarkWebGetBuyOffers(playerOne, "offers-refresh")
 PZLinuxTestAssert(refreshed.ok and refreshed.offers[1].offerId ~= contestedOffer.offerId,

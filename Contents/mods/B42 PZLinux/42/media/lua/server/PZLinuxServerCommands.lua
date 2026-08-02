@@ -12,6 +12,11 @@ local function PZLinuxServerSend(player, command, args)
     sendServerCommand(player, PZLINUX_MODULE, command, args or {})
 end
 
+local function PZLinuxServerBroadcast(command, args)
+    if not sendServerCommand then return end
+    sendServerCommand(PZLINUX_MODULE, command, args or {})
+end
+
 local function PZLinuxServerGetWorldHours()
     if getGameTime then
         return getGameTime():getWorldAgeHours()
@@ -277,7 +282,11 @@ end
 
 local function PZLinuxServerContractWorldEvent(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractWorldEvent", args, "PZLinuxContractWorldEventResult", function()
-        return PZLinuxContractsApplyWorldEvent(player, args and args.event, args, args and args.requestId)
+        local result = PZLinuxContractsApplyWorldEvent(player, args and args.event, args, args and args.requestId)
+        if result and result.ok and args and args.event == "capture" then
+            PZLinuxServerBroadcast("PZLinuxContractZombieRemoved", { target = args.target })
+        end
+        return result
     end)
 end
 

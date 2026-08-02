@@ -67,13 +67,21 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   from their persistent server records, without duplicating tagged entities.
 - Kept killed Manhunt targets in the corpse-interaction state until their proof
   is collected.
+- Broadcast validated live-zombie captures from the authoritative server so the
+  captured zombie is neutralized and removed from every connected client.
+- Spawn Manhunt targets and protection hordes through the multiplayer-aware game
+  population helper, using a nearby free square when the mission marker itself
+  is obstructed.
+- Localized contract, mail, mailbox, computer-repair and ATM context-menu actions
+  across every language catalog shipped with the mod.
 
 ### Economy
 
 - Rebalanced Dark Web prices for firearms, ammunition, explosives, generators,
   armor, strong melee weapons, books and rare magazines.
 - Displayed the remaining Dark Web stock beside each purchase price and disabled
-  offers that are sold out.
+  exhausted offers immediately after their last unit is purchased. Sell offers
+  also display the total quantity available in the player's inventory.
 - Increased Request base prices and capped the Plant Scavenging discount at 15%.
 - Reduced easy contract rewards while retaining stronger payouts for dangerous
   objectives.
@@ -123,6 +131,9 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Replaced single-line contract dialogue labels with fixed-size wrapped panels,
   automatic scrolling and controls kept outside the transcript for long
   translations.
+- Fixed Auto Parts, Medical and Weapons previews displaying a transient `nil`
+  quantity, and resolved requested item names through the player's local Project
+  Zomboid translation catalog.
 - Added a 5% reward modifier per absolute Z level for elevated and underground
   mission objectives.
 - Removed the legacy `RetrievePackage.lua` implementation.

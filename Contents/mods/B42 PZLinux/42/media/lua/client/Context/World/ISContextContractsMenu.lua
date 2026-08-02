@@ -62,7 +62,7 @@ function completeContractMenu_AddContext(player, context, worldobjects)
     ) or math.huge
     local packageSameZ = playerSquare and targetZ and playerSquare:getZ() == targetZ
     if packageReady and packageDistance <= packageRadius and packageSameZ then
-        context:addOption("Take the package of the contract", nil, completeContractMenu_OnUse, player)
+        context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_TakeContractPackage"), nil, completeContractMenu_OnUse, player)
     elseif tonumber(modData.PZLinuxActiveContract) == 1 and packageDistance <= 100 then
         print("[PZLinux Contracts Context] option missing"
             .. " active=" .. tostring(modData.PZLinuxActiveContract)
@@ -89,13 +89,13 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                     local objectContractId = PZLinuxContractsGetEntityContractId(obj)
                     local objectWorldRecord = PZLinuxContractsGetWorldContract(objectContractId)
                     if objectWorldRecord and tonumber(objectWorldRecord.contractId) == 7 and objectWorldRecord.status == "spawned" then
-                        context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z)
+                        context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_PrepareCargo"), obj, completeContractMenu_OnCargo, player, x, y, z)
                         break
                     end
                     if targetX and targetY and targetZ and isNearTarget(x, y, z, targetX, targetY, targetZ) then
-                        if modData.PZLinuxContractCargo == 2 then context:addOption("Prepare the cargo to be helicoptered.", obj, completeContractMenu_OnCargo, player, x, y, z); break end
-                        if modData.PZLinuxContractProtect == 1 then context:addOption("Protect the building", obj, completeContractMenu_OnProtect, player, x, y, z); break end
-                        if modData.PZLinuxContractProtect == 3 then context:addOption("Tag the sector as clear", obj, completeContractMenu_OnProtect, player, x, y, z); break end
+                        if modData.PZLinuxContractCargo == 2 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_PrepareCargo"), obj, completeContractMenu_OnCargo, player, x, y, z); break end
+                        if modData.PZLinuxContractProtect == 1 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_ProtectBuilding"), obj, completeContractMenu_OnProtect, player, x, y, z); break end
+                        if modData.PZLinuxContractProtect == 3 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_MarkSectorClear"), obj, completeContractMenu_OnProtect, player, x, y, z); break end
                     end
                 end
             end
@@ -119,8 +119,8 @@ function completeContractMenu_AddContext(player, context, worldobjects)
                                         local body = deadBodies:get(i)
                                         local x, y, z = nearbySquare:getX(), nearbySquare:getY(), nearbySquare:getZ()
 
-                                        if modData.PZLinuxContractManhunt == 2 then context:addOption("Cut the target", body, completeContractMenu_OnCut, player, x, y, z); break end
-                                        if modData.PZLinuxContractBlood == 1 and modData.PZLinuxOnZombieDead > 0 then context:addOption("Take the blood of the target", body, completeContractMenu_OnBlood, player, x, y, z) break end
+                                        if modData.PZLinuxContractManhunt == 2 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_CutTarget"), body, completeContractMenu_OnCut, player, x, y, z); break end
+                                        if modData.PZLinuxContractBlood == 1 and modData.PZLinuxOnZombieDead > 0 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_TakeZombieBlood"), body, completeContractMenu_OnBlood, player, x, y, z) break end
                                     end
                                 end
                             end
@@ -141,7 +141,7 @@ function completeContractMenu_AddContext(player, context, worldobjects)
             if square then
                 local x, y, z = square:getX(), square:getY(), square:getZ()
                 if isNearTargetCapture(x, y, z, captureTargetX, captureTargetY, captureTargetZ) then
-                    context:addOption("Capture a zombie", zombie, completeContractMenu_OnCapture, player, x, y, z)
+                    context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_CaptureZombie"), zombie, completeContractMenu_OnCapture, player, x, y, z)
                     break
                 end
             end

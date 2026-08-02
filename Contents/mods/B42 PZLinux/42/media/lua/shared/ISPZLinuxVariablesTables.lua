@@ -139,6 +139,17 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Betting_RacePlaceBet = "PLACE BET",
     IGUI_PZLinux_Betting_RaceBackSchedule = "SCHEDULE",
     IGUI_PZLinux_Betting_RaceSavingBet = "Saving ticket...",
+    IGUI_PZLinux_Context_DepositMailItems = "Deposit the requested email items",
+    IGUI_PZLinux_Context_Mailbox = "Mailbox",
+    IGUI_PZLinux_Context_TakeContractPackage = "Take the contract package",
+    IGUI_PZLinux_Context_PrepareCargo = "Prepare the cargo for helicopter pickup",
+    IGUI_PZLinux_Context_ProtectBuilding = "Protect the building",
+    IGUI_PZLinux_Context_MarkSectorClear = "Mark the sector as clear",
+    IGUI_PZLinux_Context_CutTarget = "Cut off the target's head",
+    IGUI_PZLinux_Context_TakeZombieBlood = "Collect zombie blood",
+    IGUI_PZLinux_Context_CaptureZombie = "Capture a zombie",
+    IGUI_PZLinux_Context_RepairComputer = "Repair the computer",
+    IGUI_PZLinux_Context_ATM = "ATM",
 }
 
 function PZLinuxGetText(key)
@@ -1030,6 +1041,10 @@ end
 if Events and Events.OnServerCommand then
     Events.OnServerCommand.Add(function(module, command, args)
         if module ~= "PZLinux" then return end
+        if command == "PZLinuxContractZombieRemoved" then
+            PZLinuxRemoveReplicatedZombie(args and args.target)
+            return
+        end
         if command == "PZLinuxBankSync"
         or command == "PZLinuxBankDebitResult"
         or command == "PZLinuxAtmSyncResult"
@@ -2673,14 +2688,47 @@ function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
     return true
 end
 
-function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
-    if not createZombie then return false end
-    local zombie = createZombie(tonumber(x), tonumber(y), tonumber(z), nil, 0, IsoDirections.S)
-    PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie")
-    if zombie and zombie.transmitCompleteItemToClients then
-        zombie:transmitCompleteItemToClients()
+local function PZLinuxContractsFindZombieSpawnSquare(x, y, z)
+    if not getCell then return nil end
+    local centerX = math.floor(tonumber(x) or 0)
+    local centerY = math.floor(tonumber(y) or 0)
+    local level = math.floor(tonumber(z) or 0)
+
+    for radius = 0, 5 do
+        for offsetX = -radius, radius do
+            for offsetY = -radius, radius do
+                if radius == 0 or math.abs(offsetX) == radius or math.abs(offsetY) == radius then
+                    local square = getCell():getGridSquare(centerX + offsetX, centerY + offsetY, level)
+                    if square and square:isFree(false) then return square end
+                end
+            end
+        end
     end
-    return zombie ~= nil
+    return nil
+end
+
+local function PZLinuxContractsFirstSpawnedZombie(spawned)
+    if not spawned then return nil end
+    if spawned.size and spawned.get and spawned:size() > 0 then return spawned:get(0) end
+    return spawned[1]
+end
+
+function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
+    local square = PZLinuxContractsFindZombieSpawnSquare(x, y, z)
+    if not square then return false end
+
+    local zombie
+    if addZombiesInOutfit then
+        zombie = PZLinuxContractsFirstSpawnedZombie(addZombiesInOutfit(
+            square:getX(), square:getY(), square:getZ(), 1, nil, nil
+        ))
+    elseif createZombie then
+        zombie = createZombie(square:getX(), square:getY(), square:getZ(), nil, 0, IsoDirections.S)
+    end
+    if not zombie then return false end
+
+    PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie")
+    return true
 end
 
 local function PZLinuxContractsCountTaggedZombies(contractWorldId, objectiveType)
@@ -2835,6 +2883,8 @@ end
 
 function PZLinuxContractsRemoveWorldEntity(entity)
     if not entity then return false end
+    if entity.setTarget then entity:setTarget(nil) end
+    if entity.setUseless then entity:setUseless(true) end
     if entity.removeFromWorld then entity:removeFromWorld() end
     if entity.removeFromSquare then entity:removeFromSquare() end
     return true

@@ -166,6 +166,12 @@ PZLinuxTestAssert(contractEvents:find("if alreadyNotified then return end"),
 local contractsUi = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua")
 PZLinuxTestAssert(not contractsUi:find("AddItem%(['\"]Base%.Note['\"]%)"),
     "the client must not create a private duplicate of the server contract note")
+PZLinuxTestAssert(contractsUi:find("PZLinuxContractsLocalizedItemName"),
+    "item-request contracts must resolve names through the local PZ translation catalog")
+PZLinuxTestAssert(contractsUi:find("tonumber%(contractPreview%.infoCount%) or 0"),
+    "item-request contracts must use the immutable server preview quantity")
+PZLinuxTestAssert(not contractsUi:find("tostring%(dialogue%.modData%.PZLinuxContractInfoCount%)"),
+    "contract dialogue must not read a transient ModData quantity that can become nil")
 local stateRenderBlock = contractsUi:match("function contractsUI:showSynchronizedContractState.-\nend\n\n%-%- INIT")
 PZLinuxTestAssert(stateRenderBlock and stateRenderBlock:find("activeContract == 1"),
     "the contracts UI must render an active contract after server synchronization")

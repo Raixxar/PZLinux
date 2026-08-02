@@ -456,7 +456,7 @@ function AtmMenu_AddContext(player, context, worldobjects)
                      (getSandboxOptions():getElecShutModifier() > -1 and
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
-                        context:addOption("ATM", obj, AtmMenu_OnUse, player, x, y, z, sprite:getName())
+                        context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_ATM"), obj, AtmMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                      else
                         if playerObj then

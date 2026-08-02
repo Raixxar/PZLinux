@@ -32,6 +32,12 @@ PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find('"accepted", "s
     "manhunt spawn must be recoverable after reconnect")
 PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find("PZLinuxContractsEnsureManhuntZombie"),
     "manhunt recovery must reuse an existing tagged target")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsFindZombieSpawnSquare")
+    and variables:find("square:isFree%(false%)"),
+    "contract zombies must use a nearby loaded free square")
+PZLinuxTestAssert(variables:find("addZombiesInOutfit%(")
+    and variables:find("PZLinuxContractsFirstSpawnedZombie"),
+    "contract zombies must use the multiplayer-aware game spawn helper")
 local restoreProtectBranch = applyBlock:match('eventName == "restoreProtect"(.-)elseif')
 PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(tonumber%(record%.zombieCount%)"),
     "protect recovery must only restore the number of objective kills still required")
@@ -57,6 +63,15 @@ PZLinuxTestAssert(not requestBlock:find("PZLinuxContractId"), "world-event reque
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
 PZLinuxTestAssert(serverCommands:find("Events%.OnZombieDead%.Add%(PZLinuxServerOnZombieDead%)"),
     "the server must own zombie-death accounting")
+PZLinuxTestAssert(serverCommands:find('args%.event == "capture".-PZLinuxServerBroadcast%("PZLinuxContractZombieRemoved"'),
+    "a validated capture must broadcast removal of the zombie to every client")
+PZLinuxTestAssert(variables:find('command == "PZLinuxContractZombieRemoved".-PZLinuxRemoveReplicatedZombie'),
+    "clients must remove captured zombies only after the trusted server broadcast")
+local worldInteractions = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxWorldInteractions.lua")
+local replicatedRemoval = worldInteractions:match("function PZLinuxRemoveReplicatedZombie.-\nend")
+PZLinuxTestAssert(replicatedRemoval and replicatedRemoval:find("setUseless")
+    and replicatedRemoval:find("removeFromWorld") and replicatedRemoval:find("removeFromSquare"),
+    "replicated capture removal must neutralize and remove the local zombie")
 PZLinuxTestAssert(variables:find("modData%.PZLinuxActiveContract = PZLinuxContractsCanonicalActiveState%(record%.status%)"),
     "active contract state must be rebuilt from the persistent server record")
 PZLinuxTestAssert(variables:find("PZLinuxContractsUpdateKillNote%(playerObj, record%)"),

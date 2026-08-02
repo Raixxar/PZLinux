@@ -378,7 +378,10 @@ function darkWebUI:onBuy()
 
                     if self.offerPriceLabels[lineIndex] then
                         self.offerPriceLabels[lineIndex]:setName(
-                            "$" .. tostring(rowData.price) .. " | x" .. tostring(rowData.stock or 0)
+                            "$" .. tostring(rowData.price) .. " | " .. string.format(
+                                PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
+                                tonumber(rowData.stock) or 0
+                            )
                         )
                     end
 
@@ -517,7 +520,11 @@ function darkWebUI:onSell()
         local itemSellLabel = ISLabel:new(self.width * 0.059, yOffset, 20, item.name, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(itemSellLabel)
 
-        local priceLabel = ISLabel:new(self.width * 0.41, yOffset, 20, " $" .. item.price, 0, 1, 0, 1, UIFont.Small, true)
+        local priceText = " $" .. tostring(item.price) .. " | " .. string.format(
+            PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
+            tonumber(item.count) or 0
+        )
+        local priceLabel = ISLabel:new(self.width * 0.35, yOffset, 20, priceText, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(priceLabel)
 
         local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
@@ -543,6 +550,9 @@ function darkWebUI:OnFilter(button)
 end
 
 function darkWebUI:FilterMatch(rowData)
+    if rowData.transactionType == "Buy" and (tonumber(rowData.stock) or 0) <= 0 then
+        return false
+    end
     if self.filterMode == "all" then
         return true
     elseif self.filterMode == "search" then
@@ -770,5 +780,5 @@ function darkWebMenu_ShowUI(player)
     ui:addToUIManager()
     ui:startUI()
 
-    return ui 
+    return ui
 end

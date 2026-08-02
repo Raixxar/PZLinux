@@ -216,6 +216,18 @@ function PZLinuxFindZombie(ref)
     return nil
 end
 
+function PZLinuxRemoveReplicatedZombie(ref)
+    local zombie = PZLinuxFindZombie(ref)
+    if not zombie then return false end
+
+    if zombie.setTarget then zombie:setTarget(nil) end
+    if zombie.setUseless then zombie:setUseless(true) end
+    local square = zombie.getSquare and zombie:getSquare() or nil
+    if zombie.removeFromWorld then zombie:removeFromWorld() end
+    if square and zombie.removeFromSquare then zombie:removeFromSquare() end
+    return true
+end
+
 function PZLinuxIsPlayerNearPosition(player, x, y, z, maxDistance)
     local playerObj = PZLinuxGetPlayer(player)
     x, y, z = tonumber(x), tonumber(y), tonumber(z)

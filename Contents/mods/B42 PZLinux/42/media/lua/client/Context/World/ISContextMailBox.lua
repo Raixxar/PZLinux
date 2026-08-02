@@ -166,7 +166,7 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
                     local square = obj:getSquare()
                     if square then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
-                        context:addOption("MailBox", obj, MailBoxMenu_OnUse, player, x, y, z, sprite:getName())
+                        context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_Mailbox"), obj, MailBoxMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                     end
                 end

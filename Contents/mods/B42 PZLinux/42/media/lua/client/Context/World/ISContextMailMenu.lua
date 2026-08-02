@@ -13,7 +13,7 @@ function completeMailAmmo_AddContext(player, context, worldobjects)
                 if type(id) == "number" and type(mail) == "table" then
                     if mail.status == 2 then
                         if isNearTarget(x, y, z, mail.x, mail.y, mail.z) then
-                            context:addOption("Deposit the requested items from the email", obj, completeMailMenu_OnUse, playerObj, id, x, y, z)
+                            context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_DepositMailItems"), obj, completeMailMenu_OnUse, playerObj, id, x, y, z)
                             return
                         end
                     end

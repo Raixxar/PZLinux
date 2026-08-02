@@ -551,7 +551,7 @@ function linuxMenu_AddContext(player, context, worldobjects)
 
                             if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
                             if obj:getModData().statusCondition < 15 then
-                                context:addOption("Fix the computer", obj, linuxMenu_OnRepare, playerObj, x, y, z, sprite:getName())
+                                context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_RepairComputer"), obj, linuxMenu_OnRepare, playerObj, x, y, z, sprite:getName())
                             end
 
                             if obj:getModData().statusCondition > 0 then

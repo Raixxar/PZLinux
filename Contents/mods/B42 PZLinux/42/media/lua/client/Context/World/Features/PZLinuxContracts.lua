@@ -17,6 +17,31 @@ local function PZLinuxContractsText(key, fallback, ...)
     return fallback
 end
 
+local function PZLinuxContractsLocalizedItemName(fullType, fallback)
+    local itemType = tostring(fullType or "")
+    local itemNameResolver = rawget(_G, "getItemNameFromFullType")
+    if itemType ~= "" and itemNameResolver then
+        local ok, translatedName = pcall(itemNameResolver, itemType)
+        if ok and translatedName and translatedName ~= "" and translatedName ~= itemType then
+            return translatedName
+        end
+    end
+
+    if itemType ~= "" and getScriptManager then
+        local scriptItem = getScriptManager():FindItem(itemType)
+        local displayName = scriptItem and scriptItem:getDisplayName() or nil
+        if displayName and displayName ~= "" then return displayName end
+    end
+    return tostring(fallback or itemType)
+end
+
+local function PZLinuxContractsFormatItemRequest(contractPreview)
+    local count = math.max(0, tonumber(contractPreview.infoCount) or 0)
+    local itemName = PZLinuxContractsLocalizedItemName(contractPreview.info, contractPreview.infoName)
+    if count > 0 then return tostring(count) .. " " .. itemName end
+    return itemName
+end
+
 local function PZLinuxContractsSetRichText(panel, message)
     if not panel then return end
     panel.text = "<RGB:0,1,0>" .. tostring(message or "")
@@ -708,7 +733,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AutoParts_AskParts", "Which auto parts do you need ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, tostring(dialogue.modData.PZLinuxContractInfoCount) .. " " .. tostring(contractPreview.infoName or ""), true)
+            PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsFormatItemRequest(contractPreview), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
@@ -808,7 +833,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskExactRequest", "What exactly are you looking for ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, tostring(dialogue.modData.PZLinuxContractInfoCount) .. " " .. tostring(contractPreview.infoName or ""), true)
+            PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsFormatItemRequest(contractPreview), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
@@ -833,7 +858,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskExactRequest", "What exactly are you looking for ?"))
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
-            PZLinuxContractsAppendSellerLine(dialogue, tostring(dialogue.modData.PZLinuxContractInfoCount) .. " " .. tostring(contractPreview.infoName or ""), true)
+            PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsFormatItemRequest(contractPreview), true)
 
             if not PZLinuxContractsWaitDialogue(dialogue) then return end
             PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
