@@ -2,6 +2,7 @@ PZLinux = PZLinux or {}
 PZLinux.RaceSchedule = PZLinux.RaceSchedule or {}
 
 local PZLINUX_RACE_SCHEDULE_DATA = "PZLinuxRaceSchedule"
+local PZLINUX_RACE_MARKET_VERSION = 2
 local PZLINUX_RACE_HOURS = { 8, 10, 12, 14, 16 }
 local PZLINUX_RACE_VISIBLE_SLOTS = 5
 local PZLINUX_RACE_MAXIMUM_UNREAD_RESULTS = 5
@@ -99,6 +100,7 @@ local function PZLinuxRaceScheduleCreateRace(state, year, month, day, dayStartWo
     if isJackpot then pool.maximumBet = PZLINUX_RACE_JACKPOT_MAXIMUM_BET end
     local race = {
         id = raceId,
+        marketVersion = PZLINUX_RACE_MARKET_VERSION,
         dateKey = dateKey,
         label = dateKey .. " " .. string.format("%02d:00", hour),
         hour = hour,
@@ -121,8 +123,25 @@ local function PZLinuxRaceScheduleCreateRace(state, year, month, day, dayStartWo
     return race
 end
 
+local function PZLinuxRaceScheduleRefreshOpenMarkets(state)
+    local racesWithTickets = {}
+    for _, tickets in pairs(state.tickets) do
+        for raceId in pairs(tickets) do racesWithTickets[raceId] = true end
+    end
+
+    for raceId, race in pairs(state.races) do
+        if race.status == "open"
+            and race.marketVersion ~= PZLINUX_RACE_MARKET_VERSION
+            and not racesWithTickets[raceId]
+        then
+            state.races[raceId] = nil
+        end
+    end
+end
+
 local function PZLinuxRaceScheduleEnsureRaces(state)
     local clock = PZLinuxRaceScheduleGetClock()
+    PZLinuxRaceScheduleRefreshOpenMarkets(state)
     for _, hour in ipairs(PZLINUX_RACE_HOURS) do
         PZLinuxRaceScheduleCreateRace(
             state,

@@ -368,6 +368,9 @@ montants variables, une commission configurable de 15 % est retiree, puis le poo
 net est partage proportionnellement entre les mises gagnantes. Le serveur ajoute
 4 % des mises virtuelles comme liquidite pour soutenir les gains des outsiders.
 Les cotes sont affichees en `N/1` et incluent cette somme.
+Le marche est versionne : apres une modification du modele de cotes, les courses
+ouvertes sans ticket sont regenerees, tandis que les paris deja engages gardent
+leur carte et leur pool d'origine.
 
 Les courses sont maintenant des rendez-vous globaux a **08:00, 10:00, 12:00,
 14:00 et 16:00** selon l'horloge du monde. Un joueur peut programmer un ticket

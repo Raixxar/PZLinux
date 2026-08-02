@@ -99,11 +99,24 @@ local distinctOrdinaryBettorCounts = 0
 for _ in pairs(ordinaryBettorCounts) do distinctOrdinaryBettorCounts = distinctOrdinaryBettorCounts + 1 end
 PZLinuxTestAssert(distinctOrdinaryBettorCounts > 1,
     "each ordinary race must generate its own virtual crowd")
+local staleRaceId = firstSnapshot.races[4].id
+local staleRace = globalData.PZLinuxRaceSchedule.races[staleRaceId]
+staleRace.marketVersion = 1
+local refreshedSnapshot = PZLinuxRaceScheduleSnapshot(player, "snapshot-market-refresh")
+PZLinuxTestAssert(globalData.PZLinuxRaceSchedule.races[staleRaceId] ~= staleRace
+    and refreshedSnapshot.races[4].id == staleRaceId,
+    "an obsolete open market without tickets must be regenerated")
 
 local firstRaceId = firstSnapshot.races[1].id
 local secondRaceId = firstSnapshot.races[2].id
 local firstBet = PZLinuxRaceSchedulePlaceBet(player, firstRaceId, 1, 100, "bet-1")
 PZLinuxTestAssert(firstBet.ok and firstBet.placed, "the first scheduled ticket must be accepted")
+local ticketedRace = globalData.PZLinuxRaceSchedule.races[firstRaceId]
+ticketedRace.marketVersion = 1
+PZLinuxRaceScheduleSnapshot(player, "snapshot-preserve-ticketed-market")
+PZLinuxTestAssert(globalData.PZLinuxRaceSchedule.races[firstRaceId] == ticketedRace,
+    "an obsolete market with a player ticket must never be regenerated")
+ticketedRace.marketVersion = 2
 local secondBet = PZLinuxRaceSchedulePlaceBet(player, secondRaceId, 2, 150, "bet-2")
 PZLinuxTestAssert(secondBet.ok and secondBet.placed, "the player must be able to program several races")
 PZLinuxTestAssert(player.modData.PZLinuxBank == 9750, "scheduled stakes must be debited immediately")

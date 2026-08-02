@@ -132,6 +132,8 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   pool commission, estimated multipliers and a $2,000 ordinary-race bet cap.
 - Recalibrated virtual-bettor weighting for the larger crowds so favorites no
   longer receive systematically underpriced odds.
+- Added race-market versioning so obsolete open cards without player tickets
+  are regenerated after an odds-model update.
 - Added 4% server liquidity to each Zombie Race prize pool and restored
   fractional `N/1` odds: final 25/1 odds return the stake plus 25 times its value.
 - Replaced unlimited instant Zombie Races with five shared server departures per
