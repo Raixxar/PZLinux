@@ -230,8 +230,12 @@ end
 function requestUI:onSelectContract(button)
     self.minimizeButton:setVisible(false)
     self.minimizeBackButton:setVisible(true)
-    self.prevButton:setVisible(false)
-    self.nextButton:setVisible(false)
+    -- Filtering the catalog down to today's available categories often means
+    -- everything fits on a single page, so prevButton/nextButton may never
+    -- have been created (they are only built when there is more than one
+    -- page) -- nil-check before touching them.
+    if self.prevButton then self.prevButton:setVisible(false) end
+    if self.nextButton then self.nextButton:setVisible(false) end
     for _, contractButton in ipairs(self.contractButtons) do
         contractButton:setVisible(false)
     end
