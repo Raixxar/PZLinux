@@ -3316,12 +3316,16 @@ local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit, prepareR
     if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
     if zombie.resetModelNextFrame then zombie:resetModelNextFrame() end
     if transmit ~= false then
-        local networkAI = zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
-        if networkAI and networkAI.extraUpdate then
+        local getAIOk, networkAI = pcall(function()
+            return zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
+        end)
+        if getAIOk and networkAI then
             local updateOk, updateError = pcall(function() networkAI:extraUpdate() end)
             if not updateOk then
                 print("[PZLinux Manhunt][server] network update failed: " .. tostring(updateError))
             end
+        elseif not getAIOk then
+            print("[PZLinux Manhunt][server] network AI lookup failed: " .. tostring(networkAI))
         end
     end
     return true
