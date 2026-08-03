@@ -16,6 +16,12 @@
 - Manhunt : la mort est aussi reconnue depuis la cible canonique conservee par
   le serveur lorsque B42 ne restitue pas ses tags ModData dans `OnZombieDead`.
   Le contrat passe alors a `target_down` sans faire reapparaitre la cible.
+- Manhunt : suppression du double chemin `addZombieSitting` puis fallback qui
+  pouvait creer deux cibles. Une seule API de spawn MP synchrone est utilisee,
+  puis la posture passive est appliquee a l'entite obtenue.
+- Contrats monde : une exception serveur renvoie maintenant `server_exception`
+  au client et laisse une trace explicite, au lieu de provoquer des retries
+  silencieux susceptibles de dupliquer un objectif.
 
 All notable changes to PZLinux are documented in this file. Pre-1.0 entries are
 preserved as historical notes and may describe systems replaced by 1.0.0.

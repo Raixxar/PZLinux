@@ -3297,34 +3297,6 @@ local function PZLinuxContractsFirstSpawnedZombie(spawned)
     return spawned[1]
 end
 
-local function PZLinuxContractsSnapshotZombies()
-    local snapshot = {}
-    if not getCell then return snapshot end
-    local zombies = getCell():getZombieList()
-    if not zombies then return snapshot end
-    for index = 0, zombies:size() - 1 do
-        snapshot[zombies:get(index)] = true
-    end
-    return snapshot
-end
-
-local function PZLinuxContractsFindNewZombie(snapshot, x, y, z)
-    if not getCell then return nil end
-    local zombies = getCell():getZombieList()
-    if not zombies then return nil end
-    for index = zombies:size() - 1, 0, -1 do
-        local zombie = zombies:get(index)
-        if zombie and not snapshot[zombie]
-        and (not zombie.isDead or not zombie:isDead())
-        and math.abs(zombie:getX() - x) <= 2
-        and math.abs(zombie:getY() - y) <= 2
-        and math.abs(zombie:getZ() - z) <= 0.1 then
-            return zombie
-        end
-    end
-    return nil
-end
-
 local function PZLinuxContractsGetZombieOnlineId(zombie)
     if not zombie then return -1 end
     if zombie.getOnlineID then return tonumber(zombie:getOnlineID()) or -1 end
@@ -3345,7 +3317,12 @@ local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit, prepareR
     if zombie.resetModelNextFrame then zombie:resetModelNextFrame() end
     if transmit ~= false then
         local networkAI = zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
-        if networkAI and networkAI.extraUpdate then networkAI:extraUpdate() end
+        if networkAI and networkAI.extraUpdate then
+            local updateOk, updateError = pcall(function() networkAI:extraUpdate() end)
+            if not updateOk then
+                print("[PZLinux Manhunt][server] network update failed: " .. tostring(updateError))
+            end
+        end
     end
     return true
 end
@@ -3362,22 +3339,7 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
 
     local zombie
     local spawnMethod = "none"
-    if objectiveType == "manhunt" and addZombieSitting then
-        local snapshot = PZLinuxContractsSnapshotZombies()
-        local ok, spawnError = pcall(addZombieSitting, square:getX(), square:getY(), square:getZ())
-        if ok then
-            zombie = PZLinuxContractsFindNewZombie(
-                snapshot,
-                square:getX(),
-                square:getY(),
-                square:getZ()
-            )
-            if zombie then spawnMethod = "addZombieSitting" end
-        else
-            print("[PZLinux Manhunt][server] addZombieSitting failed: " .. tostring(spawnError))
-        end
-    end
-    if not zombie and addZombiesInOutfit then
+    if addZombiesInOutfit then
         local ok, spawnedOrError = pcall(
             addZombiesInOutfit,
             square:getX(), square:getY(), square:getZ(), 1, nil, nil,

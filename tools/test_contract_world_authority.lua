@@ -48,10 +48,10 @@ PZLinuxTestAssert(variables:find("function PZLinuxContractsFindZombieSpawnSquare
 PZLinuxTestAssert(variables:find("addZombiesInOutfit", 1, true)
     and variables:find("PZLinuxContractsFirstSpawnedZombie"),
     "contract zombies must use the multiplayer-aware game spawn helper")
-PZLinuxTestAssert(variables:find('objectiveType == "manhunt" and addZombieSitting', 1, true)
-    and variables:find('spawnMethod = "addZombieSitting"', 1, true),
-    "manhunt must prefer the game's dedicated sitting-zombie helper")
-PZLinuxTestAssert(variables:find("if not zombie and addZombiesInOutfit", 1, true)
+PZLinuxTestAssert(not variables:find('objectiveType == "manhunt" and addZombieSitting', 1, true)
+    and variables:find("if addZombiesInOutfit", 1, true),
+    "manhunt must use one synchronous multiplayer spawn path and avoid duplicate delayed sitting zombies")
+PZLinuxTestAssert(variables:find("if addZombiesInOutfit", 1, true)
     and variables:find("if not zombie and createZombie", 1, true),
     "zombie spawning must fall back when an available helper returns no zombie")
 PZLinuxTestAssert(variables:find("PZLinuxContractsConfigureManhuntZombie"),
@@ -66,6 +66,8 @@ PZLinuxTestAssert(manhuntConfig and manhuntConfig:find("zombie:setUseless%(false
 PZLinuxTestAssert(not manhuntConfig:find("transmitModData")
     and variables:find('PZLinuxContractsTagEntity%(zombie, contractWorldId, objectiveType or "zombie", objectiveType ~= "manhunt"%)'),
     "manhunt ModData must not be transmitted before B42 registers the moving object")
+PZLinuxTestAssert(manhuntConfig:find("pcall%(function%(%) networkAI:extraUpdate%(%) end%)"),
+    "a B42 network update failure must not prevent the manhunt spawn response")
 PZLinuxTestAssert(variables:find("PZLinux%.ManhuntTargets")
     and variables:find("function PZLinuxContractsMaintainManhuntTargets")
     and variables:find("runtimeTarget:getSquare%(%)")
@@ -151,6 +153,9 @@ PZLinuxTestAssert(requestBlock ~= nil, "could not inspect world-event request")
 PZLinuxTestAssert(not requestBlock:find("PZLinuxContractId"), "world-event requests must not inject a client contract id")
 
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
+PZLinuxTestAssert(serverCommands:find("pcall%(PZLinuxContractsApplyWorldEvent")
+    and serverCommands:find('error = "server_exception"'),
+    "contract world-event exceptions must return an explicit response instead of causing blind retries")
 PZLinuxTestAssert(serverCommands:find("Events%.OnZombieDead%.Add%(PZLinuxServerOnZombieDead%)"),
     "the server must own zombie-death accounting")
 PZLinuxTestAssert(serverCommands:find("PZLinuxContractsMaintainManhuntTargets%(%)"),
