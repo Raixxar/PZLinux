@@ -4,7 +4,15 @@ PZLinux.Config = PZLinux.Config or {}
 PZLinux.Config.ATM = PZLinux.Config.ATM or {
     minCash = 10000,
     maxCash = 50000,
+    -- Cash slowly regenerates over in-game time (a cash truck service,
+    -- narratively), capped at maxCash, so withdrawals alone can never
+    -- permanently drain every ATM on the map. Default refills an empty
+    -- machine to maxCash over roughly 4 in-game days.
+    restockPerHour = 500,
 }
+PZLinux.Config.ATM.minCash = tonumber(PZLinux.Config.ATM.minCash) or 10000
+PZLinux.Config.ATM.maxCash = tonumber(PZLinux.Config.ATM.maxCash) or 50000
+PZLinux.Config.ATM.restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 500
 
 PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
     packageInteractionRadius = 5,
@@ -19,6 +27,24 @@ PZLinux.Config.Contracts.objectiveActivationRadius =
 PZLinux.Config.Contracts.objectiveSpawnSearchRadius =
     tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
 PZLinux.Config.Contracts.cargoSprite = PZLinux.Config.Contracts.cargoSprite or "carpentry_01_19"
+
+-- "Refill an ATM" (contract id 13). Its single wall-mounted ATM location
+-- lives in the "atmRefill" pool in PZLinuxMissionLocations.lua, alongside
+-- every other contract location, so it is never hardcoded here too. The
+-- amount to refill is rolled fresh per mission as
+-- ZombRand(1, amountRollMax + 1) * amountStep, e.g. 1-6 * $10,000 =
+-- $10,000-$60,000. The player must already have that much in their bank
+-- account to even accept the contract (otherwise they could never withdraw
+-- it at all). The contract itself never touches the bank or hands over any
+-- cash -- the actual difficulty is having to withdraw that much physical
+-- cash from ATMs around town (possibly emptying several of them) and carry
+-- it all to the one hardcoded target to deposit it.
+PZLinux.Config.AtmRefill = PZLinux.Config.AtmRefill or {
+    amountRollMax = 6,
+    amountStep = 10000,
+}
+PZLinux.Config.AtmRefill.amountRollMax = tonumber(PZLinux.Config.AtmRefill.amountRollMax) or 6
+PZLinux.Config.AtmRefill.amountStep = tonumber(PZLinux.Config.AtmRefill.amountStep) or 10000
 
 PZLinux.Config.Reputation = PZLinux.Config.Reputation or {
     baseline = 1,

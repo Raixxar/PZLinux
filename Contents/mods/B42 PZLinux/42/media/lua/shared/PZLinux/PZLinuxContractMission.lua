@@ -56,6 +56,10 @@ local function PZLinuxContractsMissionNote(mission)
         if locationLine ~= "" then locationLine = locationLine .. "\n" end
         locationLine = locationLine .. "* Zombies to kill: 10"
     end
+    if mission.contractId == 13 and mission.atmAmount > 0 then
+        if locationLine ~= "" then locationLine = locationLine .. "\n" end
+        locationLine = locationLine .. "* Amount to deposit: $" .. tostring(mission.atmAmount)
+    end
 
     local contractNote = "* [" .. tostring(mission.code) .. "] " .. tostring(mission.questName)
         .. " for $" .. tostring(mission.reward)
@@ -97,6 +101,7 @@ function PZLinuxContractsBuildMission(selectedContract)
         infoCount = 0,
         targetName = "",
         zombieToKill = 0,
+        atmAmount = 0,
     }
 
     local poolName = PZLinuxGetContractLocationPoolName(contractId)
@@ -143,6 +148,11 @@ function PZLinuxContractsBuildMission(selectedContract)
         mission.reward = mission.reward * request.delta
     elseif contractId == 11 or contractId == 12 then
         mission.infoCount = 1
+    elseif contractId == 13 then
+        -- Location comes from the "atmRefill" pool above (a single fixed,
+        -- wall-mounted ATM in Ekron) -- only the refill amount is rolled here.
+        local atmCfg = PZLinux.Config.AtmRefill
+        mission.atmAmount = ZombRand(1, atmCfg.amountRollMax + 1) * atmCfg.amountStep
     end
 
     mission.reward = PZLinuxContractsRoundReward(mission.reward)

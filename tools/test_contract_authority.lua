@@ -25,7 +25,7 @@ dofile(luaRoot .. "/shared/PZLinux/PZLinuxMissionLocations.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractRequestData.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractMission.lua")
 
-local cityByContract = { [2] = 3, [3] = 9, [7] = 3, [8] = 2 }
+local cityByContract = { [2] = 3, [3] = 9, [7] = 3, [8] = 2, [13] = 2 }
 local manhuntCityIds = PZLinuxGetMissionLocationCityIds("manhunt")
 PZLinuxTestAssert(#manhuntCityIds == 1 and manhuntCityIds[1] == 9,
     "only the validated Muldraugh manhunt location may be selected")
@@ -86,6 +86,18 @@ local weaponMission = assert(PZLinuxContractsBuildMission({
 }))
 PZLinuxTestAssert(weaponMission.info == "Base.Pistol3", "weapon must come from the allowlist")
 PZLinuxTestAssert(weaponMission.infoCount == 5 and weaponMission.reward == 1350, "weapon count and reward must be server generated")
+
+local atmMission = assert(PZLinuxContractsBuildMission({
+    id = 13, code = "EZG", questName = "Refill an ATM", cityId = 2, difficulty = 2, reward = 2000,
+}))
+PZLinuxTestAssert(atmMission.locationPool == "atmRefill", "ATM refill contract must use the atmRefill pool")
+PZLinuxTestAssert(atmMission.locationX == 418 and atmMission.locationY == 9869 and atmMission.locationZ == 0,
+    "ATM refill location must be the single hardcoded Ekron ATM")
+PZLinuxTestAssert(atmMission.locationCity == "Ekron", "ATM refill location city must be Ekron")
+PZLinuxTestAssert(atmMission.atmAmount == 60000,
+    "ATM refill amount must be ZombRand(1, amountRollMax+1) * amountStep (deterministic max roll here is 6 * 10000)")
+PZLinuxTestAssert(atmMission.fullNote:find("Amount to deposit: $60000", 1, true),
+    "ATM refill note must show the amount to deposit")
 
 local variablesPath = luaRoot .. "/shared/ISPZLinuxVariablesTables.lua"
 local variables = PZLinuxTestRead(variablesPath)
@@ -287,6 +299,7 @@ local inlineIntros = {
     [8] = "Protect_Intro",
     [9] = "Medical_Intro",
     [10] = "Weapons_Intro",
+    [13] = "AtmRefill_Intro",
 }
 for contractId, introName in pairs(inlineIntros) do
     local startMarker = "elseif contract == " .. tostring(contractId) .. " then"

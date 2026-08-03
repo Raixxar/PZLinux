@@ -453,10 +453,32 @@ function PZLinuxAtmLoadCash(atmObject)
         end
         atmCash = ZombRand(PZLINUX_ATM_MIN_CASH, PZLINUX_ATM_MAX_CASH + 1)
         modData.PZLinuxAtmCash = atmCash
+        modData.PZLinuxAtmCashUpdatedHour = getGameTime and getGameTime():getWorldAgeHours() or 0
         PZLinuxAtmTransmitModData(atmObject)
     end
 
     atmCash = math.max(0, math.floor(atmCash))
+
+    -- Cash slowly regenerates over in-game time (capped at maxCash) so
+    -- withdrawals alone can never permanently drain every ATM on the map.
+    -- Only the server ever advances this; clients just read the value.
+    if not (isClient and isClient()) then
+        local currentHour = getGameTime and getGameTime():getWorldAgeHours() or 0
+        local lastHour = tonumber(modData.PZLinuxAtmCashUpdatedHour)
+        if lastHour == nil then
+            modData.PZLinuxAtmCashUpdatedHour = currentHour
+        else
+            local elapsedHours = currentHour - lastHour
+            if elapsedHours > 0 then
+                local restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 0
+                if restockPerHour > 0 and atmCash < PZLINUX_ATM_MAX_CASH then
+                    atmCash = math.min(PZLINUX_ATM_MAX_CASH, atmCash + elapsedHours * restockPerHour)
+                end
+                modData.PZLinuxAtmCashUpdatedHour = currentHour
+            end
+        end
+    end
+
     modData.PZLinuxAtmCash = atmCash
     return atmCash
 end
@@ -466,6 +488,7 @@ function PZLinuxAtmSaveCash(atmObject, atmCash)
 
     local modData = atmObject:getModData()
     modData.PZLinuxAtmCash = math.max(0, math.floor(tonumber(atmCash) or 0))
+    modData.PZLinuxAtmCashUpdatedHour = getGameTime and getGameTime():getWorldAgeHours() or 0
     PZLinuxAtmTransmitModData(atmObject)
     return modData.PZLinuxAtmCash
 end
@@ -1143,6 +1166,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxContractAcceptResult"
         or command == "PZLinuxContractCancelResult"
         or command == "PZLinuxContractDepositResult"
+        or command == "PZLinuxContractAtmRefillDepositResult"
         or command == "PZLinuxContractCompleteResult"
         or command == "PZLinuxContractCompletionAckResult"
         or command == "PZLinuxContractWorldEventResult"
@@ -1186,6 +1210,7 @@ if Events and Events.OnServerCommand then
             if (command == "PZLinuxContractSyncResult"
             or command == "PZLinuxContractAcceptResult"
             or command == "PZLinuxContractDepositResult"
+            or command == "PZLinuxContractAtmRefillDepositResult"
             or command == "PZLinuxContractWorldEventResult") and args then
                 local playerObj = PZLinuxGetPlayer()
                 local modData = playerObj and playerObj:getModData()
@@ -1207,6 +1232,8 @@ if Events and Events.OnServerCommand then
                     if args.contractWeapon ~= nil then modData.PZLinuxContractWeapon = args.contractWeapon end
                     if args.contractSendComputer ~= nil then modData.PZLinuxContractSendComputer = args.contractSendComputer end
                     if args.contractSendFridge ~= nil then modData.PZLinuxContractSendFridge = args.contractSendFridge end
+                    if args.contractAtmRefill ~= nil then modData.PZLinuxContractAtmRefill = args.contractAtmRefill end
+                    if args.atmAmount ~= nil then modData.PZLinuxContractAtmAmount = args.atmAmount end
                     if args.contractId ~= nil then modData.PZLinuxContractTypeId = args.contractId end
                     if args.locationX ~= nil then modData.PZLinuxContractLocationX = args.locationX end
                     if args.locationY ~= nil then modData.PZLinuxContractLocationY = args.locationY end
@@ -3146,6 +3173,7 @@ function PZLinuxContractsSetTypeFlags(modData, contractId)
     if contractId == 10 then modData.PZLinuxContractWeapon = 1 end
     if contractId == 11 then modData.PZLinuxContractSendComputer = 1 end
     if contractId == 12 then modData.PZLinuxContractSendFridge = 1 end
+    if contractId == 13 then modData.PZLinuxContractAtmRefill = 1 end
 end
 
 function PZLinuxContractsMarkWorldContract(contractWorldId, status, player)
@@ -3219,6 +3247,8 @@ function PZLinuxContractsClearState(modData)
     modData.PZLinuxContractWeapon = 0
     modData.PZLinuxContractSendComputer = 0
     modData.PZLinuxContractSendFridge = 0
+    modData.PZLinuxContractAtmRefill = 0
+    modData.PZLinuxContractAtmAmount = 0
 end
 
 function PZLinuxContractsRemoveContractNote(player)
@@ -3280,6 +3310,26 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
     if not previewResult.ok then return previewResult end
     local effectiveReward = PZLinuxNormalizeMoney(previewResult.reward)
 
+    -- "Refill an ATM" requires the player to already have the full amount in
+    -- their own bank account -- otherwise they could never withdraw it at
+    -- all, from any ATM. The actual difficulty is gathering that much
+    -- physical cash by withdrawing (possibly emptying) several ATMs around
+    -- town, then carrying it all to the one hardcoded target -- this
+    -- contract itself never touches the bank or hands over any cash; it
+    -- only gates acceptance and later validates the deposit.
+    if contractId == 13 then
+        local requiredAmount = PZLinuxNormalizeMoney(previewResult.atmAmount)
+        if PZLinuxLoadBankBalance(playerObj) < requiredAmount then
+            return {
+                ok = false,
+                error = "insufficient_funds_for_contract",
+                requestId = requestId,
+                requiredAmount = requiredAmount,
+                balance = PZLinuxLoadBankBalance(playerObj),
+            }
+        end
+    end
+
     PZLinuxContractsClearState(modData)
     modData.PZLinuxActiveContract = 1
     modData.PZLinuxOnZombieDead = 0
@@ -3295,6 +3345,15 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
     modData.PZLinuxContractTargetName = previewResult.targetName or ""
     modData.PZLinuxOnZombieToKill = PZLinuxNormalizeMoney(previewResult.zombieToKill)
     PZLinuxContractsSetTypeFlags(modData, contractId)
+
+    if contractId == 13 then
+        -- Nothing is debited or handed over here: the player must go
+        -- withdraw the physical cash themselves, from any ATM(s) they like,
+        -- using the ordinary withdrawal mechanic (possibly emptying several
+        -- along the way if no single one holds enough), then carry it all
+        -- to the one hardcoded target ATM to deposit it.
+        modData.PZLinuxContractAtmAmount = PZLinuxNormalizeMoney(previewResult.atmAmount)
+    end
 
     local worldRecord = PZLinuxContractsCreateWorldContract(playerObj, selectedContract, contractId, previewResult)
     if not worldRecord then
@@ -3347,6 +3406,8 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
         contractWeapon = modData.PZLinuxContractWeapon,
         contractSendComputer = modData.PZLinuxContractSendComputer,
         contractSendFridge = modData.PZLinuxContractSendFridge,
+        contractAtmRefill = modData.PZLinuxContractAtmRefill,
+        atmAmount = modData.PZLinuxContractAtmAmount,
     }
 end
 
@@ -3359,6 +3420,10 @@ function PZLinuxContractsApplyCancel(player, requestId)
         return { ok = false, error = "no_active_contract", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
+    -- Nothing to refund here: "Refill an ATM" never debits the bank or hands
+    -- over cash at accept time, so cancelling has no special money to undo
+    -- -- any cash the player already withdrew themselves along the way is
+    -- simply theirs, exactly like it would be outside this contract.
     local dataName = modData.PZLinuxContractCompanyUp
     local reputationPenalty = PZLinux.Economy.contractCancelPenalty()
     local reputation = PZLinuxApplyReputationDelta(playerObj, -reputationPenalty)
@@ -3585,6 +3650,76 @@ function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
         worldContractId = modData.PZLinuxContractId,
         activeContract = modData.PZLinuxActiveContract,
         balance = PZLinuxLoadBankBalance(playerObj),
+    }
+end
+
+-- Depositing the withdrawn cash at the exact hardcoded ATM the contract
+-- targets: removes the physical cash the player is carrying, refunds that
+-- same amount to the bank (the withdrawal was only ever temporary), tops up
+-- the target ATM's own cash reserve (the actual point of the contract), and
+-- advances the contract to "ready to complete" so the existing generic
+-- PZLinuxContractsApplyComplete pays out the reward.
+function PZLinuxContractsApplyAtmRefillDeposit(player, atmRef, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local modData = playerObj:getModData()
+    if tonumber(modData.PZLinuxContractAtmRefill) ~= 1 or tonumber(modData.PZLinuxActiveContract) ~= 1 then
+        return { ok = false, error = "no_active_contract", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local targetX = tonumber(modData.PZLinuxContractLocationX)
+    local targetY = tonumber(modData.PZLinuxContractLocationY)
+    local targetZ = tonumber(modData.PZLinuxContractLocationZ)
+    local refX = tonumber(atmRef and atmRef.x)
+    local refY = tonumber(atmRef and atmRef.y)
+    local refZ = tonumber(atmRef and atmRef.z)
+    if refX ~= targetX or refY ~= targetY or refZ ~= targetZ then
+        return { ok = false, error = "wrong_atm", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local atmObject = PZLinuxFindAtmObject(atmRef)
+    if not atmObject then
+        return { ok = false, error = "atm_not_found", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local amount = PZLinuxNormalizeMoney(modData.PZLinuxContractAtmAmount)
+    if amount <= 0 then
+        return { ok = false, error = "invalid_amount", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local inventoryCash = PZLinuxCountInventoryCash(playerObj)
+    if inventoryCash < amount then
+        return {
+            ok = false,
+            error = "not_enough_inventory_cash",
+            requestId = requestId,
+            inventoryCash = inventoryCash,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+
+    local removed = PZLinuxRemoveInventoryCash(playerObj, amount)
+    if removed ~= amount then
+        return { ok = false, error = "cash_remove_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local credit = PZLinuxApplyBankCredit(playerObj, amount, "atm-refill-refund", requestId)
+
+    local atmCash = PZLinuxAtmLoadCash(atmObject)
+    PZLinuxAtmSaveCash(atmObject, atmCash + amount)
+
+    modData.PZLinuxActiveContract = 9
+    PZLinuxContractsMarkWorldContract(modData.PZLinuxContractId, "deposited", playerObj)
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return {
+        ok = true,
+        requestId = requestId,
+        amount = amount,
+        worldContractId = modData.PZLinuxContractId,
+        activeContract = modData.PZLinuxActiveContract,
+        balance = credit.balance or PZLinuxLoadBankBalance(playerObj),
     }
 end
 
@@ -4751,6 +4886,17 @@ function PZLinuxRequestContractDeposit(player, mailboxRef, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxContractsApplyDeposit(player, mailboxRef, requestId))
+    return requestId
+end
+
+function PZLinuxRequestContractAtmRefillDeposit(player, atmObject, callback)
+    local requestId = PZLinuxNextRequestId("contract-atm-refill-deposit")
+    local atmRef = PZLinuxGetAtmReference(atmObject)
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxContractAtmRefillDeposit", { requestId = requestId, atm = atmRef }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxContractsApplyAtmRefillDeposit(player, atmRef, requestId))
     return requestId
 end
 

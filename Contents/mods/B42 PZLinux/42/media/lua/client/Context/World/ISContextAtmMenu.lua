@@ -3,6 +3,23 @@
 
 AtmUI = ISPanel:derive("AtmUI")
 
+-- True only if the player has an active "Refill an ATM" contract AND this
+-- specific ATM object is the one hardcoded target -- carrying the withdrawn
+-- cash to any other ATM must not work.
+local function PZLinuxAtmRefillMatchesContract(playerObj, atmObject)
+    if not playerObj or not atmObject or not atmObject.getSquare then return false end
+    local modData = playerObj:getModData()
+    if tonumber(modData.PZLinuxContractAtmRefill) ~= 1 or tonumber(modData.PZLinuxActiveContract) ~= 1 then
+        return false
+    end
+
+    local square = atmObject:getSquare()
+    if not square then return false end
+    return square:getX() == tonumber(modData.PZLinuxContractLocationX)
+        and square:getY() == tonumber(modData.PZLinuxContractLocationY)
+        and square:getZ() == tonumber(modData.PZLinuxContractLocationZ)
+end
+
 -- CONSTRUCTOR
 function AtmUI:new(x, y, width, height, player, atmObject)
     local o = ISPanel:new(x, y, width, height)
@@ -73,6 +90,10 @@ function AtmUI:showTransactionError(result)
         message = PZLinuxGetText("IGUI_PZLinux_ATM_NotFound")
     elseif errorCode == "invalid_amount" then
         message = PZLinuxGetText("IGUI_PZLinux_ATM_InvalidAmount")
+    elseif errorCode == "wrong_atm" then
+        message = PZLinuxFormatText("IGUI_PZLinux_ATM_WrongAtm", "This is not the ATM the contract needs refilled.")
+    elseif errorCode == "no_active_contract" then
+        message = PZLinuxFormatText("IGUI_PZLinux_ATM_NoActiveContract", "You have no active ATM refill contract.")
     end
 
     HaloTextHelper.addBadText(playerObj, message)
@@ -172,6 +193,17 @@ function AtmUI:showMainMenu()
     self.depositeButton:setVisible(true)
     self.depositeButton:initialise()
     self.topBar:addChild(self.depositeButton)
+
+    if PZLinuxAtmRefillMatchesContract(PZLinuxGetPlayer(self.player), self.atmObject) then
+        self.contractRefillButton = ISButton:new(
+            self.width * 0.295, self.width * 0.77, self.width * 0.25, self.height * 0.08,
+            PZLinuxFormatText("IGUI_PZLinux_ATM_ContractRefill", "REFILL FOR CONTRACT"),
+            self, self.onContractRefillDeposit
+        )
+        self.contractRefillButton:setVisible(true)
+        self.contractRefillButton:initialise()
+        self.topBar:addChild(self.contractRefillButton)
+    end
 
     self.atmCashLabel = ISLabel:new(self.width * 0.225, self.width * 0.448, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Cash") .. tostring(self.atmCash), 1, 1, 1, 1, UIFont.Small, true)
     self.atmCashLabel:initialise()
@@ -406,6 +438,31 @@ function AtmUI:onDepositeSend()
     PZLinuxRequestAtmDeposit(playerObj, self.atmObject, amount, function(result)
         if self.isClosing then return end
         self:handleTransactionResult(result)
+    end)
+end
+
+function AtmUI:onContractRefillDeposit()
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+    if self.transactionPending then return end
+
+    self:setTransactionPending(true)
+    PZLinuxRequestContractAtmRefillDeposit(playerObj, self.atmObject, function(result)
+        if self.isClosing then return end
+        self:setTransactionPending(false)
+        self:syncFromTransactionResult(result)
+        if not result or not result.ok then
+            self:showTransactionError(result)
+            return
+        end
+
+        if self.contractRefillButton then
+            self.contractRefillButton:setVisible(false)
+        end
+        HaloTextHelper.addGoodText(playerObj, PZLinuxFormatText(
+            "IGUI_PZLinux_ATM_ContractRefillDone",
+            "The ATM has been refilled. Head back to a computer to complete the contract."
+        ))
     end)
 end
 

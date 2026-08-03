@@ -274,6 +274,29 @@ PZLinux.MissionLocations.pools.protect = PZLinux.MissionLocations.pools.protect 
     },
 }
 
+-- A single wall-mounted ATM for the "Refill an ATM" contract (id 13): fixed
+-- in place so the target never moves, unlike the randomized street/building
+-- pools above.
+PZLinux.MissionLocations.pools.atmRefill = PZLinux.MissionLocations.pools.atmRefill or {
+    byCityId = {
+        [1] = {},
+        [2] = {
+            { id = "atm_ekron_ez_go_banking_01", description = "At the E-Z GO Banking ATM in Ekron.", x = 418, y = 9869, z = 0, city = "Ekron", building = "E-Z GO Banking", tags = { "atm", "bank" }, enabled = true },
+        },
+        [3] = {},
+        [4] = {},
+        [5] = {},
+        [6] = {},
+        [7] = {},
+        [8] = {},
+        [9] = {},
+        [10] = {},
+        [11] = {},
+        [12] = {},
+        [13] = {},
+    },
+}
+
 PZLinux.MissionLocations.pools.mailDrops = PZLinux.MissionLocations.pools.mailDrops or {
     ammo = {
         byCityId = PZLinuxMissionLocationsEmptyCityPools(),
@@ -438,6 +461,7 @@ function PZLinuxGetContractLocationPoolName(contractId)
     if contractId == 3 then return "manhunt" end
     if contractId == 7 then return "cargo" end
     if contractId == 8 then return "protect" end
+    if contractId == 13 then return "atmRefill" end
     return nil
 end
 

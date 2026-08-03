@@ -288,6 +288,12 @@ local function PZLinuxServerContractDeposit(player, args)
     end)
 end
 
+local function PZLinuxServerContractAtmRefillDeposit(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxContractAtmRefillDeposit", args, "PZLinuxContractAtmRefillDepositResult", function()
+        return PZLinuxContractsApplyAtmRefillDeposit(player, args and args.atm, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerContractComplete(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractComplete", args, "PZLinuxContractCompleteResult", function()
         return PZLinuxContractsApplyComplete(player, args, args and args.requestId)
@@ -486,6 +492,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxContractAccept = PZLinuxServerContractAccept,
     PZLinuxContractCancel = PZLinuxServerContractCancel,
     PZLinuxContractDeposit = PZLinuxServerContractDeposit,
+    PZLinuxContractAtmRefillDeposit = PZLinuxServerContractAtmRefillDeposit,
     PZLinuxContractComplete = PZLinuxServerContractComplete,
     PZLinuxContractCompletionAck = PZLinuxServerContractCompletionAck,
     PZLinuxContractWorldEvent = PZLinuxServerContractWorldEvent,

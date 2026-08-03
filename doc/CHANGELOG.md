@@ -2,6 +2,51 @@
 
 ## Correctifs post-1.0.0
 
+- ATM : le stock de liquide de chaque distributeur se souvenait bien de son
+  etat precedent (persiste dans son propre ModData), mais ne se reapprovisionnait
+  jamais -- seuls les depots (rares) pouvaient le faire remonter. A terme,
+  avec des retraits plus frequents que les depots, tous les distributeurs de
+  la carte auraient fini par s'assecher durablement. Chaque ATM regenere
+  desormais son liquide au fil du temps de jeu ecoule (500 $/heure par
+  defaut, plafonne a `maxCash`, configurable via
+  `PZLinux.Config.ATM.restockPerHour`), calcule paresseusement a chaque
+  consultation plutot que via une boucle globale (aucun registre de tous les
+  distributeurs de la carte n'existe). Seul le serveur fait avancer ce calcul
+  ; le client se contente de lire la valeur deja calculee. Voir
+  `tools/test_atm_restock.lua` pour la couverture (initialisation, absence de
+  regen sans temps ecoule, regen proportionnelle, plafond a maxCash meme
+  apres une tres longue absence, regen depuis un distributeur totalement a
+  sec, et l'absence totale de mutation cote client).
+
+- Nouveau contrat "Refill an ATM" (id 13, difficulte moyenne, recompense
+  2000 $, coherent avec les autres contrats de difficulte 2). Cible un seul
+  distributeur fixe et mural (E-Z GO Banking, Ekron, coordonnees dans le pool
+  `atmRefill` de `PZLinuxMissionLocations.lua`, comme tous les autres
+  emplacements de contrats -- rien n'est code en dur dans la config). La
+  somme a renflouer est tiree entre 10 000 $ et 60 000 $ (`ZombRand(1,6) *
+  10000`, configurable via `PZLinux.Config.AtmRefill`). Le joueur doit deja
+  avoir cette somme sur son compte pour accepter le contrat (sinon il ne
+  pourrait jamais la retirer nulle part), mais le contrat lui-meme ne debite
+  jamais la banque ni ne remet d'argent liquide automatiquement : la vraie
+  difficulte est d'aller retirer cette somme en especes aux distributeurs de
+  la carte (potentiellement en en vidant plusieurs si aucun n'a assez de
+  reserve) puis de tout transporter jusqu'au distributeur cible. Une fois
+  depose via un nouveau bouton "REFILL FOR CONTRACT" dans l'interface du DAB,
+  le liquide est retire de l'inventaire, la somme est remboursee
+  integralement sur le compte, et le stock de liquide du DAB cible augmente
+  d'autant. Le contrat passe alors en "pret a valider" comme les contrats de
+  livraison classiques (retour a un ordinateur pour toucher la recompense).
+  Le gain net du joueur ne correspond donc qu'a la recompense du contrat :
+  l'argent retire ailleurs puis depose ici s'annule exactement. Annuler le
+  contrat en cours de route n'a rien de special a rembourser, puisque
+  l'acceptation n'a jamais pris d'argent -- tout liquide deja retire par le
+  joueur lui appartient normalement, comme en dehors du contrat. Voir les
+  nouvelles fonctions `PZLinuxContractsApplyAtmRefillDeposit` dans
+  `ISPZLinuxVariablesTables.lua` et `tools/test_atm_refill_contract.lua`
+  (couverture complete : refus faute de fonds, depot les mains vides, mauvais
+  distributeur, liquide insuffisant, depot valide, refus d'un second depot,
+  annulation sans effet sur l'argent deja retire).
+
 - Sell Goods : correctif d'un plantage au moment de deposer un colis dans une
   boite aux lettres ("attempted index" via `tonumber` avec une base
   invalide). `PZLinuxDarkWebApplyRedeemSales` (Dark Web) et

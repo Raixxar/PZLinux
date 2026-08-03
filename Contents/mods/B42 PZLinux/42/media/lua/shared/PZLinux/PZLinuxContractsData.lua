@@ -13,6 +13,7 @@ PZLinuxContractDefinitions = PZLinuxContractDefinitions or {
     { id = 10, difficulty = 3, reward = 4500, questName = "Send weapons", city = false },
     { id = 11, difficulty = 2, reward = 1800, questName = "Send a computer", city = false },
     { id = 12, difficulty = 1, reward = 750, questName = "Send a fridge", city = false },
+    { id = 13, difficulty = 2, reward = 2000, questName = "Refill an ATM", city = true },
 }
 
 PZLinuxContractCities = PZLinuxContractCities or {

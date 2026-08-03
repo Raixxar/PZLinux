@@ -880,6 +880,43 @@ function contractsUI:onContractPreview(contract, contractPreview)
             PZLinuxContractsAddChoiceButtons(contract)
         end)
 
+    elseif contract == 13 then
+        self.terminalCoroutine = coroutine.create(function()
+            local dialogue = PZLinuxContractsCreateDialogue(contract)
+
+            PZLinuxContractsSetSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AtmRefill_Intro", "One of our ATMs ran dry. We need someone to refill it."))
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Protect_AskLocation", "Where is the building ?"))
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            if not PZLinuxContractsApplyLocation(dialogue, "atmRefill") then return end
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText(
+                "IGUI_PZLinux_Contracts_AtmRefill_Amount",
+                "You will need to withdraw $%s from your own account and carry it there.",
+                tostring(contractPreview.atmAmount)
+            ), true)
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            PZLinuxContractsAsk(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_AskReward", "What is the reward for this mission ?"))
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            PZLinuxContractsAppendSellerLine(dialogue, "$" .. tostring(dialogue.reward), true)
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText(
+                "IGUI_PZLinux_Contracts_AtmRefill_Refund",
+                "Once deposited, the full amount is refunded to your account on top of the reward."
+            ), true)
+
+            if not PZLinuxContractsWaitDialogue(dialogue) then return end
+            PZLinuxContractsAppendSellerLine(dialogue, PZLinuxContractsText("IGUI_PZLinux_Contracts_Deal", "Deal ?"), true)
+
+            PZLinuxContractsAddChoiceButtons(contract)
+        end)
+
     elseif contract == 11 then self.terminalCoroutine = PZLinux_Contract_SendComputer_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     elseif contract == 12 then self.terminalCoroutine = PZLinux_Contract_SendFridge_CreateCoroutine(self, contract, contractsCompanyCodes, contractsCompanyReward, typeText)
     end
@@ -926,7 +963,16 @@ function contractsUI:onYesButton(button)
     local contractId = tonumber(button.contractId)
 
     PZLinuxRequestContractAccept(self.player, contractId, function(result)
-        if not result or not result.ok then return end
+        if not result or not result.ok then
+            if result and result.error == "insufficient_funds_for_contract" then
+                HaloTextHelper.addBadText(playerObj, PZLinuxContractsText(
+                    "IGUI_PZLinux_Contracts_InsufficientFunds",
+                    "You need at least $%s in your bank account to accept this contract.",
+                    tostring(tonumber(result.requiredAmount) or 0)
+                ))
+            end
+            return
+        end
 
         local updatedModData = playerObj:getModData()
         updatedModData.PZLinuxActiveContract = result.activeContract
@@ -954,6 +1000,8 @@ function contractsUI:onYesButton(button)
         updatedModData.PZLinuxContractWeapon = tonumber(result.contractWeapon) or 0
         updatedModData.PZLinuxContractSendComputer = tonumber(result.contractSendComputer) or 0
         updatedModData.PZLinuxContractSendFridge = tonumber(result.contractSendFridge) or 0
+        updatedModData.PZLinuxContractAtmRefill = tonumber(result.contractAtmRefill) or 0
+        updatedModData.PZLinuxContractAtmAmount = tonumber(result.atmAmount) or 0
 
         if updatedModData.PZLinuxContractLocationX and updatedModData.PZLinuxContractLocationX > 0 then
             contractsDrawOnMap(updatedModData.PZLinuxContractLocationX, updatedModData.PZLinuxContractLocationY, updatedModData.PZLinuxContractNote)

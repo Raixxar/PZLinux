@@ -1,13 +1,10 @@
 Add options to the mod to make it sandbox.
-Prevent a trade by burning a cargo.
-Player can create a request basket of our own choice and wait for it to be presented to us.
 Make the mod compatible with controllers.
 new contract: Radio station activates a message that attracts zombies to the area.
 new contract: add contract with timer for items
 new contract: retrieval via a computer triggers an alarm (chance) and spawns a horde.
 new contract: Delivering 200L of fuel / Water..
-new contract: Add money to ATM
-New contract: drop off a vehicle in a specific area.
+    new contract: Add money to ATM
 New contract: Racing with animals
 Quest: Obtainaing rare item, Big Spiffo or gas mask
 Quest: get document from doctor or other.
