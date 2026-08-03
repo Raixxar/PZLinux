@@ -130,26 +130,73 @@ function completeContractMenu_AddContext(player, context, worldobjects)
         end
     end
 
-    if modData.PZLinuxContractManhunt == 2 or modData.PZLinuxContractBlood == 1 then
+    local manhuntWorldStatus = tostring(modData.PZLinuxContractWorldStatus
+        or (worldRecord and worldRecord.status)
+        or "")
+    local manhuntRecordDown = tonumber(modData.PZLinuxContractTypeId) == 3
+        and manhuntWorldStatus == "target_down"
+    local manhuntReady = manhuntRecordDown
+        or (manhuntWorldStatus == ""
+            and tonumber(modData.PZLinuxContractTypeId) == 3
+            and tonumber(modData.PZLinuxContractManhunt) == 2)
+    local bloodReady = tonumber(modData.PZLinuxContractBlood) == 1
+        and (tonumber(modData.PZLinuxOnZombieDead) or 0) > 0
+    if manhuntReady or bloodReady then
         local checkedSquares = {}
+        local centers = { playerSquare }
         for _, obj in ipairs(worldobjects) do
-            if instanceof(obj, "IsoObject") then
-                local square = obj:getSquare()
-                if square and not checkedSquares[square] then
-                    checkedSquares[square] = true
-                    for dx = -1, 1 do
-                        for dy = -1, 1 do
-                            local nearbySquare = getCell():getGridSquare(square:getX() + dx, square:getY() + dy, square:getZ())
-                            if nearbySquare then
-                                local deadBodies = nearbySquare:getDeadBodys()
-                                if deadBodies and not deadBodies:isEmpty() then
-                                    for i = 0, deadBodies:size() - 1 do
-                                        local body = deadBodies:get(i)
-                                        local x, y, z = nearbySquare:getX(), nearbySquare:getY(), nearbySquare:getZ()
+            local square = obj and obj.getSquare and obj:getSquare() or nil
+            if square then table.insert(centers, square) end
+        end
 
-                                        if modData.PZLinuxContractManhunt == 2 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_CutTarget"), body, completeContractMenu_OnCut, player, x, y, z); break end
-                                        if modData.PZLinuxContractBlood == 1 and modData.PZLinuxOnZombieDead > 0 then context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_TakeZombieBlood"), body, completeContractMenu_OnBlood, player, x, y, z) break end
-                                    end
+        local manhuntAdded = false
+        local bloodAdded = false
+        for _, centerSquare in ipairs(centers) do
+            for dx = -2, 2 do
+                for dy = -2, 2 do
+                    local nearbySquare = getCell():getGridSquare(
+                        centerSquare:getX() + dx,
+                        centerSquare:getY() + dy,
+                        centerSquare:getZ()
+                    )
+                    if nearbySquare and not checkedSquares[nearbySquare] then
+                        checkedSquares[nearbySquare] = true
+                        local deadBodies = nearbySquare:getDeadBodys()
+                        if deadBodies then
+                            for index = 0, deadBodies:size() - 1 do
+                                local body = deadBodies:get(index)
+                                local x, y, z = nearbySquare:getX(), nearbySquare:getY(), nearbySquare:getZ()
+                                local targetDeathX = tonumber(worldRecord and worldRecord.targetDeathX)
+                                local targetDeathY = tonumber(worldRecord and worldRecord.targetDeathY)
+                                local targetDeathZ = tonumber(worldRecord and worldRecord.targetDeathZ)
+                                local matchesRecordedDeath = not targetDeathX or (
+                                    math.max(math.abs(x - targetDeathX), math.abs(y - targetDeathY)) <= 2
+                                    and (not targetDeathZ or z == targetDeathZ)
+                                )
+
+                                if manhuntReady and not manhuntAdded and matchesRecordedDeath then
+                                    context:addOption(
+                                        PZLinuxGetText("IGUI_PZLinux_Context_CutTarget"),
+                                        body,
+                                        completeContractMenu_OnCut,
+                                        player,
+                                        x,
+                                        y,
+                                        z
+                                    )
+                                    manhuntAdded = true
+                                end
+                                if bloodReady and not bloodAdded then
+                                    context:addOption(
+                                        PZLinuxGetText("IGUI_PZLinux_Context_TakeZombieBlood"),
+                                        body,
+                                        completeContractMenu_OnBlood,
+                                        player,
+                                        x,
+                                        y,
+                                        z
+                                    )
+                                    bloodAdded = true
                                 end
                             end
                         end

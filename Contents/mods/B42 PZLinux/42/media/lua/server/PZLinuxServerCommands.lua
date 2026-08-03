@@ -234,6 +234,18 @@ local function PZLinuxServerContractsBoard(player, args)
     end)
 end
 
+local function PZLinuxServerContractAdminForce(player, args)
+    PZLinuxServerProcessIdempotent(
+        player,
+        "PZLinuxContractAdminForce",
+        args,
+        "PZLinuxContractAdminForceResult",
+        function()
+            return PZLinuxContractsAdminForceBoard(player, args and args.contractId, args and args.requestId)
+        end
+    )
+end
+
 local function PZLinuxServerContractPreview(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxContractPreview", args, "PZLinuxContractPreviewResult", function()
         return PZLinuxContractsGetPreview(player, args and args.contractId, args and args.requestId)
@@ -403,6 +415,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxTradingBuy = PZLinuxServerTradingBuy,
     PZLinuxTradingSell = PZLinuxServerTradingSell,
     PZLinuxContractsBoard = PZLinuxServerContractsBoard,
+    PZLinuxContractAdminForce = PZLinuxServerContractAdminForce,
     PZLinuxContractPreview = PZLinuxServerContractPreview,
     PZLinuxContractSync = PZLinuxServerContractSync,
     PZLinuxContractAccept = PZLinuxServerContractAccept,
@@ -456,6 +469,14 @@ end
 
 Events.EveryOneMinute.Add(function()
     PZLinuxServerForEachOnlinePlayer(PZLinuxContractsReconcilePlayerZombieKills)
+end)
+
+local PZLinuxServerManhuntMaintenanceTicks = 0
+Events.OnTick.Add(function()
+    PZLinuxServerManhuntMaintenanceTicks = PZLinuxServerManhuntMaintenanceTicks + 1
+    if PZLinuxServerManhuntMaintenanceTicks < 30 then return end
+    PZLinuxServerManhuntMaintenanceTicks = 0
+    PZLinuxContractsMaintainManhuntTargets()
 end)
 
 Events.EveryTenMinutes.Add(function()

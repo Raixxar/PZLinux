@@ -558,7 +558,11 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
   seconde meme si le joueur s'arrete apres son arrivee sur place. A la mort, le
   serveur memorise la position de la cible afin que la decapitation reste valide
   meme si les tags ne sont pas recopies sur le cadavre en MP ;
-  re-test visuel, mort et decoupe en MP requis.
+  la cible v4 est desormais passive cote serveur et client, conservee dans un
+  registre runtime pour stopper les respawns, et son statut `target_down` est
+  synchronise explicitement pour afficher l'action de decoupe. Les anciennes
+  cibles v3 et leurs doublons sont remplaces lors de la restauration ; re-test
+  visuel, mort et decoupe en MP requis.
 - [x] 4 - Collect zombie blood.
 - [x] 5 - Send automobile parts.
 - [x] 6 - Capture a live zombie.
@@ -566,6 +570,11 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
   La caisse v3 utilise desormais un `IsoThumpable` special avec sprite transmis.
 - [ ] Visibilite Cargo : confirmer sur le client Windows que la migration v2 vers
   v3 affiche bien la caisse classique, puis verifier unload/reload du chunk.
+- [x] Outil admin de test : le menu contextuel `PZLinux Admin > Force contract on
+  board` permet a un administrateur de placer l'un des 12 contrats en tete du
+  tableau partage. La commande est validee cote serveur, prefixee, idempotente et
+  refusee aux joueurs ordinaires. Le contrat force reste disponible jusqu'a son
+  acceptation ou au prochain renouvellement normal du tableau.
 - [x] 8 - Protect the building.
 - [x] 9 - Send medical equipment.
 - [x] 10 - Send weapons.
@@ -686,6 +695,8 @@ sauf pour corriger un bug reproductible.
 
 - [ ] Geler la liste des features de la 1.0.0.
 - [ ] Rejouer les 12 contrats du debut a la fin en solo puis en MP.
+- [ ] Utiliser `PZLinux Admin > Force contract on board` pour tester chaque contrat
+  sans attendre le renouvellement hebdomadaire; le contrat 7 correspond a Cargo.
 - [ ] Pour chaque bug, noter le contexte, les etapes exactes, le resultat attendu,
   le resultat obtenu et les lignes pertinentes de `console.txt`.
 - [ ] Garder `tools/watch_console.ps1` ouvert sur Windows ou

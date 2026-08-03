@@ -126,6 +126,10 @@ PZLinuxTestAssert(variables:find("boardGeneratedHour = tonumber%(mission%.boardG
     "world contracts must retain the board generation they came from")
 PZLinuxTestAssert(variables:find("PZLinuxContractsPruneConsumedBoardContracts%(boardData%)"),
     "the board must prune offers already consumed during its current generation")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsAdminForceBoard")
+    and variables:find('error = "admin_required"')
+    and variables:find("adminForcedContracts"),
+    "forcing a test contract must be server-authorized and survive normal board pruning")
 PZLinuxTestAssert(variables:find("boardRefreshHours")
     and variables:find("needsScheduleMigration")
     and variables:find("boardData%.scheduleVersion = scheduleVersion"),
@@ -231,6 +235,17 @@ PZLinuxTestAssert(serverCommands:find(
     1,
     true
 ), "the prefixed completion-receipt acknowledgement command must be registered")
+PZLinuxTestAssert(serverCommands:find(
+    "PZLinuxContractAdminForce = PZLinuxServerContractAdminForce",
+    1,
+    true
+), "the admin-only forced-contract command must be registered with a PZLinux prefix")
+local debugMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextDebug.lua")
+PZLinuxTestAssert(debugMenu:find("local function PZLinuxDebugForceContract%(player, contractId%)")
+    and debugMenu:find("PZLinuxDebugHasAdminAccess")
+    and debugMenu:find("PZLinuxRequestAdminForceContract")
+    and debugMenu:find("Force contract on board", 1, true),
+    "administrators must have an in-game menu for selecting a contract to test")
 local initialiseBlock = contractsUi:match("function contractsUI:initialise.-\nend\n\nfunction contractsUI:onCancelContract")
 PZLinuxTestAssert(initialiseBlock and initialiseBlock:find("PZLinuxRequestContractSync"),
     "opening the contracts UI must synchronize with the server before rendering")

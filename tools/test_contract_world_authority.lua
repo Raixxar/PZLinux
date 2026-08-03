@@ -52,21 +52,25 @@ PZLinuxTestAssert(variables:find("if not zombie and addZombiesInOutfit", 1, true
 PZLinuxTestAssert(variables:find("PZLinuxContractsConfigureManhuntZombie"),
     "manhunt must apply its network-safe target configuration")
 local manhuntConfig = variables:match("local function PZLinuxContractsConfigureManhuntZombie.-\nend")
-PZLinuxTestAssert(manhuntConfig and manhuntConfig:find("zombie:setUseless%(false%)")
+PZLinuxTestAssert(manhuntConfig and manhuntConfig:find("zombie:setUseless%(true%)")
     and manhuntConfig:find("zombie:setCanWalk%(false%)")
     and manhuntConfig:find("zombie:setAlwaysKnockedDown%(true%)")
     and manhuntConfig:find("zombie:setSitAgainstWall%(true%)")
     and manhuntConfig:find("networkAI:extraUpdate%(%)"),
-    "the manhunt target must stay network-active while seated and unable to wander away")
+    "the manhunt target must remain passive, seated and unable to wander away")
+PZLinuxTestAssert(variables:find("PZLinux%.ManhuntTargets")
+    and variables:find("function PZLinuxContractsMaintainManhuntTargets")
+    and variables:find("runtimeTarget:getSquare%(%)"),
+    "the server must retain and maintain the canonical manhunt target between recovery requests")
 PZLinuxTestAssert(variables:find("PZLinuxContractsFindTaggedZombies")
     and variables:find("removedDuplicates", 1, true)
     and variables:find("PZLinuxContractsRemoveWorldEntity%(candidate%)"),
     "manhunt recovery must retain one canonical target and remove duplicate spawns")
 PZLinuxTestAssert(not variables:find("existingOnlineId >= 0", 1, true),
     "a visible B42 multiplayer target must not be discarded only because its online id is -1")
-PZLinuxTestAssert(variables:find("local PZLinuxManhuntTargetVersion = 3", 1, true)
+PZLinuxTestAssert(variables:find("local PZLinuxManhuntTargetVersion = 4", 1, true)
     and variables:find("PZLinuxManhuntVersion = PZLinuxManhuntTargetVersion", 1, true),
-    "legacy manhunt targets must migrate once to the network-safe v3 target")
+    "legacy manhunt targets must migrate once to the passive v4 target")
 local restoreProtectBranch = applyBlock:match('eventName == "restoreProtect"(.-)elseif')
 PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(tonumber%(record%.zombieCount%)"),
     "protect recovery must only restore the number of objective kills still required")
@@ -98,6 +102,13 @@ PZLinuxTestAssert(contextMenu:find("cargoState == 1")
     and contextMenu:find("cargoDistance <= packageRadius")
     and cargoAction:find('PZLinuxRequestContractWorldEvent%(self%.character, "takeCargo", {}'),
     "cargo pickup must remain available when the replicated crate is missing")
+PZLinuxTestAssert(contextMenu:find('manhuntWorldStatus == "target_down"', 1, true)
+    and contextMenu:find("worldRecord%.targetDeathX")
+    and contextMenu:find("for dx = %-2, 2 do"),
+    "manhunt corpse interaction must use server state and scan around the clicked/player square")
+PZLinuxTestAssert(variables:find("modData%.PZLinuxContractWorldStatus = tostring%(record%.status or \"\"%)")
+    and variables:find("if args%.worldStatus ~= nil then modData%.PZLinuxContractWorldStatus = args%.worldStatus end"),
+    "the canonical contract status must be synchronized explicitly to the client")
 
 local cargoSpawn = variables:match("function PZLinuxContractsSpawnCargoObject.-\nend\n\nlocal function PZLinuxContractsFindZombieSpawnSquare")
 PZLinuxTestAssert(cargoSpawn and cargoSpawn:find('data%.PZLinuxContractObjective = "cargo"')
@@ -128,6 +139,8 @@ PZLinuxTestAssert(not requestBlock:find("PZLinuxContractId"), "world-event reque
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
 PZLinuxTestAssert(serverCommands:find("Events%.OnZombieDead%.Add%(PZLinuxServerOnZombieDead%)"),
     "the server must own zombie-death accounting")
+PZLinuxTestAssert(serverCommands:find("PZLinuxContractsMaintainManhuntTargets%(%)"),
+    "the server must periodically keep the manhunt target passive")
 PZLinuxTestAssert(variables:find("function PZLinuxContractsResolveZombieKiller")
     and variables:find("zombie%.authOwnerPlayer")
     and variables:find('"network_owner"'),
@@ -168,8 +181,9 @@ PZLinuxTestAssert(not events:find("PZLinuxContractManhunt = 1"), "reconnect must
 PZLinuxTestAssert(manhuntEvents:find("PZLinuxFindVisibleManhuntTarget")
     and manhuntEvents:find("result%.spawnEntityId")
     and manhuntEvents:find("matchesConfirmedPosition")
-    and manhuntEvents:find("tonumber%(data%.PZLinuxManhuntVersion%) == 3"),
-    "the client must recognize the confirmed v3 target by id, tag, or spawn position")
+    and manhuntEvents:find("tonumber%(data%.PZLinuxManhuntVersion%) == 4")
+    and manhuntEvents:find("PZLinuxKeepManhuntTargetPassive"),
+    "the client must recognize and keep the confirmed passive v4 target by id, tag, or spawn position")
 PZLinuxTestAssert(events:find("local function PZLinuxIsManhuntContractPending")
     and events:find("contractType == 3")
     and events:find("return activeState == 1 and recordIsManhunt", 1, true),

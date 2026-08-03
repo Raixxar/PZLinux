@@ -1,6 +1,15 @@
 local PZLinuxManhuntSpawnRequests = {}
 local PZLinuxManhuntTargetState = {}
 
+local function PZLinuxKeepManhuntTargetPassive(zombie)
+    if not zombie then return end
+    if zombie.setTarget then zombie:setTarget(nil) end
+    if zombie.setUseless then zombie:setUseless(true) end
+    if zombie.setCanWalk then zombie:setCanWalk(false) end
+    if zombie.setAlwaysKnockedDown then zombie:setAlwaysKnockedDown(true) end
+    if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
+end
+
 local function PZLinuxIsManhuntContractPending(modData)
     if not modData then return false end
 
@@ -37,6 +46,12 @@ end
 
 local function PZLinuxFindVisibleManhuntTarget(modData, expectedState)
     if not getCell then return nil end
+    local rememberedZombie = expectedState and expectedState.zombie
+    if rememberedZombie
+    and (not rememberedZombie.isDead or not rememberedZombie:isDead())
+    and rememberedZombie.getSquare and rememberedZombie:getSquare() then
+        return rememberedZombie
+    end
     local zombies = getCell():getZombieList()
     if not zombies then return nil end
     local contractWorldId = tostring(modData.PZLinuxContractId or "")
@@ -53,7 +68,7 @@ local function PZLinuxFindVisibleManhuntTarget(modData, expectedState)
         local matchesTag = data
             and tostring(data.PZLinuxContractId or "") == contractWorldId
             and data.PZLinuxContractObjective == "manhunt"
-            and tonumber(data.PZLinuxManhuntVersion) == 3
+            and tonumber(data.PZLinuxManhuntVersion) == 4
         local matchesConfirmedPosition = spawnX and spawnY and spawnZ
             and math.abs(zombie:getX() - spawnX) <= 2
             and math.abs(zombie:getY() - spawnY) <= 2
@@ -81,7 +96,12 @@ local function checkAndSpawnZombie(player)
         ) or nil
         if dist < 50 and not targetSquare then return end
         local targetState = PZLinuxManhuntTargetState[playerKey]
-        if dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState) then
+        local visibleTarget = dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState) or nil
+        if visibleTarget then
+            targetState = targetState or {}
+            targetState.zombie = visibleTarget
+            PZLinuxManhuntTargetState[playerKey] = targetState
+            PZLinuxKeepManhuntTargetPassive(visibleTarget)
             return
         end
         if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then

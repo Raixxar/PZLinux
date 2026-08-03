@@ -1,28 +1,40 @@
-local debug = 0
-function DebugtMenu_AddContext(player, context, _worldobjects)
-    if debug == 1 then
-        context:addOption("Debug-1", player, DebugMenu_OnDebug1)
-        context:addOption("Debug-2", player, DebugMenu_OnDebug2)
+local function PZLinuxDebugHasAdminAccess(playerObj)
+    if not playerObj or not playerObj.getAccessLevel then return false end
+    local accessLevel = tostring(playerObj:getAccessLevel() or ""):lower()
+    return accessLevel == "admin" or accessLevel == "administrator"
+end
+
+local function PZLinuxDebugForceContract(player, contractId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+    PZLinuxRequestAdminForceContract(playerObj, contractId, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(playerObj, "Contract " .. tostring(contractId) .. " added to the board")
+        else
+            HaloTextHelper.addBadText(playerObj, "Admin command failed: "
+                .. tostring(result and result.error or "no response"))
+        end
+    end)
+end
+
+local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not PZLinuxDebugHasAdminAccess(playerObj) then return end
+
+    local adminOption = context:addOption("PZLinux Admin")
+    local adminMenu = ISContextMenu:getNew(context)
+    context:addSubMenu(adminOption, adminMenu)
+    local forceOption = adminMenu:addOption("Force contract on board")
+    local forceMenu = ISContextMenu:getNew(adminMenu)
+    adminMenu:addSubMenu(forceOption, forceMenu)
+    for _, definition in ipairs(PZLinuxContractDefinitions or {}) do
+        forceMenu:addOption(
+            tostring(definition.id) .. " - " .. tostring(definition.questName),
+            player,
+            PZLinuxDebugForceContract,
+            definition.id
+        )
     end
 end
 
-function DebugMenu_OnDebug1()
-    local x = 450
-    local y = 9792
-    local message = "test"
-    ISWorldMap.ShowWorldMap(0)
-    ISWorldMap.HideWorldMap(0)
-    WorldMapVisited.getInstance():setVisitedInCells(x, y, x + 10, y + 10)
-    local mapSymbol = ISWorldMap_instance.mapAPI:getSymbolsAPI():addTexture("Circle", x, y)
-    local mapText = ISWorldMap_instance.mapAPI:getSymbolsAPI():addTranslatedText(message, UIFont.SdfCaveat, x + 20, y)
-    mapSymbol:setRGBA(0, 0, 0, 1.0)
-    mapSymbol:setAnchor(0.5, 0.5)
-    mapText:setRGBA(0, 0, 0, 1.0)
-end
-
-function DebugMenu_OnDebug2()
-    local priceMultiplier = SandboxVars.PZLinux.PriceMultiplier or 1.0
-    print(priceMultiplier)
-end
-
-Events.OnFillWorldObjectContextMenu.Add(DebugtMenu_AddContext)
+Events.OnFillWorldObjectContextMenu.Add(PZLinuxDebugMenuAddContext)

@@ -1142,6 +1142,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxContractCompleteResult"
         or command == "PZLinuxContractCompletionAckResult"
         or command == "PZLinuxContractWorldEventResult"
+        or command == "PZLinuxContractAdminForceResult"
         or command == "PZLinuxRequestOrderResult"
         or command == "PZLinuxRequestDeliverResult"
         or command == "PZLinuxRequestSpawnVehicleResult"
@@ -1179,6 +1180,7 @@ if Events and Events.OnServerCommand then
                 local modData = playerObj and playerObj:getModData()
                 if modData then
                     if args.worldContractId ~= nil then modData.PZLinuxContractId = args.worldContractId end
+                    if args.worldStatus ~= nil then modData.PZLinuxContractWorldStatus = args.worldStatus end
                     if args.activeContract ~= nil then modData.PZLinuxActiveContract = args.activeContract end
                     if args.zombieTarget ~= nil then modData.PZLinuxOnZombieToKill = args.zombieTarget end
                     if args.zombieCount ~= nil then modData.PZLinuxOnZombieDead = args.zombieCount end
@@ -2132,7 +2134,10 @@ local function PZLinuxContractsPruneConsumedBoardContracts(boardData)
 
     local changed = false
     for index = #boardData.contracts, 1, -1 do
-        if consumed[tonumber(boardData.contracts[index].id)] then
+        local contractId = tonumber(boardData.contracts[index].id)
+        local adminForced = boardData.adminForcedContracts
+            and boardData.adminForcedContracts[tostring(contractId)] == true
+        if consumed[contractId] and not adminForced then
             table.remove(boardData.contracts, index)
             changed = true
         end
@@ -2168,6 +2173,7 @@ function PZLinuxContractsGetBoardData()
         end
 
         boardData.contracts = selected
+        boardData.adminForcedContracts = {}
         boardData.generatedHour = worldHour
         boardData.scheduleVersion = scheduleVersion
         boardData.nextRefreshHour = worldHour + refreshHours
@@ -2199,6 +2205,48 @@ function PZLinuxContractsGetBoard(player, requestId)
     }
 end
 
+local function PZLinuxContractsHasAdminAccess(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return false end
+    if not (isClient and isClient()) and not (isServer and isServer()) then return true end
+    local accessLevel = playerObj.getAccessLevel and playerObj:getAccessLevel() or ""
+    accessLevel = tostring(accessLevel):lower()
+    return accessLevel == "admin" or accessLevel == "administrator"
+end
+
+function PZLinuxContractsAdminForceBoard(player, contractId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    local definition = PZLinuxContractsGetDefinition(contractId)
+    if not definition then return { ok = false, error = "invalid_contract", requestId = requestId } end
+
+    local boardData = PZLinuxContractsGetBoardData()
+    boardData.adminForcedContracts = boardData.adminForcedContracts or {}
+    for index = #(boardData.contracts or {}), 1, -1 do
+        if tonumber(boardData.contracts[index].id) == tonumber(definition.id) then
+            table.remove(boardData.contracts, index)
+        end
+    end
+    table.insert(boardData.contracts, 1, PZLinuxContractsBuildContract(definition))
+    boardData.adminForcedContracts[tostring(definition.id)] = true
+    PZLinux.contractPreviews = {}
+    if isServer and isServer() and ModData and ModData.transmit then
+        ModData.transmit("PZLinuxContractsBoard")
+    end
+    print("[PZLinux Admin] " .. tostring(playerObj:getUsername())
+        .. " forced contract " .. tostring(definition.id) .. " on the shared board")
+    return {
+        ok = true,
+        requestId = requestId,
+        contractId = definition.id,
+        contracts = boardData.contracts,
+    }
+end
+
 function PZLinuxContractsFindBoardContract(contractId)
     contractId = tonumber(contractId)
     local boardData = PZLinuxContractsGetBoardData()
@@ -2218,6 +2266,9 @@ local function PZLinuxContractsRemoveBoardContract(contractId, generatedHour)
     for index = #(boardData.contracts or {}), 1, -1 do
         if tonumber(boardData.contracts[index].id) == contractId then
             table.remove(boardData.contracts, index)
+            if boardData.adminForcedContracts then
+                boardData.adminForcedContracts[tostring(contractId)] = nil
+            end
             PZLinux.contractPreviews = {}
             if isServer and isServer() and ModData and ModData.transmit then
                 ModData.transmit("PZLinuxContractsBoard")
@@ -2397,6 +2448,7 @@ function PZLinuxContractsSyncWorldRecordToPlayer(player, record)
     local modData = playerObj:getModData()
     modData.PZLinuxContractId = record.id
     modData.PZLinuxContractTypeId = tonumber(record.contractId) or 0
+    modData.PZLinuxContractWorldStatus = tostring(record.status or "")
     modData.PZLinuxActiveContract = PZLinuxContractsCanonicalActiveState(record.status)
     modData.PZLinuxOnReward = PZLinuxNormalizeMoney(record.reward)
     modData.PZLinuxContractCompanyUp = "PZLinuxTrading" .. tostring(record.code or "")
@@ -2563,6 +2615,7 @@ function PZLinuxContractsClearState(modData)
     modData.PZLinuxContractLocationZ = 0
     modData.PZLinuxContractId = ""
     modData.PZLinuxContractTypeId = 0
+    modData.PZLinuxContractWorldStatus = ""
     modData.PZLinuxOnZombieDead = 0
     modData.PZLinuxActiveContract = 0
     modData.PZLinuxContractNote = ""
@@ -3095,7 +3148,8 @@ function PZLinuxContractsTransmitSquareObject(square, obj)
 end
 
 local PZLinuxCargoObjectVersion = 3
-local PZLinuxManhuntTargetVersion = 3
+local PZLinuxManhuntTargetVersion = 4
+PZLinux.ManhuntTargets = PZLinux.ManhuntTargets or {}
 
 local function PZLinuxContractsFindCargoObject(x, y, z, contractWorldId)
     if not getCell then return false end
@@ -3277,21 +3331,21 @@ local function PZLinuxContractsGetZombieOnlineId(zombie)
     return tonumber(zombie.OnlineID) or -1
 end
 
-local function PZLinuxContractsConfigureManhuntZombie(zombie)
+local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit)
     if not zombie then return false end
     local data = zombie:getModData()
     data.PZLinuxManhuntVersion = PZLinuxManhuntTargetVersion
     if zombie.setTarget then zombie:setTarget(nil) end
-    -- setUseless is intended for local tutorial actors and may exclude a zombie
-    -- from normal multiplayer updates. Keep the target active but immobile.
-    if zombie.setUseless then zombie:setUseless(false) end
+    if zombie.setUseless then zombie:setUseless(true) end
     if zombie.setCanWalk then zombie:setCanWalk(false) end
     if zombie.setAlwaysKnockedDown then zombie:setAlwaysKnockedDown(true) end
     if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
     if zombie.resetModelNextFrame then zombie:resetModelNextFrame() end
-    if zombie.transmitModData then zombie:transmitModData() end
-    local networkAI = zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
-    if networkAI and networkAI.extraUpdate then networkAI:extraUpdate() end
+    if transmit ~= false then
+        if zombie.transmitModData then zombie:transmitModData() end
+        local networkAI = zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
+        if networkAI and networkAI.extraUpdate then networkAI:extraUpdate() end
+    end
     return true
 end
 
@@ -3394,6 +3448,17 @@ end
 
 local function PZLinuxContractsEnsureManhuntZombie(record)
     if not record then return false, 0 end
+    local runtimeTarget = PZLinux.ManhuntTargets[tostring(record.id)]
+    if runtimeTarget
+    and (not runtimeTarget.isDead or not runtimeTarget:isDead())
+    and runtimeTarget.getSquare and runtimeTarget:getSquare() then
+        PZLinuxContractsTagEntity(runtimeTarget, record.id, "manhunt")
+        PZLinuxContractsConfigureManhuntZombie(runtimeTarget)
+        return true, 0, runtimeTarget:getX(), runtimeTarget:getY(), runtimeTarget:getZ(),
+            PZLinuxContractsGetZombieOnlineId(runtimeTarget)
+    end
+    PZLinux.ManhuntTargets[tostring(record.id)] = nil
+
     local existingTargets = PZLinuxContractsFindTaggedZombies(record.id, "manhunt")
     local existingZombie
     local searchRadius = tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
@@ -3413,8 +3478,9 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
     end
     if existingZombie then
         local existingOnlineId = PZLinuxContractsGetZombieOnlineId(existingZombie)
+        PZLinux.ManhuntTargets[tostring(record.id)] = existingZombie
         PZLinuxContractsConfigureManhuntZombie(existingZombie)
-        print("[PZLinux Manhunt][server] reused canonical target v3 onlineId="
+        print("[PZLinux Manhunt][server] reused canonical target v4 onlineId="
             .. tostring(existingOnlineId)
             .. " removedDuplicates=" .. tostring(math.max(0, #existingTargets - 1))
             .. " at " .. tostring(existingZombie:getX()) .. ","
@@ -3431,9 +3497,10 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
         "manhunt"
     )
     if not created then return false, 0 end
+    PZLinux.ManhuntTargets[tostring(record.id)] = zombie
     local onlineId = PZLinuxContractsGetZombieOnlineId(zombie)
     local inWorld = not zombie.isExistInTheWorld or zombie:isExistInTheWorld()
-    print("[PZLinux Manhunt][server] spawned network target v3 method=" .. tostring(spawnMethod)
+    print("[PZLinux Manhunt][server] spawned network target v4 method=" .. tostring(spawnMethod)
         .. " onlineId=" .. tostring(onlineId)
         .. " inWorld=" .. tostring(inWorld)
         .. " at " .. tostring(square and square:getX() or zombie:getX()) .. ","
@@ -3445,6 +3512,19 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
         square and square:getY() or zombie:getY(),
         square and square:getZ() or zombie:getZ(),
         onlineId
+end
+
+function PZLinuxContractsMaintainManhuntTargets()
+    for contractWorldId, zombie in pairs(PZLinux.ManhuntTargets or {}) do
+        local record = PZLinuxContractsGetWorldContract(contractWorldId)
+        if not record or not PZLinuxContractsIsRecordStatus(record, "spawned")
+        or not zombie or (zombie.isDead and zombie:isDead())
+        or not zombie.getSquare or not zombie:getSquare() then
+            PZLinux.ManhuntTargets[contractWorldId] = nil
+        else
+            PZLinuxContractsConfigureManhuntZombie(zombie, false)
+        end
+    end
 end
 
 local function PZLinuxContractsSpawnProtectZombies(record, count)
@@ -3747,6 +3827,7 @@ function PZLinuxContractsApplyServerZombieDeath(zombie)
     local changed = false
 
     if taggedRecord and objectiveType == "manhunt" and PZLinuxContractsIsRecordStatus(taggedRecord, "spawned") then
+        PZLinux.ManhuntTargets[tostring(taggedRecord.id)] = nil
         taggedRecord.status = "target_down"
         taggedRecord.targetKilled = true
         taggedRecord.targetDeathX = zombie:getX()
@@ -3844,6 +3925,7 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
         record.spawnX = spawnX
         record.spawnY = spawnY
         record.spawnZ = spawnZ
+        record.spawnEntityId = spawnEntityId
     elseif eventName == "spawnCargo" then
         local record, recordError = usePlayerRecord(7, "accepted", "spawned")
         if recordError then return reject(recordError) end
@@ -3990,6 +4072,15 @@ function PZLinuxRequestContractsBoard(player, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxContractsGetBoard(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAdminForceContract(player, contractId, callback)
+    local requestId = PZLinuxNextRequestId("contract-admin-force")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, contractId = tonumber(contractId) }
+    if PZLinuxSendClientCommand("PZLinuxContractAdminForce", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxContractsAdminForceBoard(player, contractId, requestId))
     return requestId
 end
 
