@@ -218,6 +218,10 @@ Modules partages deja extraits :
   persistants lorsque l'API de l'entite le permet.
 - Cargo, Manhunt, Blood, Capture et Protect resolvent une entite reelle cote
   serveur avant mutation.
+- Manhunt utilise un rayon d'activation partage et configurable de 80 cases. Le
+  client demande puis retente le spawn meme si sa copie de la case cible n'est
+  pas encore chargee; le serveur decide quand la zone est exploitable. Les
+  actions finales restent limitees a leur controle de proximite strict.
 - Kill/Protect/Blood utilisent `Events.OnZombieDead` serveur et le dernier
   attaquant, pas un compteur fourni par le client.
 - `zombieKilled` et `clearCargo` envoyes par un client sont explicitement refuses.

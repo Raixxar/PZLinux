@@ -13,6 +13,7 @@ local function PZLinuxTestRead(path)
 end
 
 local variables = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
+local config = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxConfig.lua")
 local applyBlock = variables:match("function PZLinuxContractsApplyWorldEvent.-\nend\n\nfunction PZLinuxRequestContractWorldEvent")
 PZLinuxTestAssert(applyBlock ~= nil, "could not inspect contract world-event authority")
 PZLinuxTestAssert(not applyBlock:find("args%.contractId"), "world events must not trust a client contract id")
@@ -37,6 +38,10 @@ PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find('"accepted", "s
     "manhunt spawn must be recoverable after reconnect")
 PZLinuxTestAssert(spawnManhuntBranch and spawnManhuntBranch:find("PZLinuxContractsEnsureManhuntZombie"),
     "manhunt recovery must reuse an existing tagged target")
+PZLinuxTestAssert(config:find("objectiveActivationRadius = 80", 1, true)
+    and spawnManhuntBranch:find("PZLinux.Config.Contracts.objectiveActivationRadius", 1, true)
+    and spawnManhuntBranch:find("activationRadius", 1, true),
+    "manhunt activation must use the shared radius on the authoritative server")
 PZLinuxTestAssert(variables:find("function PZLinuxContractsFindZombieSpawnSquare")
     and variables:find("square:isFree%(false%)"),
     "contract zombies must use a nearby loaded free square")
@@ -195,9 +200,11 @@ PZLinuxTestAssert(events:find("local function PZLinuxIsManhuntContractPending")
     and events:find("contractType == 3")
     and events:find("return activeState == 1 and recordIsManhunt", 1, true),
     "manhunt recovery must survive a stale legacy type flag after reconnect")
-PZLinuxTestAssert(manhuntEvents:find("getGridSquare")
-    and manhuntEvents:find("if dist < 50 and not targetSquare then return end", 1, true),
-    "manhunt must wait until the objective chunk is loaded on the client")
+PZLinuxTestAssert(manhuntEvents:find("PZLinux.Config.Contracts.objectiveActivationRadius", 1, true)
+    and not manhuntEvents:find("not targetSquare", 1, true)
+    and events:find("Events.OnPlayerMove.Add(checkAndSpawnZombie)", 1, true)
+    and events:find("Events.OnTick.Add(PZLinuxPollWorldObjectiveRestores)", 1, true),
+    "manhunt must request and retry server recovery without a silent client square gate")
 PZLinuxTestAssert(manhuntEvents:find("[PZLinux Manhunt][client] restore failed", 1, true)
     and not manhuntEvents:find('result%.error ~= "invalid_contract_state"'),
     "manhunt recovery must log every server rejection, including invalid state")

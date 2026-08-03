@@ -3909,7 +3909,14 @@ function PZLinuxContractsApplyWorldEvent(player, eventName, args, requestId)
             print("[PZLinux Manhunt][server] rejected: " .. tostring(recordError))
             return reject(recordError)
         end
-        if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then
+        local activationRadius = tonumber(PZLinux.Config.Contracts.objectiveActivationRadius) or 80
+        if not PZLinuxIsPlayerNearPosition(
+            playerObj,
+            record.locationX,
+            record.locationY,
+            record.locationZ,
+            activationRadius
+        ) then
             print("[PZLinux Manhunt][server] rejected: too_far_from_contract player="
                 .. tostring(math.floor(playerObj:getX())) .. "," .. tostring(math.floor(playerObj:getY()))
                 .. " target=" .. tostring(record.locationX) .. "," .. tostring(record.locationY))

@@ -1,5 +1,14 @@
 # Changelog
 
+## Correctifs post-1.0.0
+
+- Manhunt : le rayon d'activation client/serveur passe a 80 cases et devient
+  configurable. Une cible situee entre 50 et 80 cases n'est plus ignoree lors
+  du chargement de son chunk; le rayon d'interaction final reste inchange.
+- Manhunt : suppression du blocage client silencieux lorsque la case exacte de
+  la cible n'est pas encore presente. Le serveur recoit la demande et les essais
+  reprennent automatiquement toutes les cinq secondes jusqu'au chargement.
+
 All notable changes to PZLinux are documented in this file. Pre-1.0 entries are
 preserved as historical notes and may describe systems replaced by 1.0.0.
 

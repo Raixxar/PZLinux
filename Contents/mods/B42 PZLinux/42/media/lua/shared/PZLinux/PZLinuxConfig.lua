@@ -8,11 +8,14 @@ PZLinux.Config.ATM = PZLinux.Config.ATM or {
 
 PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
     packageInteractionRadius = 5,
+    objectiveActivationRadius = 80,
     objectiveSpawnSearchRadius = 15,
     boardRefreshHours = 168,
     cargoSprite = "carpentry_01_19",
 }
 PZLinux.Config.Contracts.boardRefreshHours = tonumber(PZLinux.Config.Contracts.boardRefreshHours) or 168
+PZLinux.Config.Contracts.objectiveActivationRadius =
+    tonumber(PZLinux.Config.Contracts.objectiveActivationRadius) or 80
 PZLinux.Config.Contracts.objectiveSpawnSearchRadius =
     tonumber(PZLinux.Config.Contracts.objectiveSpawnSearchRadius) or 15
 PZLinux.Config.Contracts.cargoSprite = PZLinux.Config.Contracts.cargoSprite or "carpentry_01_19"

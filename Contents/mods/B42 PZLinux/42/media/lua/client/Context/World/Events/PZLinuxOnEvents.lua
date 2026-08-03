@@ -89,14 +89,11 @@ local function checkAndSpawnZombie(player)
         local x, y, z = modData.PZLinuxContractLocationX, modData.PZLinuxContractLocationY, modData.PZLinuxContractLocationZ
         if not x or not y or not z then return end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
-        local targetSquare = getCell and getCell():getGridSquare(
-            math.floor(tonumber(x) or 0),
-            math.floor(tonumber(y) or 0),
-            math.floor(tonumber(z) or 0)
-        ) or nil
-        if dist < 50 and not targetSquare then return end
+        local activationRadius = tonumber(PZLinux.Config.Contracts.objectiveActivationRadius) or 80
         local targetState = PZLinuxManhuntTargetState[playerKey]
-        local visibleTarget = dist < 50 and PZLinuxFindVisibleManhuntTarget(modData, targetState) or nil
+        local visibleTarget = dist < activationRadius
+            and PZLinuxFindVisibleManhuntTarget(modData, targetState)
+            or nil
         if visibleTarget then
             targetState = targetState or {}
             targetState.zombie = visibleTarget
@@ -104,7 +101,8 @@ local function checkAndSpawnZombie(player)
             PZLinuxKeepManhuntTargetPassive(visibleTarget)
             return
         end
-        if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
+        if dist < activationRadius
+        and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
             print("[PZLinux Manhunt][client] requesting target"
                 .. " active=" .. tostring(modData.PZLinuxActiveContract)
                 .. " type=" .. tostring(modData.PZLinuxContractTypeId)
