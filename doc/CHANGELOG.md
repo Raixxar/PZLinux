@@ -2,6 +2,29 @@
 
 ## Correctifs post-1.0.0
 
+- Contrat "Refill an ATM" : le bouton "REFILL FOR CONTRACT" etait beaucoup
+  trop grand (occupait quasiment tout l'ecran du DAB). Ramene a la taille des
+  boutons RETRAIT/DEPOT normaux.
+- Traduction complete du dialogue et des textes du contrat "Refill an ATM"
+  dans les 20 langues supportees (le texte n'existait qu'en anglais avec un
+  affichage force en francais pour les phrases deja communes aux autres
+  contrats, d'ou le melange signale). Concerne : l'intro du dialogue, la
+  ligne du montant a retirer, la ligne de remboursement, le message "fonds
+  insuffisants", le bouton et les messages d'erreur du DAB (mauvais
+  distributeur, aucun contrat actif, renflouement termine), et la
+  description du lieu (E-Z GO Banking, Ekron). Voir les fichiers
+  `Contents/mods/B42 PZLinux/42/media/lua/shared/Translate/<LANG>/IG_UI.json`.
+- Correctif de deux textes francais tronques a l'affichage ("Votre contrat a
+  été" au lieu de "...payé.", "...progressivement vers la" au lieu de
+  "...neutralité.") : dans les deux cas, le mot manquant se terminait par un
+  caractere accentue immediatement suivi d'un point final, sans espace.
+  Hypothese (non confirmee au niveau moteur, mais corrigee par prudence et
+  coherente avec des choix similaires deja presents ailleurs dans ce meme
+  fichier de traduction) : un caractere accentue colle a une ponctuation de
+  fin de phrase perturbe le rendu/retour a la ligne du client et fait
+  disparaitre le dernier mot entierement. Les nouvelles traductions ATM
+  ajoutees ci-dessus evitent deliberement ce meme motif partout ou possible.
+
 - Contrat "Refill an ATM" : correctif d'une option de menu contextuel
   incorrecte ("récupérer l'objet du contrat") apparaissant a proximite du
   distributeur cible. Cause : le filet de secours "legacyPackageFallback" du

@@ -214,7 +214,7 @@ function AtmUI:ensureContractRefillButton()
     if self.depositeButton then self.depositeButton:setVisible(false) end
 
     self.contractRefillButton = ISButton:new(
-        self.width * 0.295, self.width * 0.55, self.width * 0.25, self.height * 0.19,
+        self.width * 0.295, self.width * 0.60, self.width * 0.25, self.height * 0.08,
         PZLinuxFormatText("IGUI_PZLinux_ATM_ContractRefill", "REFILL FOR CONTRACT"),
         self, self.onContractRefillDeposit
     )
