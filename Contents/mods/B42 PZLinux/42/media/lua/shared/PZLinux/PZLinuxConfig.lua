@@ -88,11 +88,11 @@ PZLinux.Config.Sell = PZLinux.Config.Sell or {
     demandChancePercent = 15,
     quantityMin = 1,
     quantityMax = 10,
-    basePricePercentMin = 30,
-    basePricePercentMax = 50,
+    basePricePercentMin = 15,
+    basePricePercentMax = 25,
     greatDealChancePercent = 10,
-    greatDealMinPercent = 110,
-    greatDealMaxPercent = 130,
+    greatDealMinPercent = 25,
+    greatDealMaxPercent = 125,
     negotiateIncrement = 100,
     negotiateSuccessChancePercent = 50,
 }
@@ -103,15 +103,15 @@ PZLinux.Config.Sell.quantityMin =
 PZLinux.Config.Sell.quantityMax =
     tonumber(PZLinux.Config.Sell.quantityMax) or 10
 PZLinux.Config.Sell.basePricePercentMin =
-    tonumber(PZLinux.Config.Sell.basePricePercentMin) or 30
+    tonumber(PZLinux.Config.Sell.basePricePercentMin) or 15
 PZLinux.Config.Sell.basePricePercentMax =
-    tonumber(PZLinux.Config.Sell.basePricePercentMax) or 50
+    tonumber(PZLinux.Config.Sell.basePricePercentMax) or 25
 PZLinux.Config.Sell.greatDealChancePercent =
     tonumber(PZLinux.Config.Sell.greatDealChancePercent) or 10
 PZLinux.Config.Sell.greatDealMinPercent =
-    tonumber(PZLinux.Config.Sell.greatDealMinPercent) or 110
+    tonumber(PZLinux.Config.Sell.greatDealMinPercent) or 25
 PZLinux.Config.Sell.greatDealMaxPercent =
-    tonumber(PZLinux.Config.Sell.greatDealMaxPercent) or 130
+    tonumber(PZLinux.Config.Sell.greatDealMaxPercent) or 125
 PZLinux.Config.Sell.negotiateIncrement =
     tonumber(PZLinux.Config.Sell.negotiateIncrement) or 100
 PZLinux.Config.Sell.negotiateSuccessChancePercent =

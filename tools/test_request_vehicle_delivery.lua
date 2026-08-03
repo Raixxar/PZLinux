@@ -147,7 +147,12 @@ PZLinuxRequestsFindVehicleLocation = function(x, y, z)
     return nil
 end
 
-assert(loadstring(applyOrderSource))()
+-- Note: applyOrderSource is used only for the static text-position
+-- assertions above; PZLinuxRequestsApplyOrder itself was already loaded by
+-- the bigger slice above (with access to its local helper upvalues such as
+-- PZLinuxRequestsMarkCategoryConsumed). Re-loading this smaller slice as its
+-- own separate chunk would redefine the global with a copy that cannot see
+-- those local helpers at all, since Lua locals are chunk-scoped.
 local debitCalls = 0
 PZLinuxRequestsBuildOrder = function(_, state, requestId)
     return { ok = true, contractId = state.contractId, amount = 100, requestId = requestId }
@@ -326,6 +331,19 @@ local ammoOrder = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 2 }, "o
 PZLinuxTestAssert(ammoOrder.ok, "an order for an available category must succeed directly")
 PZLinuxTestAssert(ammoOrder.searching == nil,
     "item Requests no longer go through a delayed supplier search reveal")
+
+-- A successful purchase must also consume the category for today: the same
+-- seller doesn't have infinite stock to sell twice in one day.
+local categoriesAfterPurchase = PZLinuxRequestsGetAvailableCategories(searchPlayer, "categories-after-purchase")
+local stillListedAfterPurchase = false
+for _, contractId in ipairs(categoriesAfterPurchase.available) do
+    if contractId == 2 then stillListedAfterPurchase = true end
+end
+PZLinuxTestAssert(not stillListedAfterPurchase,
+    "a category just bought from must disappear from the list the same day")
+local blockedByPurchase = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 2 }, "order-repurchase")
+PZLinuxTestAssert(not blockedByPurchase.ok and blockedByPurchase.error == "category_unavailable",
+    "buying from the same category twice in one day must be refused")
 
 -- Refusing an offered price hides that category until the next game day,
 -- exactly like finding no seller at all would.

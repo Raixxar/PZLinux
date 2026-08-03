@@ -43,11 +43,11 @@ PZLinux = { Config = { Sell = {
     demandChancePercent = 15,
     quantityMin = 1,
     quantityMax = 10,
-    basePricePercentMin = 30,
-    basePricePercentMax = 50,
+    basePricePercentMin = 15,
+    basePricePercentMax = 25,
     greatDealChancePercent = 10,
-    greatDealMinPercent = 110,
-    greatDealMaxPercent = 130,
+    greatDealMinPercent = 25,
+    greatDealMaxPercent = 125,
     negotiateIncrement = 100,
     negotiateSuccessChancePercent = 50,
 } } }
@@ -142,7 +142,7 @@ end
 PZLinuxTestAssert(itemAOffer and itemBOffer, "every mocked item must appear in the offer list")
 PZLinuxTestAssert(itemAOffer.quantity == 1, "the deterministic minimum roll must pick the minimum quantity (1)")
 PZLinuxTestAssert(itemAOffer.greatDeal, "the deterministic minimum roll must pick a great deal (1 <= 10)")
-local expectedUnitPrice = math.floor(1000 * 110 / 100)
+local expectedUnitPrice = math.floor(1000 * 25 / 100)
 PZLinuxTestAssert(itemAOffer.total == expectedUnitPrice * 1,
     "the quoted total must reflect the great-deal percentage times the wanted quantity")
 
@@ -238,7 +238,7 @@ PZLinuxTestAssert(#offersNextDay.offers == 2, "the next game day must reroll eve
 -- check still succeeds while the separate great-deal roll fails (the queue
 -- covers only the first item's rolls: wanted, quantity, great-deal-fails;
 -- everything after falls back to the deterministic minimum, so the base
--- price percent resolves to the configured basePricePercentMin, 30).
+-- price percent resolves to the configured basePricePercentMin, 15).
 local zombRandQueue = { 1, 1, 50 } -- item wanted, quantity = 1, great-deal roll fails (50 > 10)
 ZombRand = function(minimum)
     if #zombRandQueue > 0 then return table.remove(zombRandQueue, 1) end
@@ -250,7 +250,7 @@ local baseOffers = PZLinuxSellGetOffers(basePlayer, "offers-base")
 PZLinuxTestAssert(#baseOffers.offers >= 1, "the queued rolls must still make at least one item wanted")
 local baseOffer = baseOffers.offers[1]
 PZLinuxTestAssert(not baseOffer.greatDeal, "rolling above the great-deal chance must fall back to the base (bad) price")
-local expectedBasePrice = math.floor(1000 * 30 / 100)
+local expectedBasePrice = math.floor(1000 * 15 / 100)
 PZLinuxTestAssert(baseOffer.total == expectedBasePrice * baseOffer.quantity,
     "the base price must fall within the configured base percentage range times the quantity")
 ZombRand = savedZombRand

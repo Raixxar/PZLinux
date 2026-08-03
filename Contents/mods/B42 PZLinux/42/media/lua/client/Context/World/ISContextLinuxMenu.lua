@@ -164,7 +164,7 @@ function linuxUI:initialise()
     self.contractsButton:initialise()
     self.topBar:addChild(self.contractsButton)
 
-    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05, self.height * 0.025, "SEND A REQUEST", self, self.onRequest)
+    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05, self.height * 0.025, "BUY GOODS", self, self.onRequest)
     self.requestButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.requestButton.textColor = {r=0, g=1, b=0, a=1}
     self.requestButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -172,7 +172,18 @@ function linuxUI:initialise()
     self.requestButton:initialise()
     self.topBar:addChild(self.requestButton)
 
-    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, "ONLINE BETTING", self, self.onBetting)
+    -- Grouped directly below BUY GOODS since both are the same feature pair
+    -- (buying and selling everyday goods), rather than at the bottom of the
+    -- list.
+    self.sellButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, "SELL GOODS", self, self.onSell)
+    self.sellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.sellButton.textColor = {r=0, g=1, b=0, a=1}
+    self.sellButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.sellButton:setVisible(false)
+    self.sellButton:initialise()
+    self.topBar:addChild(self.sellButton)
+
+    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "ONLINE BETTING", self, self.onBetting)
     self.bettingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.bettingButton.textColor = {r=0, g=1, b=0, a=1}
     self.bettingButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -180,7 +191,7 @@ function linuxUI:initialise()
     self.bettingButton:initialise()
     self.topBar:addChild(self.bettingButton)
 
-    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "MAIL", self, self.onMail)
+    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, "MAIL", self, self.onMail)
     self.mailButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.mailButton.textColor = {r=0, g=1, b=0, a=1}
     self.mailButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -188,7 +199,7 @@ function linuxUI:initialise()
     self.mailButton:initialise()
     self.topBar:addChild(self.mailButton)
 
-    self.reputationButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Reputation_Button"), self, self.onReputation)
+    self.reputationButton = ISButton:new(self.width * 0.20, self.height * 0.53, self.width * 0.05, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Reputation_Button"), self, self.onReputation)
     self.reputationButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.reputationButton.textColor = {r=0, g=1, b=0, a=1}
     self.reputationButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -196,21 +207,13 @@ function linuxUI:initialise()
     self.reputationButton:initialise()
     self.topBar:addChild(self.reputationButton)
 
-    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.53, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
+    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.56, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
     self.conditionButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionButton.borderColor = {r=0, g=0, b=0, a=0}
     self.conditionButton:setVisible(false)
     self.conditionButton:initialise()
     self.topBar:addChild(self.conditionButton)
-
-    self.sellButton = ISButton:new(self.width * 0.20, self.height * 0.56, self.width * 0.05, self.height * 0.025, "SELL SURPLUS", self, self.onSell)
-    self.sellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-    self.sellButton.textColor = {r=0, g=1, b=0, a=1}
-    self.sellButton.borderColor = {r=0, g=0, b=0, a=0}
-    self.sellButton:setVisible(false)
-    self.sellButton:initialise()
-    self.topBar:addChild(self.sellButton)
 end
 
 -- CLOSE

@@ -2,6 +2,39 @@
 
 ## Correctifs post-1.0.0
 
+- Menu PZLinux : les boutons "SEND A REQUEST" et "SELL SURPLUS" sont
+  renommes en "BUY GOODS" et "SELL GOODS", plus explicites sur le fait que ce
+  sont des biens de consommation courante qu'on achete ou qu'on vend (pas
+  des contrats). Le bouton SELL GOODS est aussi deplace juste en dessous de
+  BUY GOODS dans le menu (les deux features formant une paire logique),
+  au lieu d'etre tout en bas de la liste.
+
+- Requests (objets et vehicules) : correctif d'incoherence -- apres un achat
+  reussi, la categorie restait affichee et achetable dans la liste, comme si
+  le vendeur avait un stock infini. Un achat reussi marque desormais la
+  categorie comme consommee pour le reste de la journee, exactement comme un
+  refus de prix : elle disparait de la liste jusqu'au reset du jour de jeu
+  suivant. Renommage interne de `PZLinuxRequestCategoryRejected` en
+  `PZLinuxRequestCategoryConsumed` (couvre desormais achat ET refus) dans
+  `ISPZLinuxVariablesTables.lua`, nouvelle fonction partagee
+  `PZLinuxRequestsMarkCategoryConsumed`. Voir `tools/test_request_vehicle_delivery.lua`
+  pour la couverture du cas rapporte (acheter puis retenter la meme
+  categorie le meme jour doit etre refuse).
+- Sell Surplus : equilibrage des prix pour eviter que la feature ne devienne
+  plus rentable que les contrats (risque de faire du farming d'objets au lieu
+  de jouer les contrats). Le prix de base passe de 30-50 % a 15-25 % de la
+  valeur de reference. Le "great deal" (10 % de chance) devient beaucoup plus
+  large et moins garanti : 25-125 % au lieu de 110-130 % -- il peut desormais
+  retomber pres du prix de base au lieu d'etre toujours un bon prix, mais
+  peut aussi ponctuellement depasser largement la valeur de l'objet. Voir
+  `PZLinux.Config.Sell` (`basePricePercentMin/Max`,
+  `greatDealMinPercent/MaxPercent`) dans `PZLinuxConfig.lua`.
+- Sell Surplus : correctif d'un debordement visuel de la liste (elle
+  depassait le cadre visible du moniteur). La zone de defilement occupait 60
+  % de la hauteur du panneau, ce qui deborde de la zone d'ecran reellement
+  visible sur la texture du moniteur CRT (bordure/bezel de l'image). Reduite
+  a 46 % (memes proportions que le Dark Web) avec une vraie barre de
+  defilement visible ajoutee.
 - Sell Surplus : deuxieme refonte complete, cette fois pour ressembler au
   Dark Web (icones, liste defilante) au lieu d'un systeme par categorie. La
   demande n'est plus tiree une fois par jour pour une categorie entiere, mais

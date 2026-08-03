@@ -88,7 +88,7 @@ function PZLinuxSellUI:initialise()
 
     self.titleLabel = ISLabel:new(
         self.width * 0.20, self.height * 0.17, self.height * 0.03,
-        PZLinuxSellText("IGUI_PZLinux_Sell_Title", "SELL SURPLUS"),
+        PZLinuxSellText("IGUI_PZLinux_Sell_Title", "SELL GOODS"),
         0, 1, 0, 1, UIFont.Medium, true
     )
     self.titleLabel:initialise()
@@ -102,7 +102,11 @@ function PZLinuxSellUI:initialise()
     self.statusLabel:initialise()
     self.topBar:addChild(self.statusLabel)
 
-    self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.26, self.width * 0.568, self.height * 0.60)
+    -- Matches Dark Web's scroll area proportions -- the CRT texture's
+    -- visible screen area is smaller than the full image (there is a bezel
+    -- baked into the art), so a taller panel here visually overflows past
+    -- the monitor frame even though it is numerically within self.height.
+    self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.28, self.width * 0.568, self.height * 0.46)
     self.scrollPanel:initialise()
     self.scrollPanel:instantiate()
     function self.scrollPanel:prerender()
@@ -117,6 +121,7 @@ function PZLinuxSellUI:initialise()
     self.scrollPanel.backgroundColor = {r=0.02, g=0.15, b=0.02, a=0}
     self.scrollPanel.borderColor = {r=0, g=0.5, b=0, a=0}
     self.topBar:addChild(self.scrollPanel)
+    self.scrollPanel:addScrollBars(true)
 
     self.rowIcons = {}
     self.rowLabels = {}

@@ -1385,28 +1385,40 @@ local function PZLinuxRequestsEnsureCategoryRoll(playerObj)
     end
     modData.PZLinuxRequestCategoryDay = currentDay
     modData.PZLinuxRequestCategoryAvailable = available
-    -- A category the player explicitly refused today is also hidden until
-    -- the next roll, exactly like one where no seller showed up at all.
-    modData.PZLinuxRequestCategoryRejected = {}
+    -- A category already bought from or explicitly refused today is hidden
+    -- until the next roll, exactly like one where no seller showed up at
+    -- all -- the same seller doesn't have infinite stock to sell twice.
+    modData.PZLinuxRequestCategoryConsumed = {}
     PZLinuxTransmitPlayerModData(playerObj)
     return modData
 end
 
 -- True only if today's roll found a seller for this category AND the player
--- has not already declined that offer today.
+-- has not already bought from or declined that offer today.
 function PZLinuxRequestsIsCategoryAvailable(playerObj, contractId)
     local modData = PZLinuxRequestsEnsureCategoryRoll(playerObj)
     local key = tostring(tonumber(contractId))
     local rolled = tonumber(modData.PZLinuxRequestCategoryAvailable[key]) == 1
-    local rejected = modData.PZLinuxRequestCategoryRejected and modData.PZLinuxRequestCategoryRejected[key]
-    return rolled and not rejected
+    local consumed = modData.PZLinuxRequestCategoryConsumed and modData.PZLinuxRequestCategoryConsumed[key]
+    return rolled and not consumed
 end
 
 local function PZLinuxRequestsIsCategoryAvailableIn(modData, contractId)
     local key = tostring(tonumber(contractId))
     local rolled = tonumber(modData.PZLinuxRequestCategoryAvailable[key]) == 1
-    local rejected = modData.PZLinuxRequestCategoryRejected and modData.PZLinuxRequestCategoryRejected[key]
-    return rolled and not rejected
+    local consumed = modData.PZLinuxRequestCategoryConsumed and modData.PZLinuxRequestCategoryConsumed[key]
+    return rolled and not consumed
+end
+
+-- Marks a category as spent for the rest of today, whether because the
+-- player bought from it or declined the offered price -- either way, this
+-- seller is done for today and the category disappears from the list until
+-- the next game day's roll.
+local function PZLinuxRequestsMarkCategoryConsumed(playerObj, contractId)
+    local modData = PZLinuxRequestsEnsureCategoryRoll(playerObj)
+    modData.PZLinuxRequestCategoryConsumed = modData.PZLinuxRequestCategoryConsumed or {}
+    modData.PZLinuxRequestCategoryConsumed[tostring(tonumber(contractId))] = 1
+    PZLinuxTransmitPlayerModData(playerObj)
 end
 
 function PZLinuxRequestsGetAvailableCategories(player, requestId)
@@ -1436,12 +1448,7 @@ end
 function PZLinuxRequestsRejectCategory(player, contractId, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
-    local modData = PZLinuxRequestsEnsureCategoryRoll(playerObj)
-
-    modData.PZLinuxRequestCategoryRejected = modData.PZLinuxRequestCategoryRejected or {}
-    modData.PZLinuxRequestCategoryRejected[tostring(tonumber(contractId))] = 1
-    PZLinuxTransmitPlayerModData(playerObj)
-
+    PZLinuxRequestsMarkCategoryConsumed(playerObj, contractId)
     return { ok = true, requestId = requestId, contractId = tonumber(contractId) }
 end
 
@@ -1546,6 +1553,10 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
     end
     PZLinuxTransmitPlayerModData(playerObj)
+
+    -- This seller sold what they had: the category disappears from the list
+    -- until tomorrow's roll, exactly like a declined offer would.
+    PZLinuxRequestsMarkCategoryConsumed(playerObj, order.contractId)
 
     order.balance = PZLinuxLoadBankBalance(playerObj)
     return order
