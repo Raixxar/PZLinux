@@ -1428,14 +1428,25 @@ local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
         local vehicles = manager and manager.getVehicles and manager:getVehicles() or nil
         if not vehicles then return nil end
 
+        -- While the vehicle scan above was broken, every retry that failed to
+        -- find the already-delivered vehicle spawned a brand new one instead,
+        -- stacking duplicates. Keep only the first (canonical) match and clean
+        -- up any extras so a save affected by that bug self-heals, and so a
+        -- future regression can never stack free vehicles again.
+        local canonical
         for index = 0, vehicles:size() - 1 do
             local vehicle = vehicles:get(index)
             local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
             if data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId) then
-                return vehicle
+                if not canonical then
+                    canonical = vehicle
+                elseif PZLinuxContractsRemoveWorldEntity then
+                    print("[PZLinux Vehicle] removed duplicate delivery=" .. tostring(deliveryId))
+                    PZLinuxContractsRemoveWorldEntity(vehicle)
+                end
             end
         end
-        return nil
+        return canonical
     end)
     if not ok then
         print("[PZLinux Vehicle] delivered-vehicle scan failed: " .. tostring(found))

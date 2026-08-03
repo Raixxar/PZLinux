@@ -57,6 +57,14 @@
   utilisent maintenant `VehicleManager.instance:getVehicles()`, qui renvoie
   une vraie `ArrayList` et est deja utilise ailleurs dans ce fichier pour
   l'identifiant reseau du vehicule.
+- Requests (vehicule) : tant que la recherche ci-dessus echouait, chaque
+  relance (toutes les 5 secondes) qui ne retrouvait pas le vehicule deja
+  livre en spawnait un nouveau, empilant des doublons identiques. La
+  recherche retire desormais explicitement tout doublon partageant le meme
+  `PZLinuxRequestVehicleDeliveryId` et ne garde que le premier, sur le meme
+  principe que le nettoyage des doublons Manhunt. Une sauvegarde deja
+  affectee se corrige toute seule au prochain sondage tant que la livraison
+  est encore en attente.
 - Manhunt : la depouille de la cible decapitee est maintenant retiree cote
   client via un broadcast `PZLinuxContractDeadBodyRemoved`, comme cela se
   faisait deja pour les zombies captures. Le corps ne restait visible que
