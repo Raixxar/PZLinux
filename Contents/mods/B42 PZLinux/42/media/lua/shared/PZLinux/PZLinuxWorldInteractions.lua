@@ -216,6 +216,16 @@ function PZLinuxFindZombie(ref)
     return nil
 end
 
+function PZLinuxRemoveReplicatedDeadBody(ref)
+    local body = PZLinuxFindDeadBody(ref)
+    if not body then return false end
+
+    local square = body.getSquare and body:getSquare() or nil
+    if body.removeFromWorld then body:removeFromWorld() end
+    if square and body.removeFromSquare then body:removeFromSquare() end
+    return true
+end
+
 function PZLinuxRemoveReplicatedZombie(ref)
     local zombie = PZLinuxFindZombie(ref)
     if not zombie then return false end

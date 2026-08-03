@@ -311,6 +311,9 @@ local function PZLinuxServerContractWorldEvent(player, args)
         if result and result.ok and args and args.event == "capture" then
             PZLinuxServerBroadcast("PZLinuxContractZombieRemoved", { target = args.target })
         end
+        if result and result.ok and args and args.event == "decapitate" then
+            PZLinuxServerBroadcast("PZLinuxContractDeadBodyRemoved", { target = args.target })
+        end
         return result
     end)
 end

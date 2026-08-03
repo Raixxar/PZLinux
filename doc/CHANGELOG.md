@@ -22,6 +22,16 @@
 - Contrats monde : une exception serveur renvoie maintenant `server_exception`
   au client et laisse une trace explicite, au lieu de provoquer des retries
   silencieux susceptibles de dupliquer un objectif.
+- Contrats monde : le detail de l'exception serveur (`errorDetail`) est
+  desormais transmis au client afin de diagnostiquer les echecs sans acces
+  aux logs serveur.
+- Manhunt : le test d'existence de `NetworkZombieAI.extraUpdate` hors du
+  `pcall` faisait planter `spawnManhunt` sur les versions de B42 ou cette
+  methode n'existe pas. L'appel est desormais entierement protege.
+- Manhunt : la depouille de la cible decapitee est maintenant retiree cote
+  client via un broadcast `PZLinuxContractDeadBodyRemoved`, comme cela se
+  faisait deja pour les zombies captures. Le corps ne restait visible que
+  parce que sa suppression serveur n'etait jamais synchronisee.
 
 All notable changes to PZLinux are documented in this file. Pre-1.0 entries are
 preserved as historical notes and may describe systems replaced by 1.0.0.

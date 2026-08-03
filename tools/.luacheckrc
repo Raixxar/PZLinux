@@ -140,6 +140,7 @@ globals = {
     "PZLinuxFormatIRCName",
     "PZLinuxFormatText",
     "PZLinuxRemoveReplicatedZombie",
+    "PZLinuxRemoveReplicatedDeadBody",
     "PZLinuxIsPlayerNearPosition",
     "PZLinuxValidateWorldInteraction",
     "PZLinuxGetAtmState",

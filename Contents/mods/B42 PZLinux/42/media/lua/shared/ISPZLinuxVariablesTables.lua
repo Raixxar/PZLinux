@@ -1114,6 +1114,10 @@ if Events and Events.OnServerCommand then
             PZLinuxRemoveReplicatedZombie(args and args.target)
             return
         end
+        if command == "PZLinuxContractDeadBodyRemoved" then
+            PZLinuxRemoveReplicatedDeadBody(args and args.target)
+            return
+        end
         if command == "PZLinuxBankSync"
         or command == "PZLinuxBankDebitResult"
         or command == "PZLinuxAtmSyncResult"

@@ -554,7 +554,7 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
 
 - [x] 1 - Kill zombies.
 - [x] 2 - Retrieve the package : recuperation, expedition et paiement valides en MP.
-- [ ] 3 - Eliminate the target : cible serveur de nouveau assise et immobilisee,
+- [x] 3 - Eliminate the target : cible serveur de nouveau assise et immobilisee,
   recherche de case libre elargie. La cible v3 utilise en priorite le helper natif
   `addZombieSitting`, puis deux methodes de repli. Les tests B42.20 MP ont montre
   qu'une cible visible peut conserver `onlineId=-1` : elle est donc reconnue par
