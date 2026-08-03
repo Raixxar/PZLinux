@@ -67,19 +67,20 @@ local function PZLinuxRequestWaitForSupplier(playerObj, delaySeconds)
         end)
     end)
 
+    local tickEvent = Events.OnTickEvenPaused or Events.OnTick
     local pump
     pump = function()
         if coroutine.status(co) == "dead" then
-            (Events.OnTickEvenPaused or Events.OnTick).Remove(pump)
+            tickEvent.Remove(pump)
             return
         end
         local ok, err = coroutine.resume(co)
         if not ok then
             print("[PZLinux Request] search wait coroutine error: " .. tostring(err))
-            (Events.OnTickEvenPaused or Events.OnTick).Remove(pump)
+            tickEvent.Remove(pump)
         end
     end
-    (Events.OnTickEvenPaused or Events.OnTick).Add(pump)
+    tickEvent.Add(pump)
 end
 
 -- CONSTRUCTOR

@@ -2,6 +2,24 @@
 
 ## Correctifs post-1.0.0
 
+- Correctif critique : un bug de syntaxe Lua (ambiguite classique
+  `print(...)` suivi d'une ligne commencant par `(` sur la ligne suivante,
+  interprete par Lua comme un appel de fonction chaine plutot que deux
+  instructions distinctes) dans `PZLinuxRequestWaitForSupplier`
+  (`PZLinuxRequest.lua`, feature de recherche de fournisseur ajoutee
+  precedemment) rendait tout le fichier invalide au chargement, cassant
+  entierement l'envoi de Requests ("Send Requests ne marche plus", crash
+  `Object tried to call nil in update` sur `ISPZLinuxAction.lua:52`). Corrige
+  en extrayant l'evenement de tick dans une variable locale unique. Le
+  nouveau fichier `PZLinuxSell.lua` n'etait pas en cause. Par la meme
+  occasion, `tools/check_lua_syntax.sh` a ete corrige : son resume final ne
+  refletait que les avertissements `luacheck` (qui sort toujours en erreur
+  des qu'il y a un avertissement cosmetique, meme sans vrai probleme) et
+  masquait silencieusement les echecs de parsing `luac5.1 -p`, qui s'affichaient
+  bien dans la sortie mais n'etaient jamais comptes ni pris en compte pour le
+  code de sortie du script. Le script compte et affiche desormais
+  explicitement `luac5.1 parse errors: N` et ne fait echouer le gate que sur
+  ce compteur.
 - Nouvelle feature "Sell Surplus" (l'inverse de Requests), compatible
   solo/MP : une fois par jour de jeu, 15 % de chance qu'un acheteur recherche
   exactement une des 13 categories de Requests (vehicule exclu). Le joueur
