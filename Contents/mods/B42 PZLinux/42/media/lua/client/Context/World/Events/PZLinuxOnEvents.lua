@@ -127,6 +127,7 @@ local function checkAndSpawnZombie(player)
                 else
                     print("[PZLinux Manhunt][client] restore failed: "
                         .. tostring(result and result.error or "no_server_response")
+                        .. " detail=" .. tostring(result and result.errorDetail or "")
                         .. " active=" .. tostring(modData.PZLinuxActiveContract)
                         .. " flag=" .. tostring(modData.PZLinuxContractManhunt)
                         .. " worldContract=" .. tostring(modData.PZLinuxContractId))

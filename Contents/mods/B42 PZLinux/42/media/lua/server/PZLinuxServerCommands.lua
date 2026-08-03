@@ -303,6 +303,7 @@ local function PZLinuxServerContractWorldEvent(player, args)
             return {
                 ok = false,
                 error = "server_exception",
+                errorDetail = tostring(result),
                 event = eventName,
                 requestId = requestId,
             }
