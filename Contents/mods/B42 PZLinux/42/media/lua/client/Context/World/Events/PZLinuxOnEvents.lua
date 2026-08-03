@@ -149,14 +149,18 @@ local PZLinuxVehicleSpawnRequests = {}
 local PZLinuxVehicleDeliveryState = {}
 
 local function PZLinuxFindVisibleDeliveredVehicle(vehicleId, deliveryId)
-    if not getCell then return nil end
     local expectedVehicleId = tonumber(vehicleId)
     local expectedDeliveryId = tostring(deliveryId or "")
     local canMatchVehicleId = expectedVehicleId ~= nil and expectedVehicleId >= 0
     local canMatchDeliveryId = expectedDeliveryId ~= ""
     if not canMatchVehicleId and not canMatchDeliveryId then return nil end
 
-    local vehicles = getCell():getVehicles()
+    -- IsoCell:getVehicles() returns a java.util.Set, which has no :get(index)
+    -- method (only :size(), hence the intermittent "tried to call nil" errors).
+    -- VehicleManager.instance:getVehicles() returns a proper ArrayList instead.
+    local managerClass = rawget(_G, "VehicleManager")
+    local manager = managerClass and managerClass.instance or nil
+    local vehicles = manager and manager.getVehicles and manager:getVehicles() or nil
     if not vehicles then return nil end
     for index = 0, vehicles:size() - 1 do
         local vehicle = vehicles:get(index)

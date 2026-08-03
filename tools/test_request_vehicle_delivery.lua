@@ -57,6 +57,7 @@ IsoDirections = { S = 4 }
 ZombRand = function(minimum) return minimum end
 
 VehicleManager = { instance = {} }
+function VehicleManager.instance.getVehicles(_manager) return vehicles end
 function VehicleManager.instance.getVehicleByID(_manager, vehicleId)
     for index = 0, vehicles:size() - 1 do
         local vehicle = vehicles:get(index)

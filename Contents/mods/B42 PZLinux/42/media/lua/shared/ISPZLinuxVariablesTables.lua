@@ -1416,10 +1416,16 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
 end
 
 local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
-    if not deliveryId or deliveryId == "" or not getCell then return nil end
+    if not deliveryId or deliveryId == "" then return nil end
 
     local ok, found = pcall(function()
-        local vehicles = getCell():getVehicles()
+        -- IsoCell:getVehicles() returns a java.util.Set, which has no :get(index)
+        -- method (only :size(), hence the intermittent "tried to call nil"
+        -- crashes). VehicleManager.instance:getVehicles() returns a proper
+        -- ArrayList that supports indexed access.
+        local managerClass = rawget(_G, "VehicleManager")
+        local manager = managerClass and managerClass.instance or nil
+        local vehicles = manager and manager.getVehicles and manager:getVehicles() or nil
         if not vehicles then return nil end
 
         for index = 0, vehicles:size() - 1 do

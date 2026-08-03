@@ -49,6 +49,14 @@
 - Requests : `PZLinuxRequestsFindDeliveredVehicle` protege desormais son
   parcours de la liste des vehicules avec un `pcall` par mesure de securite
   supplementaire.
+- Requests (vehicule) : cause reelle du "tried to call nil" identifiee dans le
+  bytecode Java du jeu (`projectzomboid.jar`) : `IsoCell:getVehicles()` renvoie
+  un `java.util.Set`, qui n'a pas de methode `:get(index)` (seulement
+  `:size()`, d'ou l'echec systematique une fois entre dans la boucle). Les
+  deux fonctions de recherche de vehicule livre (cote serveur et cote client)
+  utilisent maintenant `VehicleManager.instance:getVehicles()`, qui renvoie
+  une vraie `ArrayList` et est deja utilise ailleurs dans ce fichier pour
+  l'identifiant reseau du vehicule.
 - Manhunt : la depouille de la cible decapitee est maintenant retiree cote
   client via un broadcast `PZLinuxContractDeadBodyRemoved`, comme cela se
   faisait deja pour les zombies captures. Le corps ne restait visible que
