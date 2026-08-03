@@ -3618,9 +3618,44 @@ end
 function PZLinuxContractsGetPlayerWorldRecord(player, expectedContractId)
     local playerObj = PZLinuxGetPlayer(player)
     local modData = playerObj and playerObj:getModData()
-    local record = modData and PZLinuxContractsGetWorldContract(modData.PZLinuxContractId) or nil
-    if not record or tonumber(record.contractId) ~= tonumber(expectedContractId) then return nil end
-    if record.status == "completed" or record.status == "cancelled" then return nil end
+    if not playerObj or not modData then return nil end
+
+    local worldData = PZLinuxContractsGetWorldData()
+    local playerKey = PZLinuxGetPlayerKey(playerObj)
+    local expectedId = tonumber(expectedContractId)
+    local function isOwnedActiveRecord(candidate)
+        if not candidate or tonumber(candidate.contractId) ~= expectedId then return false end
+        if candidate.status == "completed" or candidate.status == "cancelled" then return false end
+        local acceptedBy = tostring(candidate.acceptedBy or candidate.owner or "")
+        return acceptedBy == playerKey
+    end
+
+    local requestedId = tostring(modData.PZLinuxContractId or "")
+    local record = worldData.active[requestedId]
+    if not isOwnedActiveRecord(record) then
+        local indexedId = tostring(worldData.byPlayer[playerKey] or "")
+        record = worldData.active[indexedId]
+    end
+    if not isOwnedActiveRecord(record) then
+        record = nil
+        for _, candidate in pairs(worldData.active) do
+            if isOwnedActiveRecord(candidate)
+            and (not record or (tonumber(candidate.acceptedHour) or 0) > (tonumber(record.acceptedHour) or 0)) then
+                record = candidate
+            end
+        end
+    end
+    if not record then return nil end
+
+    if requestedId ~= tostring(record.id) or worldData.byPlayer[playerKey] ~= record.id then
+        print("[PZLinux Contracts][server] repaired active contract index player="
+            .. tostring(playerKey)
+            .. " requested=" .. tostring(requestedId)
+            .. " canonical=" .. tostring(record.id))
+        worldData.byPlayer[playerKey] = record.id
+        PZLinuxContractsTransmitWorldData()
+        PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record)
+    end
     return record
 end
 

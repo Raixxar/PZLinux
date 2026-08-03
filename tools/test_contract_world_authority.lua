@@ -167,6 +167,13 @@ PZLinuxTestAssert(replicatedRemoval and replicatedRemoval:find("setUseless")
     "replicated capture removal must neutralize and remove the local zombie")
 PZLinuxTestAssert(variables:find("modData%.PZLinuxActiveContract = PZLinuxContractsCanonicalActiveState%(record%.status%)"),
     "active contract state must be rebuilt from the persistent server record")
+local playerRecordResolver = variables:match("function PZLinuxContractsGetPlayerWorldRecord.-\nend")
+PZLinuxTestAssert(playerRecordResolver
+    and playerRecordResolver:find("worldData%.byPlayer%[playerKey%]")
+    and playerRecordResolver:find("candidate%.acceptedBy or candidate%.owner")
+    and playerRecordResolver:find("PZLinuxContractsSyncWorldRecordToPlayer%(playerObj, record%)")
+    and playerRecordResolver:find("tonumber%(candidate%.contractId%) ~= expectedId"),
+    "server world events must repair stale player indexes from an owned canonical contract")
 PZLinuxTestAssert(variables:find("PZLinuxContractsUpdateKillNote%(playerObj, record%)"),
     "server kill accounting must synchronize the persistent contract note")
 PZLinuxTestAssert(variables:find('PZLinuxContractsTagEntity%(note, record%.id, "contract_note"%)'),

@@ -216,6 +216,8 @@ Modules partages deja extraits :
 - Location, Z, cible, item, quantite, reward et note sont generes cote serveur.
 - Les objectifs monde utilisent `PZLinuxContractId`, un statut global et des tags
   persistants lorsque l'API de l'entite le permet.
+- La resolution d'un contrat actif repare les index joueur obsoletes uniquement
+  depuis un enregistrement serveur canonique du bon type et accepte par ce joueur.
 - Cargo, Manhunt, Blood, Capture et Protect resolvent une entite reelle cote
   serveur avant mutation.
 - Manhunt utilise un rayon d'activation partage et configurable de 80 cases. Le

@@ -8,6 +8,9 @@
 - Manhunt : suppression du blocage client silencieux lorsque la case exacte de
   la cible n'est pas encore presente. Le serveur recoit la demande et les essais
   reprennent automatiquement toutes les cinq secondes jusqu'au chargement.
+- Contrats : le serveur repare un identifiant joueur obsolete depuis son registre
+  canonique `byPlayer` ou le dernier contrat actif accepte par ce meme joueur.
+  Le type, le proprietaire et le statut restent controles cote serveur.
 
 All notable changes to PZLinux are documented in this file. Pre-1.0 entries are
 preserved as historical notes and may describe systems replaced by 1.0.0.
