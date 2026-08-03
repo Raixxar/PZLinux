@@ -4,6 +4,13 @@ local function PZLinuxDebugHasAdminAccess(playerObj)
     return accessLevel == "admin" or accessLevel == "administrator"
 end
 
+local function PZLinuxDebugCanUseMenu(playerObj)
+    if isClient and isClient() then
+        return PZLinuxDebugHasAdminAccess(playerObj)
+    end
+    return isDebugEnabled and isDebugEnabled()
+end
+
 local function PZLinuxDebugForceContract(player, contractId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return end
@@ -19,7 +26,7 @@ end
 
 local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
     local playerObj = PZLinuxGetPlayer(player)
-    if not PZLinuxDebugHasAdminAccess(playerObj) then return end
+    if not playerObj or not PZLinuxDebugCanUseMenu(playerObj) then return end
 
     local adminOption = context:addOption("PZLinux Admin")
     local adminMenu = ISContextMenu:getNew(context)

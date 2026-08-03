@@ -2590,14 +2590,14 @@ function PZLinuxContractsMarkWorldContract(contractWorldId, status, player)
     return record
 end
 
-function PZLinuxContractsTagEntity(entity, contractWorldId, objectiveType)
+function PZLinuxContractsTagEntity(entity, contractWorldId, objectiveType, transmit)
     if not entity or not contractWorldId then return end
     if entity.getModData then
         local data = entity:getModData()
         data.PZLinuxContractId = contractWorldId
         data.PZLinuxContractObjective = objectiveType or ""
     end
-    if entity.transmitModData then
+    if transmit ~= false and entity.transmitModData then
         entity:transmitModData()
     end
 end
@@ -3331,18 +3331,19 @@ local function PZLinuxContractsGetZombieOnlineId(zombie)
     return tonumber(zombie.OnlineID) or -1
 end
 
-local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit)
+local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit, prepareReplication)
     if not zombie then return false end
     local data = zombie:getModData()
     data.PZLinuxManhuntVersion = PZLinuxManhuntTargetVersion
     if zombie.setTarget then zombie:setTarget(nil) end
-    if zombie.setUseless then zombie:setUseless(true) end
+    -- A useless server zombie is removed from B42's population replication before
+    -- clients receive it. The client neutralizes it only after it becomes visible.
+    if prepareReplication ~= false and zombie.setUseless then zombie:setUseless(false) end
     if zombie.setCanWalk then zombie:setCanWalk(false) end
     if zombie.setAlwaysKnockedDown then zombie:setAlwaysKnockedDown(true) end
     if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
     if zombie.resetModelNextFrame then zombie:resetModelNextFrame() end
     if transmit ~= false then
-        if zombie.transmitModData then zombie:transmitModData() end
         local networkAI = zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
         if networkAI and networkAI.extraUpdate then networkAI:extraUpdate() end
     end
@@ -3403,7 +3404,7 @@ function PZLinuxContractsSpawnZombieAt(x, y, z, contractWorldId, objectiveType)
     if zombie.isExistInTheWorld and not zombie:isExistInTheWorld() and zombie.addToWorld then
         zombie:addToWorld()
     end
-    PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie")
+    PZLinuxContractsTagEntity(zombie, contractWorldId, objectiveType or "zombie", objectiveType ~= "manhunt")
     if objectiveType == "manhunt" then
         PZLinuxContractsConfigureManhuntZombie(zombie)
     end
@@ -3452,7 +3453,7 @@ local function PZLinuxContractsEnsureManhuntZombie(record)
     if runtimeTarget
     and (not runtimeTarget.isDead or not runtimeTarget:isDead())
     and runtimeTarget.getSquare and runtimeTarget:getSquare() then
-        PZLinuxContractsTagEntity(runtimeTarget, record.id, "manhunt")
+        PZLinuxContractsTagEntity(runtimeTarget, record.id, "manhunt", false)
         PZLinuxContractsConfigureManhuntZombie(runtimeTarget)
         return true, 0, runtimeTarget:getX(), runtimeTarget:getY(), runtimeTarget:getZ(),
             PZLinuxContractsGetZombieOnlineId(runtimeTarget)
@@ -3522,7 +3523,7 @@ function PZLinuxContractsMaintainManhuntTargets()
         or not zombie.getSquare or not zombie:getSquare() then
             PZLinux.ManhuntTargets[contractWorldId] = nil
         else
-            PZLinuxContractsConfigureManhuntZombie(zombie, false)
+            PZLinuxContractsConfigureManhuntZombie(zombie, false, false)
         end
     end
 end

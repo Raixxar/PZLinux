@@ -31,6 +31,7 @@ read_globals = {
     "getWorld",
     "HaloTextHelper",
     "isClient",
+    "isDebugEnabled",
     "instanceof",
     "InventoryItemFactory",
     "ISBaseTimedAction",

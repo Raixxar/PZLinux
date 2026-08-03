@@ -105,6 +105,13 @@ local function checkAndSpawnZombie(player)
             return
         end
         if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxManhuntSpawnRequests, player, 5) then
+            print("[PZLinux Manhunt][client] requesting target"
+                .. " active=" .. tostring(modData.PZLinuxActiveContract)
+                .. " type=" .. tostring(modData.PZLinuxContractTypeId)
+                .. " status=" .. tostring(modData.PZLinuxContractWorldStatus)
+                .. " contract=" .. tostring(modData.PZLinuxContractId)
+                .. " player=" .. tostring(math.floor(player:getX())) .. "," .. tostring(math.floor(player:getY()))
+                .. " target=" .. tostring(x) .. "," .. tostring(y) .. "," .. tostring(z))
             PZLinuxRequestContractWorldEvent(player, "spawnManhunt", {}, function(result)
                 if result and result.ok then
                     PZLinuxManhuntTargetState[playerKey] = {

@@ -474,7 +474,7 @@ end)
 local PZLinuxServerManhuntMaintenanceTicks = 0
 Events.OnTick.Add(function()
     PZLinuxServerManhuntMaintenanceTicks = PZLinuxServerManhuntMaintenanceTicks + 1
-    if PZLinuxServerManhuntMaintenanceTicks < 30 then return end
+    if PZLinuxServerManhuntMaintenanceTicks < 5 then return end
     PZLinuxServerManhuntMaintenanceTicks = 0
     PZLinuxContractsMaintainManhuntTargets()
 end)

@@ -243,9 +243,11 @@ PZLinuxTestAssert(serverCommands:find(
 local debugMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextDebug.lua")
 PZLinuxTestAssert(debugMenu:find("local function PZLinuxDebugForceContract%(player, contractId%)")
     and debugMenu:find("PZLinuxDebugHasAdminAccess")
+    and debugMenu:find("isDebugEnabled and isDebugEnabled%(%)")
+    and debugMenu:find("if isClient and isClient%(%) then")
     and debugMenu:find("PZLinuxRequestAdminForceContract")
     and debugMenu:find("Force contract on board", 1, true),
-    "administrators must have an in-game menu for selecting a contract to test")
+    "MP administrators and solo debug sessions must have a contract test menu")
 local initialiseBlock = contractsUi:match("function contractsUI:initialise.-\nend\n\nfunction contractsUI:onCancelContract")
 PZLinuxTestAssert(initialiseBlock and initialiseBlock:find("PZLinuxRequestContractSync"),
     "opening the contracts UI must synchronize with the server before rendering")

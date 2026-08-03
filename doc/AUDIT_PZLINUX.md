@@ -558,7 +558,8 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
   seconde meme si le joueur s'arrete apres son arrivee sur place. A la mort, le
   serveur memorise la position de la cible afin que la decapitation reste valide
   meme si les tags ne sont pas recopies sur le cadavre en MP ;
-  la cible v4 est desormais passive cote serveur et client, conservee dans un
+  la cible v4 reste repliquee et immobilisee cote serveur, puis devient passive
+  seulement apres son apparition cote client. Elle est conservee dans un
   registre runtime pour stopper les respawns, et son statut `target_down` est
   synchronise explicitement pour afficher l'action de decoupe. Les anciennes
   cibles v3 et leurs doublons sont remplaces lors de la restauration ; re-test
@@ -574,7 +575,8 @@ Progression fonctionnelle des contrats en MP : **11/12 valides**.
   board` permet a un administrateur de placer l'un des 12 contrats en tete du
   tableau partage. La commande est validee cote serveur, prefixee, idempotente et
   refusee aux joueurs ordinaires. Le contrat force reste disponible jusqu'a son
-  acceptation ou au prochain renouvellement normal du tableau.
+  acceptation ou au prochain renouvellement normal du tableau. En solo, ce menu
+  est strictement masque sauf lorsque le jeu est lance avec `-debug`.
 - [x] 8 - Protect the building.
 - [x] 9 - Send medical equipment.
 - [x] 10 - Send weapons.

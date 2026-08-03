@@ -132,10 +132,12 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
 - Made Manhunt corpse validation independent from unreliable corpse ModData in
   multiplayer: the server records the canonical target death position and only
   accepts a zombie body at that position while the contract is `target_down`.
-- Migrated Manhunt targets to passive v4 actors maintained by the server and
-  client. A runtime canonical reference prevents repeated recovery requests from
-  spawning duplicates, while the synchronized `target_down` status and a wider
-  corpse scan restore the decapitation context action in multiplayer.
+- Migrated Manhunt targets to v4 actors kept replicated and immobile by the
+  server, then made passive only after becoming visible to the client. Their
+  ModData is no longer sent before B42 registers the moving object. A runtime
+  canonical reference prevents repeated recovery requests from spawning
+  duplicates, while the synchronized `target_down` status and a wider corpse
+  scan restore the decapitation context action in multiplayer.
 - Restricted package-context diagnostics to package contracts so Manhunt right
   clicks no longer flood the client log with misleading `option missing` lines.
 - Added a once-per-second world-objective recovery poll for Manhunt, Cargo,
@@ -143,7 +145,8 @@ preserved as historical notes and may describe systems replaced by 1.0.0.
   requesting creation, and retries continue even after the player stops moving.
 - Added an administrator-only context menu for forcing any of the 12 contracts
   onto the shared board. The server validates access, keeps the forced offer
-  available for testing and removes it normally when a player accepts it.
+  available for testing and removes it normally when a player accepts it. Solo
+  players only receive this menu when the game is launched with `-debug`.
 - Migrated requested vehicle delivery to the positioned B42 vehicle-spawn API,
   with canonical model/location/proximity checks, nearby free-square selection,
   synchronized key rollback on failure and throttled client retry requests.
