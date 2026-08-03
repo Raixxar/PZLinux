@@ -104,7 +104,7 @@ function MailBoxUI:onSendTakePackage()
     if not playerObj then return end
 
     self.loginButton:setEnable(false)
-    local pendingActions = 4
+    local pendingActions = 5
     local function PZLinuxMailBoxActionFinished()
         pendingActions = pendingActions - 1
         if pendingActions <= 0 then self:refreshActionState() end
@@ -143,6 +143,20 @@ function MailBoxUI:onSendTakePackage()
             HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Request package delivered")
+        end
+        PZLinuxMailBoxActionFinished()
+    end)
+
+    PZLinuxRequestSellConfirmDrop(playerObj, self.mailbox, function(result)
+        if result and result.ok == false then
+            HaloTextHelper.addBadText(playerObj, "Sell surplus failed: " .. tostring(result.error or "unknown error"))
+        elseif result and result.ok and result.sold and result.sold > 0 then
+            saveAtmBalance(result.balance, playerObj)
+            if result.greatDeal then
+                HaloTextHelper.addGoodText(playerObj, "Great deal! $" .. tostring(result.total) .. " for your surplus")
+            else
+                HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.total) .. " for your surplus")
+            end
         end
         PZLinuxMailBoxActionFinished()
     end)

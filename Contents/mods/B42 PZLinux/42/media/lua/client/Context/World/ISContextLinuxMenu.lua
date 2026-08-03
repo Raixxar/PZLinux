@@ -148,7 +148,7 @@ function linuxUI:initialise()
     self.walletButton:initialise()
     self.topBar:addChild(self.walletButton)
 
-    self.hackingIdButton = ISButton:new(self.width * 0.20, self.height * 0.35, self.width * 0.05, self.height * 0.025, "HACK AN ID CARD", self, self.onHackingId)
+    self.hackingIdButton = ISButton:new(self.width * 0.20, self.height * 0.35, self.width * 0.05, self.height * 0.025, "HACK A CREDIT CARD", self, self.onHackingId)
     self.hackingIdButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.hackingIdButton.textColor = {r=0, g=1, b=0, a=1}
     self.hackingIdButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -203,6 +203,14 @@ function linuxUI:initialise()
     self.conditionButton:setVisible(false)
     self.conditionButton:initialise()
     self.topBar:addChild(self.conditionButton)
+
+    self.sellButton = ISButton:new(self.width * 0.20, self.height * 0.56, self.width * 0.05, self.height * 0.025, "SELL SURPLUS", self, self.onSell)
+    self.sellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.sellButton.textColor = {r=0, g=1, b=0, a=1}
+    self.sellButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.sellButton:setVisible(false)
+    self.sellButton:initialise()
+    self.topBar:addChild(self.sellButton)
 end
 
 -- CLOSE
@@ -333,6 +341,7 @@ function linuxUI:onPrompt()
     self.mailButton:setVisible(true)
     self.reputationButton:setVisible(true)
     self.conditionButton:setVisible(true)
+    self.sellButton:setVisible(true)
 end
 
 function linuxUI:onInternet()
@@ -484,6 +493,20 @@ function linuxUI:onCondition()
     local modData = PZLinuxGetModData(self.player)
     if not modData then return end
     modData.PZLinuxUIOpenMenu = 20
+end
+
+function linuxUI:onSell()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
+        modData.PZLinuxUIOpenMenu = 12
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
 end
 
 function linuxUI:onConnect()

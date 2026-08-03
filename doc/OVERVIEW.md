@@ -26,7 +26,7 @@ contracts, order supplies and vehicles, and receive jobs through mailboxes.
 
 [h2]Hacking[/h2]
 
-Use ID cards found on zombies to attempt bank account hacks. Passwords, consumed
+Use credit cards found on zombies to attempt bank account hacks. Passwords, consumed
 cards and rewards are validated by the server in multiplayer.
 
 [h2]Online Betting[/h2]

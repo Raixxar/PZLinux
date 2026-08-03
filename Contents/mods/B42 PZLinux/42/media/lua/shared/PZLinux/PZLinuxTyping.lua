@@ -21,12 +21,37 @@ local function PZLinuxTypingCharacters(value)
     return characters
 end
 
+-- A virtual clock that advances with real time at normal/paused speed, but
+-- faster than real time when the player fast-forwards (getGameSpeed() > 1).
+-- Using wall-clock time directly kept every dialogue/typing delay stuck at
+-- real-time pace regardless of game speed; using world age directly would
+-- instead freeze every dialogue while the game is paused, since world time
+-- does not advance then. Accumulating real-time deltas scaled by the current
+-- speed gets both right with a single clock.
+local PZLinuxTypingVirtualClockMs = 0
+local PZLinuxTypingLastRealMs = nil
+
 local function PZLinuxTypingNowMs()
     local timestampProvider = rawget(_G, "getTimestampMs")
-    if timestampProvider then
-        return tonumber(timestampProvider()) or 0
+    local nowReal = timestampProvider and tonumber(timestampProvider()) or nil
+    if not nowReal then
+        return math.ceil(getGameTime():getWorldAgeHours() * 3600000)
     end
-    return math.ceil(getGameTime():getWorldAgeHours() * 3600000)
+
+    if not PZLinuxTypingLastRealMs then
+        PZLinuxTypingLastRealMs = nowReal
+        return PZLinuxTypingVirtualClockMs
+    end
+
+    local deltaReal = nowReal - PZLinuxTypingLastRealMs
+    PZLinuxTypingLastRealMs = nowReal
+    if deltaReal > 0 then
+        local speedProvider = rawget(_G, "getGameSpeed")
+        local speed = speedProvider and tonumber(speedProvider()) or 1
+        if not speed or speed <= 0 then speed = 1 end
+        PZLinuxTypingVirtualClockMs = PZLinuxTypingVirtualClockMs + deltaReal * speed
+    end
+    return PZLinuxTypingVirtualClockMs
 end
 
 local PZLinuxTypingProfiles = {

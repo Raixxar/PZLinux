@@ -2,6 +2,39 @@
 
 ## Correctifs post-1.0.0
 
+- Nouvelle feature "Sell Surplus" (l'inverse de Requests), compatible
+  solo/MP : une fois par jour de jeu, 15 % de chance qu'un acheteur recherche
+  exactement une des 13 categories de Requests (vehicule exclu). Le joueur
+  choisit jusqu'a 6 objets a vendre depuis l'interface ordinateur; le prix
+  (50 % du prix de reference, avec 10 % de chance de tomber sur un gros
+  acheteur payant 110-130 % du prix normal) est tire et fige immediatement
+  cote serveur des la demande de devis, avant meme que le joueur ne se rende
+  a une boite aux lettres pour deposer les objets et finaliser la vente. Toute
+  la logique (tirage quotidien, devis, retrait d'inventaire, credit bancaire)
+  est autoritaire cote serveur; le client ne fait que proposer une intention.
+  Voir `PZLinux.Config.Sell` dans `PZLinuxConfig.lua` et
+  `tools/test_sell_surplus.lua`.
+- Hacking : retrait des cartes d'identite (`Base.IDcard`, `Base.IDcard_Stolen`,
+  `Base.IDcard_Female`, `Base.IDcard_Male`) de `PZLinuxHackingCardTypes`. Seules
+  les cartes de credit (`Base.CreditCard`, `Base.CreditCard_Stolen`, deja plus
+  rares en jeu) permettent desormais de lancer un hack, ce qui est plus
+  coherent avec le monde reel qu'un piratage de carte d'identite. Textes UI et
+  documentation (`OVERVIEW.md`, `FAQ.md`) mis a jour en consequence.
+- Requests (objets) : nouvelle etape de "recherche de fournisseur" apres le
+  paiement d'une commande d'objet. Le resultat (fournisseur trouve ou non, 40 %
+  d'echec par defaut) est tire immediatement et de facon autoritative cote
+  serveur au moment de la commande, mais seulement revele au client apres un
+  delai aleatoire de 10 a 90 secondes reelles (configurable), affiche via le
+  systeme de frappe deja accelere par la vitesse de jeu. Le tirage ne peut
+  donc jamais etre influence en fermant l'interface ou en se deconnectant,
+  puisqu'il est deja fige des la commande. En cas d'echec, le joueur est
+  rembourse integralement et un cooldown d'un jour de jeu (configurable)
+  s'applique uniquement au type d'objet concerne
+  (`PZLinuxRequestSearchCooldowns`), sans bloquer les autres types de
+  commandes. Le cooldown suit un compteur de jours de jeu ecoules (et non la
+  date calendaire affichee) pour qu'un echec juste avant minuit ne permette
+  pas de retenter deux minutes de jeu plus tard a 00h01. Voir
+  `PZLinux.Config.Requests` dans `PZLinuxConfig.lua`.
 - Manhunt : le rayon d'activation client/serveur passe a 80 cases et devient
   configurable. Une cible situee entre 50 et 80 cases n'est plus ignoree lors
   du chargement de son chunk; le rayon d'interaction final reste inchange.
@@ -71,6 +104,38 @@
   carte depuis la reponse brute. Le suivi client (`checkAndSpawnVehicle`) ne
   voyait donc jamais la demande en attente. Ces champs sont desormais
   recopies explicitement, comme les champs de contrat le sont deja.
+- Requests (vehicule) : les logs de diagnostic ajoutes pour la MP ci-dessus
+  spammaient une ligne par tick indefiniment tant qu'une livraison restait en
+  attente de confirmation visuelle (par exemple si le joueur s'eloigne du
+  vehicule deja livre). Ils sont maintenant limites a une ligne toutes les 20
+  secondes et distinguent explicitement "en attente de confirmation visuelle"
+  de "trop loin pour redemander un spawn".
+- Dialogues et frappe (`PZLinuxTyping.lua`) : tous les delais (boot, connexion,
+  dialogues de contrat, dialogues de requests) etaient mesures avec l'horloge
+  reelle (`getTimestampMs()`), independante de la vitesse de simulation. Un
+  joueur en vitesse x2/x3/x4 ne voyait donc aucune acceleration. L'horloge
+  interne accumule maintenant le temps reel ecoule multiplie par
+  `getGameSpeed()`, ce qui accelere avec la vitesse de jeu tout en continuant
+  d'avancer normalement en pause (`getGameSpeed() == 0` est traite comme 1x
+  pour ne pas geler les dialogues pendant une pause, comportement deja voulu
+  par l'usage de `Events.OnTickEvenPaused`).
+- Requests (vehicule) : une livraison ne se confirme cote serveur que si le
+  client la voit visuellement pres du joueur. Si cette confirmation n'arrivait
+  jamais (le joueur repart avec le vehicule sans jamais re-declencher le
+  sondage au bon moment, perte reseau ponctuelle), `PZLinuxOnItemRequestCar`
+  pouvait rester bloque a 1 indefiniment, empechant toute nouvelle commande
+  Request pour ce joueur. Une nouvelle tentative de commande verifie desormais
+  l'anciennete de la livraison en attente (`PZLinuxRequestVehicleOrderedHour`)
+  et l'auto-repare si elle date de plus de deux heures de jeu -- mais
+  uniquement si le vehicule a deja ete cree cote serveur (via
+  `PZLinuxRequestsFindDeliveredVehicle`). Le vehicule et sa cle ne sont crees
+  que lorsque le joueur s'approche une premiere fois du point de livraison
+  (`dist < 50` dans `checkAndSpawnVehicle`); si le joueur n'a jamais fait ce
+  trajet, rien n'existe encore et l'auto-reparation ne doit surtout pas
+  effacer le flag, sous peine de faire perdre silencieusement au joueur le
+  vehicule et la cle qu'il a deja payes, sans aucun moyen de les recuperer.
+  Un test dedie couvre les deux cas (jamais spawne -> reste bloque; deja
+  livre -> se repare).
 - Admin : nouvelle option `PZLinux Admin > Add funds to bank` (menu contextuel
   du monde) pour ajouter des fonds a son propre compte a des fins de test.
   Meme protection que "Force contract on board" : reservee a `-debug` en solo

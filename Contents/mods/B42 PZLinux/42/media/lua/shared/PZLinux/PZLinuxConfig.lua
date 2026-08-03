@@ -57,6 +57,46 @@ PZLinux.Config.UI = PZLinux.Config.UI or {
     atmStatusDelayMaxMs = 850,
 }
 
+PZLinux.Config.Requests = PZLinux.Config.Requests or {
+    searchFailureChancePercent = 40,
+    searchMinDelaySeconds = 10,
+    searchMaxDelaySeconds = 90,
+    searchCooldownGameDays = 1,
+}
+PZLinux.Config.Requests.searchFailureChancePercent =
+    tonumber(PZLinux.Config.Requests.searchFailureChancePercent) or 40
+PZLinux.Config.Requests.searchMinDelaySeconds =
+    tonumber(PZLinux.Config.Requests.searchMinDelaySeconds) or 10
+PZLinux.Config.Requests.searchMaxDelaySeconds =
+    tonumber(PZLinux.Config.Requests.searchMaxDelaySeconds) or 90
+PZLinux.Config.Requests.searchCooldownGameDays =
+    tonumber(PZLinux.Config.Requests.searchCooldownGameDays) or 1
+
+-- Sell Surplus: the inverse of Requests. Once per game day, there is a small
+-- chance a buyer wants one specific category. The base price is deliberately
+-- bad (a fraction of the normal purchase price) so this never becomes a real
+-- income source, with a rare chance of a much better one-off offer instead.
+PZLinux.Config.Sell = PZLinux.Config.Sell or {
+    demandChancePercent = 15,
+    basePricePercent = 50,
+    greatDealChancePercent = 10,
+    greatDealMinPercent = 110,
+    greatDealMaxPercent = 130,
+    maxItemsPerSale = 6,
+}
+PZLinux.Config.Sell.demandChancePercent =
+    tonumber(PZLinux.Config.Sell.demandChancePercent) or 15
+PZLinux.Config.Sell.basePricePercent =
+    tonumber(PZLinux.Config.Sell.basePricePercent) or 50
+PZLinux.Config.Sell.greatDealChancePercent =
+    tonumber(PZLinux.Config.Sell.greatDealChancePercent) or 10
+PZLinux.Config.Sell.greatDealMinPercent =
+    tonumber(PZLinux.Config.Sell.greatDealMinPercent) or 110
+PZLinux.Config.Sell.greatDealMaxPercent =
+    tonumber(PZLinux.Config.Sell.greatDealMaxPercent) or 130
+PZLinux.Config.Sell.maxItemsPerSale =
+    tonumber(PZLinux.Config.Sell.maxItemsPerSale) or 6
+
 PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {
     ranks = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" },
     suits = { "C", "D", "H", "S" },

@@ -43,6 +43,45 @@ local function PZLinuxRequestSetConversation(ui, message)
     panel:setYScroll(-maxYScroll)
 end
 
+-- Waits (game-speed aware, continues through pause, independent of whether the
+-- Request UI panel is still open) for the server-decided supplier search to
+-- become due, then reveals the already-decided outcome. The outcome cannot be
+-- changed by closing the panel or disconnecting since it was rolled up front.
+local function PZLinuxRequestWaitForSupplier(playerObj, delaySeconds)
+    local waitMs = math.max(0, tonumber(delaySeconds) or 0) * 1000
+    local co = coroutine.create(function()
+        PZLinux.Typing.wait(nil, waitMs, waitMs, 1)
+        PZLinuxRequestResolveSearch(playerObj, function(result)
+            if not result or not result.ok or not result.resolved then return end
+            if result.found then
+                HaloTextHelper.addGoodText(playerObj, PZLinuxFormatText(
+                    "IGUI_PZLinux_Request_SupplierFound",
+                    "A supplier was found. Your order is on its way to the mailbox."
+                ))
+            else
+                HaloTextHelper.addBadText(playerObj, PZLinuxFormatText(
+                    "IGUI_PZLinux_Request_SupplierNotFound",
+                    "No supplier could be found. You have been refunded."
+                ))
+            end
+        end)
+    end)
+
+    local pump
+    pump = function()
+        if coroutine.status(co) == "dead" then
+            (Events.OnTickEvenPaused or Events.OnTick).Remove(pump)
+            return
+        end
+        local ok, err = coroutine.resume(co)
+        if not ok then
+            print("[PZLinux Request] search wait coroutine error: " .. tostring(err))
+            (Events.OnTickEvenPaused or Events.OnTick).Remove(pump)
+        end
+    end
+    (Events.OnTickEvenPaused or Events.OnTick).Add(pump)
+end
+
 -- CONSTRUCTOR
 function requestUI:new(x, y, width, height, player)
     local o = ISPanel:new(x, y, width, height)
@@ -453,7 +492,16 @@ function requestUI:onYesButton(button)
     PZLinuxRequestOrder(playerObj, requestState, function(result)
         if not result or not result.ok then
             getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(getCore():getOptionSoundVolume() / 50)
-            HaloTextHelper.addBadText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_Rejected"))
+            if result and result.error == "supplier_cooldown" then
+                local daysLeft = math.max(1, math.ceil(tonumber(result.retryAfterGameDays) or 1))
+                HaloTextHelper.addBadText(playerObj, PZLinuxFormatText(
+                    "IGUI_PZLinux_Request_SupplierCooldown",
+                    "No supplier will take this order yet (try again in %s in-game day(s)).",
+                    daysLeft
+                ))
+            else
+                HaloTextHelper.addBadText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_Rejected"))
+            end
             return
         end
 
@@ -479,7 +527,15 @@ function requestUI:onYesButton(button)
         end
 
         modData.PZLinuxUIOpenMenu = 8
-        HaloTextHelper.addGoodText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_MailboxAvailable"))
+        if result.searching then
+            HaloTextHelper.addGoodText(playerObj, PZLinuxFormatText(
+                "IGUI_PZLinux_Request_SearchingSupplier",
+                "Searching for a supplier..."
+            ))
+            PZLinuxRequestWaitForSupplier(playerObj, result.revealDelaySeconds)
+        else
+            HaloTextHelper.addGoodText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_MailboxAvailable"))
+        end
     end)
 end
 

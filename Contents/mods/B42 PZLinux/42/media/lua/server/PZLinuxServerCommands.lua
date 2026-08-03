@@ -336,9 +336,44 @@ local function PZLinuxServerRequestOrder(player, args)
     end)
 end
 
+local function PZLinuxServerRequestResolveSearch(player, args)
+    PZLinuxServerProcessIdempotent(
+        player,
+        "PZLinuxRequestResolveSearch",
+        args,
+        "PZLinuxRequestResolveSearchResult",
+        function()
+            return PZLinuxRequestsResolveSearch(player, args and args.requestId)
+        end
+    )
+end
+
 local function PZLinuxServerRequestDeliver(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxRequestDeliver", args, "PZLinuxRequestDeliverResult", function()
         return PZLinuxRequestsApplyDelivery(player, args and args.mailbox, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerSellRefreshDemand(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellRefreshDemand", args, "PZLinuxSellRefreshDemandResult", function()
+        return PZLinuxSellRefreshDemand(player, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerSellRequestQuote(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellRequestQuote", args, "PZLinuxSellRequestQuoteResult", function()
+        return PZLinuxSellRequestQuote(
+            player,
+            args and args.contractId,
+            args and args.items,
+            args and args.requestId
+        )
+    end)
+end
+
+local function PZLinuxServerSellConfirmDrop(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellConfirmDrop", args, "PZLinuxSellConfirmDropResult", function()
+        return PZLinuxSellApplyConfirmDrop(player, args and args.mailbox, args and args.requestId)
     end)
 end
 
@@ -454,7 +489,11 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxContractCompletionAck = PZLinuxServerContractCompletionAck,
     PZLinuxContractWorldEvent = PZLinuxServerContractWorldEvent,
     PZLinuxRequestOrder = PZLinuxServerRequestOrder,
+    PZLinuxRequestResolveSearch = PZLinuxServerRequestResolveSearch,
     PZLinuxRequestDeliver = PZLinuxServerRequestDeliver,
+    PZLinuxSellRefreshDemand = PZLinuxServerSellRefreshDemand,
+    PZLinuxSellRequestQuote = PZLinuxServerSellRequestQuote,
+    PZLinuxSellConfirmDrop = PZLinuxServerSellConfirmDrop,
     PZLinuxMailboxState = PZLinuxServerMailboxState,
     PZLinuxReputationSnapshot = PZLinuxServerReputationSnapshot,
     PZLinuxRequestSpawnVehicle = PZLinuxServerRequestSpawnVehicle,

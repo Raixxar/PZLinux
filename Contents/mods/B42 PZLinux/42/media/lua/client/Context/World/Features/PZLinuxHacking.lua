@@ -110,7 +110,7 @@ function hackingUI:onCloseX(_button)
 end
 
 
--- ID CARD
+-- CREDIT CARD
 function hackingUI:onIdCard()
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
@@ -130,7 +130,7 @@ function hackingUI:onIdCard()
 end
 
 function hackingUI:showNoCardError()
-    self.hackLabelTitleError = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, "No ID Card or Credit Card...", 0, 1, 0, 1, UIFont.Small, true)
+    self.hackLabelTitleError = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, "No Credit Card...", 0, 1, 0, 1, UIFont.Small, true)
     self.hackLabelTitleError.backgroundColor = {r=0, g=0, b=0, a=0}
     self.hackLabelTitleError.borderColor = {r=0, g=0, b=0, a=0}
     self.hackLabelTitleError:setVisible(true)
@@ -472,7 +472,7 @@ function hackingUI:hackAuto()
 
     PZLinuxRequestHackingAuto(player, function(result)
         if not result or not result.ok then
-            HaloTextHelper.addBadText(player, "No ID Card or Credit Card...");
+            HaloTextHelper.addBadText(player, "No Credit Card...");
             return
         end
 
@@ -497,7 +497,7 @@ function hackingUI:hackNext()
 
     PZLinuxRequestHackingStart(playerObj, function(result)
         if not result or not result.ok then
-            HaloTextHelper.addBadText(playerObj, "No ID Card or Credit Card...")
+            HaloTextHelper.addBadText(playerObj, "No Credit Card...")
             return
         end
 

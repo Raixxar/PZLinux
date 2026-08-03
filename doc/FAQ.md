@@ -20,7 +20,7 @@ You can also trade with fictional companies. Stock prices are updated every hour
 
 To track your stock market activities and simplify your investment overview, the portfolio will help you. All your stocks are stored in your digital wallet where you can monitor your gains and losses.
 
-To hack an ID card. ID cards from zombies allow you to recover valuable information about bank accounts. Zombies don’t need money, so why not get rid of it! 😄
+To hack a credit card. Credit cards from zombies allow you to recover valuable information about bank accounts. Zombies don’t need money, so why not get rid of it! 😄
 
 You can also accept contracts in the form of quests or missions that will require you to complete certain tasks, varying in difficulty.
 
@@ -80,7 +80,7 @@ Your assets are grouped in your digital wallet, allowing you to track the real-t
 
 [h3]How it works ?[/h3]
 
-The hacking interface is available as long as you have an ID card. Currently, there are no restrictions for hacking an ID card. Once you have a zombie's name, you try to retrieve the balance of their bank account by hacking the central bank. Your electrical skill level gives you the chance to find more money, but that's not all; to unlock access to the account, you must find the correct code. After six attempts without finding the correct code, the account will be locked and cannot be recovered. Similar to the game Mastermind, the code helps you find the right numbers. You need to find four unique digits; This means there will never be any duplicate or triplicate numbers in the code.
+The hacking interface is available as long as you have a credit card. Currently, there are no restrictions for hacking a credit card. Once you have a zombie's name, you try to retrieve the balance of their bank account by hacking the central bank. Your electrical skill level gives you the chance to find more money, but that's not all; to unlock access to the account, you must find the correct code. After six attempts without finding the correct code, the account will be locked and cannot be recovered. Similar to the game Mastermind, the code helps you find the right numbers. You need to find four unique digits; This means there will never be any duplicate or triplicate numbers in the code.
 
 [h2]Contracts:[/h2]
 

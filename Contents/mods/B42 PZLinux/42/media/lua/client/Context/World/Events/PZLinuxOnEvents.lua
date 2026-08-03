@@ -202,6 +202,12 @@ local function PZLinuxConfirmVisibleVehicle(player, state)
     return true
 end
 
+local PZLinuxVehiclePrintThrottle = {}
+
+local function PZLinuxVehicleCanPrint(player, interval)
+    return PZLinuxCanRequestContractRestore(PZLinuxVehiclePrintThrottle, player, interval)
+end
+
 local function checkAndSpawnVehicle(player)
     if not player then return end
     local modData = player:getModData()
@@ -215,16 +221,29 @@ local function checkAndSpawnVehicle(player)
             deliveryState = nil
         end
         if PZLinuxConfirmVisibleVehicle(player, deliveryState) then return end
+        if deliveryState then
+            -- Already spawned server-side; just waiting for this client to see
+            -- it (e.g. the player drove/walked out of the loaded cell). Do not
+            -- re-request a spawn or spam every tick while this is pending.
+            if PZLinuxVehicleCanPrint(player, 20) then
+                print("[PZLinux Vehicle][client] waiting to visually confirm delivered vehicle"
+                    .. " deliveryId=" .. tostring(deliveryState.deliveryId)
+                    .. " vehicleId=" .. tostring(deliveryState.vehicleId))
+            end
+            return
+        end
         local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
         if not x or not y or not z then
-            print("[PZLinux Vehicle][client] no delivery location in modData"
-                .. " x=" .. tostring(x) .. " y=" .. tostring(y) .. " z=" .. tostring(z)
-                .. " deliveryId=" .. tostring(modData.PZLinuxRequestVehicleDeliveryId))
+            if PZLinuxVehicleCanPrint(player, 20) then
+                print("[PZLinux Vehicle][client] no delivery location in modData"
+                    .. " x=" .. tostring(x) .. " y=" .. tostring(y) .. " z=" .. tostring(z)
+                    .. " deliveryId=" .. tostring(modData.PZLinuxRequestVehicleDeliveryId))
+            end
             return
         end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
         local canRestore = PZLinuxCanRequestContractRestore(PZLinuxVehicleSpawnRequests, player, 5)
-        if dist >= 50 or not canRestore then
+        if (dist >= 50 or not canRestore) and PZLinuxVehicleCanPrint(player, 20) then
             print("[PZLinux Vehicle][client] not requesting spawn"
                 .. " dist=" .. tostring(dist) .. " canRestore=" .. tostring(canRestore)
                 .. " player=" .. tostring(math.floor(player:getX())) .. "," .. tostring(math.floor(player:getY()))
