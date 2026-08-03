@@ -3855,6 +3855,28 @@ function PZLinuxContractsResolveZombieKiller(zombie)
     return nil, "unattributed"
 end
 
+local function PZLinuxContractsResolveManhuntDeath(zombie, taggedRecord, objectiveType)
+    if taggedRecord
+    and objectiveType == "manhunt"
+    and PZLinuxContractsIsRecordStatus(taggedRecord, "spawned") then
+        return taggedRecord, "moddata"
+    end
+
+    local deadOnlineId = PZLinuxContractsGetZombieOnlineId(zombie)
+    for contractWorldId, target in pairs(PZLinux.ManhuntTargets or {}) do
+        local sameEntity = target == zombie
+        local targetOnlineId = PZLinuxContractsGetZombieOnlineId(target)
+        local sameOnlineId = deadOnlineId >= 0 and targetOnlineId == deadOnlineId
+        if sameEntity or sameOnlineId then
+            local record = PZLinuxContractsGetWorldContract(contractWorldId)
+            if record and PZLinuxContractsIsRecordStatus(record, "spawned") then
+                return record, sameEntity and "runtime_entity" or "online_id"
+            end
+        end
+    end
+    return nil, "unmatched"
+end
+
 function PZLinuxContractsApplyServerZombieDeath(zombie)
     if not zombie then return false end
     local contractWorldId = PZLinuxContractsGetEntityContractId(zombie)
@@ -3862,15 +3884,22 @@ function PZLinuxContractsApplyServerZombieDeath(zombie)
     local taggedRecord = PZLinuxContractsGetWorldContract(contractWorldId)
     local changed = false
 
-    if taggedRecord and objectiveType == "manhunt" and PZLinuxContractsIsRecordStatus(taggedRecord, "spawned") then
-        PZLinux.ManhuntTargets[tostring(taggedRecord.id)] = nil
-        taggedRecord.status = "target_down"
-        taggedRecord.targetKilled = true
-        taggedRecord.targetDeathX = zombie:getX()
-        taggedRecord.targetDeathY = zombie:getY()
-        taggedRecord.targetDeathZ = zombie:getZ()
-        taggedRecord.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or taggedRecord.updatedHour
-        PZLinuxContractsSyncRecordToParticipants(taggedRecord)
+    local manhuntRecord, manhuntSource = PZLinuxContractsResolveManhuntDeath(zombie, taggedRecord, objectiveType)
+    if manhuntRecord then
+        taggedRecord = manhuntRecord
+        objectiveType = "manhunt"
+        PZLinux.ManhuntTargets[tostring(manhuntRecord.id)] = nil
+        manhuntRecord.status = "target_down"
+        manhuntRecord.targetKilled = true
+        manhuntRecord.targetDeathX = zombie:getX()
+        manhuntRecord.targetDeathY = zombie:getY()
+        manhuntRecord.targetDeathZ = zombie:getZ()
+        manhuntRecord.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or manhuntRecord.updatedHour
+        print("[PZLinux Manhunt][server] target down contract=" .. tostring(manhuntRecord.id)
+            .. " resolvedBy=" .. tostring(manhuntSource)
+            .. " at=" .. tostring(manhuntRecord.targetDeathX) .. ","
+            .. tostring(manhuntRecord.targetDeathY) .. "," .. tostring(manhuntRecord.targetDeathZ))
+        PZLinuxContractsSyncRecordToParticipants(manhuntRecord)
         changed = true
     end
 

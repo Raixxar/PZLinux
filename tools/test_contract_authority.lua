@@ -25,7 +25,10 @@ dofile(luaRoot .. "/shared/PZLinux/PZLinuxMissionLocations.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractRequestData.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractMission.lua")
 
-local cityByContract = { [2] = 3, [3] = 3, [7] = 3, [8] = 2 }
+local cityByContract = { [2] = 3, [3] = 9, [7] = 3, [8] = 2 }
+local manhuntCityIds = PZLinuxGetMissionLocationCityIds("manhunt")
+PZLinuxTestAssert(#manhuntCityIds == 1 and manhuntCityIds[1] == 9,
+    "only the validated Muldraugh manhunt location may be selected")
 for _, definition in ipairs(PZLinuxContractDefinitions) do
     local mission, missionError = PZLinuxContractsBuildMission({
         id = definition.id,

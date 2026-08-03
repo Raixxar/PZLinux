@@ -85,6 +85,11 @@ PZLinuxTestAssert(restoreProtectBranch and restoreProtectBranch:find("10 %- %(to
     "protect recovery must only restore the number of objective kills still required")
 PZLinuxTestAssert(variables:find('record%.status == "target_down".-PZLinuxContractManhunt = 2'),
     "a killed manhunt target must remain available for corpse interaction")
+PZLinuxTestAssert(variables:find("local function PZLinuxContractsResolveManhuntDeath")
+    and variables:find("target == zombie")
+    and variables:find('return record, sameEntity and "runtime_entity" or "online_id"')
+    and variables:find("PZLinuxContractsResolveManhuntDeath%(zombie, taggedRecord, objectiveType%)"),
+    "manhunt death must resolve the canonical runtime target when B42 drops its ModData tags")
 PZLinuxTestAssert(variables:find("targetDeathX = zombie:getX%(%)")
     and variables:find("PZLinuxContractsFindManhuntRecordForBody%(body%)"),
     "manhunt decapitation must resolve the server-recorded death position when corpse tags are absent")

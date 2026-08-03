@@ -11,6 +11,11 @@
 - Contrats : le serveur repare un identifiant joueur obsolete depuis son registre
   canonique `byPlayer` ou le dernier contrat actif accepte par ce meme joueur.
   Le type, le proprietaire et le statut restent controles cote serveur.
+- Manhunt : seule la destination Muldraugh `10609,9221,0`, validee en jeu, reste
+  active. Les autres emplacements sont suspendus jusqu'a leur remplacement.
+- Manhunt : la mort est aussi reconnue depuis la cible canonique conservee par
+  le serveur lorsque B42 ne restitue pas ses tags ModData dans `OnZombieDead`.
+  Le contrat passe alors a `target_down` sans faire reapparaitre la cible.
 
 All notable changes to PZLinux are documented in this file. Pre-1.0 entries are
 preserved as historical notes and may describe systems replaced by 1.0.0.
