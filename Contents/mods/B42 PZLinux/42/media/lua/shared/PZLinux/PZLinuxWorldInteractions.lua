@@ -200,20 +200,37 @@ function PZLinuxFindDeadBody(ref)
 end
 
 function PZLinuxFindZombie(ref)
-    local x = PZLinuxReadEntityReference(ref, "zombie")
+    local x, y, z = PZLinuxReadEntityReference(ref, "zombie")
     if not x or not getCell then return nil end
-    local expectedOnlineId = tonumber(ref.onlineId)
-    if not expectedOnlineId then return nil end
 
     local zombies = getCell():getZombieList()
     if not zombies then return nil end
-    for index = 0, zombies:size() - 1 do
-        local zombie = zombies:get(index)
-        if PZLinuxGetEntityId(zombie, "getOnlineID") == expectedOnlineId then
-            return zombie
+
+    local expectedOnlineId = tonumber(ref.onlineId)
+    if expectedOnlineId and expectedOnlineId >= 0 then
+        for index = 0, zombies:size() - 1 do
+            local zombie = zombies:get(index)
+            if PZLinuxGetEntityId(zombie, "getOnlineID") == expectedOnlineId then
+                return zombie
+            end
         end
     end
-    return nil
+
+    -- Solo games never assign a valid online ID to zombies (always -1), and some
+    -- MP zombies can keep onlineId=-1 too. Fall back to the closest live zombie
+    -- near the confirmed reference position, same principle as PZLinuxFindDeadBody.
+    local closest, closestDistance
+    for index = 0, zombies:size() - 1 do
+        local zombie = zombies:get(index)
+        if (not zombie.isDead or not zombie:isDead()) and math.abs(zombie:getZ() - z) < 0.1 then
+            local distance = math.max(math.abs(zombie:getX() - x), math.abs(zombie:getY() - y))
+            if distance <= 2 and (not closestDistance or distance < closestDistance) then
+                closest = zombie
+                closestDistance = distance
+            end
+        end
+    end
+    return closest
 end
 
 function PZLinuxRemoveReplicatedDeadBody(ref)

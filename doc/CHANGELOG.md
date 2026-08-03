@@ -32,6 +32,18 @@
   client via un broadcast `PZLinuxContractDeadBodyRemoved`, comme cela se
   faisait deja pour les zombies captures. Le corps ne restait visible que
   parce que sa suppression serveur n'etait jamais synchronisee.
+- Ordinateur/Contrats/Mailbox/ATM : les timed actions a duree infinie
+  (`ISPZLinuxAction`, `ISMailBoxAction`, `ISStreetMailBoxAction`, `ISATMAction`)
+  se terminent maintenant d'elles-memes quand leur panneau se ferme sans
+  qu'un autre menu soit demande a la place (valider ou annuler un contrat,
+  deposer un colis, etc.). Avant ce correctif, le personnage restait fige
+  dans l'animation jusqu'a ce que le joueur bouge ou appuie sur echap.
+- Capturer un zombie vivant : `PZLinuxFindZombie` exigeait un `getOnlineID()`
+  valide (>= 0). En solo (et sur certains zombies MP) cet ID reste toujours a
+  -1, donc le contrat 6 echouait systematiquement en solo depuis son
+  introduction du 2026-08-01, independamment des correctifs Manhunt/MP de
+  cette session. Un repli par position confirmee (meme principe que
+  `PZLinuxFindDeadBody` et le ciblage Manhunt) corrige la capture en solo.
 
 All notable changes to PZLinux are documented in this file. Pre-1.0 entries are
 preserved as historical notes and may describe systems replaced by 1.0.0.

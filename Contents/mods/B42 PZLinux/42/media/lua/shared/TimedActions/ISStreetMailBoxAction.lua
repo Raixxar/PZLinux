@@ -11,6 +11,9 @@ end
 
 function ISStreetMailBoxAction:update()
     self.character:faceThisObject(self.item)
+    if not self.ui or self.ui.removed then
+        self:forceComplete()
+    end
 end
 
 function ISStreetMailBoxAction:start()
