@@ -27,7 +27,28 @@
   aux logs serveur.
 - Manhunt : le test d'existence de `NetworkZombieAI.extraUpdate` hors du
   `pcall` faisait planter `spawnManhunt` sur les versions de B42 ou cette
-  methode n'existe pas. L'appel est desormais entierement protege.
+  methode n'existe pas. Le `pcall` seul suffisait en MP (le serveur tourne
+  dans son propre contexte), mais en solo `spawnManhunt` s'execute de facon
+  synchrone et reentrante depuis la boucle de mise a jour du joueur
+  (`OnPlayerMove` -> `IsoPlayer.update`), et l'appel a
+  `getNetworkCharacterAI()`/`extraUpdate()` y provoquait un veritable crash
+  moteur que Kahlua ne peut pas rattraper avec `pcall`. L'appel est supprime :
+  la methode n'existe de toute facon pas sur cette version de B42 et ne
+  servait a rien.
+- Manhunt/vehicules de contrat/cargo/protect : `checkAndSpawnZombie`,
+  `checkAndSpawnVehicle`, `checkAndSpawnBox` et
+  `PZLinuxRestoreProtectContract` n'ecoutent plus `Events.OnPlayerMove`, qui
+  les appelait de facon reentrante depuis l'interieur meme de la mise a jour
+  du joueur (`IsoCell.ProcessObjects` -> `IsoPlayer.update`). C'est ce meme
+  chemin reentrant qui a fait planter la demande de vehicule de contrat en
+  solo (`PZLinuxRequestsFindDeliveredVehicle`, "tried to call nil" sur
+  `getCell():getVehicles()`). Ces quatre fonctions restent appelees pour
+  chaque joueur local via le sondage `PZLinuxPollWorldObjectiveRestores`,
+  deja present sur `Events.OnTick` et limite a une fois par seconde reelle;
+  au pire un delai d'une seconde avant reaction au lieu d'un crash.
+- Requests : `PZLinuxRequestsFindDeliveredVehicle` protege desormais son
+  parcours de la liste des vehicules avec un `pcall` par mesure de securite
+  supplementaire.
 - Manhunt : la depouille de la cible decapitee est maintenant retiree cote
   client via un broadcast `PZLinuxContractDeadBodyRemoved`, comme cela se
   faisait deja pour les zombies captures. Le corps ne restait visible que

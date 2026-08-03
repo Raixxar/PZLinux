@@ -60,18 +60,18 @@ local manhuntConfig = variables:match("local function PZLinuxContractsConfigureM
 PZLinuxTestAssert(manhuntConfig and manhuntConfig:find("zombie:setUseless%(false%)")
     and manhuntConfig:find("zombie:setCanWalk%(false%)")
     and manhuntConfig:find("zombie:setAlwaysKnockedDown%(true%)")
-    and manhuntConfig:find("zombie:setSitAgainstWall%(true%)")
-    and manhuntConfig:find("networkAI:extraUpdate%(%)"),
+    and manhuntConfig:find("zombie:setSitAgainstWall%(true%)"),
     "the server target must remain replicated, seated and unable to wander away")
 PZLinuxTestAssert(not manhuntConfig:find("transmitModData")
     and variables:find('PZLinuxContractsTagEntity%(zombie, contractWorldId, objectiveType or "zombie", objectiveType ~= "manhunt"%)'),
     "manhunt ModData must not be transmitted before B42 registers the moving object")
-PZLinuxTestAssert(manhuntConfig:find("pcall%(function%(%) networkAI:extraUpdate%(%) end%)"),
-    "a B42 network update failure must not prevent the manhunt spawn response")
+PZLinuxTestAssert(not manhuntConfig:find("extraUpdate", 1, true)
+    and not manhuntConfig:find("getNetworkCharacterAI", 1, true),
+    "manhunt must not call NetworkZombieAI.extraUpdate, which does not exist on this B42 build and crashed solo games synchronously calling contract server code from the player's own update tick")
 PZLinuxTestAssert(variables:find("PZLinux%.ManhuntTargets")
     and variables:find("function PZLinuxContractsMaintainManhuntTargets")
     and variables:find("runtimeTarget:getSquare%(%)")
-    and variables:find("PZLinuxContractsConfigureManhuntZombie%(zombie, false, false%)"),
+    and variables:find("PZLinuxContractsConfigureManhuntZombie%(zombie, false%)"),
     "the server must retain and maintain the canonical manhunt target between recovery requests")
 PZLinuxTestAssert(variables:find("PZLinuxContractsFindTaggedZombies")
     and variables:find("removedDuplicates", 1, true)
@@ -199,8 +199,15 @@ for _, path in ipairs({
 end
 
 local events = PZLinuxTestRead(luaRoot .. "/client/Context/World/Events/PZLinuxOnEvents.lua")
-local manhuntEvents = events:match("local function PZLinuxFindVisibleManhuntTarget.-Events%.OnPlayerMove%.Add%(checkAndSpawnZombie%)")
+local manhuntEvents = events:match("local function PZLinuxFindVisibleManhuntTarget.-\nend\n%-%- Not registered")
 PZLinuxTestAssert(manhuntEvents ~= nil, "could not inspect client manhunt recovery")
+PZLinuxTestAssert(not events:find("Events%.OnPlayerMove%.Add%(checkAndSpawnZombie%)")
+    and not events:find("Events%.OnPlayerMove%.Add%(checkAndSpawnVehicle%)")
+    and not events:find("Events%.OnPlayerMove%.Add%(checkAndSpawnBox%)")
+    and not events:find("Events%.OnPlayerMove%.Add%(PZLinuxRestoreProtectContract%)")
+    and events:find("checkAndSpawnZombie(player)", 1, true)
+    and events:find("function PZLinuxPollWorldObjectiveRestores"),
+    "world-restore checks must run from the OnTick poller, not reentrantly from OnPlayerMove/IsoPlayer.update")
 PZLinuxTestAssert(not events:find('"zombieKilled"'), "the client must not report zombie kills")
 PZLinuxTestAssert(not events:find('"clearCargo"'), "the client must not request cargo deletion")
 PZLinuxTestAssert(not events:find("PZLinuxContractManhunt = 1"), "reconnect must not reset a persistent spawned target")
@@ -219,7 +226,6 @@ PZLinuxTestAssert(events:find("local function PZLinuxIsManhuntContractPending")
     "manhunt recovery must survive a stale legacy type flag after reconnect")
 PZLinuxTestAssert(manhuntEvents:find("PZLinux.Config.Contracts.objectiveActivationRadius", 1, true)
     and not manhuntEvents:find("not targetSquare", 1, true)
-    and events:find("Events.OnPlayerMove.Add(checkAndSpawnZombie)", 1, true)
     and events:find("Events.OnTick.Add(PZLinuxPollWorldObjectiveRestores)", 1, true),
     "manhunt must request and retry server recovery without a silent client square gate")
 PZLinuxTestAssert(manhuntEvents:find("[PZLinux Manhunt][client] restore failed", 1, true)

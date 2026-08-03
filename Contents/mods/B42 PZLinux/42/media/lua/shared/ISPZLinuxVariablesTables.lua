@@ -1417,17 +1417,25 @@ end
 
 local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
     if not deliveryId or deliveryId == "" or not getCell then return nil end
-    local vehicles = getCell():getVehicles()
-    if not vehicles then return nil end
 
-    for index = 0, vehicles:size() - 1 do
-        local vehicle = vehicles:get(index)
-        local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
-        if data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId) then
-            return vehicle
+    local ok, found = pcall(function()
+        local vehicles = getCell():getVehicles()
+        if not vehicles then return nil end
+
+        for index = 0, vehicles:size() - 1 do
+            local vehicle = vehicles:get(index)
+            local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
+            if data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId) then
+                return vehicle
+            end
         end
+        return nil
+    end)
+    if not ok then
+        print("[PZLinux Vehicle] delivered-vehicle scan failed: " .. tostring(found))
+        return nil
     end
-    return nil
+    return found
 end
 
 local function PZLinuxRequestsGetVehicleNetworkId(vehicle)
@@ -3307,7 +3315,7 @@ local function PZLinuxContractsGetZombieOnlineId(zombie)
     return tonumber(zombie.OnlineID) or -1
 end
 
-local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit, prepareReplication)
+local function PZLinuxContractsConfigureManhuntZombie(zombie, prepareReplication)
     if not zombie then return false end
     local data = zombie:getModData()
     data.PZLinuxManhuntVersion = PZLinuxManhuntTargetVersion
@@ -3319,19 +3327,6 @@ local function PZLinuxContractsConfigureManhuntZombie(zombie, transmit, prepareR
     if zombie.setAlwaysKnockedDown then zombie:setAlwaysKnockedDown(true) end
     if zombie.setSitAgainstWall then zombie:setSitAgainstWall(true) end
     if zombie.resetModelNextFrame then zombie:resetModelNextFrame() end
-    if transmit ~= false then
-        local getAIOk, networkAI = pcall(function()
-            return zombie.getNetworkCharacterAI and zombie:getNetworkCharacterAI() or nil
-        end)
-        if getAIOk and networkAI then
-            local updateOk, updateError = pcall(function() networkAI:extraUpdate() end)
-            if not updateOk then
-                print("[PZLinux Manhunt][server] network update failed: " .. tostring(updateError))
-            end
-        elseif not getAIOk then
-            print("[PZLinux Manhunt][server] network AI lookup failed: " .. tostring(networkAI))
-        end
-    end
     return true
 end
 
@@ -3493,7 +3488,7 @@ function PZLinuxContractsMaintainManhuntTargets()
         or not zombie.getSquare or not zombie:getSquare() then
             PZLinux.ManhuntTargets[contractWorldId] = nil
         else
-            PZLinuxContractsConfigureManhuntZombie(zombie, false, false)
+            PZLinuxContractsConfigureManhuntZombie(zombie, false)
         end
     end
 end

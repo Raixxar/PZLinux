@@ -138,7 +138,12 @@ local function checkAndSpawnZombie(player)
         PZLinuxManhuntTargetState[playerKey] = nil
     end
 end
-Events.OnPlayerMove.Add(checkAndSpawnZombie)
+-- Not registered on Events.OnPlayerMove: that fires reentrantly from inside
+-- IsoPlayer's own per-frame update (IsoCell.ProcessObjects -> IsoPlayer.update),
+-- and spawning/searching zombies from there caused hard crashes in solo (the
+-- server-side logic runs inline instead of on a separate server thread).
+-- PZLinuxPollWorldObjectiveRestores below calls this safely once per second
+-- from Events.OnTick instead, for every local player.
 
 local PZLinuxVehicleSpawnRequests = {}
 local PZLinuxVehicleDeliveryState = {}
@@ -229,7 +234,8 @@ local function checkAndSpawnVehicle(player)
         PZLinuxVehicleDeliveryState[playerKey] = nil
     end
 end
-Events.OnPlayerMove.Add(checkAndSpawnVehicle)
+-- See the comment above checkAndSpawnZombie: the same reentrancy hazard
+-- crashed vehicle requests in solo. Handled by the OnTick poller instead.
 
 local PZLinuxCargoSpawnRequests = {}
 
@@ -302,7 +308,7 @@ local function checkAndSpawnBox(player)
         end
     end
 end
-Events.OnPlayerMove.Add(checkAndSpawnBox)
+-- See the comment above checkAndSpawnZombie. Handled by the OnTick poller.
 
 local PZLinuxProtectRestoreRequests = {}
 
@@ -322,7 +328,7 @@ local function PZLinuxRestoreProtectContract(player)
         end
     end)
 end
-Events.OnPlayerMove.Add(PZLinuxRestoreProtectContract)
+-- See the comment above checkAndSpawnZombie. Handled by the OnTick poller.
 
 local PZLinuxWorldObjectiveLastPoll = -1
 
