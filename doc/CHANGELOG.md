@@ -61,6 +61,22 @@
   via `:toArray()` puis `ipairs()`, exactement comme le fait deja le jeu
   lui-meme pour un autre `Set` (`item:getTags():toArray()` dans
   `server/Vehicles/Vehicles.lua`), sans dependre d'aucun registre reseau.
+- Requests (vehicule) MP : la commande de vehicule ne livrait jamais rien en
+  MP reel bien que le debit et le point sur la carte fonctionnaient. Cause :
+  `PZLinuxOnItemRequestCar`, `PZLinuxRequestLocationX/Y/Z` et
+  `PZLinuxRequestVehicleDeliveryId` n'etaient ecrits que dans la copie serveur
+  du ModData; contrairement a chaque champ de contrat, ils n'etaient jamais
+  recopies explicitement dans le ModData local du client a la reception de
+  `PZLinuxRequestOrderResult`, qui se contentait d'afficher le point sur la
+  carte depuis la reponse brute. Le suivi client (`checkAndSpawnVehicle`) ne
+  voyait donc jamais la demande en attente. Ces champs sont desormais
+  recopies explicitement, comme les champs de contrat le sont deja.
+- Admin : nouvelle option `PZLinux Admin > Add funds to bank` (menu contextuel
+  du monde) pour ajouter des fonds a son propre compte a des fins de test.
+  Meme protection que "Force contract on board" : reservee a `-debug` en solo
+  et au niveau d'acces admin en MP, avec verification d'autorite cote serveur
+  (`PZLinuxContractsHasAdminAccess`) independante du client. Reutilise
+  `PZLinuxApplyBankCredit` deja utilise par les rewards de contrat.
 - Requests (vehicule) : tant que la recherche ci-dessus echouait, chaque
   relance (toutes les 5 secondes) qui ne retrouvait pas le vehicule deja
   livre en spawnait un nouveau, empilant des doublons identiques. La

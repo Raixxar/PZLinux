@@ -1147,6 +1147,7 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxContractCompletionAckResult"
         or command == "PZLinuxContractWorldEventResult"
         or command == "PZLinuxContractAdminForceResult"
+        or command == "PZLinuxContractAdminAddFundsResult"
         or command == "PZLinuxRequestOrderResult"
         or command == "PZLinuxRequestDeliverResult"
         or command == "PZLinuxRequestSpawnVehicleResult"
@@ -1204,6 +1205,27 @@ if Events and Events.OnServerCommand then
                     if args.locationX ~= nil then modData.PZLinuxContractLocationX = args.locationX end
                     if args.locationY ~= nil then modData.PZLinuxContractLocationY = args.locationY end
                     if args.locationZ ~= nil then modData.PZLinuxContractLocationZ = args.locationZ end
+                end
+            end
+            -- A paid vehicle Request only sets PZLinuxOnItemRequestCar/location
+            -- fields in the server's own modData copy. Every other command above
+            -- explicitly mirrors its result fields into the client's local
+            -- modData; this one did not, so in real MP the client's background
+            -- spawn poll (checkAndSpawnVehicle) never saw the pending request and
+            -- nothing ever spawned, even though the order itself (debit, map
+            -- marker from the raw response) worked fine.
+            if command == "PZLinuxRequestOrderResult" and args and args.ok
+            and tonumber(args.contractId) == 9 then
+                local playerObj = PZLinuxGetPlayer()
+                local modData = playerObj and playerObj:getModData()
+                if modData then
+                    modData.PZLinuxOnItemRequestCar = 1
+                    modData.PZLinuxActiveRequest = 1
+                    if args.vehicleName ~= nil then modData.PZLinuxOnItemRequestCarName = args.vehicleName end
+                    if args.locationX ~= nil then modData.PZLinuxRequestLocationX = args.locationX end
+                    if args.locationY ~= nil then modData.PZLinuxRequestLocationY = args.locationY end
+                    if args.locationZ ~= nil then modData.PZLinuxRequestLocationZ = args.locationZ end
+                    if args.deliveryId ~= nil then modData.PZLinuxRequestVehicleDeliveryId = args.deliveryId end
                 end
             end
             PZLinuxDispatchCallback(args)
@@ -2274,6 +2296,22 @@ function PZLinuxContractsAdminForceBoard(player, contractId, requestId)
         contractId = definition.id,
         contracts = boardData.contracts,
     }
+end
+
+function PZLinuxContractsAdminAddFunds(player, amount, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    local credit = PZLinuxApplyBankCredit(playerObj, amount, "admin-add-funds", requestId)
+    if credit.ok then
+        print("[PZLinux Admin] " .. tostring(playerObj:getUsername())
+            .. " added $" .. tostring(credit.amount) .. " to their own bank balance"
+            .. " (new balance $" .. tostring(credit.balance) .. ")")
+    end
+    return credit
 end
 
 function PZLinuxContractsFindBoardContract(contractId)
@@ -4135,6 +4173,15 @@ function PZLinuxRequestAdminForceContract(player, contractId, callback)
     local args = { requestId = requestId, contractId = tonumber(contractId) }
     if PZLinuxSendClientCommand("PZLinuxContractAdminForce", args) then return requestId end
     PZLinuxDispatchCallback(PZLinuxContractsAdminForceBoard(player, contractId, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAdminAddFunds(player, amount, callback)
+    local requestId = PZLinuxNextRequestId("admin-add-funds")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, amount = tonumber(amount) }
+    if PZLinuxSendClientCommand("PZLinuxContractAdminAddFunds", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxContractsAdminAddFunds(player, amount, requestId))
     return requestId
 end
 

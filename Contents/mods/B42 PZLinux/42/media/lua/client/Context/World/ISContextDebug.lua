@@ -24,6 +24,22 @@ local function PZLinuxDebugForceContract(player, contractId)
     end)
 end
 
+local PZLinuxDebugAddFundsAmounts = { 1000, 10000, 50000, 100000, 500000, 1000000 }
+
+local function PZLinuxDebugAddFunds(player, amount)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+    PZLinuxRequestAdminAddFunds(playerObj, amount, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.amount)
+                .. " added (balance $" .. tostring(result.balance) .. ")")
+        else
+            HaloTextHelper.addBadText(playerObj, "Admin command failed: "
+                .. tostring(result and result.error or "no response"))
+        end
+    end)
+end
+
 local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj or not PZLinuxDebugCanUseMenu(playerObj) then return end
@@ -41,6 +57,13 @@ local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
             PZLinuxDebugForceContract,
             definition.id
         )
+    end
+
+    local fundsOption = adminMenu:addOption("Add funds to bank")
+    local fundsMenu = ISContextMenu:getNew(adminMenu)
+    adminMenu:addSubMenu(fundsOption, fundsMenu)
+    for _, amount in ipairs(PZLinuxDebugAddFundsAmounts) do
+        fundsMenu:addOption("+$" .. tostring(amount), player, PZLinuxDebugAddFunds, amount)
     end
 end
 
