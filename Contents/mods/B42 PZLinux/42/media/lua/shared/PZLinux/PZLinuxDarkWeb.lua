@@ -358,18 +358,28 @@ function PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId)
 
     for index = items:size() - 1, 0, -1 do
         local item = items:get(index)
+        -- Sell Surplus also uses "Base.SuspiciousPackage" (tagged with its
+        -- own PZLinuxSellSaleAmount modData key instead); skip those here so
+        -- PZLinuxSellApplyRedeemPackage is the only thing that ever redeems
+        -- them, instead of falling through to the name-parsing fallback
+        -- below (which also crashed: string.gsub returns two values, and
+        -- passing both straight into tonumber(string, base) treated the
+        -- substitution count as an invalid numeric base).
         if item and item:getFullType() == "Base.SuspiciousPackage" then
             local itemModData = item:getModData()
-            local packageAmount = tonumber(itemModData.PZLinuxDarkWebSaleAmount)
-            if not packageAmount then
-                local boxName = item:getName() or ""
-                packageAmount = tonumber(boxName:gsub("%$", ""))
-            end
+            if not itemModData.PZLinuxSellSaleAmount then
+                local packageAmount = tonumber(itemModData.PZLinuxDarkWebSaleAmount)
+                if not packageAmount then
+                    local boxName = item:getName() or ""
+                    local cleanedName = boxName:gsub("%$", "")
+                    packageAmount = tonumber(cleanedName)
+                end
 
-            if packageAmount and packageAmount > 0 then
-                amount = amount + PZLinuxNormalizeMoney(packageAmount)
-                redeemed = redeemed + 1
-                PZLinuxRemoveInventoryItem(playerObj, item)
+                if packageAmount and packageAmount > 0 then
+                    amount = amount + PZLinuxNormalizeMoney(packageAmount)
+                    redeemed = redeemed + 1
+                    PZLinuxRemoveInventoryItem(playerObj, item)
+                end
             end
         end
     end

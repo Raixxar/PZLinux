@@ -47,7 +47,7 @@ PZLinux = { Config = { Sell = {
     basePricePercentMax = 25,
     greatDealChancePercent = 10,
     greatDealMinPercent = 25,
-    greatDealMaxPercent = 125,
+    greatDealMaxPercent = 75,
     negotiateIncrement = 100,
     negotiateSuccessChancePercent = 50,
 } } }

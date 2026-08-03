@@ -2,6 +2,27 @@
 
 ## Correctifs post-1.0.0
 
+- Sell Goods : correctif d'un plantage au moment de deposer un colis dans une
+  boite aux lettres ("attempted index" via `tonumber` avec une base
+  invalide). `PZLinuxDarkWebApplyRedeemSales` (Dark Web) et
+  `PZLinuxSellApplyRedeemPackage` (Sell Goods) utilisent tous les deux
+  `Base.SuspiciousPackage` pour representer un colis a encaisser; la fonction
+  du Dark Web tentait de traiter TOUS les colis rencontres, y compris ceux de
+  Sell Goods (qui n'ont pas son marqueur `PZLinuxDarkWebSaleAmount`), et
+  tombait alors sur un ancien filet de secours bugue qui passait par erreur
+  les deux valeurs de retour de `string.gsub` a `tonumber` (la seconde,
+  un simple compteur de remplacements, etait alors interpretee comme une
+  base numerique invalide). Corrige en ignorant explicitement dans le Dark
+  Web tout colis marque comme provenant de Sell Goods, et en corrigeant le
+  filet de secours lui-meme pour ne passer qu'une seule valeur a `tonumber`.
+  Voir `tools/test_darkweb_delivery.lua` pour la couverture (colis Dark Web,
+  colis Sell Goods, et ancien colis sans marqueur du tout, tous melanges dans
+  le meme inventaire).
+- Sell Goods : le plafond du "great deal" redescend de 125 % a 75 % de la
+  valeur de reference (toujours 25 % minimum, 10 % de chance). Meme dans le
+  meilleur des cas, vendre puis racheter le meme objet reste donc toujours
+  perdant pour le joueur, ce qui evite tout aller-retour rentable.
+
 - Menu PZLinux : les boutons "SEND A REQUEST" et "SELL SURPLUS" sont
   renommes en "BUY GOODS" et "SELL GOODS", plus explicites sur le fait que ce
   sont des biens de consommation courante qu'on achete ou qu'on vend (pas

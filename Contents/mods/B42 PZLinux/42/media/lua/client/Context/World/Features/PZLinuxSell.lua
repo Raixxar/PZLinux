@@ -106,7 +106,10 @@ function PZLinuxSellUI:initialise()
     -- visible screen area is smaller than the full image (there is a bezel
     -- baked into the art), so a taller panel here visually overflows past
     -- the monitor frame even though it is numerically within self.height.
-    self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.28, self.width * 0.568, self.height * 0.46)
+    -- Raised slightly and shortened compared to the first pass: there was
+    -- too big a gap under the status text and not enough margin above the
+    -- bottom bezel.
+    self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.24, self.width * 0.568, self.height * 0.43)
     self.scrollPanel:initialise()
     self.scrollPanel:instantiate()
     function self.scrollPanel:prerender()

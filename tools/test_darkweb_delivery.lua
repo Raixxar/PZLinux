@@ -100,4 +100,62 @@ for _, uiPath in ipairs({
     PZLinuxTestAssert(uiSource:find('result%.ok == false'), uiPath .. " must display delivery failures")
 end
 
+-- Redeeming at a mailbox must never touch a Sell Surplus package (also a
+-- "Base.SuspiciousPackage", tagged with PZLinuxSellSaleAmount instead of
+-- PZLinuxDarkWebSaleAmount) -- this used to crash entirely, since the
+-- name-parsing fallback passed both of string.gsub's return values straight
+-- into tonumber(string, base), treating the substitution count as an
+-- invalid numeric base.
+local function PZLinuxTestList(values)
+    local list = { values = values or {} }
+    function list:size() return #self.values end
+    function list:get(index) return self.values[index + 1] end
+    return list
+end
+
+local function PZLinuxTestMakePackage(fullType, name, packageModData)
+    local item = { fullType = fullType, name = name, modData = packageModData or {} }
+    function item:getFullType() return self.fullType end
+    function item:getName() return self.name end
+    function item:getModData() return self.modData end
+    return item
+end
+
+local redeemInventoryValues = {
+    PZLinuxTestMakePackage("Base.SuspiciousPackage", "$500", { PZLinuxDarkWebSaleAmount = 500 }),
+    PZLinuxTestMakePackage("Base.SuspiciousPackage", "$1250", { PZLinuxSellSaleAmount = 1250 }),
+    PZLinuxTestMakePackage("Base.SuspiciousPackage", "$750"), -- legacy package, no modData marker at all
+}
+local removedPackages = {}
+local redeemInventory = {
+    getItems = function() return PZLinuxTestList(redeemInventoryValues) end,
+}
+local redeemPlayer = {
+    getInventory = function() return redeemInventory end,
+    getModData = function() return {} end,
+}
+PZLinuxRemoveInventoryItem = function(_, item)
+    table.insert(removedPackages, item)
+    for index = #redeemInventoryValues, 1, -1 do
+        if redeemInventoryValues[index] == item then table.remove(redeemInventoryValues, index) end
+    end
+end
+PZLinuxNormalizeMoney = function(amount) return math.floor(tonumber(amount) or 0) end
+local creditedAmount, creditCallCount = nil, 0
+PZLinuxApplyBankCredit = function(_, amount)
+    creditCallCount = creditCallCount + 1
+    creditedAmount = amount
+    return { ok = true, balance = 1000 + amount }
+end
+
+local redeemResult = PZLinuxDarkWebApplyRedeemSales(redeemPlayer, {}, "redeem-mixed")
+PZLinuxTestAssert(redeemResult.ok, "redeeming must not crash when a Sell Surplus package is present")
+PZLinuxTestAssert(redeemResult.redeemed == 2,
+    "only the two Dark Web packages must be redeemed, not the Sell Surplus one")
+PZLinuxTestAssert(creditCallCount == 1 and creditedAmount == 1250,
+    "the credited amount must be exactly the sum of the two Dark Web packages (500 + 750), skipping the Sell Surplus one")
+PZLinuxTestAssert(#redeemInventoryValues == 1
+    and redeemInventoryValues[1]:getModData().PZLinuxSellSaleAmount == 1250,
+    "the Sell Surplus package must remain in the inventory, untouched, for its own redeem function to handle")
+
 print("PZLinux Dark Web delivery tests OK")
