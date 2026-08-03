@@ -51,12 +51,16 @@
   supplementaire.
 - Requests (vehicule) : cause reelle du "tried to call nil" identifiee dans le
   bytecode Java du jeu (`projectzomboid.jar`) : `IsoCell:getVehicles()` renvoie
-  un `java.util.Set`, qui n'a pas de methode `:get(index)` (seulement
-  `:size()`, d'ou l'echec systematique une fois entre dans la boucle). Les
-  deux fonctions de recherche de vehicule livre (cote serveur et cote client)
-  utilisent maintenant `VehicleManager.instance:getVehicles()`, qui renvoie
-  une vraie `ArrayList` et est deja utilise ailleurs dans ce fichier pour
-  l'identifiant reseau du vehicule.
+  un `java.util.Set`, qui n'a pas de methode `:get(index)` (seulement `:size()`
+  et `:toArray()`, d'ou l'echec systematique une fois entre dans la boucle).
+  Un premier correctif est passe par `VehicleManager.instance:getVehicles()`
+  (une vraie `ArrayList`), mais ce registre reseau n'est pas fiable en solo et
+  laissait la recherche echouer silencieusement, provoquant le meme
+  empilement de vehicules. Les deux fonctions de recherche de vehicule livre
+  (cote serveur et cote client) convertissent maintenant le `Set` d'origine
+  via `:toArray()` puis `ipairs()`, exactement comme le fait deja le jeu
+  lui-meme pour un autre `Set` (`item:getTags():toArray()` dans
+  `server/Vehicles/Vehicles.lua`), sans dependre d'aucun registre reseau.
 - Requests (vehicule) : tant que la recherche ci-dessus echouait, chaque
   relance (toutes les 5 secondes) qui ne retrouvait pas le vehicule deja
   livre en spawnait un nouveau, empilant des doublons identiques. La

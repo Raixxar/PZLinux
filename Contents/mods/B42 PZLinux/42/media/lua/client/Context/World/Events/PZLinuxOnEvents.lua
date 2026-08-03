@@ -155,15 +155,16 @@ local function PZLinuxFindVisibleDeliveredVehicle(vehicleId, deliveryId)
     local canMatchDeliveryId = expectedDeliveryId ~= ""
     if not canMatchVehicleId and not canMatchDeliveryId then return nil end
 
-    -- IsoCell:getVehicles() returns a java.util.Set, which has no :get(index)
-    -- method (only :size(), hence the intermittent "tried to call nil" errors).
-    -- VehicleManager.instance:getVehicles() returns a proper ArrayList instead.
-    local managerClass = rawget(_G, "VehicleManager")
-    local manager = managerClass and managerClass.instance or nil
-    local vehicles = manager and manager.getVehicles and manager:getVehicles() or nil
-    if not vehicles then return nil end
-    for index = 0, vehicles:size() - 1 do
-        local vehicle = vehicles:get(index)
+    if not getCell then return nil end
+    -- IsoCell:getVehicles() returns a java.util.Set (confirmed in the game's own
+    -- bytecode), which has no :get(index) method, only :size() and :toArray().
+    -- Converting to an array first (same pattern the game itself uses for other
+    -- Set-returning APIs, e.g. item:getTags():toArray() in Vehicles.lua) makes
+    -- it safely iterable instead of throwing "tried to call nil".
+    local vehicles = getCell():getVehicles()
+    local vehicleArray = vehicles and vehicles.toArray and vehicles:toArray() or nil
+    if not vehicleArray then return nil end
+    for _, vehicle in ipairs(vehicleArray) do
         local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
         local matchesVehicleId = canMatchVehicleId and tonumber(vehicle:getId()) == expectedVehicleId
         local matchesDeliveryId = canMatchDeliveryId

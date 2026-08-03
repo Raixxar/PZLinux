@@ -19,6 +19,11 @@ local function PZLinuxTestList(values)
     local list = { values = values or {} }
     function list:size() return #self.values end
     function list:get(index) return self.values[index + 1] end
+    function list:toArray()
+        local array = {}
+        for index, value in ipairs(self.values) do array[index] = value end
+        return array
+    end
     return list
 end
 
@@ -57,7 +62,6 @@ IsoDirections = { S = 4 }
 ZombRand = function(minimum) return minimum end
 
 VehicleManager = { instance = {} }
-function VehicleManager.instance.getVehicles(_manager) return vehicles end
 function VehicleManager.instance.getVehicleByID(_manager, vehicleId)
     for index = 0, vehicles:size() - 1 do
         local vehicle = vehicles:get(index)

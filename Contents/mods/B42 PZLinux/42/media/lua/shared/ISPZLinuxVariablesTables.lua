@@ -1416,17 +1416,18 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
 end
 
 local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
-    if not deliveryId or deliveryId == "" then return nil end
+    if not deliveryId or deliveryId == "" or not getCell then return nil end
 
     local ok, found = pcall(function()
-        -- IsoCell:getVehicles() returns a java.util.Set, which has no :get(index)
-        -- method (only :size(), hence the intermittent "tried to call nil"
-        -- crashes). VehicleManager.instance:getVehicles() returns a proper
-        -- ArrayList that supports indexed access.
-        local managerClass = rawget(_G, "VehicleManager")
-        local manager = managerClass and managerClass.instance or nil
-        local vehicles = manager and manager.getVehicles and manager:getVehicles() or nil
-        if not vehicles then return nil end
+        -- IsoCell:getVehicles() returns a java.util.Set (confirmed in the game's
+        -- own bytecode), which has no :get(index) method, only :size() and
+        -- :toArray() -- hence the "tried to call nil" crashes when it was
+        -- iterated like an ArrayList. Converting to an array first (the same
+        -- pattern the game itself uses for other Set-returning APIs, e.g.
+        -- item:getTags():toArray() in Vehicles.lua) makes it safely iterable.
+        local vehicles = getCell():getVehicles()
+        local vehicleArray = vehicles and vehicles.toArray and vehicles:toArray() or nil
+        if not vehicleArray then return nil end
 
         -- While the vehicle scan above was broken, every retry that failed to
         -- find the already-delivered vehicle spawned a brand new one instead,
@@ -1434,8 +1435,7 @@ local function PZLinuxRequestsFindDeliveredVehicle(deliveryId)
         -- up any extras so a save affected by that bug self-heals, and so a
         -- future regression can never stack free vehicles again.
         local canonical
-        for index = 0, vehicles:size() - 1 do
-            local vehicle = vehicles:get(index)
+        for _, vehicle in ipairs(vehicleArray) do
             local data = vehicle and vehicle.getModData and vehicle:getModData() or nil
             if data and tostring(data.PZLinuxRequestVehicleDeliveryId or "") == tostring(deliveryId) then
                 if not canonical then
