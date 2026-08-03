@@ -354,32 +354,21 @@ local function PZLinuxServerRequestDeliver(player, args)
     end)
 end
 
-local function PZLinuxServerSellRefreshDemand(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxSellRefreshDemand", args, "PZLinuxSellRefreshDemandResult", function()
-        return PZLinuxSellRefreshDemand(player, args and args.requestId)
+local function PZLinuxServerSellGetOffers(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellGetOffers", args, "PZLinuxSellGetOffersResult", function()
+        return PZLinuxSellGetOffers(player, args and args.requestId)
     end)
 end
 
-local function PZLinuxServerSellRequestQuote(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxSellRequestQuote", args, "PZLinuxSellRequestQuoteResult", function()
-        return PZLinuxSellRequestQuote(
-            player,
-            args and args.contractId,
-            args and args.items,
-            args and args.requestId
-        )
+local function PZLinuxServerSellNegotiate(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellNegotiate", args, "PZLinuxSellNegotiateResult", function()
+        return PZLinuxSellNegotiate(player, args and args.itemName, args and args.requestId)
     end)
 end
 
-local function PZLinuxServerSellAcceptOffer(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxSellAcceptOffer", args, "PZLinuxSellAcceptOfferResult", function()
-        return PZLinuxSellAcceptOffer(player, args and args.requestId)
-    end)
-end
-
-local function PZLinuxServerSellCancelOffer(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxSellCancelOffer", args, "PZLinuxSellCancelOfferResult", function()
-        return PZLinuxSellCancelOffer(player, args and args.requestId)
+local function PZLinuxServerSellSell(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellSell", args, "PZLinuxSellSellResult", function()
+        return PZLinuxSellApplySell(player, args and args.itemName, args and args.requestId)
     end)
 end
 
@@ -504,10 +493,9 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxRequestGetCategories = PZLinuxServerRequestGetCategories,
     PZLinuxRequestRejectCategory = PZLinuxServerRequestRejectCategory,
     PZLinuxRequestDeliver = PZLinuxServerRequestDeliver,
-    PZLinuxSellRefreshDemand = PZLinuxServerSellRefreshDemand,
-    PZLinuxSellRequestQuote = PZLinuxServerSellRequestQuote,
-    PZLinuxSellAcceptOffer = PZLinuxServerSellAcceptOffer,
-    PZLinuxSellCancelOffer = PZLinuxServerSellCancelOffer,
+    PZLinuxSellGetOffers = PZLinuxServerSellGetOffers,
+    PZLinuxSellNegotiate = PZLinuxServerSellNegotiate,
+    PZLinuxSellSell = PZLinuxServerSellSell,
     PZLinuxSellRedeemPackage = PZLinuxServerSellRedeemPackage,
     PZLinuxMailboxState = PZLinuxServerMailboxState,
     PZLinuxReputationSnapshot = PZLinuxServerReputationSnapshot,

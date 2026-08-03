@@ -78,27 +78,44 @@ PZLinux.Config.Requests.unavailableChancePercentMax =
 PZLinux.Config.Requests.unavailableRampGameDays =
     tonumber(PZLinux.Config.Requests.unavailableRampGameDays) or 180
 
--- Sell Surplus: the inverse of Requests. Once per game day, there is a small
--- chance a buyer wants one specific category. The base price is deliberately
--- bad (a fraction of the normal purchase price) so this never becomes a real
--- income source, with a rare chance of a much better one-off offer instead.
+-- Sell Surplus: the inverse of Requests, Dark Web-styled. Every sellable item
+-- independently has a small daily chance of being wanted, for a random
+-- quantity the player must fully own to sell (no partial sale). The base
+-- price is deliberately bad (a fraction of the item's reference value) so
+-- this never becomes a real income source, with a rare chance of a much
+-- better one-off offer instead, plus an optional 50/50 negotiation minigame.
 PZLinux.Config.Sell = PZLinux.Config.Sell or {
     demandChancePercent = 15,
-    basePricePercent = 50,
+    quantityMin = 1,
+    quantityMax = 10,
+    basePricePercentMin = 30,
+    basePricePercentMax = 50,
     greatDealChancePercent = 10,
     greatDealMinPercent = 110,
     greatDealMaxPercent = 130,
+    negotiateIncrement = 100,
+    negotiateSuccessChancePercent = 50,
 }
 PZLinux.Config.Sell.demandChancePercent =
     tonumber(PZLinux.Config.Sell.demandChancePercent) or 15
-PZLinux.Config.Sell.basePricePercent =
-    tonumber(PZLinux.Config.Sell.basePricePercent) or 50
+PZLinux.Config.Sell.quantityMin =
+    tonumber(PZLinux.Config.Sell.quantityMin) or 1
+PZLinux.Config.Sell.quantityMax =
+    tonumber(PZLinux.Config.Sell.quantityMax) or 10
+PZLinux.Config.Sell.basePricePercentMin =
+    tonumber(PZLinux.Config.Sell.basePricePercentMin) or 30
+PZLinux.Config.Sell.basePricePercentMax =
+    tonumber(PZLinux.Config.Sell.basePricePercentMax) or 50
 PZLinux.Config.Sell.greatDealChancePercent =
     tonumber(PZLinux.Config.Sell.greatDealChancePercent) or 10
 PZLinux.Config.Sell.greatDealMinPercent =
     tonumber(PZLinux.Config.Sell.greatDealMinPercent) or 110
 PZLinux.Config.Sell.greatDealMaxPercent =
     tonumber(PZLinux.Config.Sell.greatDealMaxPercent) or 130
+PZLinux.Config.Sell.negotiateIncrement =
+    tonumber(PZLinux.Config.Sell.negotiateIncrement) or 100
+PZLinux.Config.Sell.negotiateSuccessChancePercent =
+    tonumber(PZLinux.Config.Sell.negotiateSuccessChancePercent) or 50
 
 PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {
     ranks = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" },

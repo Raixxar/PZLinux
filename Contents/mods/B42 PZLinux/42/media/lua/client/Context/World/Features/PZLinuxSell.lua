@@ -1,16 +1,29 @@
--- Sell Surplus: the inverse of Requests. Once per game day there is a small
--- chance a buyer wants exactly one category; the player picks items they
--- currently hold in their main inventory, gets a (deliberately bad,
--- occasionally great) price quote, then must accept it -- which turns the
--- goods into a priced package, Dark Web style -- and drop that package at a
--- mailbox to actually get paid.
+-- Sell Surplus: the inverse of Requests, Dark Web-styled. Every sellable
+-- item independently has a small daily chance of being wanted, for a random
+-- quantity the player must fully own to sell. Selling is instant (like Dark
+-- Web): the goods disappear immediately, replaced by a priced package that
+-- must still be dropped at a mailbox to actually get paid. A negotiation
+-- button lets the player gamble for a better price, at the risk of the
+-- buyer walking away entirely.
 
 PZLinuxSellUI = ISPanel:derive("PZLinuxSellUI")
 
-local ITEMS_PER_PAGE = 5
+local ITEMS_MAX = 40
 
 local function PZLinuxSellText(key, fallback, ...)
     return PZLinuxFormatText(key, fallback, ...)
+end
+
+local function PZLinuxSellCountOwned(playerObj, itemName)
+    local items = playerObj:getInventory():getItems()
+    local count = 0
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and item.getFullType and item:getFullType() == itemName then
+            count = count + 1
+        end
+    end
+    return count
 end
 
 function PZLinuxSellUI:new(x, y, width, height, player)
@@ -23,8 +36,7 @@ function PZLinuxSellUI:new(x, y, width, height, player)
     o.height = height
     o.player = player
     o.isClosing = false
-    o.selected = {}
-    o.currentPage = 1
+    o.offers = {}
     return o
 end
 
@@ -82,306 +94,234 @@ function PZLinuxSellUI:initialise()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    self.content = ISRichTextPanel:new(self.width * 0.20, self.height * 0.24, self.width * 0.57, self.height * 0.14)
-    self.content.backgroundColor = {r=0, g=0, b=0, a=0}
-    self.content.borderColor = {r=0, g=0, b=0, a=0}
-    self.content.autosetheight = false
-    self.content.text = "<RGB:0,1,0>" .. PZLinuxSellText("IGUI_PZLinux_Sell_Loading", "Checking for a buyer...")
-    self.content:initialise()
-    self.content:instantiate()
-    self.content:paginate()
-    self.topBar:addChild(self.content)
-
-    self.itemButtons = {}
-
-    self.prevPageButton = ISButton:new(self.width * 0.20, self.height * 0.76, self.width * 0.12, self.height * 0.04, "<", self, self.onPrevPage)
-    self.prevPageButton.textColor = {r=0, g=1, b=0, a=1}
-    self.prevPageButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-    self.prevPageButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.prevPageButton:initialise()
-    self.prevPageButton:setVisible(false)
-    self.topBar:addChild(self.prevPageButton)
-
-    self.nextPageButton = ISButton:new(self.width * 0.65, self.height * 0.76, self.width * 0.12, self.height * 0.04, ">", self, self.onNextPage)
-    self.nextPageButton.textColor = {r=0, g=1, b=0, a=1}
-    self.nextPageButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-    self.nextPageButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.nextPageButton:initialise()
-    self.nextPageButton:setVisible(false)
-    self.topBar:addChild(self.nextPageButton)
-
-    self.sellButton = ISButton:new(
-        self.width * 0.20, self.height * 0.86, self.width * 0.27, self.height * 0.05,
-        PZLinuxSellText("IGUI_PZLinux_Sell_SellSelected", "GET A QUOTE"), self, self.onSellSelected
+    self.statusLabel = ISLabel:new(
+        self.width * 0.20, self.height * 0.215, self.height * 0.025,
+        PZLinuxSellText("IGUI_PZLinux_Sell_Loading", "Checking who wants to buy..."),
+        0, 1, 0, 1, UIFont.Small, true
     )
-    self.sellButton.textColor = {r=0, g=1, b=0, a=1}
-    self.sellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-    self.sellButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.sellButton:initialise()
-    self.sellButton:setVisible(false)
-    self.topBar:addChild(self.sellButton)
+    self.statusLabel:initialise()
+    self.topBar:addChild(self.statusLabel)
 
-    self.acceptButton = ISButton:new(
-        self.width * 0.20, self.height * 0.86, self.width * 0.27, self.height * 0.05,
-        PZLinuxSellText("IGUI_PZLinux_Sell_Accept", "ACCEPT"), self, self.onAcceptOffer
-    )
-    self.acceptButton.textColor = {r=0, g=1, b=0, a=1}
-    self.acceptButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-    self.acceptButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.acceptButton:initialise()
-    self.acceptButton:setVisible(false)
-    self.topBar:addChild(self.acceptButton)
-
-    self.cancelButton = ISButton:new(
-        self.width * 0.50, self.height * 0.86, self.width * 0.27, self.height * 0.05,
-        PZLinuxSellText("IGUI_PZLinux_Sell_Cancel", "CANCEL"), self, self.onCancelOffer
-    )
-    self.cancelButton.textColor = {r=0, g=1, b=0, a=1}
-    self.cancelButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-    self.cancelButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.cancelButton:initialise()
-    self.cancelButton:setVisible(false)
-    self.topBar:addChild(self.cancelButton)
-
-    self:refreshDemand()
-end
-
-function PZLinuxSellUI:setContentText(text)
-    if not self.content then return end
-    self.content.text = "<RGB:0,1,0>" .. text
-    self.content:paginate()
-end
-
-function PZLinuxSellUI:hideSelectionControls()
-    for _, entry in ipairs(self.itemButtons) do
-        entry.button:setVisible(false)
+    self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.26, self.width * 0.568, self.height * 0.60)
+    self.scrollPanel:initialise()
+    self.scrollPanel:instantiate()
+    function self.scrollPanel:prerender()
+        ISPanel.prerender(self)
+        self:setStencilRect(0, 0, self.width, self.height)
     end
-    self.itemButtons = {}
-    self.prevPageButton:setVisible(false)
-    self.nextPageButton:setVisible(false)
-    self.sellButton:setVisible(false)
-    self.acceptButton:setVisible(false)
-    self.cancelButton:setVisible(false)
+    function self.scrollPanel:postrender()
+        self:clearStencilRect()
+        ISPanel.postrender(self)
+    end
+    self.scrollPanel:setScrollChildren(true)
+    self.scrollPanel.backgroundColor = {r=0.02, g=0.15, b=0.02, a=0}
+    self.scrollPanel.borderColor = {r=0, g=0.5, b=0, a=0}
+    self.topBar:addChild(self.scrollPanel)
+
+    self.rowIcons = {}
+    self.rowLabels = {}
+    self.rowPriceLabels = {}
+    self.rowSellButtons = {}
+    self.rowNegotiateButtons = {}
+
+    local rowHeight = math.max(38, self.height * 0.055)
+    self.scrollPanel:setScrollHeight(ITEMS_MAX * rowHeight + 10)
+    self.scrollPanel.onMouseWheel = function(scrollSelf, del)
+        if scrollSelf:getScrollHeight() > 0 then
+            scrollSelf:setYScroll(scrollSelf:getYScroll() - (del * 40))
+            return true
+        end
+        return false
+    end
+
+    for i = 1, ITEMS_MAX do
+        local yOffset = 5 + (i - 1) * rowHeight
+        local rowBackground = ISPanel:new(5, yOffset, self.scrollPanel.width - 23, rowHeight)
+        rowBackground.backgroundColor = {r=0, g=0, b=0, a=0}
+        rowBackground.borderColor = {r=0, g=0, b=0, a=0}
+        rowBackground:initialise()
+        self.scrollPanel:addChild(rowBackground)
+
+        local iconSize = 28
+        local iconImg = ISImage:new(5, (rowHeight - iconSize) / 2, iconSize, iconSize, nil)
+        iconImg:initialise()
+        rowBackground:addChild(iconImg)
+        self.rowIcons[i] = iconImg
+
+        local labelX = 5 + iconSize + 5
+        local nameLabel = ISLabel:new(labelX, math.max(0, (rowHeight - 30) / 2), 20, "", 0, 1, 0, 1, UIFont.Small, true)
+        nameLabel:initialise()
+        rowBackground:addChild(nameLabel)
+        self.rowLabels[i] = nameLabel
+
+        local priceLabel = ISLabel:new(labelX, math.max(0, (rowHeight - 30) / 2) + 15, 20, "", 0, 1, 0, 1, UIFont.Small, true)
+        priceLabel:initialise()
+        rowBackground:addChild(priceLabel)
+        self.rowPriceLabels[i] = priceLabel
+
+        local buttonHeight = math.min(22, rowHeight * 0.4)
+        local negotiateWidth = math.max(70, self.scrollPanel.width * 0.16)
+        local sellWidth = math.max(60, self.scrollPanel.width * 0.13)
+        local sellX = rowBackground.width - sellWidth - 6
+        local negotiateX = sellX - negotiateWidth - 6
+
+        local negotiateButton = ISButton:new(negotiateX, (rowHeight - buttonHeight) / 2, negotiateWidth, buttonHeight, PZLinuxSellText("IGUI_PZLinux_Sell_Negotiate", "NEGOTIATE"), self, self.onNegotiateItem)
+        negotiateButton.backgroundColor = {r=0.4, g=0.3, b=0, a=1}
+        negotiateButton.internal = i
+        negotiateButton:initialise()
+        negotiateButton:setVisible(false)
+        rowBackground:addChild(negotiateButton)
+        self.rowNegotiateButtons[i] = negotiateButton
+
+        local sellButton = ISButton:new(sellX, (rowHeight - buttonHeight) / 2, sellWidth, buttonHeight, PZLinuxSellText("IGUI_PZLinux_Sell_SellButton", "SELL"), self, self.onSellItem)
+        sellButton.backgroundColor = {r=0, g=0.4, b=0, a=1}
+        sellButton.internal = i
+        sellButton:initialise()
+        sellButton:setVisible(false)
+        rowBackground:addChild(sellButton)
+        self.rowSellButtons[i] = sellButton
+
+        function rowBackground:onMouseMove(_dx, _dy) self.backgroundColor = {r=0.5, g=0.5, b=0.5, a=0.3} end
+        function rowBackground:onMouseMoveOutside(_dx, _dy) self.backgroundColor = {r=0, g=0, b=0, a=0} end
+    end
+
+    self:refreshOffers()
 end
 
-function PZLinuxSellUI:refreshDemand()
+function PZLinuxSellUI:refreshOffers()
+    if self.offersPending then return end
+    self.offersPending = true
     local playerObj = PZLinuxGetPlayer(self.player)
-    PZLinuxRequestSellRefreshDemand(playerObj, function(result)
-        if self.isClosing or not self.content then return end
+    PZLinuxRequestSellGetOffers(playerObj, function(result)
+        self.offersPending = false
+        if self.isClosing then return end
         if not result or not result.ok then
-            self:hideSelectionControls()
-            self:setContentText(PZLinuxSellText("IGUI_PZLinux_Sell_Unavailable", "Sell service unavailable."))
+            self.statusLabel:setName(PZLinuxSellText("IGUI_PZLinux_Sell_Unavailable", "Sell service unavailable."))
             return
         end
-
-        if not result.available then
-            self:hideSelectionControls()
-            self:setContentText(PZLinuxSellText(
+        self.offers = result.offers or {}
+        if #self.offers == 0 then
+            self.statusLabel:setName(PZLinuxSellText(
                 "IGUI_PZLinux_Sell_NoBuyerToday",
-                "No buyer today. Come back tomorrow."
+                "Nobody wants to buy anything today. Come back tomorrow."
             ))
-            return
-        end
-
-        self.contractId = result.contractId
-        self.contractName = result.contractName or tostring(result.contractId)
-        self.currentPage = 1
-        self.selected = {}
-        self:showCategoryItems()
-    end)
-end
-
-function PZLinuxSellUI:getOwnedCategoryItems()
-    local playerObj = PZLinuxGetPlayer(self.player)
-    local definition = PZLinuxRequestsGetDefinition and PZLinuxRequestsGetDefinition(self.contractId)
-    local categoryItems = (definition and definition.items) or {}
-    if not playerObj then return {} end
-
-    local counts = {}
-    local items = playerObj:getInventory():getItems()
-    for index = 0, items:size() - 1 do
-        local item = items:get(index)
-        local fullType = item and item.getFullType and item:getFullType()
-        if fullType then counts[fullType] = (counts[fullType] or 0) + 1 end
-    end
-
-    local owned = {}
-    for _, itemName in ipairs(categoryItems) do
-        if (counts[itemName] or 0) > 0 then
-            table.insert(owned, { name = itemName, count = counts[itemName] })
-        end
-    end
-    return owned
-end
-
-function PZLinuxSellUI:showCategoryItems()
-    for _, entry in ipairs(self.itemButtons) do
-        entry.button:setVisible(false)
-    end
-    self.itemButtons = {}
-    self.acceptButton:setVisible(false)
-    self.cancelButton:setVisible(false)
-
-    local ownedItems = self:getOwnedCategoryItems()
-    if #ownedItems == 0 then
-        self.prevPageButton:setVisible(false)
-        self.nextPageButton:setVisible(false)
-        self.sellButton:setVisible(false)
-        self:setContentText(PZLinuxSellText(
-            "IGUI_PZLinux_Sell_NothingToSell",
-            "A buyer today is interested in: %s\nYou have none of it in your main inventory.",
-            self.contractName or ""
-        ))
-        return
-    end
-
-    local pageCount = math.max(1, math.ceil(#ownedItems / ITEMS_PER_PAGE))
-    self.currentPage = math.min(math.max(1, self.currentPage), pageCount)
-    local startIndex = (self.currentPage - 1) * ITEMS_PER_PAGE + 1
-    local endIndex = math.min(startIndex + ITEMS_PER_PAGE - 1, #ownedItems)
-
-    local y = 0.42
-    for index = startIndex, endIndex do
-        local entry = ownedItems[index]
-        local scriptItem = getScriptManager and getScriptManager():FindItem(entry.name)
-        local displayName = (scriptItem and scriptItem:getDisplayName() and scriptItem:getDisplayName():match("%S"))
-            and scriptItem:getDisplayName() or entry.name
-
-        local isSelected = self.selected[entry.name] and true or false
-        local label = tostring(displayName) .. " x" .. tostring(entry.count) .. (isSelected and " [SELECTED]" or "")
-        local button = ISButton:new(self.width * 0.20, self.height * y, self.width * 0.57, self.height * 0.045, label, self, self.onToggleItem)
-        button.textColor = isSelected and {r=1, g=1, b=0, a=1} or {r=0, g=1, b=0, a=1}
-        button.backgroundColor = {r=0, g=0, b=0, a=0.5}
-        button.borderColor = {r=0, g=1, b=0, a=0.5}
-        button.itemName = entry.name
-        button:initialise()
-        button:setVisible(true)
-        self.topBar:addChild(button)
-        table.insert(self.itemButtons, { button = button, itemName = entry.name })
-        y = y + 0.055
-    end
-
-    self.prevPageButton:setVisible(pageCount > 1)
-    self.prevPageButton:setEnable(self.currentPage > 1)
-    self.nextPageButton:setVisible(pageCount > 1)
-    self.nextPageButton:setEnable(self.currentPage < pageCount)
-    self.sellButton:setVisible(true)
-
-    local selectedCount = 0
-    for _ in pairs(self.selected) do selectedCount = selectedCount + 1 end
-    self:setContentText(
-        PZLinuxSellText("IGUI_PZLinux_Sell_BuyerWants", "A buyer today is interested in: %s", self.contractName or "")
-        .. "<LINE>" .. PZLinuxSellText("IGUI_PZLinux_Sell_SelectedCount", "Selected item types: %s", selectedCount)
-    )
-end
-
-function PZLinuxSellUI:onPrevPage(_button)
-    self.currentPage = math.max(1, self.currentPage - 1)
-    self:showCategoryItems()
-end
-
-function PZLinuxSellUI:onNextPage(_button)
-    self.currentPage = self.currentPage + 1
-    self:showCategoryItems()
-end
-
-function PZLinuxSellUI:onToggleItem(button)
-    if self.selected[button.itemName] then
-        self.selected[button.itemName] = nil
-    else
-        self.selected[button.itemName] = true
-    end
-    self:showCategoryItems()
-end
-
-function PZLinuxSellUI:onSellSelected(_button)
-    local itemNames = {}
-    for itemName in pairs(self.selected) do
-        table.insert(itemNames, itemName)
-    end
-    if #itemNames == 0 then return end
-
-    local playerObj = PZLinuxGetPlayer(self.player)
-    if not playerObj then return end
-
-    self.sellButton:setEnable(false)
-    PZLinuxRequestSellQuote(playerObj, self.contractId, itemNames, function(result)
-        self.sellButton:setEnable(true)
-        if self.isClosing or not self.content then return end
-        if not result or not result.ok then
-            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(getCore():getOptionSoundVolume() / 50)
-            HaloTextHelper.addBadText(playerObj, PZLinuxSellText("IGUI_PZLinux_Sell_Rejected", "This sale was rejected."))
-            return
-        end
-
-        self:hideSelectionControls()
-        self.quoteTotal = result.total
-        self.quoteGreatDeal = result.greatDeal
-
-        local lines
-        if result.greatDeal then
-            lines = { PZLinuxSellText("IGUI_PZLinux_Sell_GreatDeal", "A buyer really wants this! Offer: $%s", result.total) }
         else
-            lines = { PZLinuxSellText("IGUI_PZLinux_Sell_Offer", "Offer: $%s", result.total) }
+            self.statusLabel:setName(PZLinuxSellText(
+                "IGUI_PZLinux_Sell_BuyersToday", "Buyers looking for %s item(s) today.", #self.offers
+            ))
         end
-        table.insert(lines, PZLinuxSellText(
-            "IGUI_PZLinux_Sell_AcceptOrCancel",
-            "Accept to hand over the items now, or cancel. Either way, no one will buy today after this."
-        ))
-        self:setContentText(table.concat(lines, "<LINE>"))
-        self.acceptButton:setVisible(true)
-        self.cancelButton:setVisible(true)
+        self:renderOffers()
     end)
 end
 
-function PZLinuxSellUI:onAcceptOffer(_button)
+function PZLinuxSellUI:renderOffers()
+    local playerObj = PZLinuxGetPlayer(self.player)
+    for i = 1, ITEMS_MAX do
+        local offer = self.offers[i]
+        if offer then
+            local scriptItem = getScriptManager and getScriptManager():FindItem(offer.name)
+            local displayName = (scriptItem and scriptItem:getDisplayName() and scriptItem:getDisplayName():match("%S"))
+                and scriptItem:getDisplayName() or offer.name
+            local iconName = scriptItem and scriptItem:getIcon()
+            local iconTex = iconName and (getTexture(iconName) or getTexture("Item_" .. iconName)) or nil
+
+            if iconTex then
+                self.rowIcons[i].texture = iconTex
+                self.rowIcons[i]:setVisible(true)
+            else
+                self.rowIcons[i].texture = nil
+                self.rowIcons[i]:setVisible(false)
+            end
+
+            local owned = PZLinuxSellCountOwned(playerObj, offer.name)
+            self.rowLabels[i]:setName(tostring(displayName) .. " (x" .. tostring(offer.quantity) .. ")")
+
+            local priceText = "$" .. tostring(offer.total)
+                .. "  |  " .. PZLinuxSellText("IGUI_PZLinux_Sell_Owned", "You have: %s/%s", owned, offer.quantity)
+            if offer.greatDeal then
+                priceText = priceText .. "  " .. PZLinuxSellText("IGUI_PZLinux_Sell_GreatDealTag", "(great deal!)")
+            end
+            self.rowPriceLabels[i]:setName(priceText)
+
+            self.rowSellButtons[i].internal = i
+            self.rowSellButtons[i]:setVisible(true)
+            self.rowSellButtons[i]:setEnable(owned >= offer.quantity)
+
+            self.rowNegotiateButtons[i].internal = i
+            self.rowNegotiateButtons[i]:setVisible(true)
+        else
+            self.rowIcons[i]:setVisible(false)
+            self.rowLabels[i]:setName("")
+            self.rowPriceLabels[i]:setName("")
+            self.rowSellButtons[i]:setVisible(false)
+            self.rowNegotiateButtons[i]:setVisible(false)
+        end
+    end
+end
+
+function PZLinuxSellUI:onSellItem(button)
+    local offer = self.offers[button.internal]
+    if not offer then return end
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
-    self.acceptButton:setEnable(false)
-    self.cancelButton:setEnable(false)
-    PZLinuxRequestSellAcceptOffer(playerObj, function(result)
-        self.acceptButton:setEnable(true)
-        self.cancelButton:setEnable(true)
-        if self.isClosing or not self.content then return end
-
-        if not result or not result.ok then
-            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(getCore():getOptionSoundVolume() / 50)
+    button:setEnable(false)
+    PZLinuxRequestSellSell(playerObj, offer.name, function(result)
+        if self.isClosing then return end
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        if result and result.ok then
+            getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            local message = result.greatDeal
+                and PZLinuxSellText("IGUI_PZLinux_Sell_GreatDeal", "Great deal! Sold for $%s", result.total)
+                or PZLinuxSellText("IGUI_PZLinux_Sell_Sold", "Sold for $%s", result.total)
+            HaloTextHelper.addGoodText(playerObj, message)
+            HaloTextHelper.addGoodText(playerObj, PZLinuxSellText(
+                "IGUI_PZLinux_Sell_DropAtMailbox", "Bring the package to any mailbox to get paid."
+            ))
+        else
+            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             if result and result.error == "missing_items" then
                 HaloTextHelper.addBadText(playerObj, PZLinuxSellText(
-                    "IGUI_PZLinux_Sell_MissingItems",
-                    "You no longer have all the promised items."
+                    "IGUI_PZLinux_Sell_MissingItems", "You do not have enough of this item."
                 ))
-                return
+            else
+                HaloTextHelper.addBadText(playerObj, PZLinuxSellText("IGUI_PZLinux_Sell_Rejected", "This sale was rejected."))
             end
-            HaloTextHelper.addBadText(playerObj, PZLinuxSellText("IGUI_PZLinux_Sell_Rejected", "This sale was rejected."))
-            return
         end
-
-        self.acceptButton:setVisible(false)
-        self.cancelButton:setVisible(false)
-        self:setContentText(PZLinuxSellText(
-            "IGUI_PZLinux_Sell_DropAtMailbox",
-            "Deal! Bring the package to any mailbox to get paid."
-        ))
+        self:refreshOffers()
     end)
 end
 
-function PZLinuxSellUI:onCancelOffer(_button)
+function PZLinuxSellUI:onNegotiateItem(button)
+    local offer = self.offers[button.internal]
+    if not offer then return end
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
-    self.acceptButton:setEnable(false)
-    self.cancelButton:setEnable(false)
-    PZLinuxRequestSellCancelOffer(playerObj, function(result)
-        if self.isClosing or not self.content then return end
-        self.acceptButton:setVisible(false)
-        self.cancelButton:setVisible(false)
-        if not result or not result.ok then return end
-        self:setContentText(PZLinuxSellText(
-            "IGUI_PZLinux_Sell_NoBuyerToday",
-            "No one wants to buy items anymore. Come back tomorrow."
-        ))
+    button:setEnable(false)
+    PZLinuxRequestSellNegotiate(playerObj, offer.name, function(result)
+        button:setEnable(true)
+        if self.isClosing then return end
+        local globalVolume = getCore():getOptionSoundVolume() / 50
+        if not result or not result.ok then
+            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addBadText(playerObj, PZLinuxSellText("IGUI_PZLinux_Sell_Rejected", "This sale was rejected."))
+            self:refreshOffers()
+            return
+        end
+
+        if result.withdrawn then
+            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addBadText(playerObj, PZLinuxSellText(
+                "IGUI_PZLinux_Sell_NegotiateWithdrawn", "The buyer got annoyed and walked away."
+            ))
+        else
+            getSoundManager():PlayWorldSound("ircNotification", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addGoodText(playerObj, PZLinuxSellText(
+                "IGUI_PZLinux_Sell_NegotiateSuccess", "The buyer agreed! New offer: $%s", result.total
+            ))
+        end
+        self:refreshOffers()
     end)
 end
 

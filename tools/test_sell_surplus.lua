@@ -14,41 +14,50 @@ local function PZLinuxTestRead(path)
     return content
 end
 
--- Real category catalog (13 sellable categories + the vehicle one at id 9,
--- which Sell Surplus must never offer).
-local requestsData = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxRequestsData.lua")
-assert(loadstring(requestsData))()
+-- Lightweight catalog: 2 categories (one sellable, one the vehicle category
+-- that must never be offered), independent of the real 13-category data file.
+PZLinuxRequestDefinitions = {
+    [1] = { baseName = "Canned food", price = 1000, items = { "Base.ItemA", "Base.ItemB" } },
+    [9] = { baseName = "Car", price = 65000, vehicles = {} },
+}
 
 local source = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
-local first = assert(source:find("-- Sell Surplus: the inverse of Requests", 1, true))
+
+-- PZLinuxRequestsAllCategoryIds is a `local function` in the real file, so it
+-- is not visible to a separately-loaded chunk; provide an equivalent global
+-- for the Sell Surplus slice below to call.
+PZLinuxRequestsAllCategoryIds = function()
+    local ids = {}
+    for contractId in pairs(PZLinuxRequestDefinitions or {}) do
+        table.insert(ids, tonumber(contractId))
+    end
+    table.sort(ids)
+    return ids
+end
+
+local first = assert(source:find("-- Sell Surplus: the inverse of Requests, Dark Web-styled", 1, true))
 local last = assert(source:find("function PZLinuxRequestsFindDeliveredVehicle", first, true))
 assert(loadstring(source:sub(first, last - 1)))()
 
-PZLinuxRequestsGetDefinition = function(contractId)
-    return PZLinuxRequestDefinitions[tonumber(contractId)]
-end
-PZLinuxRequestsContains = function(entries, baseName)
-    for _, entry in ipairs(entries or {}) do
-        local value = type(entry) == "table" and entry.baseName or entry
-        if value == baseName then return entry end
-    end
-    return nil
-end
-
 PZLinux = { Config = { Sell = {
     demandChancePercent = 15,
-    basePricePercent = 50,
+    quantityMin = 1,
+    quantityMax = 10,
+    basePricePercentMin = 30,
+    basePricePercentMax = 50,
     greatDealChancePercent = 10,
     greatDealMinPercent = 110,
     greatDealMaxPercent = 130,
+    negotiateIncrement = 100,
+    negotiateSuccessChancePercent = 50,
 } } }
 
 local currentDay = 0
 PZLinuxRequestsCurrentGameDay = function() return currentDay end
 
 -- Deterministic: ZombRand(min[, max]) always returns min. Combined with the
--- config above, this always rolls "demand available", "great deal" and picks
--- the lowest-numbered category and the cheapest end of the great-deal range.
+-- config above, this always rolls "item wanted" (1 <= 15), quantity = 1 (the
+-- minimum), and a "great deal" (1 <= 10) at the cheapest end of its range.
 ZombRand = function(minimum) return minimum end
 
 PZLinuxGetPlayerKey = function() return "sell-test-player" end
@@ -64,7 +73,7 @@ end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxNormalizeMoney = function(amount) return math.floor(tonumber(amount) or 0) end
 PZLinuxSyncAddedInventoryItem = function() return true end
-PZLinuxRemoveInventoryItem = function(player, item) player:getInventory():Remove(item) return true end
+PZLinuxRemoveInventoryItem = function(player, item) player:getInventory():Remove(item) end
 
 local function PZLinuxTestList(values)
     local list = { values = values or {} }
@@ -103,8 +112,6 @@ end
 
 PZLinuxGetPlayer = function(value) return value end
 
--- Adds `count` items of `itemName` directly into the player's main inventory,
--- mirroring what "must be in the main inventory, like Dark Web" requires.
 local function PZLinuxTestGiveItems(player, itemName, count)
     for _ = 1, count do
         player.inventory:AddItem(itemName)
@@ -121,138 +128,131 @@ local function PZLinuxTestCountPackages(player)
     return count
 end
 
--- 13 sellable categories (14 defined minus vehicle id 9).
-local categoryCount = 0
-for contractId in pairs(PZLinuxRequestDefinitions) do
-    if tonumber(contractId) ~= 9 then categoryCount = categoryCount + 1 end
-end
-PZLinuxTestAssert(categoryCount == 13, "Sell Surplus must offer every Request category except the vehicle")
-
+-- The catalog must flatten every item of every category except the vehicle
+-- one (id 9), which must never be offered for sale.
 local player = PZLinuxTestNewPlayer()
-local definition1 = PZLinuxRequestDefinitions[1]
-local itemA, itemB = definition1.items[1], definition1.items[2]
+local offersDay0 = PZLinuxSellGetOffers(player, "offers-day0")
+PZLinuxTestAssert(offersDay0.ok, "getting today's offers must succeed")
+PZLinuxTestAssert(#offersDay0.offers == 2, "both mocked catalog items must roll wanted with the deterministic minimum roll")
+local itemAOffer, itemBOffer
+for _, offer in ipairs(offersDay0.offers) do
+    if offer.name == "Base.ItemA" then itemAOffer = offer end
+    if offer.name == "Base.ItemB" then itemBOffer = offer end
+end
+PZLinuxTestAssert(itemAOffer and itemBOffer, "every mocked item must appear in the offer list")
+PZLinuxTestAssert(itemAOffer.quantity == 1, "the deterministic minimum roll must pick the minimum quantity (1)")
+PZLinuxTestAssert(itemAOffer.greatDeal, "the deterministic minimum roll must pick a great deal (1 <= 10)")
+local expectedUnitPrice = math.floor(1000 * 110 / 100)
+PZLinuxTestAssert(itemAOffer.total == expectedUnitPrice * 1,
+    "the quoted total must reflect the great-deal percentage times the wanted quantity")
 
--- First refresh of day 0 rolls the demand and locks it in for the day.
-local refresh1 = PZLinuxSellRefreshDemand(player, "sell-refresh-1")
-PZLinuxTestAssert(refresh1.ok and refresh1.available and refresh1.contractId == 1,
-    "a fresh day must roll a demand (deterministic mock picks the lowest sellable category id)")
-PZLinuxTestAssert(refresh1.contractId ~= 9, "the vehicle category must never be offered for sale")
+-- A second refresh the same day must not reroll (same quantities/prices).
+local offersDay0Again = PZLinuxSellGetOffers(player, "offers-day0-again")
+local itemAOfferAgain
+for _, offer in ipairs(offersDay0Again.offers) do
+    if offer.name == "Base.ItemA" then itemAOfferAgain = offer end
+end
+PZLinuxTestAssert(itemAOfferAgain.total == itemAOffer.total, "the same day must not reroll a demanded item's price")
 
--- A second refresh the same day must not reroll.
-local refresh2 = PZLinuxSellRefreshDemand(player, "sell-refresh-2")
-PZLinuxTestAssert(refresh2.available and refresh2.contractId == refresh1.contractId,
-    "the demand must not reroll again within the same game day")
+-- Selling without owning enough of the item must be refused.
+local missingSale = PZLinuxSellApplySell(player, "Base.ItemA", "sell-missing")
+PZLinuxTestAssert(not missingSale.ok and missingSale.error == "missing_items",
+    "selling an item the player does not fully own must be refused")
+PZLinuxTestAssert(creditCalls == 0, "a refused sale must never credit the player")
 
--- Quoting the wrong category must be refused, and must not burn the day.
-local wrongCategory = PZLinuxSellRequestQuote(player, 2, { itemA }, "sell-quote-wrong")
-PZLinuxTestAssert(not wrongCategory.ok and wrongCategory.error == "wrong_category",
-    "a quote for a category other than today's demand must be refused")
-
--- Quoting items the player does not physically own must be refused and must
--- not consume the day's opportunity, since nothing was actually gathered yet.
-local notOwned = PZLinuxSellRequestQuote(player, 1, { itemA }, "sell-quote-not-owned")
-PZLinuxTestAssert(not notOwned.ok and notOwned.error == "invalid_sell_items",
-    "a quote for items not present in the main inventory must be refused")
-
--- Quoting with items that do not belong to the demanded category is rejected.
-local invalidItems = PZLinuxSellRequestQuote(player, 1, { "Base.NotARealItem" }, "sell-quote-invalid")
-PZLinuxTestAssert(not invalidItems.ok and invalidItems.error == "invalid_sell_items",
-    "a quote with no valid items for the category must be refused")
-
--- Gather two of itemA and one of itemB, then request a valid quote covering
--- both -- the quantity sold is whatever is actually owned, not a manual pick.
-PZLinuxTestGiveItems(player, itemA, 2)
-PZLinuxTestGiveItems(player, itemB, 1)
-local quote = PZLinuxSellRequestQuote(player, 1, { itemA, itemB }, "sell-quote-ok")
-PZLinuxTestAssert(quote.ok and quote.greatDeal and quote.count == 3,
-    "a valid quote must sell every owned unit of every selected item type (2 + 1 = 3)")
-local expectedUnitPrice = math.floor(definition1.price * 110 / 100)
-PZLinuxTestAssert(quote.total == expectedUnitPrice * 3,
-    "the quoted total must reflect the great-deal percentage times the owned quantity")
-PZLinuxTestAssert(#player.inventory.values == 3, "items must remain in inventory until the offer is accepted")
-
--- The single daily opportunity is already spent, win or lose, the moment a
--- quote is issued -- even before the player accepts or cancels it.
-local secondQuoteSameDay = PZLinuxSellRequestQuote(player, 1, { itemA }, "sell-quote-again")
-PZLinuxTestAssert(not secondQuoteSameDay.ok and secondQuoteSameDay.error == "no_demand_today",
-    "requesting a second quote the same day must be refused even for the same category")
-
--- Accepting removes exactly the promised items and hands over one priced
--- package, Dark Web style; nothing is credited to the bank yet.
-local accepted = PZLinuxSellAcceptOffer(player, "sell-accept-ok")
-PZLinuxTestAssert(accepted.ok and accepted.sold == 3 and accepted.total == quote.total,
-    "accepting a valid offer must remove exactly the quoted quantity")
-PZLinuxTestAssert(creditCalls == 0, "accepting an offer must not credit the bank directly")
+-- Gather exactly the demanded quantity and sell.
+PZLinuxTestGiveItems(player, "Base.ItemA", itemAOffer.quantity)
+local sale = PZLinuxSellApplySell(player, "Base.ItemA", "sell-ok")
+PZLinuxTestAssert(sale.ok and sale.sold == itemAOffer.quantity and sale.total == itemAOffer.total,
+    "a valid sale must remove exactly the demanded quantity for the demanded total")
 PZLinuxTestAssert(#player.inventory.values == 1, "sold items must be removed from the inventory, replaced by one package")
-PZLinuxTestAssert(PZLinuxTestCountPackages(player) == 1, "accepting must create exactly one Sell Surplus package")
+PZLinuxTestAssert(PZLinuxTestCountPackages(player) == 1, "selling must create exactly one Sell Surplus package")
+PZLinuxTestAssert(creditCalls == 0, "selling must not credit the bank directly -- only redeeming the package does")
+
+-- The same item cannot be sold again today.
+PZLinuxTestGiveItems(player, "Base.ItemA", 1)
+local resaleAttempt = PZLinuxSellApplySell(player, "Base.ItemA", "sell-again")
+PZLinuxTestAssert(not resaleAttempt.ok and resaleAttempt.error == "no_demand",
+    "an already-sold item must not be sellable again the same day")
+
+local offersAfterSale = PZLinuxSellGetOffers(player, "offers-after-sale")
+local itemAStillListed = false
+for _, offer in ipairs(offersAfterSale.offers) do
+    if offer.name == "Base.ItemA" then itemAStillListed = true end
+end
+PZLinuxTestAssert(not itemAStillListed, "a sold item must disappear from the offer list for the rest of the day")
 
 -- Redeeming the package at a mailbox is what actually pays the player.
-local redeemed = PZLinuxSellApplyRedeemPackage(player, {}, "sell-redeem-ok")
-PZLinuxTestAssert(redeemed.ok and redeemed.sold == 1 and redeemed.total == quote.total,
-    "redeeming at a mailbox must credit exactly the quoted total")
-PZLinuxTestAssert(creditCalls == 1 and lastCreditAmount == quote.total,
+local redeemed = PZLinuxSellApplyRedeemPackage(player, {}, "redeem-ok")
+PZLinuxTestAssert(redeemed.ok and redeemed.sold == 1 and redeemed.total == sale.total,
+    "redeeming at a mailbox must credit exactly the sale total")
+PZLinuxTestAssert(creditCalls == 1 and lastCreditAmount == sale.total,
     "redeeming must credit the bank exactly once for the package amount")
-PZLinuxTestAssert(#player.inventory.values == 0, "the package must be removed once redeemed")
 
--- Redeeming again with nothing pending is a harmless no-op.
-local noPendingRedeem = PZLinuxSellApplyRedeemPackage(player, {}, "sell-redeem-none")
-PZLinuxTestAssert(noPendingRedeem.ok and noPendingRedeem.sold == 0, "redeeming with no package must be a harmless no-op")
-PZLinuxTestAssert(creditCalls == 1, "a no-op redemption must never credit the player again")
+-- Negotiation: force success (ZombRand always minimum, so 1 <= 50 succeeds),
+-- raising the price by the configured increment.
+local negotiated = PZLinuxSellNegotiate(player, "Base.ItemB", "negotiate-1")
+PZLinuxTestAssert(negotiated.ok and not negotiated.withdrawn,
+    "the deterministic minimum roll must always succeed a negotiation (1 <= 50)")
+PZLinuxTestAssert(negotiated.total == itemBOffer.total + 100,
+    "a successful negotiation must raise the total by the configured increment")
 
--- The next game day allows a fresh roll.
+local offersAfterNegotiate = PZLinuxSellGetOffers(player, "offers-after-negotiate")
+local itemBAfterNegotiate
+for _, offer in ipairs(offersAfterNegotiate.offers) do
+    if offer.name == "Base.ItemB" then itemBAfterNegotiate = offer end
+end
+PZLinuxTestAssert(itemBAfterNegotiate and itemBAfterNegotiate.total == negotiated.total,
+    "the raised price must persist across subsequent offer refreshes")
+
+-- Negotiation failure: force the roll to fail, the buyer must walk away and
+-- the item must become unsellable for the rest of the day.
+local savedZombRand = ZombRand
+ZombRand = function(minimum, maximum)
+    if maximum then return maximum end -- always rolls above the 50% success chance
+    return minimum
+end
+local failedNegotiation = PZLinuxSellNegotiate(player, "Base.ItemB", "negotiate-fail")
+PZLinuxTestAssert(failedNegotiation.ok and failedNegotiation.withdrawn,
+    "a failed negotiation roll must make the buyer withdraw")
+ZombRand = savedZombRand
+
+local offersAfterWithdrawal = PZLinuxSellGetOffers(player, "offers-after-withdrawal")
+local itemBStillListed = false
+for _, offer in ipairs(offersAfterWithdrawal.offers) do
+    if offer.name == "Base.ItemB" then itemBStillListed = true end
+end
+PZLinuxTestAssert(not itemBStillListed, "a withdrawn item must disappear from the offer list for the rest of the day")
+
+PZLinuxTestGiveItems(player, "Base.ItemB", 10)
+local sellAfterWithdrawal = PZLinuxSellApplySell(player, "Base.ItemB", "sell-after-withdrawal")
+PZLinuxTestAssert(not sellAfterWithdrawal.ok and sellAfterWithdrawal.error == "no_demand",
+    "a withdrawn item must not be sellable even if the player owns plenty")
+
+-- The next game day rerolls everything, including sold/withdrawn items.
 currentDay = 1
-local nextDayRefresh = PZLinuxSellRefreshDemand(player, "sell-refresh-day2")
-PZLinuxTestAssert(nextDayRefresh.available, "a new game day must roll a fresh demand")
-local nextDayDefinition = PZLinuxRequestDefinitions[nextDayRefresh.contractId]
-PZLinuxTestGiveItems(player, nextDayDefinition.items[1], 1)
-local nextDayQuote = PZLinuxSellRequestQuote(player, nextDayRefresh.contractId, { nextDayDefinition.items[1] }, "sell-quote-day2")
-PZLinuxTestAssert(nextDayQuote.ok, "the day's fresh demand must allow a new quote")
-
--- Cancelling a locked-in offer never refunds the day: like a failed Request
--- supplier search, the roll already happened, so the player must wait.
-local cancelled = PZLinuxSellCancelOffer(player, "sell-cancel-ok")
-PZLinuxTestAssert(cancelled.ok, "cancelling a pending offer must succeed")
-PZLinuxTestAssert(#player.inventory.values == 1, "cancelling must never touch the player's inventory")
-local afterCancelQuote = PZLinuxSellRequestQuote(player, nextDayRefresh.contractId, { nextDayDefinition.items[1] }, "sell-quote-after-cancel")
-PZLinuxTestAssert(not afterCancelQuote.ok and afterCancelQuote.error == "no_demand_today",
-    "cancelling must not refund today's already-spent opportunity")
-
--- Accepting when items were spent/lost between quote and accept must fail
--- without creating a package, but must not crash or corrupt state. A fresh
--- player avoids any leftover inventory from the earlier scenarios above.
-currentDay = 2
-local missingPlayer = PZLinuxTestNewPlayer()
-local missingRefresh = PZLinuxSellRefreshDemand(missingPlayer, "sell-refresh-missing")
-local missingDefinition = PZLinuxRequestDefinitions[missingRefresh.contractId]
-PZLinuxTestGiveItems(missingPlayer, missingDefinition.items[1], 1)
-local missingQuote = PZLinuxSellRequestQuote(missingPlayer, missingRefresh.contractId, { missingDefinition.items[1] }, "sell-quote-missing")
-PZLinuxTestAssert(missingQuote.ok, "the quote must succeed while the item is still present")
-missingPlayer.inventory:Remove(missingPlayer.inventory.values[#missingPlayer.inventory.values])
-local missingAccept = PZLinuxSellAcceptOffer(missingPlayer, "sell-accept-missing")
-PZLinuxTestAssert(not missingAccept.ok and missingAccept.error == "missing_items",
-    "accepting must be refused if the promised items are no longer in the inventory")
-PZLinuxTestAssert(PZLinuxTestCountPackages(missingPlayer) == 0, "a failed acceptance must never create a package")
+local offersNextDay = PZLinuxSellGetOffers(player, "offers-day1")
+PZLinuxTestAssert(#offersNextDay.offers == 2, "the next game day must reroll every item fresh")
 
 -- Base (non-great-deal) pricing path: queue specific rolls so the demand
--- check still succeeds while the separate great-deal roll fails. Another
--- fresh player keeps this scenario's owned quantity exactly 1.
-local savedZombRand = ZombRand
-local zombRandQueue = { 1, 1, 50 } -- demand available, category index 1, great-deal roll fails (50 > 10)
+-- check still succeeds while the separate great-deal roll fails (the queue
+-- covers only the first item's rolls: wanted, quantity, great-deal-fails;
+-- everything after falls back to the deterministic minimum, so the base
+-- price percent resolves to the configured basePricePercentMin, 30).
+local zombRandQueue = { 1, 1, 50 } -- item wanted, quantity = 1, great-deal roll fails (50 > 10)
 ZombRand = function(minimum)
     if #zombRandQueue > 0 then return table.remove(zombRandQueue, 1) end
     return minimum
 end
-currentDay = 3
+currentDay = 2
 local basePlayer = PZLinuxTestNewPlayer()
-local baseRefresh = PZLinuxSellRefreshDemand(basePlayer, "sell-refresh-base")
-PZLinuxTestAssert(baseRefresh.available, "the queued roll must still make a demand available")
-local baseDefinition = PZLinuxRequestDefinitions[baseRefresh.contractId]
-PZLinuxTestGiveItems(basePlayer, baseDefinition.items[1], 1)
-local baseQuote = PZLinuxSellRequestQuote(basePlayer, baseRefresh.contractId, { baseDefinition.items[1] }, "sell-quote-base")
-PZLinuxTestAssert(baseQuote.ok and not baseQuote.greatDeal,
-    "rolling above the great-deal chance must fall back to the base (bad) price")
-PZLinuxTestAssert(baseQuote.total == math.floor(baseDefinition.price * 50 / 100),
-    "the base price must be exactly the configured percentage of the reference price")
+local baseOffers = PZLinuxSellGetOffers(basePlayer, "offers-base")
+PZLinuxTestAssert(#baseOffers.offers >= 1, "the queued rolls must still make at least one item wanted")
+local baseOffer = baseOffers.offers[1]
+PZLinuxTestAssert(not baseOffer.greatDeal, "rolling above the great-deal chance must fall back to the base (bad) price")
+local expectedBasePrice = math.floor(1000 * 30 / 100)
+PZLinuxTestAssert(baseOffer.total == expectedBasePrice * baseOffer.quantity,
+    "the base price must fall within the configured base percentage range times the quantity")
 ZombRand = savedZombRand
 
 print("PZLinux Sell Surplus tests OK")

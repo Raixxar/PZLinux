@@ -2,6 +2,39 @@
 
 ## Correctifs post-1.0.0
 
+- Sell Surplus : deuxieme refonte complete, cette fois pour ressembler au
+  Dark Web (icones, liste defilante) au lieu d'un systeme par categorie. La
+  demande n'est plus tiree une fois par jour pour une categorie entiere, mais
+  independamment pour CHAQUE objet vendable des Requests (toutes categories
+  sauf le vehicule) : 15 % de chance par jour qu'un acheteur le veuille, pour
+  une quantite aleatoire entre 1 et 10. Le joueur doit posseder au moins
+  cette quantite exacte dans son inventaire principal pour vendre (aucune
+  vente partielle : c'est une limite volontaire pour eviter les abus); un
+  objet absent de la liste signifie simplement que personne ne veut l'acheter
+  aujourd'hui. Le prix est tire entre 30 et 50 % de la valeur de reference de
+  l'objet, avec 10 % de chance de tomber sur un gros acheteur payant 110 a
+  130 %. La vente est desormais instantanee comme le Dark Web : cliquer sur
+  "SELL" retire immediatement les objets de l'inventaire et les remplace par
+  un colis nomme "$<prix>" a deposer dans une boite aux lettres pour etre
+  paye. Nouveau bouton "NEGOTIATE" : le joueur peut tenter de faire monter le
+  prix de 100 $ a chaque clic, avec 50 % de chance de succes; en cas
+  d'echec, l'acheteur retire completement son offre et l'objet ne peut plus
+  etre vendu avant le lendemain. Voir `PZLinux.Config.Sell` (
+  `demandChancePercent`, `quantityMin/Max`, `basePricePercentMin/Max`,
+  `negotiateIncrement`, `negotiateSuccessChancePercent`) dans
+  `PZLinuxConfig.lua`, les fonctions `PZLinuxSellGetOffers` /
+  `PZLinuxSellNegotiate` / `PZLinuxSellApplySell` dans
+  `ISPZLinuxVariablesTables.lua` (le depot en boite aux lettres,
+  `PZLinuxSellApplyRedeemPackage`, est inchange), et
+  `tools/test_sell_surplus.lua` pour la couverture complete.
+- Requests (objets) : correctif d'un plantage ("attempted index: setVisible
+  of non-table: null") lors du clic sur une categorie dans le menu Requests.
+  Les boutons de pagination precedent/suivant n'etaient crees que s'il y
+  avait plus d'une page; avec le filtrage par disponibilite quotidienne, la
+  plupart des jours n'affichent qu'une poignee de categories qui tiennent sur
+  une seule page, laissant le bouton "suivant" a `nil` et provoquant le
+  plantage au clic. Corrige en verifiant l'existence des boutons avant de les
+  manipuler.
 - Requests (objets et vehicules) : refonte complete de la rarete des
   vendeurs. Le mecanisme de "recherche de fournisseur" avec delai et 40 %
   d'echec apres paiement est supprime, remplace par un tirage quotidien
