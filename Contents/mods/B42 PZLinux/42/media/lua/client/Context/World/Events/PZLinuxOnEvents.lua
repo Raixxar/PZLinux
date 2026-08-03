@@ -216,9 +216,24 @@ local function checkAndSpawnVehicle(player)
         end
         if PZLinuxConfirmVisibleVehicle(player, deliveryState) then return end
         local x, y, z = modData.PZLinuxRequestLocationX, modData.PZLinuxRequestLocationY, modData.PZLinuxRequestLocationZ
-        if not x or not y or not z then return end
+        if not x or not y or not z then
+            print("[PZLinux Vehicle][client] no delivery location in modData"
+                .. " x=" .. tostring(x) .. " y=" .. tostring(y) .. " z=" .. tostring(z)
+                .. " deliveryId=" .. tostring(modData.PZLinuxRequestVehicleDeliveryId))
+            return
+        end
         local dist = math.sqrt((player:getX() - x)^2 + (player:getY() - y)^2)
-        if dist < 50 and PZLinuxCanRequestContractRestore(PZLinuxVehicleSpawnRequests, player, 5) then
+        local canRestore = PZLinuxCanRequestContractRestore(PZLinuxVehicleSpawnRequests, player, 5)
+        if dist >= 50 or not canRestore then
+            print("[PZLinux Vehicle][client] not requesting spawn"
+                .. " dist=" .. tostring(dist) .. " canRestore=" .. tostring(canRestore)
+                .. " player=" .. tostring(math.floor(player:getX())) .. "," .. tostring(math.floor(player:getY()))
+                .. " target=" .. tostring(x) .. "," .. tostring(y) .. "," .. tostring(z))
+        end
+        if dist < 50 and canRestore then
+            print("[PZLinux Vehicle][client] requesting spawn deliveryId="
+                .. tostring(modData.PZLinuxRequestVehicleDeliveryId)
+                .. " car=" .. tostring(modData.PZLinuxOnItemRequestCarName))
             PZLinuxRequestSpawnVehicle(player, function(result)
                 if result and result.ok and result.spawned then
                     PZLinuxVehicleDeliveryState[playerKey] = {
