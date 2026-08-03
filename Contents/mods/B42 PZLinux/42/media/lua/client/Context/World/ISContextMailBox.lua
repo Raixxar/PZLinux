@@ -147,16 +147,12 @@ function MailBoxUI:onSendTakePackage()
         PZLinuxMailBoxActionFinished()
     end)
 
-    PZLinuxRequestSellConfirmDrop(playerObj, self.mailbox, function(result)
+    PZLinuxRequestSellRedeemPackage(playerObj, self.mailbox, function(result)
         if result and result.ok == false then
             HaloTextHelper.addBadText(playerObj, "Sell surplus failed: " .. tostring(result.error or "unknown error"))
         elseif result and result.ok and result.sold and result.sold > 0 then
             saveAtmBalance(result.balance, playerObj)
-            if result.greatDeal then
-                HaloTextHelper.addGoodText(playerObj, "Great deal! $" .. tostring(result.total) .. " for your surplus")
-            else
-                HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.total) .. " for your surplus")
-            end
+            HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.total) .. " for your surplus")
         end
         PZLinuxMailBoxActionFinished()
     end)

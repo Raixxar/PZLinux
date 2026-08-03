@@ -2,6 +2,56 @@
 
 ## Correctifs post-1.0.0
 
+- Requests (objets et vehicules) : refonte complete de la rarete des
+  vendeurs. Le mecanisme de "recherche de fournisseur" avec delai et 40 %
+  d'echec apres paiement est supprime, remplace par un tirage quotidien
+  independant par categorie (14 categories, vehicule inclus) qui decide si
+  un vendeur existe ne serait-ce que pour aujourd'hui. Seules les categories
+  ou le tirage a reussi apparaissent dans la liste du menu Requests (un
+  "check rapide" de ce qui est recuperable aujourd'hui), au lieu de laisser
+  le joueur lancer une recherche dans une categorie qui n'a jamais eu la
+  moindre chance d'aboutir. Refuser une offre affichee (bouton "Non" une fois
+  qu'un prix a ete propose) masque desormais cette categorie jusqu'au reset
+  du jour suivant, exactement comme si personne n'avait ete trouve — ceci
+  evite de pouvoir re-tenter en boucle pour obtenir une meilleure offre.
+  La rarete augmente avec le temps de jeu : la chance de ne trouver personne
+  demarre a 50 % en debut de partie et grimpe lineairement jusqu'a 75 % au
+  bout de 180 jours de jeu (environ 6 mois, plafonnee ensuite), pour simuler
+  la disparition progressive des survivants/vendeurs au fil du temps. Voir
+  `PZLinux.Config.Requests` (`unavailableChancePercentStart`,
+  `unavailableChancePercentMax`, `unavailableRampGameDays`) dans
+  `PZLinuxConfig.lua`, les nouvelles fonctions
+  `PZLinuxRequestsGetAvailableCategories` / `PZLinuxRequestsRejectCategory`
+  dans `ISPZLinuxVariablesTables.lua`, et `tools/test_request_vehicle_delivery.lua`
+  pour la couverture (liste filtree, refus qui masque une categorie, reset le
+  jour suivant, cas "personne nulle part aujourd'hui", et progression de la
+  rarete dans le temps).
+- Sell Surplus : revision complete du flux suite aux premiers tests en jeu.
+  L'interface liste desormais uniquement les types d'objets de la categorie
+  demandee que le joueur possede reellement dans son inventaire principal
+  (comme le Dark Web), avec au plus 5 lignes affichees a la fois et une
+  pagination (< / >) pour le reste, ce qui corrige le debordement visuel de
+  la liste. La limite artificielle de 6 objets par vente a disparu : la
+  vente porte desormais sur la quantite reellement possedee de chaque type
+  selectionne. Le flux de validation devient un vrai aller-retour en deux
+  temps : "Obtenir un devis" fige le prix propose par l'acheteur (affiche a
+  l'ecran, variable selon la categorie et selon le tirage "gros acheteur"),
+  puis le joueur choisit ACCEPTER (les objets disparaissent immediatement de
+  l'inventaire, remplaces par un colis nomme "$<prix>", exactement comme le
+  Dark Web) ou ANNULER. Dans les deux cas l'opportunite du jour est deja
+  consommee des l'obtention du devis (comme pour la recherche de fournisseur
+  des Requests) : annuler affiche "Plus personne ne veut acheter d'objets
+  aujourd'hui" et il faut attendre le jour de jeu suivant. Le paiement reel
+  n'intervient qu'au depot du colis dans une boite aux lettres. Cote code,
+  `PZLinuxSellApplyConfirmDrop` (qui verifiait l'inventaire et payait en une
+  seule etape a la boite aux lettres) est remplace par trois fonctions
+  distinctes : `PZLinuxSellAcceptOffer` (retire les objets, cree le colis),
+  `PZLinuxSellCancelOffer` (annule sans toucher a l'inventaire) et
+  `PZLinuxSellApplyRedeemPackage` (credite la banque au depot du colis, sur
+  le meme modele que `PZLinuxDarkWebApplyRedeemSales`). Voir
+  `tools/test_sell_surplus.lua` pour la couverture de tous ces cas
+  (objets manquants entre devis et acceptation, annulation, jour suivant,
+  prix de base vs. gros acheteur).
 - Correctif critique : un bug de syntaxe Lua (ambiguite classique
   `print(...)` suivi d'une ligne commencant par `(` sur la ligne suivante,
   interprete par Lua comme un appel de fonction chaine plutot que deux

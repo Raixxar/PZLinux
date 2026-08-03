@@ -32,8 +32,18 @@ local requestUiSource = PZLinuxTestRead(luaRoot .. "/client/Context/World/Featur
 local applyOrderStart = assert(source:find("function PZLinuxRequestsApplyOrder", 1, true))
 local applyOrderEnd = assert(source:find("function PZLinuxRequestsApplyDelivery", applyOrderStart, true))
 local applyOrderSource = source:sub(applyOrderStart, applyOrderEnd - 1)
-local first = assert(source:find("function PZLinuxRequestsRealNowSeconds", 1, true))
+local first = assert(source:find("function PZLinuxRequestsCurrentGameDay", 1, true))
 local last = assert(source:find("function PZLinuxRequestOrder", first, true))
+
+-- Lightweight catalog for the category-availability roll (PZLinuxRequestsAllCategoryIds
+-- iterates over this), independent of the real 13-category data file.
+PZLinuxRequestDefinitions = {
+    [1] = { baseName = "Canned food" },
+    [2] = { baseName = "Meat" },
+    [3] = { baseName = "Fish" },
+    [9] = { baseName = "Car" },
+}
+
 assert(loadstring(source:sub(first, last - 1)))()
 
 PZLinuxTestAssert(applyOrderSource:find('error = "request_delivery_pending"', 1, true),
@@ -54,17 +64,20 @@ local cell = {
     getGridSquare = function() return square end,
 }
 getCell = function() return cell end
+-- Mutable so the trailing category-availability tests can simulate the next
+-- game day without disturbing the vehicle tests above, which assume a fixed
+-- 12h world age throughout.
+local worldAgeHours = 12
 getGameTime = function()
-    return { getWorldAgeHours = function() return 12 end }
+    return { getWorldAgeHours = function() return worldAgeHours end }
 end
 isServer = function() return true end
 IsoDirections = { S = 4 }
 ZombRand = function(minimum) return minimum end
 PZLinux = { Config = { Requests = {
-    searchFailureChancePercent = 20,
-    searchMinDelaySeconds = 10,
-    searchMaxDelaySeconds = 90,
-    searchCooldownHours = 24,
+    unavailableChancePercentStart = 50,
+    unavailableChancePercentMax = 75,
+    unavailableRampGameDays = 180,
 } } }
 
 VehicleManager = { instance = {} }
@@ -298,43 +311,80 @@ local vehicleSelection = requestUiSource:sub(vehicleSelectionStart, vehicleSelec
 PZLinuxTestAssert(vehicleSelection:find("itemCount = 1", 1, true),
     "a vehicle Request offer must contain exactly one vehicle")
 
--- Supplier search: an item Request rolls its outcome immediately but only
--- reveals it (and, on failure, refunds and applies a per-item cooldown) once
--- the random delay has passed.
+-- Category availability: each of the 4 mocked categories independently rolls
+-- once per game day whether a seller exists at all. With the mocked ZombRand
+-- always returning the minimum, every category rolls available by default
+-- (day 0's chance is the configured 50% start, and 1 <= 50).
 local searchModData = { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequest = {} }
 local searchPlayer = { getModData = function() return searchModData end }
 
-local ammoOrder = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 2 }, "search-order-1")
-PZLinuxTestAssert(ammoOrder.ok and ammoOrder.searching
-    and type(ammoOrder.revealDelaySeconds) == "number",
-    "an item Request must start a supplier search instead of an instant delivery")
-PZLinuxTestAssert(searchModData.PZLinuxRequestSearchPending == 1
-    and searchModData.PZLinuxRequestSearchContractId == 2,
-    "the search outcome must be tracked in the player's own modData")
+local categoriesDay0 = PZLinuxRequestsGetAvailableCategories(searchPlayer, "categories-day0")
+PZLinuxTestAssert(categoriesDay0.ok and #categoriesDay0.available == 4,
+    "every mocked category must be available today with the deterministic minimum roll")
 
-local tooSoon = PZLinuxRequestsResolveSearch(searchPlayer, "search-resolve-too-soon")
-PZLinuxTestAssert(tooSoon.ok and not tooSoon.resolved and tooSoon.pending,
-    "the search must not resolve before its random delay has elapsed")
+local ammoOrder = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 2 }, "order-1")
+PZLinuxTestAssert(ammoOrder.ok, "an order for an available category must succeed directly")
+PZLinuxTestAssert(ammoOrder.searching == nil,
+    "item Requests no longer go through a delayed supplier search reveal")
 
--- Force the reveal time into the past to simulate the delay having elapsed.
-searchModData.PZLinuxRequestSearchRevealAt = PZLinuxRequestsRealNowSeconds() - 1
-local resolved = PZLinuxRequestsResolveSearch(searchPlayer, "search-resolve-due")
-PZLinuxTestAssert(resolved.ok and resolved.resolved and resolved.found == false,
-    "the mocked ZombRand always rolls the minimum, so the search must resolve as failed")
-PZLinuxTestAssert(creditCalls == 1 and lastCreditAmount == 100,
-    "a failed search must fully refund the paid amount")
-PZLinuxTestAssert(searchModData.PZLinuxActiveRequest == 0 and #searchModData.PZLinuxOnItemRequest == 0,
-    "a failed search must clear the pending item delivery")
-PZLinuxTestAssert(type(searchModData.PZLinuxRequestSearchCooldowns) == "table"
-    and searchModData.PZLinuxRequestSearchCooldowns["2"] ~= nil,
-    "a failed search must apply a per-item-type cooldown")
+-- Refusing an offered price hides that category until the next game day,
+-- exactly like finding no seller at all would.
+local rejected = PZLinuxRequestsRejectCategory(searchPlayer, 3, "reject-3")
+PZLinuxTestAssert(rejected.ok, "rejecting a category must succeed")
 
-local blockedByCooldown = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 2 }, "search-order-blocked")
-PZLinuxTestAssert(not blockedByCooldown.ok and blockedByCooldown.error == "supplier_cooldown",
-    "the same item type must be refused while its supplier cooldown is active")
+local categoriesAfterReject = PZLinuxRequestsGetAvailableCategories(searchPlayer, "categories-after-reject")
+local stillListed = false
+for _, contractId in ipairs(categoriesAfterReject.available) do
+    if contractId == 3 then stillListed = true end
+end
+PZLinuxTestAssert(not stillListed, "a refused category must disappear from the list the same day")
 
-local otherItemStillWorks = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 3 }, "search-order-other")
-PZLinuxTestAssert(otherItemStillWorks.ok,
-    "the supplier cooldown must be scoped to the specific item type, not the whole player")
+local blockedByRejection = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 3 }, "order-blocked")
+PZLinuxTestAssert(not blockedByRejection.ok and blockedByRejection.error == "category_unavailable",
+    "ordering a refused category the same day must be refused")
+
+local otherCategoryStillWorks = PZLinuxRequestsApplyOrder(searchPlayer, { contractId = 1 }, "order-other")
+PZLinuxTestAssert(otherCategoryStillWorks.ok,
+    "refusing one category must not affect other categories the same day")
+
+-- The next game day rerolls everything, including previously refused
+-- categories.
+worldAgeHours = worldAgeHours + 24
+local categoriesNextDay = PZLinuxRequestsGetAvailableCategories(searchPlayer, "categories-day1")
+local listedAgain = false
+for _, contractId in ipairs(categoriesNextDay.available) do
+    if contractId == 3 then listedAgain = true end
+end
+PZLinuxTestAssert(listedAgain, "a refused category must become available again on the next game day")
+
+-- No seller today: force every category's roll to fail, then verify the
+-- category list is empty and ordering is refused -- the simplified fallback
+-- the player explicitly agreed to (only ever show categories with a seller).
+local noSellerModData = { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequest = {} }
+local noSellerPlayer = { getModData = function() return noSellerModData end }
+local savedZombRand = ZombRand
+ZombRand = function(minimum, maximum)
+    if maximum then return maximum end -- always rolls above any chance percent, i.e. always fails
+    return minimum
+end
+local noSellerCategories = PZLinuxRequestsGetAvailableCategories(noSellerPlayer, "categories-none")
+PZLinuxTestAssert(#noSellerCategories.available == 0,
+    "when every category's roll fails, the list must be empty")
+local noSellerOrder = PZLinuxRequestsApplyOrder(noSellerPlayer, { contractId = 1 }, "order-none")
+PZLinuxTestAssert(not noSellerOrder.ok and noSellerOrder.error == "category_unavailable",
+    "an order for a category with no seller today must be refused")
+ZombRand = savedZombRand
+
+-- The chance of finding nobody must rise as the world ages, then cap once
+-- the configured ramp period has fully elapsed.
+worldAgeHours = 0
+PZLinuxTestAssert(PZLinuxRequestsCurrentCategoryAvailableChancePercent() == 50,
+    "day 0 must use the configured start chance (100 - 50% unavailable)")
+worldAgeHours = 180 * 24
+PZLinuxTestAssert(PZLinuxRequestsCurrentCategoryAvailableChancePercent() == 25,
+    "at the end of the ramp (180 game days, ~6 months) the chance must equal 100 - the configured max unavailable percent")
+worldAgeHours = 360 * 24
+PZLinuxTestAssert(PZLinuxRequestsCurrentCategoryAvailableChancePercent() == 25,
+    "the chance must stay capped once the ramp period has fully elapsed")
 
 print("PZLinux Request vehicle delivery tests OK")

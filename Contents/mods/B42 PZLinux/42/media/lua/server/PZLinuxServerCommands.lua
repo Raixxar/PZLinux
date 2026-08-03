@@ -336,16 +336,16 @@ local function PZLinuxServerRequestOrder(player, args)
     end)
 end
 
-local function PZLinuxServerRequestResolveSearch(player, args)
-    PZLinuxServerProcessIdempotent(
-        player,
-        "PZLinuxRequestResolveSearch",
-        args,
-        "PZLinuxRequestResolveSearchResult",
-        function()
-            return PZLinuxRequestsResolveSearch(player, args and args.requestId)
-        end
-    )
+local function PZLinuxServerRequestGetCategories(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxRequestGetCategories", args, "PZLinuxRequestGetCategoriesResult", function()
+        return PZLinuxRequestsGetAvailableCategories(player, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerRequestRejectCategory(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxRequestRejectCategory", args, "PZLinuxRequestRejectCategoryResult", function()
+        return PZLinuxRequestsRejectCategory(player, args and args.contractId, args and args.requestId)
+    end)
 end
 
 local function PZLinuxServerRequestDeliver(player, args)
@@ -371,9 +371,21 @@ local function PZLinuxServerSellRequestQuote(player, args)
     end)
 end
 
-local function PZLinuxServerSellConfirmDrop(player, args)
-    PZLinuxServerProcessIdempotent(player, "PZLinuxSellConfirmDrop", args, "PZLinuxSellConfirmDropResult", function()
-        return PZLinuxSellApplyConfirmDrop(player, args and args.mailbox, args and args.requestId)
+local function PZLinuxServerSellAcceptOffer(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellAcceptOffer", args, "PZLinuxSellAcceptOfferResult", function()
+        return PZLinuxSellAcceptOffer(player, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerSellCancelOffer(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellCancelOffer", args, "PZLinuxSellCancelOfferResult", function()
+        return PZLinuxSellCancelOffer(player, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerSellRedeemPackage(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxSellRedeemPackage", args, "PZLinuxSellRedeemPackageResult", function()
+        return PZLinuxSellApplyRedeemPackage(player, args and args.mailbox, args and args.requestId)
     end)
 end
 
@@ -489,11 +501,14 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxContractCompletionAck = PZLinuxServerContractCompletionAck,
     PZLinuxContractWorldEvent = PZLinuxServerContractWorldEvent,
     PZLinuxRequestOrder = PZLinuxServerRequestOrder,
-    PZLinuxRequestResolveSearch = PZLinuxServerRequestResolveSearch,
+    PZLinuxRequestGetCategories = PZLinuxServerRequestGetCategories,
+    PZLinuxRequestRejectCategory = PZLinuxServerRequestRejectCategory,
     PZLinuxRequestDeliver = PZLinuxServerRequestDeliver,
     PZLinuxSellRefreshDemand = PZLinuxServerSellRefreshDemand,
     PZLinuxSellRequestQuote = PZLinuxServerSellRequestQuote,
-    PZLinuxSellConfirmDrop = PZLinuxServerSellConfirmDrop,
+    PZLinuxSellAcceptOffer = PZLinuxServerSellAcceptOffer,
+    PZLinuxSellCancelOffer = PZLinuxServerSellCancelOffer,
+    PZLinuxSellRedeemPackage = PZLinuxServerSellRedeemPackage,
     PZLinuxMailboxState = PZLinuxServerMailboxState,
     PZLinuxReputationSnapshot = PZLinuxServerReputationSnapshot,
     PZLinuxRequestSpawnVehicle = PZLinuxServerRequestSpawnVehicle,

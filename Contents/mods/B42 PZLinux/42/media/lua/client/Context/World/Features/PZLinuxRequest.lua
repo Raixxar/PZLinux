@@ -43,46 +43,6 @@ local function PZLinuxRequestSetConversation(ui, message)
     panel:setYScroll(-maxYScroll)
 end
 
--- Waits (game-speed aware, continues through pause, independent of whether the
--- Request UI panel is still open) for the server-decided supplier search to
--- become due, then reveals the already-decided outcome. The outcome cannot be
--- changed by closing the panel or disconnecting since it was rolled up front.
-local function PZLinuxRequestWaitForSupplier(playerObj, delaySeconds)
-    local waitMs = math.max(0, tonumber(delaySeconds) or 0) * 1000
-    local co = coroutine.create(function()
-        PZLinux.Typing.wait(nil, waitMs, waitMs, 1)
-        PZLinuxRequestResolveSearch(playerObj, function(result)
-            if not result or not result.ok or not result.resolved then return end
-            if result.found then
-                HaloTextHelper.addGoodText(playerObj, PZLinuxFormatText(
-                    "IGUI_PZLinux_Request_SupplierFound",
-                    "A supplier was found. Your order is on its way to the mailbox."
-                ))
-            else
-                HaloTextHelper.addBadText(playerObj, PZLinuxFormatText(
-                    "IGUI_PZLinux_Request_SupplierNotFound",
-                    "No supplier could be found. You have been refunded."
-                ))
-            end
-        end)
-    end)
-
-    local tickEvent = Events.OnTickEvenPaused or Events.OnTick
-    local pump
-    pump = function()
-        if coroutine.status(co) == "dead" then
-            tickEvent.Remove(pump)
-            return
-        end
-        local ok, err = coroutine.resume(co)
-        if not ok then
-            print("[PZLinux Request] search wait coroutine error: " .. tostring(err))
-            tickEvent.Remove(pump)
-        end
-    end
-    tickEvent.Add(pump)
-end
-
 -- CONSTRUCTOR
 function requestUI:new(x, y, width, height, player)
     local o = ISPanel:new(x, y, width, height)
@@ -177,7 +137,34 @@ function requestUI:initialise()
     self:refreshContracts()
 end
 
+-- Only categories today's roll actually made available are worth showing --
+-- a quick check of what can be found today, instead of letting the player
+-- "search" a category that was never going to have a seller.
 function requestUI:refreshContracts()
+    if not self.categoriesLoaded then
+        if self.categoriesPending then return end
+        self.categoriesPending = true
+        PZLinuxRequestGetCategories(PZLinuxGetPlayer(self.player), function(result)
+            self.categoriesPending = false
+            if self.isClosing then return end
+            local availableIds = {}
+            if result and result.ok then
+                for _, contractId in ipairs(result.available or {}) do
+                    availableIds[tonumber(contractId)] = true
+                end
+            end
+            self.availableCatalog = {}
+            for _, contract in ipairs(PZLinuxRequestCatalog) do
+                if availableIds[contract.id] then
+                    table.insert(self.availableCatalog, contract)
+                end
+            end
+            self.categoriesLoaded = true
+            self:refreshContracts()
+        end)
+        return
+    end
+
     if self.prevButton then self.prevButton:setVisible(false) end
     if self.nextButton then self.nextButton:setVisible(false) end
     for _, contractButton in ipairs(self.contractButtons or {}) do
@@ -185,14 +172,30 @@ function requestUI:refreshContracts()
     end
     self.contractButtons = {}
 
+    local availableCatalog = self.availableCatalog or {}
+    if #availableCatalog == 0 then
+        if not self.noSellerLabel then
+            self.noSellerLabel = ISLabel:new(
+                self.width * 0.20, self.height * 0.30, self.height * 0.03,
+                PZLinuxFormatText("IGUI_PZLinux_Request_NoSellerToday", "No one is buying or selling anything today. Come back tomorrow."),
+                0, 1, 0, 1, UIFont.Small, true
+            )
+            self.noSellerLabel:initialise()
+            self.topBar:addChild(self.noSellerLabel)
+        end
+        self.noSellerLabel:setVisible(true)
+        return
+    end
+    if self.noSellerLabel then self.noSellerLabel:setVisible(false) end
+
     local y = 0.20
     local itemsPerPage = 8
     local currentPage = self.currentPage or 1
     local startIndex = (currentPage - 1) * itemsPerPage + 1
-    local endIndex = math.min(startIndex + itemsPerPage - 1, #PZLinuxRequestCatalog)
+    local endIndex = math.min(startIndex + itemsPerPage - 1, #availableCatalog)
 
     for i = startIndex, endIndex do
-        local contract = PZLinuxRequestCatalog[i]
+        local contract = availableCatalog[i]
         local contractButton = ISButton:new(self.width * 0.20, self.height * y, self.width * 0.57, self.height * 0.05, contract.name, self, self.onSelectContract)
         contractButton.textColor = {r=0, g=1, b=0, a=1}
         contractButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
@@ -214,7 +217,7 @@ function requestUI:refreshContracts()
     self.prevButton:initialise()
     self.topBar:addChild(self.prevButton)
 
-    if endIndex < #PZLinuxRequestCatalog then
+    if endIndex < #availableCatalog then
         self.nextButton = ISButton:new(self.width * 0.484, self.height * 0.68, self.width * 0.030, self.height * 0.025, ">", self, function()
             self.currentPage = currentPage + 1
             self:refreshContracts()
@@ -269,13 +272,9 @@ function requestUI:onContractId(contract)
         if not PZLinux.Typing.waitProfile(self, "message") then return end
         if self.isClosing then return end
 
-        local waitUser = ZombRand(1, 4)
-        if waitUser == 1 then
-            message = PZLinuxRequestText("IGUI_PZLinux_Request_NobodyJoined")
-            PZLinuxRequestSetConversation(self, message)
-            return
-        end
-
+        -- No "nobody joined" roll here anymore: the category list already
+        -- only shows categories today's roll made available, so entering
+        -- this dialogue always finds someone.
         getSoundManager():PlayWorldSound("ircNotification", false, PZLinuxGetPlayer(self.player):getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         local sellerName = generateUsername()
         local playerName = PZLinuxFormatIRCName(generatePseudo(string.lower(PZLinuxGetPlayer(self.player):getUsername())))
@@ -419,7 +418,8 @@ function requestUI:onContractId(contract)
         local playerBalance = loadAtmBalance(self.player)
         local noButton = PZLinuxRequestText("IGUI_PZLinux_Request_No")
         local actionButtonWidth = self.width * 0.20
-        if playerBalance < totalRequestPrice then
+        local canAfford = playerBalance >= totalRequestPrice
+        if not canAfford then
             noButton = PZLinuxRequestText("IGUI_PZLinux_Request_NotEnoughMoney")
         else
             self.yesButton = ISButton:new(self.width * 0.28, self.height * 0.65, actionButtonWidth, 25, PZLinuxRequestText("IGUI_PZLinux_Request_Yes"), self, self.onYesButton)
@@ -429,7 +429,11 @@ function requestUI:onContractId(contract)
             self.yesButton:instantiate()
             self.topBar:addChild(self.yesButton)
         end
-        self.noButton = ISButton:new(self.width * 0.52, self.height * 0.65, actionButtonWidth, 25, noButton, self, self.onMinimizeBack)
+        -- Refusing a real offer (not just "not enough money") burns today's
+        -- opportunity for this category, exactly like finding no seller at
+        -- all: it disappears from the list until the next game day's roll.
+        self.noButton = ISButton:new(self.width * 0.52, self.height * 0.65, actionButtonWidth, 25, noButton, self, canAfford and self.onRefuseButton or self.onMinimizeBack)
+        self.noButton.id = contract
         self.noButton:initialise()
         self.noButton:instantiate()
         self.topBar:addChild(self.noButton)
@@ -493,12 +497,10 @@ function requestUI:onYesButton(button)
     PZLinuxRequestOrder(playerObj, requestState, function(result)
         if not result or not result.ok then
             getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(getCore():getOptionSoundVolume() / 50)
-            if result and result.error == "supplier_cooldown" then
-                local daysLeft = math.max(1, math.ceil(tonumber(result.retryAfterGameDays) or 1))
+            if result and result.error == "category_unavailable" then
                 HaloTextHelper.addBadText(playerObj, PZLinuxFormatText(
-                    "IGUI_PZLinux_Request_SupplierCooldown",
-                    "No supplier will take this order yet (try again in %s in-game day(s)).",
-                    daysLeft
+                    "IGUI_PZLinux_Request_CategoryUnavailable",
+                    "No one wants to trade in this category anymore today."
                 ))
             else
                 HaloTextHelper.addBadText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_Rejected"))
@@ -528,16 +530,20 @@ function requestUI:onYesButton(button)
         end
 
         modData.PZLinuxUIOpenMenu = 8
-        if result.searching then
-            HaloTextHelper.addGoodText(playerObj, PZLinuxFormatText(
-                "IGUI_PZLinux_Request_SearchingSupplier",
-                "Searching for a supplier..."
-            ))
-            PZLinuxRequestWaitForSupplier(playerObj, result.revealDelaySeconds)
-        else
-            HaloTextHelper.addGoodText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_MailboxAvailable"))
-        end
+        HaloTextHelper.addGoodText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_MailboxAvailable"))
     end)
+end
+
+-- Refusing a real price offer burns today's opportunity for this category,
+-- exactly like finding no seller at all would: it disappears from the list
+-- until the next game day's roll, so declining repeatedly to re-roll a
+-- better offer is not a viable strategy.
+function requestUI:onRefuseButton(button)
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if playerObj and button and button.id then
+        PZLinuxRequestRejectCategory(playerObj, button.id, function() end)
+    end
+    self:onMinimizeBack(button)
 end
 
 -- LOGOUT

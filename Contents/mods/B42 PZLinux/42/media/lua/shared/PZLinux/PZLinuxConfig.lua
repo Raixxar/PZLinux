@@ -57,20 +57,26 @@ PZLinux.Config.UI = PZLinux.Config.UI or {
     atmStatusDelayMaxMs = 850,
 }
 
+-- Once per game day, each Request category independently rolls whether a
+-- seller is willing to trade at all today (deliberately rare, so finding one
+-- feels like an actual event rather than an on-demand shop). Only categories
+-- that rolled available are shown in the Request menu; refusing an offered
+-- price hides that category the same way, until the next game day's roll.
+-- The chance of finding nobody rises over time (fewer survivors left as the
+-- world ages): it starts at unavailableChancePercentStart and ramps linearly
+-- up to unavailableChancePercentMax over unavailableRampGameDays in-game
+-- days, then stays capped there.
 PZLinux.Config.Requests = PZLinux.Config.Requests or {
-    searchFailureChancePercent = 40,
-    searchMinDelaySeconds = 10,
-    searchMaxDelaySeconds = 90,
-    searchCooldownGameDays = 1,
+    unavailableChancePercentStart = 50,
+    unavailableChancePercentMax = 75,
+    unavailableRampGameDays = 180,
 }
-PZLinux.Config.Requests.searchFailureChancePercent =
-    tonumber(PZLinux.Config.Requests.searchFailureChancePercent) or 40
-PZLinux.Config.Requests.searchMinDelaySeconds =
-    tonumber(PZLinux.Config.Requests.searchMinDelaySeconds) or 10
-PZLinux.Config.Requests.searchMaxDelaySeconds =
-    tonumber(PZLinux.Config.Requests.searchMaxDelaySeconds) or 90
-PZLinux.Config.Requests.searchCooldownGameDays =
-    tonumber(PZLinux.Config.Requests.searchCooldownGameDays) or 1
+PZLinux.Config.Requests.unavailableChancePercentStart =
+    tonumber(PZLinux.Config.Requests.unavailableChancePercentStart) or 50
+PZLinux.Config.Requests.unavailableChancePercentMax =
+    tonumber(PZLinux.Config.Requests.unavailableChancePercentMax) or 75
+PZLinux.Config.Requests.unavailableRampGameDays =
+    tonumber(PZLinux.Config.Requests.unavailableRampGameDays) or 180
 
 -- Sell Surplus: the inverse of Requests. Once per game day, there is a small
 -- chance a buyer wants one specific category. The base price is deliberately
@@ -82,7 +88,6 @@ PZLinux.Config.Sell = PZLinux.Config.Sell or {
     greatDealChancePercent = 10,
     greatDealMinPercent = 110,
     greatDealMaxPercent = 130,
-    maxItemsPerSale = 6,
 }
 PZLinux.Config.Sell.demandChancePercent =
     tonumber(PZLinux.Config.Sell.demandChancePercent) or 15
@@ -94,8 +99,6 @@ PZLinux.Config.Sell.greatDealMinPercent =
     tonumber(PZLinux.Config.Sell.greatDealMinPercent) or 110
 PZLinux.Config.Sell.greatDealMaxPercent =
     tonumber(PZLinux.Config.Sell.greatDealMaxPercent) or 130
-PZLinux.Config.Sell.maxItemsPerSale =
-    tonumber(PZLinux.Config.Sell.maxItemsPerSale) or 6
 
 PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {
     ranks = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" },

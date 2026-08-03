@@ -1149,11 +1149,14 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxContractAdminForceResult"
         or command == "PZLinuxContractAdminAddFundsResult"
         or command == "PZLinuxRequestOrderResult"
-        or command == "PZLinuxRequestResolveSearchResult"
+        or command == "PZLinuxRequestGetCategoriesResult"
+        or command == "PZLinuxRequestRejectCategoryResult"
         or command == "PZLinuxRequestDeliverResult"
         or command == "PZLinuxSellRefreshDemandResult"
         or command == "PZLinuxSellRequestQuoteResult"
-        or command == "PZLinuxSellConfirmDropResult"
+        or command == "PZLinuxSellAcceptOfferResult"
+        or command == "PZLinuxSellCancelOfferResult"
+        or command == "PZLinuxSellRedeemPackageResult"
         or command == "PZLinuxRequestSpawnVehicleResult"
         or command == "PZLinuxRequestConfirmVehicleResult"
         or command == "PZLinuxMailboxStateResult"
@@ -1230,18 +1233,6 @@ if Events and Events.OnServerCommand then
                     if args.locationY ~= nil then modData.PZLinuxRequestLocationY = args.locationY end
                     if args.locationZ ~= nil then modData.PZLinuxRequestLocationZ = args.locationZ end
                     if args.deliveryId ~= nil then modData.PZLinuxRequestVehicleDeliveryId = args.deliveryId end
-                end
-            end
-            -- Same reasoning as above: mirror the resolved supplier search
-            -- outcome into the client's own modData instead of relying on the
-            -- server's transmitModData() alone.
-            if command == "PZLinuxRequestResolveSearchResult" and args and args.ok
-            and args.resolved and args.found == false then
-                local playerObj = PZLinuxGetPlayer()
-                local modData = playerObj and playerObj:getModData()
-                if modData then
-                    modData.PZLinuxActiveRequest = 0
-                    modData.PZLinuxOnItemRequest = {}
                 end
             end
             PZLinuxDispatchCallback(args)
@@ -1336,23 +1327,123 @@ function PZLinuxRequestsBuildOrder(player, state, requestId)
     }
 end
 
-function PZLinuxRequestsRealNowSeconds()
-    local timestampProvider = rawget(_G, "getTimestampMs")
-    if timestampProvider then
-        return math.floor((tonumber(timestampProvider()) or 0) / 1000)
-    end
-    return math.floor((getGameTime and getGameTime():getWorldAgeHours() or 0) * 3600)
-end
-
 -- A counter that increments every 24 in-game hours since world start. Used
--- (instead of a rolling real-time cooldown) so a failed supplier search is
--- blocked only "for the rest of today" and always retriable once the game
--- day changes -- checking a day counter difference instead of "is it still
--- the same calendar day" avoids letting a player fail right before midnight
--- and retry a couple of in-game minutes later at 00:01.
+-- (instead of a rolling real-time or calendar-day cooldown) so a category's
+-- daily roll -- or a failed/declined Request -- is blocked only "for the
+-- rest of today" and always retriable once the game day changes: checking a
+-- day counter difference instead of "is it still the same calendar day"
+-- avoids letting a player fail right before midnight and retry a couple of
+-- in-game minutes later at 00:01.
 function PZLinuxRequestsCurrentGameDay()
     if not getGameTime then return 0 end
     return math.floor(getGameTime():getWorldAgeHours() / 24)
+end
+
+-- All catalog category ids (13 item categories plus the vehicle one, id 9).
+local function PZLinuxRequestsAllCategoryIds()
+    local ids = {}
+    for contractId in pairs(PZLinuxRequestDefinitions or {}) do
+        table.insert(ids, tonumber(contractId))
+    end
+    table.sort(ids)
+    return ids
+end
+
+-- The chance of finding a seller shrinks as the world ages (fewer survivors
+-- left): it starts high and ramps linearly down to a harsher floor over a
+-- configurable number of in-game days, then stays capped there.
+function PZLinuxRequestsCurrentCategoryAvailableChancePercent()
+    local cfg = PZLinux.Config.Requests
+    local startPercent = tonumber(cfg.unavailableChancePercentStart) or 50
+    local maxPercent = tonumber(cfg.unavailableChancePercentMax) or 75
+    local rampDays = math.max(1, tonumber(cfg.unavailableRampGameDays) or 30)
+    local progress = math.min(1, PZLinuxRequestsCurrentGameDay() / rampDays)
+    local unavailablePercent = startPercent + (maxPercent - startPercent) * progress
+    return 100 - unavailablePercent
+end
+
+-- Rolls, once per game day and cached in the player's own modData, whether
+-- each category has a seller willing to trade at all today -- deliberately
+-- rare, so finding one feels like an actual event instead of an on-demand
+-- shop. The roll is decided up front for every category at once so the
+-- Request menu can show only what is actually available today (a quick
+-- check), rather than making the player "search" one at a time.
+-- Returns the player's modData, freshly rolled for today if needed. Callers
+-- must reuse this same reference rather than calling getModData() again, so
+-- everything within one logical operation sees the same roll.
+local function PZLinuxRequestsEnsureCategoryRoll(playerObj)
+    local modData = playerObj:getModData()
+    local currentDay = PZLinuxRequestsCurrentGameDay()
+    if tonumber(modData.PZLinuxRequestCategoryDay) == currentDay
+    and type(modData.PZLinuxRequestCategoryAvailable) == "table" then
+        return modData
+    end
+
+    local chancePercent = PZLinuxRequestsCurrentCategoryAvailableChancePercent()
+    local available = {}
+    for _, contractId in ipairs(PZLinuxRequestsAllCategoryIds()) do
+        available[tostring(contractId)] = (ZombRand(1, 101) <= chancePercent) and 1 or 0
+    end
+    modData.PZLinuxRequestCategoryDay = currentDay
+    modData.PZLinuxRequestCategoryAvailable = available
+    -- A category the player explicitly refused today is also hidden until
+    -- the next roll, exactly like one where no seller showed up at all.
+    modData.PZLinuxRequestCategoryRejected = {}
+    PZLinuxTransmitPlayerModData(playerObj)
+    return modData
+end
+
+-- True only if today's roll found a seller for this category AND the player
+-- has not already declined that offer today.
+function PZLinuxRequestsIsCategoryAvailable(playerObj, contractId)
+    local modData = PZLinuxRequestsEnsureCategoryRoll(playerObj)
+    local key = tostring(tonumber(contractId))
+    local rolled = tonumber(modData.PZLinuxRequestCategoryAvailable[key]) == 1
+    local rejected = modData.PZLinuxRequestCategoryRejected and modData.PZLinuxRequestCategoryRejected[key]
+    return rolled and not rejected
+end
+
+local function PZLinuxRequestsIsCategoryAvailableIn(modData, contractId)
+    local key = tostring(tonumber(contractId))
+    local rolled = tonumber(modData.PZLinuxRequestCategoryAvailable[key]) == 1
+    local rejected = modData.PZLinuxRequestCategoryRejected and modData.PZLinuxRequestCategoryRejected[key]
+    return rolled and not rejected
+end
+
+function PZLinuxRequestsGetAvailableCategories(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local modData = PZLinuxRequestsEnsureCategoryRoll(playerObj)
+
+    local ids = {}
+    for _, contractId in ipairs(PZLinuxRequestsAllCategoryIds()) do
+        if PZLinuxRequestsIsCategoryAvailableIn(modData, contractId) then
+            table.insert(ids, contractId)
+        end
+    end
+
+    return {
+        ok = true,
+        requestId = requestId,
+        day = PZLinuxRequestsCurrentGameDay(),
+        available = ids,
+        balance = PZLinuxLoadBankBalance(playerObj),
+    }
+end
+
+-- Refusing an offered price burns today's opportunity for that category just
+-- like finding no seller at all would, so the player cannot keep re-rolling
+-- the offer by repeatedly opening and declining it.
+function PZLinuxRequestsRejectCategory(player, contractId, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local modData = PZLinuxRequestsEnsureCategoryRoll(playerObj)
+
+    modData.PZLinuxRequestCategoryRejected = modData.PZLinuxRequestCategoryRejected or {}
+    modData.PZLinuxRequestCategoryRejected[tostring(tonumber(contractId))] = 1
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return { ok = true, requestId = requestId, contractId = tonumber(contractId) }
 end
 
 function PZLinuxRequestsApplyOrder(player, state, requestId)
@@ -1364,23 +1455,18 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
 
     local modData = playerObj:getModData()
 
-    -- An item Request that fails to find a supplier applies a per-item-type
-    -- cooldown (see the search roll below); enforce it here before any debit.
-    if order.contractId ~= 9 then
-        local cooldowns = modData.PZLinuxRequestSearchCooldowns
-        local lastFailedDay = type(cooldowns) == "table" and tonumber(cooldowns[tostring(order.contractId)]) or nil
-        local cooldownDays = tonumber(PZLinux.Config.Requests.searchCooldownGameDays) or 1
-        local currentDay = PZLinuxRequestsCurrentGameDay()
-        if lastFailedDay and (currentDay - lastFailedDay) < cooldownDays then
-            return {
-                ok = false,
-                error = "supplier_cooldown",
-                requestId = requestId,
-                contractId = order.contractId,
-                retryAfterGameDays = cooldownDays - (currentDay - lastFailedDay),
-                balance = PZLinuxLoadBankBalance(playerObj),
-            }
-        end
+    -- Defense in depth: even though the client only shows categories the
+    -- daily roll already made available, re-check server-side in case the
+    -- client's view is stale (e.g. the roll changed, or the offer was
+    -- already declined in another session).
+    if not PZLinuxRequestsIsCategoryAvailable(playerObj, order.contractId) then
+        return {
+            ok = false,
+            error = "category_unavailable",
+            requestId = requestId,
+            contractId = order.contractId,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
     end
 
     local hasPendingVehicle = tonumber(modData.PZLinuxOnItemRequestCar) == 1
@@ -1459,91 +1545,11 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest or {}
         table.insert(modData.PZLinuxOnItemRequest, { { items = order.items } })
         if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
-
-        -- Roll whether a supplier is found right now, server-side, but only
-        -- reveal it to the client after a random delay. The outcome cannot be
-        -- changed by disconnecting/reconnecting since it is already decided.
-        local requestsConfig = PZLinux.Config.Requests
-        local failed = ZombRand(1, 101) <= requestsConfig.searchFailureChancePercent
-        local delaySeconds = ZombRand(
-            requestsConfig.searchMinDelaySeconds,
-            requestsConfig.searchMaxDelaySeconds + 1
-        )
-        modData.PZLinuxRequestSearchPending = 1
-        modData.PZLinuxRequestSearchContractId = order.contractId
-        modData.PZLinuxRequestSearchFailed = failed and 1 or 0
-        modData.PZLinuxRequestSearchAmount = order.amount
-        modData.PZLinuxRequestSearchRevealAt = PZLinuxRequestsRealNowSeconds() + delaySeconds
-        order.searching = true
-        order.revealDelaySeconds = delaySeconds
     end
     PZLinuxTransmitPlayerModData(playerObj)
 
     order.balance = PZLinuxLoadBankBalance(playerObj)
     return order
-end
-
-function PZLinuxRequestsResolveSearch(player, requestId)
-    local playerObj = PZLinuxGetPlayer(player)
-    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
-    local modData = playerObj:getModData()
-
-    if tonumber(modData.PZLinuxRequestSearchPending) ~= 1 then
-        return { ok = true, requestId = requestId, resolved = false, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
-
-    local revealAt = tonumber(modData.PZLinuxRequestSearchRevealAt) or 0
-    if PZLinuxRequestsRealNowSeconds() < revealAt then
-        return {
-            ok = true,
-            requestId = requestId,
-            resolved = false,
-            pending = true,
-            balance = PZLinuxLoadBankBalance(playerObj),
-        }
-    end
-
-    local contractId = tonumber(modData.PZLinuxRequestSearchContractId)
-    local failed = tonumber(modData.PZLinuxRequestSearchFailed) == 1
-    modData.PZLinuxRequestSearchPending = 0
-    modData.PZLinuxRequestSearchRevealAt = nil
-
-    if not failed then
-        PZLinuxTransmitPlayerModData(playerObj)
-        return {
-            ok = true,
-            requestId = requestId,
-            resolved = true,
-            found = true,
-            contractId = contractId,
-            balance = PZLinuxLoadBankBalance(playerObj),
-        }
-    end
-
-    local amount = tonumber(modData.PZLinuxRequestSearchAmount) or 0
-    if amount > 0 then
-        PZLinuxApplyBankCredit(playerObj, amount, "request-search-refund", requestId)
-    end
-    modData.PZLinuxActiveRequest = 0
-    modData.PZLinuxOnItemRequest = {}
-
-    modData.PZLinuxRequestSearchCooldowns = modData.PZLinuxRequestSearchCooldowns or {}
-    modData.PZLinuxRequestSearchCooldowns[tostring(contractId)] = PZLinuxRequestsCurrentGameDay()
-    PZLinuxTransmitPlayerModData(playerObj)
-
-    print("[PZLinux Request] no supplier found for " .. tostring(PZLinuxGetPlayerKey(playerObj))
-        .. " contractId=" .. tostring(contractId) .. " refunded=" .. tostring(amount)
-        .. " gameDay=" .. tostring(modData.PZLinuxRequestSearchCooldowns[tostring(contractId)]))
-
-    return {
-        ok = true,
-        requestId = requestId,
-        resolved = true,
-        found = false,
-        contractId = contractId,
-        refunded = amount,
-        balance = PZLinuxLoadBankBalance(playerObj),
-    }
 end
 
 function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
@@ -1624,14 +1630,34 @@ local function PZLinuxSellSellableCategories()
     return list
 end
 
-local function PZLinuxSellSanitizeItems(definition, items, maxCount)
-    local clean = {}
-    for _, item in ipairs(items or {}) do
-        local itemName = type(item) == "table" and item.name or item
-        if PZLinuxRequestsContains(definition.items, itemName) then
-            table.insert(clean, { name = itemName })
+local function PZLinuxSellCountInventoryItem(playerObj, itemName)
+    local items = playerObj:getInventory():getItems()
+    local count = 0
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item and item.getFullType and item:getFullType() == itemName then
+            count = count + 1
         end
-        if #clean >= maxCount then break end
+    end
+    return count
+end
+
+-- Selects only item types that belong to the demanded category AND that the
+-- player actually holds in their main inventory right now, mirroring Dark
+-- Web's "sell everything you own of this type" rule instead of an arbitrary
+-- selection cap.
+local function PZLinuxSellSanitizeItems(playerObj, definition, itemNames)
+    local seen = {}
+    local clean = {}
+    for _, entry in ipairs(itemNames or {}) do
+        local itemName = type(entry) == "table" and entry.name or entry
+        if itemName and not seen[itemName] and PZLinuxRequestsContains(definition.items, itemName) then
+            seen[itemName] = true
+            local count = PZLinuxSellCountInventoryItem(playerObj, itemName)
+            if count > 0 then
+                table.insert(clean, { name = itemName, count = count })
+            end
+        end
     end
     return clean
 end
@@ -1672,7 +1698,7 @@ function PZLinuxSellRefreshDemand(player, requestId)
     }
 end
 
-function PZLinuxSellRequestQuote(player, contractId, items, requestId)
+function PZLinuxSellRequestQuote(player, contractId, itemNames, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
     local modData = playerObj:getModData()
@@ -1692,68 +1718,67 @@ function PZLinuxSellRequestQuote(player, contractId, items, requestId)
         return { ok = false, error = "invalid_category", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local cfg = PZLinux.Config.Sell
-    local cleanItems = PZLinuxSellSanitizeItems(definition, items, cfg.maxItemsPerSale)
+    -- Only item types the player actually holds in their main inventory right
+    -- now are eligible, and the full owned quantity of each is what gets
+    -- sold -- there is no artificial cap, matching how Dark Web sells.
+    local cleanItems = PZLinuxSellSanitizeItems(playerObj, definition, itemNames)
     if #cleanItems == 0 then
         return { ok = false, error = "invalid_sell_items", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
+    local cfg = PZLinux.Config.Sell
+
     -- The outcome is decided now, server-side, the moment a quote is issued --
     -- not at mailbox drop-off -- so re-requesting a quote can never re-roll a
-    -- better price, and today's single opportunity is spent either way.
+    -- better price, and today's single opportunity is spent either way, win
+    -- or lose, whether the player later accepts or cancels this offer.
     local greatDeal = ZombRand(1, 101) <= cfg.greatDealChancePercent
     local pricePercent = greatDeal
         and ZombRand(cfg.greatDealMinPercent, cfg.greatDealMaxPercent + 1)
         or cfg.basePricePercent
     local unitPrice = math.floor((tonumber(definition.price) or 0) * pricePercent / 100)
-    local total = unitPrice * #cleanItems
+
+    local totalCount = 0
+    local total = 0
+    for _, entry in ipairs(cleanItems) do
+        totalCount = totalCount + entry.count
+        total = total + unitPrice * entry.count
+    end
 
     modData.PZLinuxSellDemandUsed = 1
     modData.PZLinuxSellPendingContractId = contractId
     modData.PZLinuxSellPendingItems = cleanItems
     modData.PZLinuxSellPendingTotal = total
     modData.PZLinuxSellPendingGreatDeal = greatDeal and 1 or 0
-    modData.PZLinuxSellPendingDeliveryId = table.concat({
-        "PZLinuxSell",
-        PZLinuxGetPlayerKey(playerObj),
-        tostring(currentDay),
-        tostring(ZombRand(100000, 1000000)),
-    }, "-")
     PZLinuxTransmitPlayerModData(playerObj)
 
     print("[PZLinux Sell] quote for " .. tostring(PZLinuxGetPlayerKey(playerObj))
-        .. " contractId=" .. tostring(contractId) .. " count=" .. tostring(#cleanItems)
+        .. " contractId=" .. tostring(contractId) .. " count=" .. tostring(totalCount)
         .. " total=" .. tostring(total) .. " greatDeal=" .. tostring(greatDeal))
 
     return {
         ok = true,
         requestId = requestId,
         contractId = contractId,
-        deliveryId = modData.PZLinuxSellPendingDeliveryId,
-        count = #cleanItems,
+        count = totalCount,
         total = total,
         greatDeal = greatDeal,
         balance = PZLinuxLoadBankBalance(playerObj),
     }
 end
 
-function PZLinuxSellApplyConfirmDrop(player, mailboxRef, requestId)
+-- Accepts the already-locked-in offer: verifies the player still actually has
+-- every promised item, then removes them immediately and hands over a single
+-- priced package (Dark Web style) that must still be dropped at a mailbox to
+-- actually get paid. Nothing here re-rolls the price or the day's demand.
+function PZLinuxSellAcceptOffer(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
-    local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
-    if mailboxError then
-        return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
 
     local modData = playerObj:getModData()
-    local deliveryId = tostring(modData.PZLinuxSellPendingDeliveryId or "")
-    if deliveryId == "" then
-        return { ok = true, requestId = requestId, sold = 0, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
-
     local items = modData.PZLinuxSellPendingItems
     if type(items) ~= "table" or #items == 0 then
-        return { ok = false, error = "invalid_pending_sale", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+        return { ok = false, error = "no_pending_offer", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     local inventory = playerObj:getInventory()
@@ -1761,52 +1786,51 @@ function PZLinuxSellApplyConfirmDrop(player, mailboxRef, requestId)
         return { ok = false, error = "missing_inventory", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    -- Verify the player still actually has every item before removing any of
-    -- them, so a partially-gathered sale never gets half-consumed.
-    local available = inventory:getItems()
-    local counts = {}
+    -- Verify the player still actually has every promised item before
+    -- removing any of them, so a partially-gathered sale never gets
+    -- half-consumed.
     for _, entry in ipairs(items) do
-        counts[entry.name] = (counts[entry.name] or 0) + 1
-    end
-    local found = {}
-    for index = 0, available:size() - 1 do
-        local item = available:get(index)
-        local fullType = item and item.getFullType and item:getFullType()
-        if fullType and counts[fullType] and (found[fullType] or 0) < counts[fullType] then
-            found[fullType] = (found[fullType] or 0) + 1
-        end
-    end
-    for name, needed in pairs(counts) do
-        if (found[name] or 0) < needed then
+        if PZLinuxSellCountInventoryItem(playerObj, entry.name) < entry.count then
             return { ok = false, error = "missing_items", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
         end
     end
 
     local removedCount = 0
     for _, entry in ipairs(items) do
+        local remaining = entry.count
+        local available = inventory:getItems()
         for index = available:size() - 1, 0, -1 do
+            if remaining <= 0 then break end
             local item = available:get(index)
             if item and item.getFullType and item:getFullType() == entry.name then
                 inventory:Remove(item)
                 removedCount = removedCount + 1
-                break
+                remaining = remaining - 1
             end
         end
-        available = inventory:getItems()
     end
 
     local total = tonumber(modData.PZLinuxSellPendingTotal) or 0
     local greatDeal = tonumber(modData.PZLinuxSellPendingGreatDeal) == 1
-    local credit = PZLinuxApplyBankCredit(playerObj, total, "sell-surplus", requestId)
+
+    local parcel = inventory:AddItem("Base.SuspiciousPackage")
+    if not parcel then
+        return { ok = false, error = "sale_parcel_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    parcel:setName("$" .. tostring(total))
+    parcel:getModData().PZLinuxSellSaleAmount = total
+    if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
+        inventory:Remove(parcel)
+        return { ok = false, error = "sale_parcel_sync_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
 
     modData.PZLinuxSellPendingContractId = nil
     modData.PZLinuxSellPendingItems = {}
     modData.PZLinuxSellPendingTotal = 0
     modData.PZLinuxSellPendingGreatDeal = 0
-    modData.PZLinuxSellPendingDeliveryId = nil
     PZLinuxTransmitPlayerModData(playerObj)
 
-    print("[PZLinux Sell] confirmed drop for " .. tostring(PZLinuxGetPlayerKey(playerObj))
+    print("[PZLinux Sell] accepted offer for " .. tostring(PZLinuxGetPlayerKey(playerObj))
         .. " sold=" .. tostring(removedCount) .. " total=" .. tostring(total))
 
     return {
@@ -1815,7 +1839,65 @@ function PZLinuxSellApplyConfirmDrop(player, mailboxRef, requestId)
         sold = removedCount,
         total = total,
         greatDeal = greatDeal,
-        balance = credit.balance or PZLinuxLoadBankBalance(playerObj),
+        balance = PZLinuxLoadBankBalance(playerObj),
+    }
+end
+
+-- Declining a locked-in offer never refunds today's opportunity: the roll
+-- already happened at quote time, so like a failed Request supplier search
+-- the player must wait for the next game day either way.
+function PZLinuxSellCancelOffer(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local modData = playerObj:getModData()
+    modData.PZLinuxSellPendingContractId = nil
+    modData.PZLinuxSellPendingItems = {}
+    modData.PZLinuxSellPendingTotal = 0
+    modData.PZLinuxSellPendingGreatDeal = 0
+    PZLinuxTransmitPlayerModData(playerObj)
+
+    return { ok = true, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+end
+
+function PZLinuxSellApplyRedeemPackage(player, mailboxRef, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
+    if mailboxError then
+        return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local inventory = playerObj:getInventory()
+    local items = inventory:getItems()
+    local amount = 0
+    local redeemed = 0
+
+    for index = items:size() - 1, 0, -1 do
+        local item = items:get(index)
+        if item and item:getFullType() == "Base.SuspiciousPackage" then
+            local itemModData = item:getModData()
+            local packageAmount = tonumber(itemModData.PZLinuxSellSaleAmount)
+            if packageAmount and packageAmount > 0 then
+                amount = amount + PZLinuxNormalizeMoney(packageAmount)
+                redeemed = redeemed + 1
+                PZLinuxRemoveInventoryItem(playerObj, item)
+            end
+        end
+    end
+
+    local credit = nil
+    if amount > 0 then
+        credit = PZLinuxApplyBankCredit(playerObj, amount, "sell-surplus", requestId)
+    end
+
+    PZLinuxTransmitPlayerModData(playerObj)
+    return {
+        ok = true,
+        requestId = requestId,
+        sold = redeemed,
+        total = amount,
+        balance = credit and credit.balance or PZLinuxLoadBankBalance(playerObj),
     }
 end
 
@@ -2125,13 +2207,24 @@ function PZLinuxRequestOrder(player, state, callback)
     return requestId
 end
 
-function PZLinuxRequestResolveSearch(player, callback)
-    local requestId = PZLinuxNextRequestId("request-resolve-search")
+function PZLinuxRequestGetCategories(player, callback)
+    local requestId = PZLinuxNextRequestId("request-get-categories")
     PZLinuxRegisterCallback(requestId, callback)
-    if PZLinuxSendClientCommand("PZLinuxRequestResolveSearch", { requestId = requestId }) then
+    if PZLinuxSendClientCommand("PZLinuxRequestGetCategories", { requestId = requestId }) then
         return requestId
     end
-    PZLinuxDispatchCallback(PZLinuxRequestsResolveSearch(player, requestId))
+    PZLinuxDispatchCallback(PZLinuxRequestsGetAvailableCategories(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestRejectCategory(player, contractId, callback)
+    local requestId = PZLinuxNextRequestId("request-reject-category")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, contractId = tonumber(contractId) }
+    if PZLinuxSendClientCommand("PZLinuxRequestRejectCategory", args) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxRequestsRejectCategory(player, contractId, requestId))
     return requestId
 end
 
@@ -2166,13 +2259,33 @@ function PZLinuxRequestSellQuote(player, contractId, items, callback)
     return requestId
 end
 
-function PZLinuxRequestSellConfirmDrop(player, mailboxRef, callback)
-    local requestId = PZLinuxNextRequestId("sell-confirm-drop")
+function PZLinuxRequestSellAcceptOffer(player, callback)
+    local requestId = PZLinuxNextRequestId("sell-accept-offer")
     PZLinuxRegisterCallback(requestId, callback)
-    if PZLinuxSendClientCommand("PZLinuxSellConfirmDrop", { requestId = requestId, mailbox = mailboxRef }) then
+    if PZLinuxSendClientCommand("PZLinuxSellAcceptOffer", { requestId = requestId }) then
         return requestId
     end
-    PZLinuxDispatchCallback(PZLinuxSellApplyConfirmDrop(player, mailboxRef, requestId))
+    PZLinuxDispatchCallback(PZLinuxSellAcceptOffer(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestSellCancelOffer(player, callback)
+    local requestId = PZLinuxNextRequestId("sell-cancel-offer")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxSellCancelOffer", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxSellCancelOffer(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestSellRedeemPackage(player, mailboxRef, callback)
+    local requestId = PZLinuxNextRequestId("sell-redeem-package")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxSellRedeemPackage", { requestId = requestId, mailbox = mailboxRef }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxSellApplyRedeemPackage(player, mailboxRef, requestId))
     return requestId
 end
 
