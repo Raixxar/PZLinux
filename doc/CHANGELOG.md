@@ -2,6 +2,29 @@
 
 ## Correctifs post-1.0.0
 
+- Contrat "Refill an ATM" : correctif d'un vrai bug en MP -- apres une
+  reconnexion, le bouton "REFILL FOR CONTRACT" ne s'affichait jamais meme
+  avec un contrat actif cote serveur (note de contrat correcte, retrait/depot
+  DAB normal fonctionnels). Cause racine : `PZLinuxContractsGetActiveState`
+  (utilisee pour resynchroniser l'etat du contrat) n'incluait jamais
+  `contractAtmRefill`/`atmAmount` dans sa reponse -- ces deux champs
+  n'etaient renvoyes qu'a l'acceptation du contrat, jamais lors d'une
+  resynchronisation ulterieure, donc le client retombait a
+  `PZLinuxContractAtmRefill=0` apres reconnexion (confirme par les logs :
+  `PZLinuxContractAtmRefill=0 PZLinuxActiveContract=0` alors que le contrat
+  etait toujours actif serveur). En plus de corriger cette reponse, le
+  montant a renflouer (`atmAmount`) est desormais aussi stocke dans
+  l'enregistrement persistant du contrat (`PZLinuxContractsCreateWorldContract`)
+  et restaure depuis celui-ci (`PZLinuxContractsSyncWorldRecordToPlayer`), au
+  lieu de ne vivre que dans le modData volatil du joueur. Autre correctif :
+  contrairement aux ordinateurs, l'ATM ne redemandait jamais l'etat du
+  contrat au serveur a son ouverture -- il se fiait uniquement au modData
+  local, potentiellement perime. L'ATM declenche desormais aussi
+  `PZLinuxRequestContractSync` a l'ouverture et reevalue le bouton apres
+  reponse. Voir `tools/test_atm_refill_contract.lua` et
+  `tools/test_contract_authority.lua` pour la couverture (regression exacte
+  du bug rapporte).
+
 - Contrat "Refill an ATM" : la somme a renflouer est de nouveau revue a la
   baisse, cette fois pour rester physiquement transportable. A environ 0.5 kg
   par tranche de 100 $ en liquide, 3 000 $ pese deja 15 kg dans l'inventaire

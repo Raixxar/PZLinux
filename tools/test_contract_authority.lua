@@ -166,6 +166,14 @@ PZLinuxTestAssert(syncBlock and syncBlock:find('record.status == "cancelled"'),
     "cancelled world-contract history must not be restored as an active player contract")
 PZLinuxTestAssert(syncBlock and syncBlock:find("completionReceipt = pzlinux%.contracts"),
     "contract synchronization must expose a persistent unread completion receipt")
+PZLinuxTestAssert(syncBlock and syncBlock:find("contractAtmRefill = modData%.PZLinuxContractAtmRefill")
+    and syncBlock:find("atmAmount = record and record%.atmAmount or modData%.PZLinuxContractAtmAmount"),
+    "reconnect resynchronization must also restore the ATM refill contract type flag and amount -- " ..
+    "the accept response alone previously left these unset again after a reconnect")
+PZLinuxTestAssert(variables:find("atmAmount = PZLinuxNormalizeMoney%(mission%.atmAmount%)"),
+    "the persistent world contract record must store the ATM refill amount for later resynchronization")
+PZLinuxTestAssert(variables:find("modData%.PZLinuxContractAtmAmount = PZLinuxNormalizeMoney%(record%.atmAmount%)"),
+    "restoring a world record to a player must also restore the ATM refill amount")
 local linuxMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextLinuxMenu.lua")
 local closeBlock = linuxMenu:match("function linuxUI:onCloseX.-\nend")
 PZLinuxTestAssert(closeBlock and closeBlock:find("PZLinuxRequestContractSync"),

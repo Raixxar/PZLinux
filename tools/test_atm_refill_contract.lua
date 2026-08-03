@@ -251,4 +251,21 @@ PZLinuxTestAssert(bankBalance == balanceBeforeCancel,
 PZLinuxTestAssert(PZLinuxCountInventoryCash(player) == previewAtmAmount,
     "cancelling must not touch cash the player legitimately withdrew on their own")
 
+-- Regression check for the reported MP bug: after a reconnect, the client's
+-- local modData can be stale (PZLinuxContractAtmRefill/PZLinuxActiveContract
+-- both reading 0 despite the contract still being active server-side),
+-- because unlike computers, the ATM never asked the server to resynchronize
+-- contract state on open. The button must therefore be (re-)evaluated once
+-- after an explicit PZLinuxRequestContractSync, not only from whatever
+-- modData happened to already be loaded when the ATM screen first opened.
+local atmMenuSource = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextAtmMenu.lua")
+PZLinuxTestAssert(atmMenuSource:find("PZLinuxRequestContractSync%(playerObj, function%(%)"),
+    "opening the ATM main menu must resynchronize contract state, like computers already do")
+local showMainMenuBlock = atmMenuSource:match("function AtmUI:showMainMenu%(%).-\nend")
+PZLinuxTestAssert(showMainMenuBlock and showMainMenuBlock:find("self:ensureContractRefillButton%(%)"),
+    "the refill button must be (re-)checked both synchronously and after the resync callback")
+local ensureButtonBlock = atmMenuSource:match("function AtmUI:ensureContractRefillButton%(%).-\nend")
+PZLinuxTestAssert(ensureButtonBlock and ensureButtonBlock:find("if self%.contractRefillButton then return end"),
+    "re-checking the refill button must be idempotent and never create a duplicate")
+
 print("PZLinux ATM refill contract tests OK")

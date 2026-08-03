@@ -2987,6 +2987,7 @@ function PZLinuxContractsCreateWorldContract(player, selectedContract, contractI
         fullNote = mission.fullNote or "",
         targetName = mission.targetName or "",
         zombieToKill = PZLinuxNormalizeMoney(mission.zombieToKill),
+        atmAmount = PZLinuxNormalizeMoney(mission.atmAmount),
         zombieCount = 0,
         playerZombieKills = playerObj.getZombieKills and tonumber(playerObj:getZombieKills()) or 0,
         pendingZombieKillCredits = 0,
@@ -3073,6 +3074,7 @@ function PZLinuxContractsSyncWorldRecordToPlayer(player, record)
     modData.PZLinuxContractTargetName = record.targetName or ""
     modData.PZLinuxOnZombieToKill = PZLinuxNormalizeMoney(record.zombieToKill)
     modData.PZLinuxOnZombieDead = PZLinuxNormalizeMoney(record.zombieCount)
+    modData.PZLinuxContractAtmAmount = PZLinuxNormalizeMoney(record.atmAmount)
     PZLinuxContractsSetTypeFlags(modData, record.contractId)
     if record.status == "spawned" then
         if tonumber(record.contractId) == 3 then modData.PZLinuxContractManhunt = 2 end
@@ -3153,6 +3155,8 @@ function PZLinuxContractsGetActiveState(player, requestId)
         contractWeapon = modData.PZLinuxContractWeapon,
         contractSendComputer = modData.PZLinuxContractSendComputer,
         contractSendFridge = modData.PZLinuxContractSendFridge,
+        contractAtmRefill = modData.PZLinuxContractAtmRefill,
+        atmAmount = record and record.atmAmount or modData.PZLinuxContractAtmAmount,
         completionReceipt = pzlinux.contracts and pzlinux.contracts.pendingCompletion or nil,
         balance = PZLinuxLoadBankBalance(playerObj),
     }

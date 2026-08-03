@@ -199,6 +199,24 @@ function AtmUI:showLoginMenu()
     self.topBar:addChild(self.passwordLabel)
 end
 
+-- Creates the "REFILL FOR CONTRACT" button once, the first time modData
+-- confirms a matching active contract -- safe to call repeatedly (e.g. once
+-- synchronously, then again after an async resync) since it no-ops if the
+-- button already exists or if the contract still isn't a match.
+function AtmUI:ensureContractRefillButton()
+    if self.contractRefillButton then return end
+    if not PZLinuxAtmRefillMatchesContract(PZLinuxGetPlayer(self.player), self.atmObject) then return end
+
+    self.contractRefillButton = ISButton:new(
+        self.width * 0.295, self.width * 0.77, self.width * 0.25, self.height * 0.08,
+        PZLinuxFormatText("IGUI_PZLinux_ATM_ContractRefill", "REFILL FOR CONTRACT"),
+        self, self.onContractRefillDeposit
+    )
+    self.contractRefillButton:setVisible(true)
+    self.contractRefillButton:initialise()
+    self.topBar:addChild(self.contractRefillButton)
+end
+
 function AtmUI:showMainMenu()
     self.withdrawalButton = ISButton:new(self.width * 0.295, self.width * 0.55, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_ATM_Withdrawal"), self, self.onWithdrawal)
     self.withdrawalButton:setVisible(true)
@@ -210,15 +228,19 @@ function AtmUI:showMainMenu()
     self.depositeButton:initialise()
     self.topBar:addChild(self.depositeButton)
 
-    if PZLinuxAtmRefillMatchesContract(PZLinuxGetPlayer(self.player), self.atmObject) then
-        self.contractRefillButton = ISButton:new(
-            self.width * 0.295, self.width * 0.77, self.width * 0.25, self.height * 0.08,
-            PZLinuxFormatText("IGUI_PZLinux_ATM_ContractRefill", "REFILL FOR CONTRACT"),
-            self, self.onContractRefillDeposit
-        )
-        self.contractRefillButton:setVisible(true)
-        self.contractRefillButton:initialise()
-        self.topBar:addChild(self.contractRefillButton)
+    self:ensureContractRefillButton()
+
+    -- Unlike computers, the ATM never otherwise asks the server to
+    -- resynchronize contract state on open. In real MP, the client's local
+    -- modData can be stale after a reconnect (native ModData transmission is
+    -- not reliable for this), so the check above may wrongly see no active
+    -- contract yet. Re-check once the server confirms the current state.
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if playerObj then
+        PZLinuxRequestContractSync(playerObj, function()
+            if self.isClosing then return end
+            self:ensureContractRefillButton()
+        end)
     end
 
     self.atmCashLabel = ISLabel:new(self.width * 0.225, self.width * 0.448, self.width * 0.1, PZLinuxGetText("IGUI_PZLinux_ATM_Cash") .. tostring(self.atmCash), 1, 1, 1, 1, UIFont.Small, true)
