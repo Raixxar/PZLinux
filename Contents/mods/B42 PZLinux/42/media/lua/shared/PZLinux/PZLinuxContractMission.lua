@@ -152,7 +152,9 @@ function PZLinuxContractsBuildMission(selectedContract)
         -- Location comes from the "atmRefill" pool above (a single fixed,
         -- wall-mounted ATM in Ekron) -- only the refill amount is rolled here.
         local atmCfg = PZLinux.Config.AtmRefill
-        mission.atmAmount = ZombRand(1, atmCfg.amountRollMax + 1) * atmCfg.amountStep
+        local minSteps = math.floor(atmCfg.amountMin / atmCfg.amountStep)
+        local maxSteps = math.floor(atmCfg.amountMax / atmCfg.amountStep)
+        mission.atmAmount = ZombRand(minSteps, maxSteps + 1) * atmCfg.amountStep
     end
 
     mission.reward = PZLinuxContractsRoundReward(mission.reward)

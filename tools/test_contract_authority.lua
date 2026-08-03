@@ -94,9 +94,9 @@ PZLinuxTestAssert(atmMission.locationPool == "atmRefill", "ATM refill contract m
 PZLinuxTestAssert(atmMission.locationX == 418 and atmMission.locationY == 9869 and atmMission.locationZ == 0,
     "ATM refill location must be the single hardcoded Ekron ATM")
 PZLinuxTestAssert(atmMission.locationCity == "Ekron", "ATM refill location city must be Ekron")
-PZLinuxTestAssert(atmMission.atmAmount == 60000,
-    "ATM refill amount must be ZombRand(1, amountRollMax+1) * amountStep (deterministic max roll here is 6 * 10000)")
-PZLinuxTestAssert(atmMission.fullNote:find("Amount to deposit: $60000", 1, true),
+PZLinuxTestAssert(atmMission.atmAmount == 5000,
+    "ATM refill amount must fall in [amountMin, amountMax] by amountStep (deterministic max roll here is 5000)")
+PZLinuxTestAssert(atmMission.fullNote:find("Amount to deposit: $5000", 1, true),
     "ATM refill note must show the amount to deposit")
 
 local variablesPath = luaRoot .. "/shared/ISPZLinuxVariablesTables.lua"

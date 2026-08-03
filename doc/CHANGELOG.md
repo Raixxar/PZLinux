@@ -2,6 +2,20 @@
 
 ## Correctifs post-1.0.0
 
+- Contrat "Refill an ATM" : la somme a renflouer est de nouveau revue a la
+  baisse, cette fois pour rester physiquement transportable. A environ 0.5 kg
+  par tranche de 100 $ en liquide, 3 000 $ pese deja 15 kg dans l'inventaire
+  -- la fourchette precedente (10 000-25 000 $) aurait pese 50 a 125 kg,
+  totalement irrealiste a porter. Nouvelle fourchette : 1 000-5 000 $ par
+  tranches de 100 $ (5 a 25 kg), un poids reel a gerer sans etre absurde. Voir
+  `PZLinux.Config.AtmRefill` (`amountMin`, `amountMax`, `amountStep`) dans
+  `PZLinuxConfig.lua`.
+- Contrat "Refill an ATM" : ajout de journalisation de diagnostic cote client
+  quand le bouton "REFILL FOR CONTRACT" ne s'affiche pas dans l'interface du
+  DAB, pour identifier precisement laquelle des conditions (contrat actif,
+  distributeur correct) echoue -- utile en cas de rapport de bug sans acces
+  direct a la partie du joueur.
+
 - ATM : le stock de liquide de chaque distributeur se souvenait bien de son
   etat precedent (persiste dans son propre ModData), mais ne se reapprovisionnait
   jamais -- seuls les depots (rares) pouvaient le faire remonter. A terme,

@@ -7,17 +7,33 @@ AtmUI = ISPanel:derive("AtmUI")
 -- specific ATM object is the one hardcoded target -- carrying the withdrawn
 -- cash to any other ATM must not work.
 local function PZLinuxAtmRefillMatchesContract(playerObj, atmObject)
-    if not playerObj or not atmObject or not atmObject.getSquare then return false end
+    if not playerObj or not atmObject or not atmObject.getSquare then
+        print("[PZLinux ATM] refill check: missing playerObj/atmObject/getSquare")
+        return false
+    end
     local modData = playerObj:getModData()
     if tonumber(modData.PZLinuxContractAtmRefill) ~= 1 or tonumber(modData.PZLinuxActiveContract) ~= 1 then
+        print("[PZLinux ATM] refill check: no matching active contract (PZLinuxContractAtmRefill="
+            .. tostring(modData.PZLinuxContractAtmRefill) .. " PZLinuxActiveContract="
+            .. tostring(modData.PZLinuxActiveContract) .. ")")
         return false
     end
 
     local square = atmObject:getSquare()
-    if not square then return false end
-    return square:getX() == tonumber(modData.PZLinuxContractLocationX)
+    if not square then
+        print("[PZLinux ATM] refill check: this ATM object has no square")
+        return false
+    end
+    local matches = square:getX() == tonumber(modData.PZLinuxContractLocationX)
         and square:getY() == tonumber(modData.PZLinuxContractLocationY)
         and square:getZ() == tonumber(modData.PZLinuxContractLocationZ)
+    if not matches then
+        print("[PZLinux ATM] refill check: location mismatch, this ATM=("
+            .. tostring(square:getX()) .. "," .. tostring(square:getY()) .. "," .. tostring(square:getZ())
+            .. ") contract target=(" .. tostring(modData.PZLinuxContractLocationX) .. ","
+            .. tostring(modData.PZLinuxContractLocationY) .. "," .. tostring(modData.PZLinuxContractLocationZ) .. ")")
+    end
+    return matches
 end
 
 -- CONSTRUCTOR
