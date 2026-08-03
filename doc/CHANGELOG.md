@@ -2,6 +2,22 @@
 
 ## Correctifs post-1.0.0
 
+- Contrat "Refill an ATM" : correctif d'une option de menu contextuel
+  incorrecte ("récupérer l'objet du contrat") apparaissant a proximite du
+  distributeur cible. Cause : le filet de secours "legacyPackageFallback" du
+  menu contextuel des contrats considere tout contrat actif avec une
+  localisation valide (X/Y > 0) comme une livraison de colis classique, sauf
+  exclusion explicite -- l'ATM refill n'etait pas exclu, alors meme que ses
+  coordonnees (418, 9869) sont bien > 0. Ajoute a la liste des exclusions
+  dans `ISContextContractsMenu.lua`.
+- Contrat "Refill an ATM" : l'interface du DAB affichait RETRAIT, DEPOT et
+  REFILL en meme temps, avec risque de confusion et un bouton qui depassait
+  du cadre visible. Quand le contrat correspond, seul le bouton REFILL
+  s'affiche desormais (plus grand), a la place des boutons RETRAIT/DEPOT
+  masques -- plus de possibilite de se tromper de bouton ni de debordement.
+  Voir `tools/test_atm_refill_contract.lua` et `tools/test_contract_authority.lua`
+  pour la couverture des deux correctifs.
+
 - Contrat "Refill an ATM" : correctif d'un vrai bug en MP -- apres une
   reconnexion, le bouton "REFILL FOR CONTRACT" ne s'affichait jamais meme
   avec un contrat actif cote serveur (note de contrat correcte, retrait/depot

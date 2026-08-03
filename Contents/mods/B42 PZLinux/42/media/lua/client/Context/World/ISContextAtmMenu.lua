@@ -202,13 +202,19 @@ end
 -- Creates the "REFILL FOR CONTRACT" button once, the first time modData
 -- confirms a matching active contract -- safe to call repeatedly (e.g. once
 -- synchronously, then again after an async resync) since it no-ops if the
--- button already exists or if the contract still isn't a match.
+-- button already exists or if the contract still isn't a match. When it does
+-- match, the ordinary withdraw/deposit buttons are hidden entirely and
+-- replaced with a single larger button in their place: showing all three at
+-- once was confusing and pushed buttons past the visible ATM screen.
 function AtmUI:ensureContractRefillButton()
     if self.contractRefillButton then return end
     if not PZLinuxAtmRefillMatchesContract(PZLinuxGetPlayer(self.player), self.atmObject) then return end
 
+    if self.withdrawalButton then self.withdrawalButton:setVisible(false) end
+    if self.depositeButton then self.depositeButton:setVisible(false) end
+
     self.contractRefillButton = ISButton:new(
-        self.width * 0.295, self.width * 0.77, self.width * 0.25, self.height * 0.08,
+        self.width * 0.295, self.width * 0.55, self.width * 0.25, self.height * 0.19,
         PZLinuxFormatText("IGUI_PZLinux_ATM_ContractRefill", "REFILL FOR CONTRACT"),
         self, self.onContractRefillDeposit
     )

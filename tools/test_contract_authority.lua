@@ -184,6 +184,10 @@ PZLinuxTestAssert(contextMenu:find("PZLinuxContractsMaybeSyncContext"),
     "opening the contract context menu must perform a throttled silent resynchronization")
 PZLinuxTestAssert(contextMenu:find("legacyPackageFallback"),
     "legacy package contracts must remain actionable when their client type flag is missing")
+local hasOtherLocationObjectiveBlock = contextMenu:match("local hasOtherLocationObjective = .-\n%s*local legacyPackageFallback")
+PZLinuxTestAssert(hasOtherLocationObjectiveBlock and hasOtherLocationObjectiveBlock:find("PZLinuxContractAtmRefill"),
+    "the ATM refill contract must be excluded from the legacy package pickup fallback -- " ..
+    "otherwise a player near the target ATM sees a bogus 'retrieve the package' option")
 PZLinuxTestAssert(contextMenu:find("%[PZLinux Contracts Context%] option missing"),
     "missing package actions must emit actionable diagnostics")
 PZLinuxTestAssert(variables:find('command == "PZLinuxContractDepositResult"'),

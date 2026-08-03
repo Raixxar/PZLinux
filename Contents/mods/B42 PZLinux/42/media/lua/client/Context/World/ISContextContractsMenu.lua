@@ -44,6 +44,7 @@ function completeContractMenu_AddContext(player, context, worldobjects)
         or tonumber(modData.PZLinuxContractProtect) == 1
         or tonumber(modData.PZLinuxContractProtect) == 2
         or tonumber(modData.PZLinuxContractProtect) == 3
+        or tonumber(modData.PZLinuxContractAtmRefill) == 1
     local legacyPackageFallback = tonumber(modData.PZLinuxActiveContract) == 1
         and targetX and targetX > 0 and targetY and targetY > 0
         and not hasOtherLocationObjective

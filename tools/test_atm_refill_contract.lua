@@ -268,4 +268,12 @@ local ensureButtonBlock = atmMenuSource:match("function AtmUI:ensureContractRefi
 PZLinuxTestAssert(ensureButtonBlock and ensureButtonBlock:find("if self%.contractRefillButton then return end"),
     "re-checking the refill button must be idempotent and never create a duplicate")
 
+-- Showing all three buttons (withdraw/deposit/refill) at once was confusing
+-- and pushed a button past the visible ATM screen; when the refill contract
+-- matches, the ordinary withdraw/deposit buttons must be hidden entirely.
+PZLinuxTestAssert(ensureButtonBlock
+    and ensureButtonBlock:find("self%.withdrawalButton:setVisible%(false%)")
+    and ensureButtonBlock:find("self%.depositeButton:setVisible%(false%)"),
+    "matching the ATM refill contract must hide the ordinary withdraw/deposit buttons")
+
 print("PZLinux ATM refill contract tests OK")
