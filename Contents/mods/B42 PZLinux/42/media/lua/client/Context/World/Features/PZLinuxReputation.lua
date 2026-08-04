@@ -193,7 +193,12 @@ function PZLinuxReputationUI:refreshSnapshot()
             ))
         end
 
-        self.content.text = "<RGB:0,1,0>" .. table.concat(lines, "<LINE>")
+        -- ISRichTextPanel:paginate() tokenizes on spaces; a word glued
+        -- directly to a following tag (e.g. "neutralité.<LINE>") gets
+        -- swallowed by the tag's token and never rendered. A space on each
+        -- side of <LINE> avoids that -- it's exactly what the engine itself
+        -- inserts when converting "\n".
+        self.content.text = "<RGB:0,1,0>" .. table.concat(lines, " <LINE> ")
         self.content:paginate()
         local maxYScroll = math.max(0, self.content:getScrollHeight() - self.content:getHeight())
         if self.content.vscroll then self.content.vscroll:setVisible(maxYScroll > 0) end

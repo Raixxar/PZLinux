@@ -734,7 +734,11 @@ function PZLinuxBettingUI:showRaceSchedule(result)
     resultPanel.backgroundColor = {r=0, g=0, b=0, a=0}
     resultPanel.borderColor = {r=0, g=0, b=0, a=0}
     resultPanel.autosetheight = false
-    resultPanel.text = "<RGB:1,1,0>" .. table.concat(resultLines, "<LINE>")
+    -- ISRichTextPanel:paginate() tokenizes on spaces; a word glued directly
+    -- to a following tag gets swallowed by the tag's token and never
+    -- rendered. A space on each side of <LINE> avoids that -- it's exactly
+    -- what the engine itself inserts when converting "\n".
+    resultPanel.text = "<RGB:1,1,0>" .. table.concat(resultLines, " <LINE> ")
     resultPanel:initialise()
     resultPanel:instantiate()
     resultPanel:paginate()

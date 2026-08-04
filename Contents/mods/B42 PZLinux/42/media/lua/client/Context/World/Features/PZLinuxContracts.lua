@@ -118,7 +118,11 @@ local function PZLinuxContractsShowCompletionReceipt(self, receipt)
     self.completeContractMessage.backgroundColor = {r=0, g=0, b=0, a=0}
     self.completeContractMessage.borderColor = {r=0, g=0, b=0, a=0}
     self.completeContractMessage.autosetheight = false
-    self.completeContractMessage.text = "<RGB:0,1,0>" .. table.concat(lines, "<LINE>")
+    -- ISRichTextPanel:paginate() tokenizes on spaces; a word glued directly
+    -- to a following tag (e.g. "payé.<LINE>") gets swallowed by the tag's
+    -- token and never rendered. A space on each side of <LINE> avoids that
+    -- -- it's exactly what the engine itself inserts when converting "\n".
+    self.completeContractMessage.text = "<RGB:0,1,0>" .. table.concat(lines, " <LINE> ")
     self.completeContractMessage:initialise()
     self.completeContractMessage:instantiate()
     self.completeContractMessage:paginate()

@@ -154,6 +154,25 @@ assert(reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.reputa
 assert(not reputationUiSource:find("mailDelayMax", 1, true) and not reputationUiSource:find("nextat", 1, true),
     "the reputation UI must keep future mail timing hidden")
 
+-- Regression test for a real gameplay bug: ISRichTextPanel:paginate()
+-- (the native game class) tokenizes on spaces. A word glued directly to a
+-- following <LINE> tag with no space in between gets swallowed by the
+-- tag's token and is never rendered -- this silently dropped the very
+-- value at the end of almost every reputation line (Score, Status,
+-- Purchase prices, Mail frequency, Completion gain, Cancel penalty, Decay),
+-- since each one ends with its substituted value immediately before the
+-- next <LINE>. table.concat(lines, "<LINE>") must always be
+-- table.concat(lines, " <LINE> ") instead -- exactly what the engine
+-- itself inserts when converting "\n" -- or the last word of every line
+-- but the final one silently disappears.
+assert(reputationUiSource:find('table%.concat%(lines, " <LINE> "%)'),
+    "reputation lines must be joined with spaced <LINE> tags, or ISRichTextPanel silently drops the last word of every line but the final one")
+local contractsUiFile = assert(io.open(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua", "rb"))
+local contractsUiSource = contractsUiFile:read("*a")
+contractsUiFile:close()
+assert(contractsUiSource:find('table%.concat%(lines, " <LINE> "%)'),
+    "the contract completion receipt lines must be joined with spaced <LINE> tags, for the same reason")
+
 local contractPriceBlock = runtimeSource:match("function PZLinuxContractsBuildContract.-\nend")
 assert(contractPriceBlock and not contractPriceBlock:find("scarcityMultiplier", 1, true),
     "world scarcity must not inflate contract rewards")

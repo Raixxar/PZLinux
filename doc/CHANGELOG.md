@@ -23,15 +23,26 @@
   distributeur, aucun contrat actif, renflouement termine), et la
   description du lieu (E-Z GO Banking, Ekron). Voir les fichiers
   `Contents/mods/B42 PZLinux/42/media/lua/shared/Translate/<LANG>/IG_UI.json`.
-- BUG CONNU NON RESOLU : deux textes francais restent tronques a l'affichage
-  ("Votre contrat a été" au lieu de "...payé.", "...progressivement vers la"
-  au lieu de "...neutralité."). Une premiere hypothese (un caractere accentue
-  immediatement suivi d'un point final, sans espace, perturbant le rendu)
-  a ete testee en retirant l'accent de "payé" -> "paye" : confirmee par
-  capture d'ecran, cette hypothese est fausse, le mot reste tronque a
-  l'identique. Cause reelle encore inconnue -- a investiguer (piste
-  envisagee : bug de retour a la ligne dans `ISRichTextPanel` specifique aux
-  textes francais, generalement 15-20% plus longs qu'en anglais).
+- Correctif (cause racine trouvee) du texte tronque signale sur l'ecran de
+  fin de contrat ("Votre contrat a été" au lieu de "...payé.") et sur l'UI
+  Reputation, ou quasiment toutes les valeurs manquaient ("Prix d'achat
+  toujours, statut etc... ça remonte aucune variable"). La premiere
+  hypothese (un caractere accentue avant un point final) avait ete testee et
+  infirmee par capture d'ecran. Vraie cause : le tokenizer natif du jeu
+  (`ISRichTextPanel:paginate()`, moteur, pas ce mod) decoupe le texte sur les
+  espaces -- quand un mot est colle directement a un tag `<LINE>` suivant
+  sans espace (ex. "payé.<LINE>"), ce tokenizer fusionne le mot et le tag en
+  un seul token et jette silencieusement le texte avant le tag. Comme
+  chaque ligne de contrat/reputation se terminait par sa valeur juste avant
+  le `<LINE>` suivant, c'est systematiquement le dernier mot -- souvent la
+  valeur elle-meme -- de chaque ligne (sauf la toute derniere) qui
+  disparaissait. Corrige en joignant les lignes avec `" <LINE> "` (espaces
+  des deux cotes) au lieu de `"<LINE>"`, exactement ce que le moteur
+  insere lui-meme lors de la conversion des retours a la ligne `"\n"`.
+  Trois ecrans concernes : le recu de fin de contrat, l'UI Reputation, et
+  l'ecran de resultat des courses de zombies (paris). Voir
+  `PZLinuxContracts.lua`, `PZLinuxReputation.lua`, `PZLinuxBetting.lua`, et
+  la regression ajoutee dans `tools/test_reputation_economy.lua`.
 
 - Contrat "Refill an ATM" : correctif d'une option de menu contextuel
   incorrecte ("récupérer l'objet du contrat") apparaissant a proximite du
