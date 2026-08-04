@@ -120,5 +120,7 @@ PZLinuxTestAssertEqual(withdrawal:find("PZLinuxAddInventoryCash") < withdrawal:f
     "physical cash must be created before debiting the bank")
 PZLinuxTestAssertEqual(withdrawal:find('error = "cash_add_failed"') ~= nil, true,
     "cash creation failure must leave the economy untouched")
+PZLinuxTestAssertEqual(withdrawal:find("PZLinuxAtmWithdrawnTotal", 1, true) ~= nil, true,
+    "withdrawals must be tracked per ATM, so passive regen only ever refunds real withdrawals (see test_atm_restock.lua)")
 
 print("PZLinux ATM inventory tests OK")

@@ -65,7 +65,7 @@ PZLinux = {
         contractCompleteReward = function() return 1 end,
     },
     Config = {
-        ATM = { minCash = 10000, maxCash = 50000, restockPerHour = 500 },
+        ATM = { minCash = 10000, maxCash = 50000, restockPerHour = 500, restockCap = 15000 },
         AtmRefill = { targetCashMin = 1, targetCashMax = 501 },
     },
 }

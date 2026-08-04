@@ -474,11 +474,55 @@ local function PZLinuxAtmCashRange(atmObject)
     return PZLINUX_ATM_MIN_CASH, PZLINUX_ATM_MAX_CASH, PZLINUX_ATM_MAX_CASH
 end
 
+-- Finds the currently active (accepted, not yet deposited/completed/
+-- cancelled) "Refill an ATM" world contract targeting these exact
+-- coordinates, if any. PZLinuxContractsGetWorldData is defined later in
+-- this same file/chunk, which is fine: Lua resolves global function calls
+-- at call time, not at parse time. Guarded with a nil check so this stays
+-- a harmless no-op in contexts (e.g. isolated unit tests) that only load a
+-- narrow slice of this file without the contract world-data system.
+local function PZLinuxAtmFindActiveRefillContract(x, y, z)
+    if not PZLinuxContractsGetWorldData then return nil end
+    local worldData = PZLinuxContractsGetWorldData()
+    for _, record in pairs(worldData.active) do
+        if record.contractId == 13 and record.status == "accepted"
+        and record.locationX == x and record.locationY == y and record.locationZ == z then
+            return record
+        end
+    end
+    return nil
+end
+
 function PZLinuxAtmLoadCash(atmObject)
     if not atmObject then return 0 end
 
     local rollMin, rollMax, capMax = PZLinuxAtmCashRange(atmObject)
     local modData = atmObject:getModData()
+
+    -- Escape valve for players who've been farming a lot of physical cash
+    -- and keep hitting "ATM full" everywhere: every time a fresh "Refill an
+    -- ATM" contract targeting this ATM is accepted, its balance drops back
+    -- down to a near-empty random roll -- even if it had climbed all the
+    -- way to maxCash -- guaranteeing at least one machine on the map has
+    -- real deposit room again. This never touches any player's bank
+    -- balance; it only resets the machine's own cash. Only applied once
+    -- per contract instance (tracked via PZLinuxAtmResetForContract), and
+    -- only the server ever does this.
+    if not (isClient and isClient()) and atmObject.getSquare then
+        local square = atmObject:getSquare()
+        if square then
+            local activeRefill = PZLinuxAtmFindActiveRefillContract(square:getX(), square:getY(), square:getZ())
+            if activeRefill and modData.PZLinuxAtmResetForContract ~= activeRefill.id then
+                modData.PZLinuxAtmCash = ZombRand(rollMin, rollMax + 1)
+                modData.PZLinuxAtmCashUpdatedHour = getGameTime and getGameTime():getWorldAgeHours() or 0
+                modData.PZLinuxAtmResetForContract = activeRefill.id
+                modData.PZLinuxAtmWithdrawnTotal = 0
+                modData.PZLinuxAtmRegenGranted = 0
+                PZLinuxAtmTransmitModData(atmObject)
+            end
+        end
+    end
+
     local atmCash = tonumber(modData.PZLinuxAtmCash)
     if atmCash == nil then
         if isClient and isClient() then
@@ -496,9 +540,14 @@ function PZLinuxAtmLoadCash(atmObject)
     -- large sum indefinitely.
     atmCash = math.min(capMax, math.max(0, math.floor(atmCash)))
 
-    -- Cash slowly regenerates over in-game time (capped at maxCash) so
-    -- withdrawals alone can never permanently drain every ATM on the map.
-    -- Only the server ever advances this; clients just read the value.
+    -- Cash slowly regenerates over in-game time (a cash truck service,
+    -- narratively), but only ever refunds cash actually withdrawn from
+    -- THIS specific ATM, up to a hard lifetime cap (restockCap). Without
+    -- this, regen would climb toward capMax purely from elapsed world time
+    -- -- even on an ATM nobody ever withdraws from -- and every ATM a
+    -- player has ever visited once would eventually sit permanently pinned
+    -- near its cap, making deposits impossible there forever. Only the
+    -- server ever advances this; clients just read the value.
     if not (isClient and isClient()) then
         local currentHour = getGameTime and getGameTime():getWorldAgeHours() or 0
         local lastHour = tonumber(modData.PZLinuxAtmCashUpdatedHour)
@@ -508,8 +557,16 @@ function PZLinuxAtmLoadCash(atmObject)
             local elapsedHours = currentHour - lastHour
             if elapsedHours > 0 then
                 local restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 0
-                if restockPerHour > 0 and atmCash < capMax then
-                    atmCash = math.min(capMax, atmCash + elapsedHours * restockPerHour)
+                local restockCap = tonumber(PZLinux.Config.ATM.restockCap) or 15000
+                local withdrawnTotal = tonumber(modData.PZLinuxAtmWithdrawnTotal) or 0
+                local regenGranted = tonumber(modData.PZLinuxAtmRegenGranted) or 0
+                local regenBudget = math.max(0, math.min(withdrawnTotal, restockCap) - regenGranted)
+                if restockPerHour > 0 and regenBudget > 0 and atmCash < capMax then
+                    local regenAmount = math.min(elapsedHours * restockPerHour, regenBudget, capMax - atmCash)
+                    if regenAmount > 0 then
+                        atmCash = atmCash + regenAmount
+                        modData.PZLinuxAtmRegenGranted = regenGranted + regenAmount
+                    end
                 end
                 modData.PZLinuxAtmCashUpdatedHour = currentHour
             end
@@ -605,6 +662,11 @@ function PZLinuxApplyAtmWithdrawal(player, atmRef, amount, requestId)
 
     local balance = PZLinuxSetBankBalance(player, previousBalance - amount)
     atmCash = PZLinuxAtmSaveCash(atmObject, atmCash - amount)
+
+    -- Tracked so passive regen (see PZLinuxAtmLoadCash) only ever refunds
+    -- cash actually taken out of this specific ATM, never more.
+    local modData = atmObject:getModData()
+    modData.PZLinuxAtmWithdrawnTotal = (tonumber(modData.PZLinuxAtmWithdrawnTotal) or 0) + amount
 
     return { ok = true, type = "withdrawal", requestId = requestId, amount = amount, balance = balance, previousBalance = previousBalance, atmCash = atmCash }
 end

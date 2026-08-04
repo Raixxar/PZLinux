@@ -1,6 +1,6 @@
 version=1.0.0
 id=3414468585
-title=PZLinux - Apocalypse Economy [Build 42]
+title=PZLinux
 
 [h1]PZLinux 1.0.0[/h1]
 
@@ -21,8 +21,10 @@ transaction includes a 5% fee.
 [h2]Contracts, Reputation and Requests[/h2]
 
 Take missions to eliminate zombies or targets, retrieve packages, deliver
-equipment, prepare cargo and protect locations. Build reputation by completing
-contracts, order supplies and vehicles, and receive jobs through mailboxes.
+equipment, prepare cargo, protect locations or refill an ATM. Completing or
+cancelling contracts moves your reputation, which grants better Dark Web and
+Request prices the more reliable you become (or worse, if you're not). Order
+supplies and vehicles, and receive jobs through mailboxes.
 
 [h2]Hacking[/h2]
 
@@ -52,6 +54,8 @@ Keyboard and mouse are required. Full controller navigation and split-screen
 support are not certified for version 1.0.0.
 
 [hr][/hr]
+
+[url=buymeacoffee.com/raixxar][img]https://i.imgur.com/4xVmWvK.png[/img][/url]
 
 Mod ID: B42_PZLinux
 Workshop ID: 3414468585

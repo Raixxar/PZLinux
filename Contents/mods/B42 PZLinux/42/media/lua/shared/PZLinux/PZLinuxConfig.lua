@@ -12,13 +12,21 @@ PZLinux.Config.ATM = PZLinux.Config.ATM or {
     minCash = 10000,
     maxCash = 50000,
     -- Cash slowly regenerates over in-game time (a cash truck service,
-    -- narratively), capped at maxCash, so withdrawals alone can never
-    -- permanently drain every ATM on the map.
+    -- narratively), so withdrawals alone can never permanently drain every
+    -- ATM on the map. Regen only ever refunds cash that was actually
+    -- withdrawn from that specific ATM (never grows a machine no one has
+    -- touched), and is additionally hard-capped at restockCap lifetime --
+    -- without that second cap, an ATM withdrawn from heavily over a long
+    -- game could still regen all the way up to maxCash on its own and
+    -- permanently block deposits there, even though every dollar of that
+    -- regen was "earned back" by real withdrawals.
     restockPerHour = 500,
+    restockCap = 15000,
 }
 PZLinux.Config.ATM.minCash = tonumber(PZLinux.Config.ATM.minCash) or 10000
 PZLinux.Config.ATM.maxCash = tonumber(PZLinux.Config.ATM.maxCash) or 50000
 PZLinux.Config.ATM.restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 500
+PZLinux.Config.ATM.restockCap = tonumber(PZLinux.Config.ATM.restockCap) or 15000
 
 PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
     packageInteractionRadius = 5,
