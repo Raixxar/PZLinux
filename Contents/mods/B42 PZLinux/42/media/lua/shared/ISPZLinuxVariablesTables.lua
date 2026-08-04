@@ -193,36 +193,31 @@ function PZLinuxGetText(key)
     return PZLinux.TextFallbacks[key] or key
 end
 
+-- Never pass extra arguments to the native getText(key, ...) call: an
+-- earlier version did (via disposable "__PZLINUX_VALUE_N__" markers, asking
+-- the native translator to substitute them so the real values could be
+-- gsub'd in afterward, with a pcall fallback if that native call errored).
+-- In practice that produced blank values in real gameplay for several
+-- multi-argument reputation lines with no error and no exception -- the
+-- native call silently consumed/dropped the "%s" placeholders without
+-- inserting the markers, so neither the marker gsub nor the "%s" gsub
+-- fallback ever found anything to replace. A plain zero-argument getText(key)
+-- lookup, with every substitution done here in Lua via gsub, sidesteps
+-- that native behavior entirely and is simple enough to fully unit-test.
 function PZLinuxFormatText(key, fallback, ...)
     local argumentCount = select("#", ...)
     local values = { ... }
-    local markers = {}
     local template = fallback or key
 
     if getText then
-        local translated
-        if argumentCount > 0 then
-            for index = 1, argumentCount do
-                markers[index] = "__PZLINUX_VALUE_" .. tostring(index) .. "__"
-            end
-            local translatedOk
-            translatedOk, translated = pcall(getText, key, unpack(markers, 1, argumentCount))
-            if not translatedOk then translated = getText(key) end
-        else
-            translated = getText(key)
-        end
+        local translated = getText(key)
         if translated and translated ~= key then template = translated end
     end
 
     for index = 1, argumentCount do
         local replacement = tostring(values[index] or "")
-        local substitutions = 0
-        if markers[index] then
-            template, substitutions = template:gsub(markers[index], function() return replacement end, 1)
-        end
-        if substitutions == 0 then
-            template, substitutions = template:gsub("%%s", function() return replacement end, 1)
-        end
+        local substitutions
+        template, substitutions = template:gsub("%%s", function() return replacement end, 1)
         if substitutions == 0 then
             template, substitutions = template:gsub("%%" .. tostring(index), function() return replacement end, 1)
         end
@@ -442,22 +437,64 @@ function PZLinuxAtmTransmitModData(atmObject)
     end
 end
 
+-- Every ATM the "Refill an ATM" contract can target (the atmRefill mission
+-- location pool) starts out almost empty -- rolled within
+-- AtmRefill.targetCashMin/targetCashMax (1-501 $ by default) instead of the
+-- general ATM range -- to make it visually obvious there is barely anything
+-- left, so the contract feels like it actually matters. This only affects
+-- the INITIAL roll: the ongoing cap (regen ceiling, deposit ceiling) stays
+-- the general ATM.maxCash, so a real refill deposit (1,000-5,000 $) can
+-- actually raise its balance instead of being clamped right back down to
+-- the same near-empty range it started in.
+function PZLinuxAtmIsContractTargetLocation(x, y, z)
+    local pool = PZLinux.MissionLocations and PZLinux.MissionLocations.pools
+        and PZLinux.MissionLocations.pools.atmRefill
+    if not pool or not pool.byCityId then return false end
+    for _, entries in pairs(pool.byCityId) do
+        for _, entry in ipairs(entries) do
+            if entry.x == x and entry.y == y and entry.z == z then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- Returns rollMin, rollMax (the range for this ATM's very first cash roll)
+-- and capMax (the ceiling applied afterward, for clamping/regen/deposits).
+local function PZLinuxAtmCashRange(atmObject)
+    if atmObject and atmObject.getSquare then
+        local square = atmObject:getSquare()
+        if square and PZLinuxAtmIsContractTargetLocation(square:getX(), square:getY(), square:getZ()) then
+            return tonumber(PZLinux.Config.AtmRefill.targetCashMin) or PZLINUX_ATM_MIN_CASH,
+                tonumber(PZLinux.Config.AtmRefill.targetCashMax) or PZLINUX_ATM_MAX_CASH,
+                PZLINUX_ATM_MAX_CASH
+        end
+    end
+    return PZLINUX_ATM_MIN_CASH, PZLINUX_ATM_MAX_CASH, PZLINUX_ATM_MAX_CASH
+end
+
 function PZLinuxAtmLoadCash(atmObject)
     if not atmObject then return 0 end
 
+    local rollMin, rollMax, capMax = PZLinuxAtmCashRange(atmObject)
     local modData = atmObject:getModData()
     local atmCash = tonumber(modData.PZLinuxAtmCash)
     if atmCash == nil then
         if isClient and isClient() then
             return 0
         end
-        atmCash = ZombRand(PZLINUX_ATM_MIN_CASH, PZLINUX_ATM_MAX_CASH + 1)
+        atmCash = ZombRand(rollMin, rollMax + 1)
         modData.PZLinuxAtmCash = atmCash
         modData.PZLinuxAtmCashUpdatedHour = getGameTime and getGameTime():getWorldAgeHours() or 0
         PZLinuxAtmTransmitModData(atmObject)
     end
 
-    atmCash = math.max(0, math.floor(atmCash))
+    -- Clamping here (not just on new deposits) self-heals any ATM left over
+    -- from before maxCash was lowered, or from before deposits were capped
+    -- at all -- otherwise a single machine could keep holding an arbitrarily
+    -- large sum indefinitely.
+    atmCash = math.min(capMax, math.max(0, math.floor(atmCash)))
 
     -- Cash slowly regenerates over in-game time (capped at maxCash) so
     -- withdrawals alone can never permanently drain every ATM on the map.
@@ -471,8 +508,8 @@ function PZLinuxAtmLoadCash(atmObject)
             local elapsedHours = currentHour - lastHour
             if elapsedHours > 0 then
                 local restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 0
-                if restockPerHour > 0 and atmCash < PZLINUX_ATM_MAX_CASH then
-                    atmCash = math.min(PZLINUX_ATM_MAX_CASH, atmCash + elapsedHours * restockPerHour)
+                if restockPerHour > 0 and atmCash < capMax then
+                    atmCash = math.min(capMax, atmCash + elapsedHours * restockPerHour)
                 end
                 modData.PZLinuxAtmCashUpdatedHour = currentHour
             end
@@ -597,6 +634,13 @@ function PZLinuxApplyAtmDeposit(player, atmRef, amount, requestId)
     end
     if inventoryCash < amount then
         return { ok = false, error = "not_enough_inventory_cash", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash, inventoryCash = inventoryCash }
+    end
+    -- Capped, not just clamped on load: without this, one player could
+    -- deposit an arbitrarily large sum for another player to withdraw
+    -- elsewhere -- an easy, untraceable way to hand over money in MP.
+    local _, _, maxCashForThisAtm = PZLinuxAtmCashRange(atmObject)
+    if atmCash + amount > maxCashForThisAtm then
+        return { ok = false, error = "atm_full", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash, inventoryCash = inventoryCash }
     end
 
     local removed = PZLinuxRemoveInventoryCash(player, amount)
@@ -3710,8 +3754,16 @@ function PZLinuxContractsApplyAtmRefillDeposit(player, atmRef, requestId)
 
     local credit = PZLinuxApplyBankCredit(playerObj, amount, "atm-refill-refund", requestId)
 
+    -- Clamp rather than reject: the player already handed over the cash and
+    -- must still get their refund + reward regardless of whether this ATM
+    -- happens to already be near its cap (e.g. from its own slow regen).
+    -- The cap here is the general ATM.maxCash, not AtmRefill.targetCashMax
+    -- (which only governs this ATM's near-empty starting roll) -- otherwise
+    -- the deposit itself, always far larger than targetCashMax, would get
+    -- clamped right back down to almost nothing and never actually refill it.
     local atmCash = PZLinuxAtmLoadCash(atmObject)
-    PZLinuxAtmSaveCash(atmObject, atmCash + amount)
+    local maxCash = tonumber(PZLinux.Config.ATM.maxCash) or 50000
+    PZLinuxAtmSaveCash(atmObject, math.min(maxCash, atmCash + amount))
 
     modData.PZLinuxActiveContract = 9
     PZLinuxContractsMarkWorldContract(modData.PZLinuxContractId, "deposited", playerObj)

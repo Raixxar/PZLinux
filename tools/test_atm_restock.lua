@@ -14,11 +14,21 @@ local function PZLinuxTestRead(path)
     return content
 end
 
-PZLinux = { Config = { ATM = {
-    minCash = 10000,
-    maxCash = 50000,
-    restockPerHour = 500,
-} } }
+PZLinux = {
+    Config = {
+        ATM = { minCash = 10000, maxCash = 50000, restockPerHour = 500 },
+        AtmRefill = { targetCashMin = 1, targetCashMax = 501 },
+    },
+    MissionLocations = {
+        pools = {
+            atmRefill = {
+                byCityId = {
+                    [2] = { { id = "atm_ekron_ez_go_banking_01", x = 418, y = 9869, z = 0 } },
+                },
+            },
+        },
+    },
+}
 
 local worldAgeHours = 0
 getGameTime = function()
@@ -74,6 +84,35 @@ PZLinuxAtmSaveCash(drainedAtm, 0)
 worldAgeHours = 1010 + 50
 PZLinuxTestAssert(PZLinuxAtmLoadCash(drainedAtm) == 50 * 500,
     "a fully drained ATM must regenerate at the configured rate like any other")
+
+-- The one ATM matching the "Refill an ATM" contract's target location must
+-- roll its very first balance within the much lower
+-- AtmRefill.targetCashMin/targetCashMax range instead of the general ATM
+-- range, so it visibly looks near-empty and the contract feels meaningful
+-- (a normal ATM sitting near its 50,000 $ cap would barely notice a
+-- 1,000-5,000 $ deposit). That low range only affects the initial roll,
+-- though: the regen ceiling stays the general ATM.maxCash, so a real
+-- refill deposit can actually raise its balance well above 501 $.
+worldAgeHours = 2000
+local function PZLinuxTestMakeAtmAt(x, y, z)
+    local modData = {}
+    return {
+        getModData = function() return modData end,
+        getSquare = function()
+            return { getX = function() return x end, getY = function() return y end, getZ = function() return z end }
+        end,
+    }
+end
+local targetAtm = PZLinuxTestMakeAtmAt(418, 9869, 0)
+PZLinuxTestAssert(PZLinuxAtmLoadCash(targetAtm) == 1,
+    "the contract's target ATM must roll its initial balance within its own much lower cash range")
+worldAgeHours = 2000 + 100000
+PZLinuxTestAssert(PZLinuxAtmLoadCash(targetAtm) == 50000,
+    "the contract's target ATM must still regenerate up to the general maxCash, not just its own low starting range")
+local otherAtm = PZLinuxTestMakeAtmAt(1, 1, 0)
+worldAgeHours = 2000
+PZLinuxTestAssert(PZLinuxAtmLoadCash(otherAtm) == 10000,
+    "an ATM elsewhere on the map must still use the general ATM cash range")
 
 -- The client must never itself mutate or restock an ATM's cash; it only
 -- ever reads whatever the server has already computed.

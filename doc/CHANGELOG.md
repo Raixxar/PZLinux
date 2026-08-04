@@ -2,6 +2,15 @@
 
 ## Correctifs post-1.0.0
 
+- Contrat "Refill an ATM" : ajout de 4 nouvelles localisations au pool
+  `atmRefill` (qui ne comptait jusqu'ici que le distributeur E-Z GO Banking
+  d'Ekron) : Corner Store a Muldraugh (10850, 10033), Knox Bank a Louisville
+  (12585, 1715), Knox Bank a Brandenburg (2079, 5836) et Knox Bank a Valley
+  Station (13665, 5751). Traductions des descriptions de lieu ajoutees dans
+  les 20 langues supportees. Voir `PZLinux.MissionLocations.pools.atmRefill`
+  dans `PZLinuxMissionLocations.lua` et la couverture regression par ville
+  dans `tools/test_contract_authority.lua`.
+
 - Contrat "Refill an ATM" : le bouton "REFILL FOR CONTRACT" etait beaucoup
   trop grand (occupait quasiment tout l'ecran du DAB). Ramene a la taille des
   boutons RETRAIT/DEPOT normaux.
@@ -14,16 +23,15 @@
   distributeur, aucun contrat actif, renflouement termine), et la
   description du lieu (E-Z GO Banking, Ekron). Voir les fichiers
   `Contents/mods/B42 PZLinux/42/media/lua/shared/Translate/<LANG>/IG_UI.json`.
-- Correctif de deux textes francais tronques a l'affichage ("Votre contrat a
-  été" au lieu de "...payé.", "...progressivement vers la" au lieu de
-  "...neutralité.") : dans les deux cas, le mot manquant se terminait par un
-  caractere accentue immediatement suivi d'un point final, sans espace.
-  Hypothese (non confirmee au niveau moteur, mais corrigee par prudence et
-  coherente avec des choix similaires deja presents ailleurs dans ce meme
-  fichier de traduction) : un caractere accentue colle a une ponctuation de
-  fin de phrase perturbe le rendu/retour a la ligne du client et fait
-  disparaitre le dernier mot entierement. Les nouvelles traductions ATM
-  ajoutees ci-dessus evitent deliberement ce meme motif partout ou possible.
+- BUG CONNU NON RESOLU : deux textes francais restent tronques a l'affichage
+  ("Votre contrat a été" au lieu de "...payé.", "...progressivement vers la"
+  au lieu de "...neutralité."). Une premiere hypothese (un caractere accentue
+  immediatement suivi d'un point final, sans espace, perturbant le rendu)
+  a ete testee en retirant l'accent de "payé" -> "paye" : confirmee par
+  capture d'ecran, cette hypothese est fausse, le mot reste tronque a
+  l'identique. Cause reelle encore inconnue -- a investiguer (piste
+  envisagee : bug de retour a la ligne dans `ISRichTextPanel` specifique aux
+  textes francais, generalement 15-20% plus longs qu'en anglais).
 
 - Contrat "Refill an ATM" : correctif d'une option de menu contextuel
   incorrecte ("récupérer l'objet du contrat") apparaissant a proximite du
@@ -77,6 +85,52 @@
   DAB, pour identifier precisement laquelle des conditions (contrat actif,
   distributeur correct) echoue -- utile en cas de rapport de bug sans acces
   direct a la partie du joueur.
+
+- UI Reputation : de nombreuses lignes (Score, Statut, prix d'achat,
+  frequence du courrier, gain a la completion, penalite d'annulation)
+  affichaient des valeurs vides sans aucune erreur, alors que la derniere
+  ligne de l'ecran (prochain statut) s'affichait correctement. Cause racine :
+  `PZLinuxFormatText` appelait le `getText(key, ...)` natif du jeu avec des
+  arguments supplementaires (des marqueurs jetables a substituer apres coup),
+  en supposant que le moteur natif les inserait a la place des `%s` du
+  template -- en pratique, le moteur natif ignore silencieusement ces
+  arguments sans erreur, donc ni le gsub des marqueurs ni le gsub de secours
+  sur `%s` ne trouvaient quoi que ce soit a remplacer. Corrige en simplifiant
+  `PZLinuxFormatText` pour n'appeler `getText` qu'avec la seule cle (jamais
+  d'argument supplementaire) et faire toute la substitution en Lua via gsub
+  sur le template ainsi obtenu. Voir `tools/test_reputation_economy.lua`.
+
+- Economie des DAB : rebalance pour rendre le contrat "Refill an ATM"
+  coherent et empecher un abus en multijoueur, sans toucher au
+  fonctionnement des DAB ordinaires. Un DAB pouvait accumuler des sommes
+  absurdes (ex. 300 000 $ observe en test) sans aucune limite sur les
+  depots des joueurs, ce qui permettait a un joueur de deposer une somme
+  enorme dans un DAB pour qu'un autre joueur la retire ailleurs -- un moyen
+  simple et intracable de transferer de l'argent entre joueurs
+  (power-leveling). La fourchette de reserve de caisse des DAB ordinaires
+  reste inchangee (`PZLinux.Config.ATM.minCash`/`maxCash`, 10 000-50 000 $) ;
+  les depots des joueurs sont desormais plafonnes a `maxCash` (nouveau
+  message d'erreur "DAB plein" / `IGUI_PZLinux_ATM_Full` si le depot
+  depasserait la limite) et la reserve de caisse est aussi plafonnee
+  automatiquement a chaque chargement du DAB, ce qui corrige d'elle-meme
+  tout DAB deja au-dessus de la limite (comme le cas a 300 000 $) des le
+  prochain acces. Separement, tout DAB pouvant etre la cible du contrat
+  "Refill an ATM" (pool de localisation `atmRefill` -- actuellement le seul
+  distributeur E-Z GO Banking d'Ekron, mais toute nouvelle localisation
+  ajoutee a ce pool en beneficie automatiquement) tire son tout premier
+  solde dans une fourchette bien plus basse, 1-501 $
+  (`PZLinux.Config.AtmRefill.targetCashMin`/`targetCashMax`), pour montrer
+  clairement qu'il ne reste presque plus rien dedans et que le contrat a une
+  vraie utilite -- ces distributeurs muraux ne pouvant jamais etre retires ou
+  deplaces, les rendre visiblement "presque vides" au depart est la seule
+  facon de le justifier. Cette fourchette basse ne concerne que ce premier
+  tirage : le plafond de fonctionnement normal (regeneration, depot du
+  contrat) reste le `maxCash` general (50 000 $) -- sinon le depot du
+  contrat (toujours bien superieur a 501 $) serait aussitot replafonne a
+  presque rien et ne renflouerait jamais vraiment le DAB. Voir
+  `PZLinuxAtmCashRange` et `PZLinuxAtmIsContractTargetLocation` dans
+  `ISPZLinuxVariablesTables.lua`, et `tools/test_atm_refill_contract.lua` /
+  `tools/test_atm_restock.lua`.
 
 - ATM : le stock de liquide de chaque distributeur se souvenait bien de son
   etat precedent (persiste dans son propre ModData), mais ne se reapprovisionnait

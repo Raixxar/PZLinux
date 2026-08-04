@@ -91,26 +91,35 @@ local runtimeSource = runtimeFile:read("*a")
 runtimeFile:close()
 local formatterSource = runtimeSource:match("(function PZLinuxFormatText.-\nend)\n\nPZLinux%.callbacks")
 assert(formatterSource and loadstring(formatterSource))()
+
+-- Regression test for a real gameplay bug: an earlier version of this
+-- formatter called the native getText(key, ...) with extra arguments,
+-- assuming the native translator would substitute "%s" placeholders with
+-- disposable markers so the real values could be gsub'd in afterward. In
+-- real gameplay, several multi-argument reputation lines (Score, Status,
+-- Purchase prices, Mail frequency, ...) rendered with their values silently
+-- missing -- no error, no exception, just blank substitutions -- while the
+-- very last line on the same screen (Next status) worked fine. getText must
+-- therefore now only ever be called with the bare key (zero arguments); all
+-- substitution happens here in Lua via gsub against whatever getText(key)
+-- alone returns.
 local nativeTemplates = {
     score = "Score : %s (de %s à %s)",
+    status = "Statut : %s",
 }
+local getTextCallArgCounts = {}
 getText = function(key, ...)
-    local template = nativeTemplates[key] or key
-    local arguments = { ... }
-    for index = 1, select("#", ...) do
-        template = template:gsub("%%s", tostring(arguments[index]), 1)
-    end
-    return template
+    table.insert(getTextCallArgCounts, select("#", ...))
+    return nativeTemplates[key] or key
 end
 PZLinuxTestAssertEqual(PZLinuxFormatText("score", "Score: %s (%s/%s)", 31, -99, 200),
-    "Score : 31 (de -99 à 200)", "native translated reputation values")
-getText = function(key, value)
-    if value ~= nil then error("unsupported translated arguments") end
-    if key == "status" then return "Statut :" end
-    return key
-end
+    "Score : 31 (de -99 à 200)", "translated reputation values must be substituted purely in Lua")
 PZLinuxTestAssertEqual(PZLinuxFormatText("status", "Status: %s", "FIABLE"),
-    "Statut : FIABLE", "fallback reputation value")
+    "Statut : FIABLE", "a single translated value must also be substituted purely in Lua")
+for _, argCount in ipairs(getTextCallArgCounts) do
+    PZLinuxTestAssertEqual(argCount, 0,
+        "getText must never be called with extra arguments -- that is exactly what silently dropped values in real gameplay")
+end
 local cancelBlock = runtimeSource:match("function PZLinuxContractsApplyCancel.-\nend")
 assert(cancelBlock and cancelBlock:find('error = "no_active_contract"'), "forged cancellation without an active contract must be rejected")
 assert(cancelBlock and cancelBlock:find("PZLinuxApplyReputationDelta%(playerObj, %-reputationPenalty%)"),
@@ -136,9 +145,9 @@ assert(reputationUiSource:find("PZLinuxRequestReputationSnapshot", 1, true),
 assert(reputationUiSource:find("PZLinuxFormatText%(key, fallback, %.%.%.%)"),
     "the reputation UI must use the shared placeholder-safe formatter")
 assert(runtimeSource:find("function PZLinuxFormatText")
-    and runtimeSource:find("__PZLINUX_VALUE_")
-    and runtimeSource:find("pcall%(getText, key, unpack%(markers, 1, argumentCount%)%)"),
-    "translated values must survive native getText formatting through explicit markers")
+    and not runtimeSource:find("pcall%(getText, key, unpack"),
+    "getText must never be called with extra arguments (that silently dropped values in real gameplay); " ..
+    "all substitution must happen in Lua via gsub against a bare getText(key) lookup")
 assert(reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.reputation%)")
     and reputationUiSource:find("PZLinuxReputationRoundedNumber%(snapshot%.pointsToNext%)"),
     "the reputation UI must display whole reputation values without floating-point noise")

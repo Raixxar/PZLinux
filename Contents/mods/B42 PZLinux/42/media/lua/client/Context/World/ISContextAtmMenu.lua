@@ -110,6 +110,8 @@ function AtmUI:showTransactionError(result)
         message = PZLinuxFormatText("IGUI_PZLinux_ATM_WrongAtm", "This is not the ATM the contract needs refilled.")
     elseif errorCode == "no_active_contract" then
         message = PZLinuxFormatText("IGUI_PZLinux_ATM_NoActiveContract", "You have no active ATM refill contract.")
+    elseif errorCode == "atm_full" then
+        message = PZLinuxFormatText("IGUI_PZLinux_ATM_Full", "This ATM cannot hold any more cash.")
     end
 
     HaloTextHelper.addBadText(playerObj, message)

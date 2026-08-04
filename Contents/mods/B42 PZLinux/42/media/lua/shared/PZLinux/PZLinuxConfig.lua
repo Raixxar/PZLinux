@@ -1,13 +1,19 @@
 PZLinux = PZLinux or {}
 PZLinux.Config = PZLinux.Config or {}
 
+-- General ATM cash reserve range, used by every ordinary ATM on the map
+-- (the single "Refill an ATM" contract target ATM is deliberately kept much
+-- smaller instead -- see AtmRefill.targetCashMin/targetCashMax below -- so
+-- that contract feels like it actually matters). Player deposits are hard
+-- capped at maxCash (see PZLinuxApplyAtmDeposit): without that cap, one
+-- player could deposit an arbitrarily large sum for another player to
+-- withdraw elsewhere -- an easy, untraceable way to hand over money in MP.
 PZLinux.Config.ATM = PZLinux.Config.ATM or {
     minCash = 10000,
     maxCash = 50000,
     -- Cash slowly regenerates over in-game time (a cash truck service,
     -- narratively), capped at maxCash, so withdrawals alone can never
-    -- permanently drain every ATM on the map. Default refills an empty
-    -- machine to maxCash over roughly 4 in-game days.
+    -- permanently drain every ATM on the map.
     restockPerHour = 500,
 }
 PZLinux.Config.ATM.minCash = tonumber(PZLinux.Config.ATM.minCash) or 10000
@@ -42,14 +48,24 @@ PZLinux.Config.Contracts.cargoSprite = PZLinux.Config.Contracts.cargoSprite or "
 -- to withdraw that much physical cash from ATMs around town (possibly
 -- emptying several of them) and carry it all to the one hardcoded target to
 -- deposit it.
+-- targetCashMin/targetCashMax: unlike ordinary ATMs (PZLinux.Config.ATM,
+-- 10,000-50,000 $), every ATM this contract can target is a small
+-- wall-mounted branch machine, fixed in place (never removable/movable from
+-- the world) and modeled as almost empty -- 1-501 $ -- to make it visibly
+-- obvious there is barely anything left, so depositing the 1,000-5,000 $ the
+-- player carries in actually feels like it matters.
 PZLinux.Config.AtmRefill = PZLinux.Config.AtmRefill or {
     amountMin = 1000,
     amountMax = 5000,
     amountStep = 100,
+    targetCashMin = 1,
+    targetCashMax = 501,
 }
 PZLinux.Config.AtmRefill.amountMin = tonumber(PZLinux.Config.AtmRefill.amountMin) or 1000
 PZLinux.Config.AtmRefill.amountMax = tonumber(PZLinux.Config.AtmRefill.amountMax) or 5000
 PZLinux.Config.AtmRefill.amountStep = tonumber(PZLinux.Config.AtmRefill.amountStep) or 100
+PZLinux.Config.AtmRefill.targetCashMin = tonumber(PZLinux.Config.AtmRefill.targetCashMin) or 1
+PZLinux.Config.AtmRefill.targetCashMax = tonumber(PZLinux.Config.AtmRefill.targetCashMax) or 501
 
 PZLinux.Config.Reputation = PZLinux.Config.Reputation or {
     baseline = 1,

@@ -59,10 +59,16 @@ assert(loadstring(source:sub(first, last - 1)))()
 -- Mocks for everything PZLinuxContractsApplyAccept/ApplyCancel/
 -- ApplyAtmRefillDeposit call out to, isolating just the ATM-refill logic
 -- this session added.
-PZLinux = { Economy = {
-    contractCancelPenalty = function() return 1 end,
-    contractCompleteReward = function() return 1 end,
-} }
+PZLinux = {
+    Economy = {
+        contractCancelPenalty = function() return 1 end,
+        contractCompleteReward = function() return 1 end,
+    },
+    Config = {
+        ATM = { minCash = 10000, maxCash = 50000, restockPerHour = 500 },
+        AtmRefill = { targetCashMin = 1, targetCashMax = 501 },
+    },
+}
 PZLinuxGetPlayer = function(value) return value end
 PZLinuxGetPlayerKey = function() return "atm-test-player" end
 PZLinuxNormalizeMoney = function(amount) return math.max(0, math.floor(tonumber(amount) or 0)) end
@@ -74,7 +80,7 @@ PZLinuxContractsFindBoardContract = function(contractId)
     return { id = contractId, code = "EZG", questName = "Refill an ATM", cityId = 2 }, { generatedHour = 10 }
 end
 PZLinux.contractPreviews = {}
-local previewAtmAmount = 30000
+local previewAtmAmount = 3000
 PZLinuxContractsGetPreview = function(_, contractId, requestId)
     return {
         ok = true,
@@ -150,13 +156,13 @@ local player = {
 
 -- Accepting with less money than the contract requires must be refused
 -- before anything is committed.
-bankBalance = 5000
+bankBalance = 1000
 local tooPoor = PZLinuxContractsApplyAccept(player, { contractId = 13 }, "accept-too-poor")
 PZLinuxTestAssert(not tooPoor.ok and tooPoor.error == "insufficient_funds_for_contract",
     "accepting the ATM refill contract without enough bank balance must be refused")
 PZLinuxTestAssert(modData.PZLinuxActiveContract == nil or modData.PZLinuxActiveContract == 0,
     "a refused accept must not leave a half-committed contract")
-PZLinuxTestAssert(bankBalance == 5000, "a refused accept must never touch the bank balance")
+PZLinuxTestAssert(bankBalance == 1000, "a refused accept must never touch the bank balance")
 
 -- Accepting with enough money succeeds, but must never touch the bank or
 -- hand over any cash automatically: the player has to go withdraw it
@@ -228,6 +234,30 @@ PZLinuxTestAssert(#worldContractsMarked > 0 and worldContractsMarked[#worldContr
 local secondDeposit = PZLinuxContractsApplyAtmRefillDeposit(player, correctAtmRef, "deposit-again")
 PZLinuxTestAssert(not secondDeposit.ok and secondDeposit.error == "no_active_contract",
     "depositing again after the contract already advanced must be refused")
+
+-- Crediting the target ATM must clamp at the general ATM.maxCash rather
+-- than exceed it (an ATM already near its cap, e.g. from its own slow
+-- regen, must never be pushed past the configured limit just because a
+-- contract completed there). It must NOT clamp at AtmRefill.targetCashMax:
+-- that only governs this ATM's near-empty starting roll (1-501 $ by
+-- default) -- a real deposit (always far larger) must still be able to
+-- raise its balance well above that.
+PZLinuxAtmSaveCash(theAtm, 49000) -- close to the mocked general maxCash of 50000
+do
+    local clampInventory = PZLinuxTestNewInventory()
+    local clampModData = {}
+    local clampPlayer = {
+        getModData = function() return clampModData end,
+        getInventory = function() return clampInventory end,
+    }
+    bankBalance = 100000
+    PZLinuxContractsApplyAccept(clampPlayer, { contractId = 13 }, "accept-for-clamp")
+    PZLinuxAddInventoryCash(clampPlayer, previewAtmAmount)
+    local clampDeposit = PZLinuxContractsApplyAtmRefillDeposit(clampPlayer, correctAtmRef, "deposit-clamp")
+    PZLinuxTestAssert(clampDeposit.ok, "depositing into a near-full ATM must still succeed for the player")
+    PZLinuxTestAssert(PZLinuxAtmLoadCash(theAtm) == 50000,
+        "the target ATM's cash must clamp at the general ATM.maxCash instead of exceeding it")
+end
 
 -- Cancelling has nothing special to refund: accepting never touched the
 -- bank or inventory, so any cash the player withdrew along the way (using

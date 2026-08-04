@@ -104,6 +104,7 @@ globals = {
     "PZLinuxAtmLoadCash",
     "PZLinuxAtmSaveCash",
     "PZLinuxAtmTransmitModData",
+    "PZLinuxAtmIsContractTargetLocation",
     "PZLinuxApplyReputationDecay",
     "PZLinuxApplyReputationDelta",
     "PZLinuxBettingUI",

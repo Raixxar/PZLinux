@@ -92,12 +92,42 @@ local atmMission = assert(PZLinuxContractsBuildMission({
 }))
 PZLinuxTestAssert(atmMission.locationPool == "atmRefill", "ATM refill contract must use the atmRefill pool")
 PZLinuxTestAssert(atmMission.locationX == 418 and atmMission.locationY == 9869 and atmMission.locationZ == 0,
-    "ATM refill location must be the single hardcoded Ekron ATM")
+    "ATM refill location for Ekron (cityId 2) must be the E-Z GO Banking ATM")
 PZLinuxTestAssert(atmMission.locationCity == "Ekron", "ATM refill location city must be Ekron")
 PZLinuxTestAssert(atmMission.atmAmount == 5000,
     "ATM refill amount must fall in [amountMin, amountMax] by amountStep (deterministic max roll here is 5000)")
 PZLinuxTestAssert(atmMission.fullNote:find("Amount to deposit: $5000", 1, true),
     "ATM refill note must show the amount to deposit")
+
+-- The atmRefill pool now has more than one location: every city with an
+-- entry must resolve correctly, not just Ekron.
+local atmMissionBrandenburg = assert(PZLinuxContractsBuildMission({
+    id = 13, code = "EZG", questName = "Refill an ATM", cityId = 3, difficulty = 2, reward = 2000,
+}))
+PZLinuxTestAssert(atmMissionBrandenburg.locationX == 2079 and atmMissionBrandenburg.locationY == 5836
+    and atmMissionBrandenburg.locationCity == "Brandenburg",
+    "ATM refill location for Brandenburg (cityId 3) must be the Knox Bank ATM")
+
+local atmMissionMuldraugh = assert(PZLinuxContractsBuildMission({
+    id = 13, code = "EZG", questName = "Refill an ATM", cityId = 9, difficulty = 2, reward = 2000,
+}))
+PZLinuxTestAssert(atmMissionMuldraugh.locationX == 10850 and atmMissionMuldraugh.locationY == 10033
+    and atmMissionMuldraugh.locationCity == "Muldraugh",
+    "ATM refill location for Muldraugh (cityId 9) must be the Corner Store ATM")
+
+local atmMissionValleyStation = assert(PZLinuxContractsBuildMission({
+    id = 13, code = "EZG", questName = "Refill an ATM", cityId = 11, difficulty = 2, reward = 2000,
+}))
+PZLinuxTestAssert(atmMissionValleyStation.locationX == 13665 and atmMissionValleyStation.locationY == 5751
+    and atmMissionValleyStation.locationCity == "Valley Station",
+    "ATM refill location for Valley Station (cityId 11) must be the Knox Bank ATM")
+
+local atmMissionLouisville = assert(PZLinuxContractsBuildMission({
+    id = 13, code = "EZG", questName = "Refill an ATM", cityId = 12, difficulty = 2, reward = 2000,
+}))
+PZLinuxTestAssert(atmMissionLouisville.locationX == 12585 and atmMissionLouisville.locationY == 1715
+    and atmMissionLouisville.locationCity == "Louisville",
+    "ATM refill location for Louisville (cityId 12) must be the Knox Bank ATM")
 
 local variablesPath = luaRoot .. "/shared/ISPZLinuxVariablesTables.lua"
 local variables = PZLinuxTestRead(variablesPath)
