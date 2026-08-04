@@ -1,25 +1,11 @@
 function PZLinuxMailGenerateBodyMedical(sender, id)
-    local name = PZLinuxPrettifyName(getPlayer():getUsername())
-    local seed = ZombRand(1, 4)
+    local player = PZLinuxGetPlayer()
+    if not player then return "" end
 
-    local player = getPlayer()
-    local md = player:getModData()
-
-    local loc = PZLinuxMailLocation()
-
-    md.pzlinux = md.pzlinux or {}
-    md.pzlinux.mails = md.pzlinux.mails or {}
-    md.pzlinux.mails[id] = md.pzlinux.mails[id] or {}
-    local mail = md.pzlinux.mails[id]
-    if not mail.status then mail.status = 1 end
-    if not mail.city then mail.city = loc.name end
-    if not mail.x then mail.x = loc.x end
-    if not mail.y then mail.y = loc.y end
-    if not mail.z then mail.z = loc.z end
-    if not mail.quantity then mail.quantity = PZLinuxMailMedicalAmount() end
-    if not mail.object then mail.object = PZLinuxMailMedicalType() end
-    if not mail.sender then mail.sender = sender end
-    if not mail.seed then mail.seed = seed end
+    local name = PZLinuxPrettifyName(player:getUsername())
+    local mail = PZLinuxMailNormalizeRecord(player, id)
+    if not mail then return "" end
+    mail.sender = mail.sender or sender
 
     local scriptItem = getScriptManager():FindItem(mail.object)
     local displayName = scriptItem and scriptItem:getDisplayName() or mail.object
@@ -85,21 +71,4 @@ end
 function PZLinuxMailMedicalAmount()
     local idx = ZombRand(1, 6)
     return idx
-end
-
-function PZLinuxMailLocation()
-    local locations = {
-        { name = "In a trash can in Echo Creek", x = 3571, y = 10913, z = 0 },
-        { name = "In a trash can in Echo Creek", x = 3524, y = 10886, z = 0 },
-        { name = "In a trash can in Rosewood", x = 8147, y = 11492, z = 0 },
-        { name = "In a trash can in Rosewood", x = 8070, y = 11469, z = 0 },
-        { name = "In a trash can in West Point", x = 11421, y = 6772, z = 0 },
-        { name = "In a trash can in West Point", x = 12100, y = 6786, z = 0 },
-        { name = "In a trash can in Riverside", x = 6604, y = 5222, z = 0 },
-        { name = "In a trash can in Riverside", x = 6467, y = 5440, z = 0 },
-        { name = "In a trash can in Brandenburg", x = 2140, y = 6439, z = 0 },
-        { name = "In a trash can in Brandenburg", x = 2099, y = 6022, z = 0 },
-    }
-    local idx = ZombRand(#locations) + 1
-    return locations[idx]
 end

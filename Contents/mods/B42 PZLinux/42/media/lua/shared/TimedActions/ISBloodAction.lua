@@ -3,7 +3,7 @@ require "TimedActions/ISBaseTimedAction"
 ISBloodAction = ISBaseTimedAction:derive("ISBloodAction")
 
 function ISBloodAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISBloodAction:waitToStart()
@@ -17,7 +17,7 @@ end
 
 function ISBloodAction:start()
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    getSoundManager():PlayWorldSound("blood", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    getSoundManager():PlayWorldSound("blood", false, self.character:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Low")
     self.character:reportEvent("EventLootItem")
@@ -28,13 +28,14 @@ function ISBloodAction:stop()
 end
 
 function ISBloodAction:perform()
-    local inv = self.character:getInventory()
-    local parcel = inv:AddItem('Base.EmptyJar')
-    parcel:setName("Blood for contract")
-    parcel:getFluidContainer():addFluid(FluidType.Blood, 1)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractBlood = 3
-    HaloTextHelper.addGoodText(getPlayer(), "Drop the blood jar in a mailbox");
+    PZLinuxRequestContractWorldEvent(self.character, "blood", {
+        target = PZLinuxGetDeadBodyReference(self.body),
+    }, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(self.character, "Drop the blood jar in a mailbox")
+        end
+    end)
+    ISBaseTimedAction.perform(self)
 end
 
 function ISBloodAction:new(character, body)

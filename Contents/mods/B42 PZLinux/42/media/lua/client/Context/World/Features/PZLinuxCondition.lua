@@ -26,7 +26,7 @@ function conditionUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -34,7 +34,7 @@ function conditionUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -45,9 +45,9 @@ function conditionUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetPlayer(self.parent.player):getModData()
         modData.PZLinuxUIX = self.parent:getX()
         modData.PZLinuxUIY = self.parent:getY()
     end
@@ -60,24 +60,6 @@ function conditionUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    local modData = getPlayer():getModData()
-    if modData.PZLinuxUISFX == 0 then
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    else
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    end
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -97,51 +79,26 @@ function conditionUI:initialise()
 end
 
 -- LOGOUT
-function conditionUI:onMinimize(button)
+function conditionUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- LOGOUT
-function conditionUI:onClose(button)
+function conditionUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetPlayer(self.player):getModData()
     modData.PZLinuxUIOpenMenu = 1
 end
 
-function conditionUI:onCloseX(button)
+function conditionUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    PZLinuxGetPlayer(self.player):StopAllActionQueue()
 end
 
-function conditionUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUISFX = 0
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
-
-function conditionUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUISFX = 1
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
 
 -- ID CARD
 function conditionUI:onCheckCondition()
@@ -153,7 +110,7 @@ function conditionUI:onCheckCondition()
     self.bootOutput:initialise()
     self.topBar:addChild(self.bootOutput)
 
-    if getPlayer():getModData().PZLinuxComputerCondition < 25 then
+    if PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition < 25 then
         self.bootMessages = {
             "<RGB:0,1,0>Booting system...",
             "Initializing hardware check...",
@@ -211,7 +168,7 @@ function conditionUI:onCheckCondition()
             "System report: Critical issues detected! Immediate attention required.",
             "Disk failure imminent. Backup recommended.</RGB>"
         }
-    elseif getPlayer():getModData().PZLinuxComputerCondition < 50 then
+    elseif PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition < 50 then
         self.bootMessages = {
             "<RGB:0,1,0>Booting system...",
             "Initializing hardware check...",
@@ -288,10 +245,8 @@ function conditionUI:onCheckCondition()
         }
     end
 
-    local messages = {}
     self.terminalCoroutine = coroutine.create(function()
         local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        local initialDelay = elapsed + 1
 
         for _, line in ipairs(self.bootMessages) do
             if self.isClosing then return end
@@ -323,11 +278,11 @@ function conditionUI:onCheckCondition()
         end
     end
     Events.OnTick.Add(self.updateCoroutineFunc)
-end 
+end
 
 function conditionUI:onConditionSummary()
     self.bootOutput:setVisible(false)
-    self.conditionSummaryButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, "Computer Condition: " .. getPlayer():getModData().PZLinuxComputerCondition .. "%")
+    self.conditionSummaryButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, "Computer Condition: " .. PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition .. "%")
     self.conditionSummaryButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionSummaryButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionSummaryButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -352,8 +307,8 @@ function conditionMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
-    local modData = getPlayer():getModData()
+
+    local modData = PZLinuxGetPlayer(player):getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 

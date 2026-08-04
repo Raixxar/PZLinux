@@ -2,11 +2,6 @@ hackingUI = ISPanel:derive("hackingUI")
 
 local hackingBankBalance = 0
 local historyPassword = ""
-local hackingPasswordFull = "****"
-local hackingPassword1 = 0
-local hackingPassword2 = 0
-local hackingPassword3 = 0
-local hackingPassword4 = 0
 local hackZombieName = nil
 
 -- CONSTRUCTOR
@@ -35,7 +30,7 @@ function hackingUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -43,7 +38,7 @@ function hackingUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -54,9 +49,10 @@ function hackingUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetModData(self.parent.player)
+        if not modData then return end
         modData.PZLinuxUIX = self.parent:getX()
         modData.PZLinuxUIY = self.parent:getY()
     end
@@ -69,24 +65,6 @@ function hackingUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    local modData = getPlayer():getModData()
-    if modData.PZLinuxUISFX == 0 then
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    else
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    end
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -106,212 +84,166 @@ function hackingUI:initialise()
 end
 
 -- LOGOUT
-function hackingUI:onMinimize(button)
+function hackingUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetModData(self.player)
+    if not modData then return end
     modData.PZLinuxUIOpenMenu = 1
 end
 
 -- LOGOUT
-function hackingUI:onClose(button)
+function hackingUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
+    local modData = PZLinuxGetModData(self.player)
+    if not modData then return end
     modData.PZLinuxUIOpenMenu = 1
 end
 
-function hackingUI:onCloseX(button)
+function hackingUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    local player = PZLinuxGetPlayer(self.player)
+    if player then
+        player:StopAllActionQueue()
+    end
 end
 
-function hackingUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUISFX = 0
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
 
-function hackingUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUISFX = 1
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
-
--- ID CARD
+-- CREDIT CARD
 function hackingUI:onIdCard()
-    local playerObj = getPlayer()
-    local inventory = playerObj:getInventory()
-    local items = inventory:getItems()
-    hackZombieName = nil
-    
-    for j = 0, items:size() - 1 do
-        local item = items:get(j)
-        local modData = getPlayer():getModData()
-        if item:getFullType() == "Base.IDcard" 
-        or item:getFullType() == "Base.IDcard_Stolen" 
-        or item:getFullType() == "Base.IDcard_Female"
-        or item:getFullType() == "Base.IDcard_Male"
-        or item:getFullType() == "Base.CreditCard"
-        or item:getFullType() == "Base.CreditCard_Stolen" then
-            hackZombieName = item:getName()
-            inventory:Remove(item)
-            break
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+
+    PZLinuxRequestHackingStart(playerObj, function(result)
+        if not result or not result.ok then
+            self:showNoCardError()
+            return
         end
-    end
 
-    if hackZombieName then
-        self.bootOutput = ISRichTextPanel:new(self.width * 0.15, self.height * 0.25, self.width * 0.65, self.height * 0.45)
-        self.bootOutput.backgroundColor = {r=0, g=0, b=0, a=0}
-        self.bootOutput.borderColor = {r=0, g=0, b=0, a=0}
-        self.bootOutput.autosetheight = false
-        self.bootOutput:setVisible(true)
-        self.bootOutput:initialise()
-        self.topBar:addChild(self.bootOutput)
+        hackZombieName = result.cardName
+        hackingBankBalance = tonumber(result.amount) or 0
+        self.passwordLength = tonumber(result.passwordLength) or 4
+        self.maxTries = tonumber(result.maxTries) or 6
+        self:startBootSequence()
+    end)
+end
 
-        local player = getPlayer()
-        self.bootMessages = {
-            "<RGB:0,1,0>Connecting to 104.223.56.8.",
-            "Connection attempt in progress.",
-            "Connection attempt in progress..",
-            "Connection attempt in progress...",
-            "Connection attempt in progress....",
-            "Connection attempt in progress... Failed.",
-            "Brute force attempt... [Failed] Attempt 1 of 100",
-            "Brute force attempt... [Failed] Attempt 2 of 100",
-            "Connection failed. Retrying...",
-            "Brute force attempt... [Failed] Attempt 3 of 100",
-            "Authentication process failed.",
-            "Brute force attempt... [Failed] Attempt 4 of 100",
-            "Brute force attempt... [Failed] Attempt 5 of 100",
-            "Brute force attempt... [Failed] Attempt 5 of 100",
-            "Brute force attempt... [Failed] Attempt 6 of 100",
-            "Brute force attempt... [Failed] Attempt 7 of 100",
-            "Brute force attempt... [Failed] Attempt 8 of 100",
-            "Brute force attempt... [Failed] Attempt 9 of 100",
-            "Brute force attempt... [Failed] Attempt 10 of 100",
-            "Brute force attempt... [Failed] Attempt 11 of 100",
-            "Brute force attempt... [Failed] Attempt 12 of 100",
-            "Brute force attempt... [Failed] Attempt 13 of 100",
-            "Brute force attempt... [Failed] Attempt 14 of 100",
-            "Connection successful.",
-            "Access granted: Authentication interface compromised.",
-            "Unauthorized access detected.",
-            "Backdoor activated.",
-            "Database access located.",
-            "Decrypting data...",
-            "Encrypting server data: *process in progress*",
-            "Alert: Firewall activation detected. Attempting bypass...",
-            "Firewall bypass failed. Reconnecting to 104.223.56.8...",
-            "Brute force active: multiple attempts to unlock the system.",
-            "Brute force successful, stable connection established.",
-            "System compromised. Full server access granted.",
-            "Alert: Unusual activity detected on the network.",
-            "Access denied, attempting to connect to backup server.",
-            "Simulation of successful connection to backup server.",
-            "Full system scan results: \n- Intrusion detected \n- Data breach detected \n- Tracking activated",
-            "System alert: Hacking attempt detected at 104.223.56.8",
-            "Data breach: Outbound transfer in progress.",
-            "Remote access: \nSecure data transfer initiated.",
-            "Brute force successful. Privilege escalation granted.",
-            "System password reset... Completed.",
-            "Hacker detected in the system.",
-            "Remote access authorized: Online banking system compromised.",
-            "Virus and malware scan in progress...",
-            "Security alert: Emergency protocol activated.",
-            "Logging event: Full breach of system 104.223.56.8 detected.",
-            "Brute force attack complete. Mission accomplished.</RGB>"
-        }
-        local messages = {}
-        self.terminalCoroutine = coroutine.create(function()
-            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            local initialDelay = elapsed + 1
-    
-            for _, line in ipairs(self.bootMessages) do
-                if self.isClosing then return end
+function hackingUI:showNoCardError()
+    self.hackLabelTitleError = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, "No Credit Card...", 0, 1, 0, 1, UIFont.Small, true)
+    self.hackLabelTitleError.backgroundColor = {r=0, g=0, b=0, a=0}
+    self.hackLabelTitleError.borderColor = {r=0, g=0, b=0, a=0}
+    self.hackLabelTitleError:setVisible(true)
+    self.hackLabelTitleError:initialise()
+    self.topBar:addChild(self.hackLabelTitleError)
+end
 
-                self.bootOutput.text = self.bootOutput.text .. "\n" .. line
-                self.bootOutput:paginate()
+function hackingUI:startBootSequence()
+    self.bootOutput = ISRichTextPanel:new(self.width * 0.15, self.height * 0.25, self.width * 0.65, self.height * 0.45)
+    self.bootOutput.backgroundColor = {r=0, g=0, b=0, a=0}
+    self.bootOutput.borderColor = {r=0, g=0, b=0, a=0}
+    self.bootOutput.autosetheight = false
+    self.bootOutput:setVisible(true)
+    self.bootOutput:initialise()
+    self.topBar:addChild(self.bootOutput)
 
-                local maxYScroll = self.bootOutput:getScrollHeight() - self.bootOutput:getHeight()
-                if maxYScroll > 0 then
-                    self.bootOutput:setYScroll(-maxYScroll)
-                end
+    self.bootMessages = {
+        "<RGB:0,1,0>Connecting to 104.223.56.8.",
+        "Connection attempt in progress.",
+        "Connection attempt in progress..",
+        "Connection attempt in progress...",
+        "Connection attempt in progress....",
+        "Connection attempt in progress... Failed.",
+        "Brute force attempt... [Failed] Attempt 1 of 100",
+        "Brute force attempt... [Failed] Attempt 2 of 100",
+        "Connection failed. Retrying...",
+        "Brute force attempt... [Failed] Attempt 3 of 100",
+        "Authentication process failed.",
+        "Brute force attempt... [Failed] Attempt 4 of 100",
+        "Brute force attempt... [Failed] Attempt 5 of 100",
+        "Brute force attempt... [Failed] Attempt 6 of 100",
+        "Brute force attempt... [Failed] Attempt 7 of 100",
+        "Brute force attempt... [Failed] Attempt 8 of 100",
+        "Brute force attempt... [Failed] Attempt 9 of 100",
+        "Brute force attempt... [Failed] Attempt 10 of 100",
+        "Brute force attempt... [Failed] Attempt 11 of 100",
+        "Brute force attempt... [Failed] Attempt 12 of 100",
+        "Brute force attempt... [Failed] Attempt 13 of 100",
+        "Brute force attempt... [Failed] Attempt 14 of 100",
+        "Connection successful.",
+        "Access granted: Authentication interface compromised.",
+        "Unauthorized access detected.",
+        "Backdoor activated.",
+        "Database access located.",
+        "Decrypting data...",
+        "Encrypting server data: *process in progress*",
+        "Alert: Firewall activation detected. Attempting bypass...",
+        "Firewall bypass failed. Reconnecting to 104.223.56.8...",
+        "Brute force active: multiple attempts to unlock the system.",
+        "Brute force successful, stable connection established.",
+        "System compromised. Full server access granted.",
+        "Alert: Unusual activity detected on the network.",
+        "Access denied, attempting to connect to backup server.",
+        "Simulation of successful connection to backup server.",
+        "Full system scan results: \n- Intrusion detected \n- Data breach detected \n- Tracking activated",
+        "System alert: Hacking attempt detected at 104.223.56.8",
+        "Data breach: Outbound transfer in progress.",
+        "Remote access: \nSecure data transfer initiated.",
+        "Brute force successful. Privilege escalation granted.",
+        "System password reset... Completed.",
+        "Hacker detected in the system.",
+        "Remote access authorized: Online banking system compromised.",
+        "Virus and malware scan in progress...",
+        "Security alert: Emergency protocol activated.",
+        "Logging event: Full breach of system 104.223.56.8 detected.",
+        "Brute force attack complete. Mission accomplished.</RGB>"
+    }
+    self.terminalCoroutine = coroutine.create(function()
+        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
 
-                local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 10)
-                while elapsed < lineDelay do
-                    coroutine.yield()
-                    elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-                end
+        for _, line in ipairs(self.bootMessages) do
+            if self.isClosing then return end
+
+            self.bootOutput.text = self.bootOutput.text .. "\n" .. line
+            self.bootOutput:paginate()
+
+            local maxYScroll = self.bootOutput:getScrollHeight() - self.bootOutput:getHeight()
+            if maxYScroll > 0 then
+                self.bootOutput:setYScroll(-maxYScroll)
             end
-        end)
 
-        self.updateCoroutineFunc = function()
-            if coroutine.status(self.terminalCoroutine) ~= "dead" then
-                coroutine.resume(self.terminalCoroutine)
-            else
-                Events.OnTick.Remove(self.updateCoroutineFunc)
-                self.updateCoroutineFunc = nil
-                self.terminalCoroutine = nil
-                self:onHack()
+            local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 10)
+            while elapsed < lineDelay do
+                coroutine.yield()
+                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
             end
         end
-        Events.OnTick.Add(self.updateCoroutineFunc)
-    else
-        self.hackLabelTitleError = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, "No ID Card or Credit Card...", 0, 1, 0, 1, UIFont.Small, true)
-        self.hackLabelTitleError.backgroundColor = {r=0, g=0, b=0, a=0}
-        self.hackLabelTitleError.borderColor = {r=0, g=0, b=0, a=0}
-        self.hackLabelTitleError:setVisible(true)
-        self.hackLabelTitleError:initialise()
-        self.topBar:addChild(self.hackLabelTitleError)
+    end)
+
+    self.updateCoroutineFunc = function()
+        if coroutine.status(self.terminalCoroutine) ~= "dead" then
+            coroutine.resume(self.terminalCoroutine)
+        else
+            Events.OnTick.Remove(self.updateCoroutineFunc)
+            self.updateCoroutineFunc = nil
+            self.terminalCoroutine = nil
+            self:onHack()
+        end
     end
-end 
+    Events.OnTick.Add(self.updateCoroutineFunc)
+end
 
 function hackingUI:onHack()
     historyPassword = ""
     self.bootOutput:setVisible(false)
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
 
-    hackingBankBalance = ZombRand(5, 1000) * (player:getPerkLevel(Perks.Electricity) + 1)
-
-    local passwordNumbers = {}
-
-    while #passwordNumbers < 4 do
-        local num = ZombRand(0, 10)
-        local exists = false
-
-        for _, v in ipairs(passwordNumbers) do
-            if v == num then
-                exists = true
-                break
-            end
-        end
-
-        if not exists then
-            table.insert(passwordNumbers, num)
-        end
-    end
-
-    hackingPassword1 = passwordNumbers[1]
-    hackingPassword2 = passwordNumbers[2]
-    hackingPassword3 = passwordNumbers[3]
-    hackingPassword4 = passwordNumbers[4]
-
-    local hackLabelTitle = tostring(hackZombieName) .. " Bank Balance: $" .. hackingBankBalance .. "\nFind the password in 4 numbers.\n"
+    self.triesCount = 0
+    self.maxTries = self.maxTries or 6
+    local passwordLength = self.passwordLength or 4
+    local hiddenPassword = string.rep("*", passwordLength)
+    local hackLabelTitle = tostring(hackZombieName) .. " Bank Balance: $" .. hackingBankBalance .. "\nFind the password in " .. passwordLength .. " numbers.\n"
     self.hackLabelTitle = ISLabel:new(self.width * 0.20, self.height * 0.22, self.height * 0.025, hackLabelTitle, 0, 1, 0, 1, UIFont.Small, true)
     self.hackLabelTitle.backgroundColor = {r=0, g=0, b=0, a=0}
     self.hackLabelTitle.borderColor = {r=0, g=0, b=0, a=0}
@@ -319,7 +251,7 @@ function hackingUI:onHack()
     self.hackLabelTitle:initialise()
     self.topBar:addChild(self.hackLabelTitle)
 
-    self.hackLabel = ISLabel:new(self.width * 0.20, self.height * 0.24, self.height * 0.025, hackingPasswordFull, 0, 1, 0, 1, UIFont.Small, true)
+    self.hackLabel = ISLabel:new(self.width * 0.20, self.height * 0.24, self.height * 0.025, hiddenPassword, 0, 1, 0, 1, UIFont.Small, true)
     self.hackLabel.backgroundColor = {r=0, g=0, b=0, a=0}
     self.hackLabel.borderColor = {r=0, g=0, b=0, a=0}
     self.hackLabel:setVisible(true)
@@ -350,15 +282,15 @@ function hackingUI:onHack()
     self.promptCommand = ISTextEntryBox:new("", self.width * 0.20, self.height * 0.42, self.width * 0.2, self.height * 0.025)
     self.promptCommand.backgroundColor = {r=0, g=0, b=0, a=0}
     self.promptCommand.borderColor = {r=0, g=1, b=0, a=0.8}
-    self.promptCommand.onCommandEntered = function(entry) self:onCommandEnter() end
+    self.promptCommand.onCommandEntered = function(_entry) self:onCommandEnter() end
     self.promptCommand:setVisible(false)
     self.promptCommand:initialise()
     self.promptCommand:instantiate()
     self.promptCommand:setOnlyNumbers(true)
     self.promptCommand.onTextChange = function(entry)
         local text = entry:getText()
-        if #text > 4 then
-            entry:setText(text:sub(1, 4))
+        if #text > passwordLength then
+            entry:setText(text:sub(1, passwordLength))
         end
     end
 
@@ -368,274 +300,229 @@ function hackingUI:onHack()
     self.hackAutoButton:setVisible(true)
     self.hackAutoButton:initialise()
     self.topBar:addChild(self.hackAutoButton)
+
+    self.promptCommand:setVisible(true)
+    self.promptCommand:setText("")
+    self.promptCommand:focus()
 end
 
 function hackingUI:onCommandEnter()
-    -- local p = getSpecificPlayer(0) or getPlayer()
-    -- local s = p and p.getStats and p:getStats() or nil
-    -- print("DBG stats=", s, "getBoredom=", s and s.getBoredom, "setBoredom=", s and s.setBoredom,
-    --     "getBoredomLevel=", s and s.getBoredomLevel, "setBoredomLevel=", s and s.setBoredomLevel)
-    
-    getPlayer():getStats():add(CharacterStat.BOREDOM, -2)
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
+
+    player:getStats():add(CharacterStat.BOREDOM, -2)
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    hackingUI.triesCount = 0
-    hackingUI.maxTries = 7
-
     local commandText = self.promptCommand:getText()
-    local passwordStr = tostring(commandText)
 
-    if #commandText ~= 4 then
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    local passwordLength = self.passwordLength or 4
+    if #commandText ~= passwordLength then
+        getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         return
     end
 
-    while #passwordStr < 4 do
-        passwordStr = passwordStr .. "*"
-    end
-
-    local firstDigit  = tonumber(passwordStr:sub(1, 1))
-    local secondDigit = tonumber(passwordStr:sub(2, 2))
-    local thirdDigit  = tonumber(passwordStr:sub(3, 3))
-    local fourthDigit = tonumber(passwordStr:sub(4, 4))
-    print(hackingPassword1, hackingPassword2, hackingPassword3, hackingPassword4)
-
-    local revealedPassword = ""
-    revealedPassword = revealedPassword .. (firstDigit  == hackingPassword1 and firstDigit  or "*")
-    revealedPassword = revealedPassword .. (secondDigit == hackingPassword2 and secondDigit or "*")
-    revealedPassword = revealedPassword .. (thirdDigit  == hackingPassword3 and thirdDigit  or "*")
-    revealedPassword = revealedPassword .. (fourthDigit == hackingPassword4 and fourthDigit or "*")
-    self.hackLabel:setName(revealedPassword)
-    if revealedPassword == commandText then
-        self.hackLabelAttempts:setName("Account unlocked")
-        getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFER", self, self.hackTransfert)
-        self.hackTransfertButton:setVisible(true)
-        self.hackTransfertButton:initialise()
-        self.topBar:addChild(self.hackTransfertButton)
-
-        self.hackAutoButton:setVisible(false)
-        self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
-        self.hackNextButton:setVisible(true)
-        self.hackNextButton:initialise()
-        self.topBar:addChild(self.hackNextButton)
-        addXp(getPlayer(), Perks.Electricity, 3)
-        return
-    end
-
-    self.triesCount = self.triesCount + 1
-    if self.triesCount > 5 then
-        self.hackLabelAttempts:setName("Account locked")
-        self.hackAutoButton:setVisible(false)
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
-        self.hackNextButton:setVisible(true)
-        self.hackNextButton:initialise()
-        self.topBar:addChild(self.hackNextButton)
-        return
-    end
-
-    local realDigits  = { hackingPassword1, hackingPassword2, hackingPassword3, hackingPassword4 }
-    local guessDigits = { firstDigit,       secondDigit,      thirdDigit,       fourthDigit }
-
-    local correctCount = 0
-    local misplacedCount = 0
-    
-    for i = 1, 4 do
-        if guessDigits[i] and guessDigits[i] == realDigits[i] then
-            correctCount = correctCount + 1
-            realDigits[i]  = nil
-            guessDigits[i] = nil
-        end
-    end
-    
-    for i = 1, 4 do
-        local g = guessDigits[i]
-        if g then
-            for j = 1, 4 do
-                if realDigits[j] and realDigits[j] == g then
-                    misplacedCount = misplacedCount + 1
-                    realDigits[j] = nil
-                    break
-                end
+    PZLinuxRequestHackingGuess(player, commandText, function(result)
+        if not result or not result.ok then
+            getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            if result and result.error == "account_locked" then
+                self.hackLabelAttempts:setName("Account locked")
             end
+            return
         end
-    end
-    
-    local feedbackMsg = nil
-    if correctCount > 0 and misplacedCount > 0 then
-        feedbackMsg = correctCount .. " digit(s) are correctly placed, " .. misplacedCount .. " digit(s) are misplaced"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+
+        local revealedPassword = result.revealedPassword or string.rep("*", passwordLength)
+        self.hackLabel:setName(revealedPassword)
+        hackingBankBalance = tonumber(result.amount) or hackingBankBalance
+        self.triesCount = tonumber(result.tries) or self.triesCount
+        self.maxTries = tonumber(result.maxTries) or self.maxTries
+
+        if result.unlocked then
+            self.hackLabelAttempts:setName("Account unlocked")
+            getSoundManager():PlayWorldSound("buy", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFER", self, self.hackTransfert)
+            self.hackTransfertButton:setVisible(true)
+            self.hackTransfertButton:initialise()
+            self.topBar:addChild(self.hackTransfertButton)
+
+            self.hackAutoButton:setVisible(false)
+            self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
+            self.hackNextButton:setVisible(true)
+            self.hackNextButton:initialise()
+            self.topBar:addChild(self.hackNextButton)
+            return
+        end
+
+        if result.locked then
+            self.hackLabelAttempts:setName("Account locked")
+            self.hackAutoButton:setVisible(false)
+            getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            self.hackNextButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.05, self.height * 0.025, "NEXT", self, self.hackNext)
+            self.hackNextButton:setVisible(true)
+            self.hackNextButton:initialise()
+            self.topBar:addChild(self.hackNextButton)
+            return
+        end
+
+        local correctCount = tonumber(result.correctCount) or 0
+        local misplacedCount = tonumber(result.misplacedCount) or 0
+        local feedbackMsg = "No digit is present in the code"
+        if correctCount > 0 and misplacedCount > 0 then
+            feedbackMsg = correctCount .. " digit(s) are correctly placed, " .. misplacedCount .. " digit(s) are misplaced"
+        elseif correctCount > 0 then
+            feedbackMsg = correctCount .. " digit(s) are correctly placed"
+        elseif misplacedCount > 0 then
+            feedbackMsg = misplacedCount .. " digit(s) are misplaced"
+        end
+
+        getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
         self.promptCommand:setText("")
-    elseif correctCount > 0 then
-        feedbackMsg = correctCount .. " digit(s) are correctly placed"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        self.promptCommand:setText("")
-    elseif misplacedCount > 0 then
-        feedbackMsg = misplacedCount .. " digit(s) are misplaced"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        self.promptCommand:setText("")
-    else
-        feedbackMsg = "No digit is present in the code"
-        getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        self.promptCommand:setText("")
-    end
-    
-    if feedbackMsg ~= nil then
         historyPassword = historyPassword .. "\n" .. commandText .. " - " .. feedbackMsg .. " - " .. revealedPassword
         self.hackLabelHistory:setName(historyPassword)
-        self.hackLabelAttempts:setName("Attempt number: ".. self.triesCount .." / ".. self.maxTries - 1)
-    end
+        self.hackLabelAttempts:setName("Attempt number: " .. tostring(self.triesCount) .. " / " .. tostring(self.maxTries))
+    end)
 end
 
 function hackingUI:hackTransfert()
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
+
     hackZombieName = nil
     self.hackTransfertButton:setVisible(false)
-    self.titleLabelPlayer = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Bank balance: $" .. tostring(loadAtmBalance()) .. " < $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
+    self.titleLabelPlayer = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Bank balance: $" .. tostring(loadAtmBalance(player)) .. " < $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
     self.titleLabelPlayer.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabelPlayer:setVisible(true)
     self.titleLabelPlayer:initialise()
     self.topBar:addChild(self.titleLabelPlayer)
 
     if hackingBankBalance >= 5000 then
-        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -10)
-        getPlayer():getStats():add(CharacterStat.STRESS, -0.5)
+        player:getStats():add(CharacterStat.UNHAPPINESS, -10)
+        player:getStats():add(CharacterStat.STRESS, -0.5)
     elseif hackingBankBalance >= 1000 then
-        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -5)
-        getPlayer():getStats():add(CharacterStat.STRESS, -0.1)
+        player:getStats():add(CharacterStat.UNHAPPINESS, -5)
+        player:getStats():add(CharacterStat.STRESS, -0.1)
     else
-        getPlayer():getStats():add(CharacterStat.UNHAPPINESS, -2)
-        getPlayer():getStats():add(CharacterStat.STRESS, -0.05)
+        player:getStats():add(CharacterStat.UNHAPPINESS, -2)
+        player:getStats():add(CharacterStat.STRESS, -0.05)
     end
 
-    self.hackingCoroutine = coroutine.create(function()
-        local playerBankBalance = tonumber(loadAtmBalance())
-        local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-        local initialDelay = elapsed + 1
-        
-        while hackingBankBalance > 0 do
-            local chunk = 1
-
-            if hackingBankBalance >= 1000 then
-                chunk = 1000
-            elseif hackingBankBalance >= 100 then
-                chunk = 100
-            elseif hackingBankBalance >= 10 then
-                chunk = 10
-            end
-
-            hackingBankBalance = hackingBankBalance - chunk
-            playerBankBalance = playerBankBalance + chunk
-            saveAtmBalance(playerBankBalance)
-
-            self.titleLabelPlayer:setName("Bank balance: $" .. tostring(loadAtmBalance()) .. " < $" .. tostring(hackingBankBalance) .. "\nTransfer in progress...")
-            local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 5)
-            while elapsed < lineDelay do
-                coroutine.yield()
-                elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
-            end
+    PZLinuxRequestHackingTransfer(player, function(result)
+        if not result or not result.ok then
+            HaloTextHelper.addBadText(player, "Transfer rejected")
+            return
         end
-    end)
 
-    self.updateCoroutineFunc = function()
-        if coroutine.status(self.hackingCoroutine) ~= "dead" then
-            local ok, err = coroutine.resume(self.hackingCoroutine)
-            if not ok then
+        local targetBalance = tonumber(result.balance) or loadAtmBalance(player)
+        local creditedAmount = tonumber(result.hackedAmount or result.amount) or hackingBankBalance
+        saveAtmBalance(targetBalance, player)
+        hackingBankBalance = creditedAmount
+
+        self.hackingCoroutine = coroutine.create(function()
+            local playerBankBalance = targetBalance - creditedAmount
+            if playerBankBalance < 0 then playerBankBalance = 0 end
+            local remainingBalance = creditedAmount
+            local displayedBankBalance = playerBankBalance
+            local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+
+            while remainingBalance > 0 do
+                local chunk = 1
+
+                if remainingBalance >= 1000 then
+                    chunk = 1000
+                elseif remainingBalance >= 100 then
+                    chunk = 100
+                elseif remainingBalance >= 10 then
+                    chunk = 10
+                end
+
+                remainingBalance = remainingBalance - chunk
+                displayedBankBalance = displayedBankBalance + chunk
+                hackingBankBalance = remainingBalance
+
+                self.titleLabelPlayer:setName("Bank balance: $" .. tostring(displayedBankBalance) .. " < $" .. tostring(remainingBalance) .. "\nTransfer in progress...")
+                local lineDelay = math.ceil(getGameTime():getWorldAgeHours() * 3600) + ZombRand(1, 5)
+                while elapsed < lineDelay do
+                    coroutine.yield()
+                    elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
+                end
+            end
+        end)
+
+        self.updateCoroutineFunc = function()
+            if coroutine.status(self.hackingCoroutine) ~= "dead" then
+                local ok = coroutine.resume(self.hackingCoroutine)
+                if not ok then
+                    Events.OnTick.Remove(self.updateCoroutineFunc)
+                end
+            else
                 Events.OnTick.Remove(self.updateCoroutineFunc)
+                self.updateCoroutineFunc = nil
+                self.hackingCoroutine = nil
+                hackingBankBalance = 0
+                self.titleLabelPlayer:setName("Bank balance: $" .. tostring(targetBalance) .. " < $0\nTransfer completed")
+                self.hackLabelTitle:setName("Hack Balance: $0\n")
             end
-        else
-
-            Events.OnTick.Remove(self.updateCoroutineFunc)
-            self.updateCoroutineFunc = nil
-            self.hackingCoroutine = nil
-            self.titleLabelPlayer:setName("Bank balance: $" .. tostring(loadAtmBalance()) .. " < $" .. tostring(hackingBankBalance) .. "\nTransfer completed")
-            self.hackLabelTitle:setName("Hack Balance: $0\n")
         end
-    end
 
-    Events.OnTick.Add(self.updateCoroutineFunc)
+        Events.OnTick.Add(self.updateCoroutineFunc)
+    end)
 end
 
 function hackingUI:hackAuto()
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
     if not player then return end
 
-    local inventory = player:getInventory()
-    local items = inventory:getItems()
-    local removedCount = 0
-
-    for i = items:size() - 1, 0, -1 do
-        local item = items:get(i)
-        if item then
-            local fullType = item:getFullType()
-            if fullType == "Base.IDcard"
-            or fullType == "Base.IDcard_Stolen"
-            or fullType == "Base.IDcard_Female"
-            or fullType == "Base.IDcard_Male"
-            or fullType == "Base.CreditCard"
-            or fullType == "Base.CreditCard_Stolen" then
-                inventory:Remove(item)
-                removedCount = removedCount + 1
-            end
+    PZLinuxRequestHackingAuto(player, function(result)
+        if not result or not result.ok then
+            HaloTextHelper.addBadText(player, "No Credit Card...");
+            return
         end
-    end
-    if removedCount == 0 then
-        print("hackAuto: no cards found")
-        return
-    end
 
-    if removedCount > 1 then
-        local valuePerCard = ZombRand(300, 501) * (player:getPerkLevel(Perks.Electricity) + 1)
-        hackingBankBalance = valuePerCard * removedCount
-    end
+        hackingBankBalance = tonumber(result.amount) or 0
+        self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFER", self, self.hackTransfert)
+        self.hackTransfertButton:setVisible(true)
+        self.hackTransfertButton:initialise()
+        self.topBar:addChild(self.hackTransfertButton)
 
-    self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFERT", self, self.hackTransfert)
-    self.hackTransfertButton:setVisible(true)
-    self.hackTransfertButton:initialise()
-    self.topBar:addChild(self.hackTransfertButton)
-
-    self.titleLabelAuto = ISLabel:new(self.width * 0.20, self.height * 0.45, self.height * 0.025,"Total money hacked. $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
-    self.titleLabelAuto.backgroundColor = {r=0, g=0, b=0, a=0}
-    self.titleLabelAuto:setVisible(true)
-    self.titleLabelAuto:initialise()
-    self.topBar:addChild(self.titleLabelAuto)
+        local cardCount = tonumber(result.cardCount) or 0
+        self.titleLabelAuto = ISLabel:new(self.width * 0.20, self.height * 0.45, self.height * 0.025,"Total money hacked. $" .. tostring(hackingBankBalance) .. " from " .. tostring(cardCount) .. " card(s)", 0, 1, 0, 1, UIFont.Small, true)
+        self.titleLabelAuto.backgroundColor = {r=0, g=0, b=0, a=0}
+        self.titleLabelAuto:setVisible(true)
+        self.titleLabelAuto:initialise()
+        self.topBar:addChild(self.titleLabelAuto)
+    end)
 end
 
 function hackingUI:hackNext()
-    local playerObj = getPlayer()
-    local inventory = playerObj:getInventory()
-    local items = inventory:getItems()
-    
-    for j = 0, items:size() - 1 do
-        local item = items:get(j)
-        local modData = getPlayer():getModData()
-        if item:getFullType() == "Base.IDcard" 
-        or item:getFullType() == "Base.IDcard_Stolen" 
-        or item:getFullType() == "Base.IDcard_Female"
-        or item:getFullType() == "Base.IDcard_Male"
-        or item:getFullType() == "Base.CreditCard"
-        or item:getFullType() == "Base.CreditCard_Stolen" then
-            hackZombieName = item:getName()
-            inventory:Remove(item)
-            if hackZombieName then
-                self.hackNextButton:setVisible(false)
-                self.triesCount = 0
-                self.hackLabel:setName("")
-                self.hackLabelHistory:setName("")
-                self.hackLabelTitle:setName("")
-                self.hackLabelAttempts:setName("")
-                self.hackLabelTitle:setName("")
-                self.promptCommand:setText("")
-                self.promptCommand:focus()
-                if self.hackTransfertButton then self.hackTransfertButton:setVisible(false) end
-                if self.titleLabelPlayer then self.titleLabelPlayer:setName("") end
-                self:onHack()
-            end
-            break
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+
+    PZLinuxRequestHackingStart(playerObj, function(result)
+        if not result or not result.ok then
+            HaloTextHelper.addBadText(playerObj, "No Credit Card...")
+            return
         end
-    end
+
+        hackZombieName = result.cardName
+        hackingBankBalance = tonumber(result.amount) or 0
+        self.passwordLength = tonumber(result.passwordLength) or 4
+        self.maxTries = tonumber(result.maxTries) or 6
+        if self.hackNextButton then self.hackNextButton:setVisible(false) end
+        self.triesCount = 0
+        self.hackLabel:setName("")
+        self.hackLabelHistory:setName("")
+        self.hackLabelTitle:setName("")
+        self.hackLabelAttempts:setName("")
+        self.promptCommand:setText("")
+        self.promptCommand:focus()
+        if self.hackTransfertButton then self.hackTransfertButton:setVisible(false) end
+        if self.titleLabelPlayer then self.titleLabelPlayer:setName("") end
+        self:onHack()
+    end)
 end
 
 function hackingMenu_ShowUI(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
     local texture = getTexture("media/ui/oldCRT.png")
     if not texture then return end
 
@@ -650,12 +537,12 @@ function hackingMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
-    local modData = getPlayer():getModData()
+
+    local modData = playerObj:getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
-    local ui = hackingUI:new(uiX, uiY, finalW, finalH, player)
+    local ui = hackingUI:new(uiX, uiY, finalW, finalH, playerObj)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
 
     centeredImage.scaled = true

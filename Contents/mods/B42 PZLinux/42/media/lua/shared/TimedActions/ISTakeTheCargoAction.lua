@@ -3,16 +3,16 @@ require "TimedActions/ISBaseTimedAction"
 ISTakeTheCargoAction = ISBaseTimedAction:derive("ISTakeTheCargoAction")
 
 function ISTakeTheCargoAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISTakeTheCargoAction:waitToStart()
-    self.character:faceThisObject(self.item)
+    if self.item then self.character:faceThisObject(self.item) end
 	return self.character:shouldBeTurning()
 end
 
 function ISTakeTheCargoAction:update()
-    self.character:faceThisObject(self.item)
+    if self.item then self.character:faceThisObject(self.item) end
 end
 
 function ISTakeTheCargoAction:start()
@@ -26,18 +26,27 @@ function ISTakeTheCargoAction:stop()
 end
 
 function ISTakeTheCargoAction:perform()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractCargo = 3
-    modData.PZLinuxActiveContract = 9
-    testHelicopter()
+    PZLinuxRequestContractWorldEvent(self.character, "takeCargo", {}, function(result)
+        if not result or not result.ok then return end
+        local helicopterHandler = rawget(_G, "testHelicopter")
+        if type(helicopterHandler) == "function" then
+            helicopterHandler()
+        else
+            print("PZLinux warning: testHelicopter handler is missing")
+        end
+    end)
+    ISBaseTimedAction.perform(self)
 end
 
-function ISTakeTheCargoAction:new(character, item)
+function ISTakeTheCargoAction:new(character, item, x, y, z)
     local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
     o.item = item
+    o.x = x
+    o.y = y
+    o.z = z
     o.stopOnWalk = true
     o.maxTime = 1000
     return o

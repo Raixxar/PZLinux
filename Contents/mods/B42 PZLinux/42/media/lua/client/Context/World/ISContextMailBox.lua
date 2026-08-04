@@ -1,10 +1,23 @@
--- MailBox UI - by Raixxar 
+-- MailBox UI - by Raixxar
 -- Updated : 25/01/26
 
 MailBoxUI = ISPanel:derive("MailBoxUI")
 
+local function PZLinuxMailBoxActionText(state)
+    if state and state.hasPickup and state.hasContractDeposit then
+        return PZLinuxGetText("IGUI_PZLinux_Mailbox_TakeAndSend")
+    end
+    if state and state.hasContractDeposit then
+        return PZLinuxGetText("IGUI_PZLinux_Mailbox_SendContract")
+    end
+    if state and state.hasPickup then
+        return PZLinuxGetText("IGUI_PZLinux_Mailbox_TakeItems")
+    end
+    return PZLinuxGetText("IGUI_PZLinux_Mailbox_Check")
+end
+
 -- CONSTRUCTOR
-function MailBoxUI:new(x, y, width, height, player)
+function MailBoxUI:new(x, y, width, height, player, mailboxObject)
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
@@ -13,6 +26,7 @@ function MailBoxUI:new(x, y, width, height, player)
     o.width           = width
     o.height          = height
     o.player          = player
+    o.mailbox         = PZLinuxGetMailboxReference(mailboxObject)
     o.isClosing       = false
     o.mode            = "main"
     return o
@@ -33,27 +47,27 @@ function MailBoxUI:showLoginMenu()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
-        self.parent.isDragging = true
-        self.parent.initialX = self.parent:getX()
-        self.parent.initialY = self.parent:getY()
-        self.parent.mouseStartX = getMouseX()
-        self.parent.mouseStartY = getMouseY()
+    function self.topBar.onMouseDown(topBar, _x, _y)
+        topBar.parent.isDragging = true
+        topBar.parent.initialX = topBar.parent:getX()
+        topBar.parent.initialY = topBar.parent:getY()
+        topBar.parent.mouseStartX = getMouseX()
+        topBar.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
-        if self.parent.isDragging then
+    function self.topBar.onMouseMove(topBar, _x, _y)
+        if topBar.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
-            local dx = curMouseX - self.parent.mouseStartX
-            local dy = curMouseY - self.parent.mouseStartY
-            self.parent:setX(self.parent.initialX + dx)
-            self.parent:setY(self.parent.initialY + dy)
+            local dx = curMouseX - topBar.parent.mouseStartX
+            local dy = curMouseY - topBar.parent.mouseStartY
+            topBar.parent:setX(topBar.parent.initialX + dx)
+            topBar.parent:setY(topBar.parent.initialY + dy)
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
-        self.parent.isDragging = false
+    function self.topBar.onMouseUp(topBar, _x, _y)
+        topBar.parent.isDragging = false
     end
 
     self.titleLabel = ISLabel:new(self.width * 0.225, self.width * 0.43, self.width * 0.1, "", 0.8, 1, 0.8, 1, UIFont.Small, true)
@@ -61,186 +75,99 @@ function MailBoxUI:showLoginMenu()
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    self.closeButton = ISButton:new(self.width * 0.765, self.height * 0.35, self.width * 0.025, self.height * 0.050, "LEAVE", self, self.onClose)
+    self.closeButton = ISButton:new(self.width * 0.765, self.height * 0.35, self.width * 0.10, self.height * 0.050, PZLinuxGetText("IGUI_PZLinux_Mailbox_Leave"), self, self.onClose)
     self.closeButton.backgroundColor = {r=0.5, g=0, b=0, a=1}
     self.closeButton:setVisible(true)
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    local loginButtonName = "SEND/TAKE THE PACKAGE"
-    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.25, self.height * 0.027, loginButtonName, self, self.onSendTakePackage)
+    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.60, self.height * 0.027, PZLinuxGetText("IGUI_PZLinux_Mailbox_Check"), self, self.onSendTakePackage)
     self.loginButton:setVisible(true)
+    self.loginButton:setEnable(false)
     self.loginButton:initialise()
     self.topBar:addChild(self.loginButton)
+    self:refreshActionState()
+end
+
+function MailBoxUI:refreshActionState()
+    if not self.loginButton or self.isClosing then return end
+    self.loginButton:setEnable(false)
+    PZLinuxRequestMailboxActionState(self.player, self.mailbox, function(result)
+        if self.isClosing or not self.loginButton then return end
+        self.loginButton:setTitle(PZLinuxMailBoxActionText(result and result.ok and result or nil))
+        self.loginButton:setEnable(true)
+    end)
 end
 
 function MailBoxUI:onSendTakePackage()
-    local playerObj = getPlayer()
-    local inventory = playerObj:getInventory()
-    local modData = getPlayer():getModData()
-    local items = inventory:getItems()
-    local totalCountForContract = false
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
 
-    local itemCount = 0
-    for j = 0, items:size() - 1 do
-        local item = items:get(j)
-        if item:getFullType() == modData.PZLinuxContractInfo then
-            itemCount = itemCount + 1
-        end
+    self.loginButton:setEnable(false)
+    local pendingActions = 5
+    local function PZLinuxMailBoxActionFinished()
+        pendingActions = pendingActions - 1
+        if pendingActions <= 0 then self:refreshActionState() end
     end
 
-    if modData.PZLinuxContractInfoCount and itemCount >= modData.PZLinuxContractInfoCount then
-        if modData.PZLinuxContractInfoCount > 0 then 
-            totalCountForContract = true 
+    PZLinuxRequestDarkWebRedeemSales(playerObj, self.mailbox, function(result)
+        if result and result.ok and result.amount and result.amount > 0 then
+            saveAtmBalance(result.balance, playerObj)
+            HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.amount) .. " transferred to your bank account")
         end
-    end
-    
-    for j = items:size() - 1, 0, -1 do
-        local item = items:get(j)
-        if item and item:getFullType() == "Base.SuspiciousPackage" then
-            local boxName = item:getName()
-            boxName = boxName:gsub("%$", "")
-            local balance = loadAtmBalance()
-            local amount = tonumber(boxName)
-            if amount then
-                saveAtmBalance(balance + amount)
-                inventory:Remove(item)
-            end
-        end
+        PZLinuxMailBoxActionFinished()
+    end)
 
-        local isComputerMoveable = false
-        if item and instanceof(item, "Moveable") then
-            local ws = item:getWorldSprite()
-            if ws == "appliances_com_01_72"
-            or ws == "appliances_com_01_73"
-            or ws == "appliances_com_01_74"
-            or ws == "appliances_com_01_75" then
-                isComputerMoveable = true
-            end
+    PZLinuxRequestDarkWebDeliverOrders(playerObj, self.mailbox, function(result)
+        if result and result.ok == false then
+            HaloTextHelper.addBadText(playerObj, "Dark web delivery failed: " .. tostring(result.error or "unknown error"))
+        elseif result and result.lost then
+            HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
+        elseif result and result.ok and result.delivered and result.delivered > 0 then
+            HaloTextHelper.addGoodText(playerObj, "Dark web order delivered")
         end
+        PZLinuxMailBoxActionFinished()
+    end)
 
-        local isFridgeMoveable = false
-        if item and instanceof(item, "Moveable") then
-            local ws = item:getWorldSprite()
-            if ws == "appliances_refrigeration_01_0"
-            or ws == "appliances_refrigeration_01_1"
-            or ws == "appliances_refrigeration_01_2"
-            or ws == "appliances_refrigeration_01_3"
-            or ws == "appliances_refrigeration_01_4"
-            or ws == "appliances_refrigeration_01_5"
-            or ws == "appliances_refrigeration_01_6"
-            or ws == "appliances_refrigeration_01_7"
-            or ws == "appliances_refrigeration_01_8"
-            or ws == "appliances_refrigeration_01_9"
-            or ws == "appliances_refrigeration_01_10"
-            or ws == "appliances_refrigeration_01_11"
-            or ws == "appliances_refrigeration_01_12"
-            or ws == "appliances_refrigeration_01_13"
-            or ws == "appliances_refrigeration_01_14"
-            or ws == "appliances_refrigeration_01_15"
-            or ws == "appliances_refrigeration_01_22"
-            or ws == "appliances_refrigeration_01_23"
-            or ws == "appliances_refrigeration_01_24"
-            or ws == "appliances_refrigeration_01_25"
-            or ws == "appliances_refrigeration_01_26"
-            or ws == "appliances_refrigeration_01_27"
-            or ws == "appliances_refrigeration_01_28"
-            or ws == "appliances_refrigeration_01_29"
-            or ws == "appliances_refrigeration_01_30"
-            or ws == "appliances_refrigeration_01_31"
-            or ws == "appliances_refrigeration_01_32"
-            or ws == "appliances_refrigeration_01_33"
-            or ws == "appliances_refrigeration_01_34"
-            or ws == "appliances_refrigeration_01_35"
-            or ws == "appliances_refrigeration_01_36"
-            or ws == "appliances_refrigeration_01_37"
-            or ws == "appliances_refrigeration_01_40"
-            or ws == "appliances_refrigeration_01_41"
-            or ws == "appliances_refrigeration_01_42"
-            or ws == "appliances_refrigeration_01_43" then
-                isFridgeMoveable = true
-            end
+    PZLinuxRequestContractDeposit(playerObj, self.mailbox, function(result)
+        if result and result.ok and result.removed and result.removed > 0 then
+            HaloTextHelper.addGoodText(playerObj, "Contract package sent")
         end
+        PZLinuxMailBoxActionFinished()
+    end)
 
-        if (item and item:getFullType() == "Base.Bag_ProtectiveCaseSmall" and modData.PZLinuxContractPickUp == 3)
-        or (isComputerMoveable and modData.PZLinuxContractSendComputer == 1)
-        or (isFridgeMoveable and modData.PZLinuxContractSendFridge == 1)
-        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractManhunt == 3)
-        or (item and item:getFullType() == "Base.EmptyJar" and modData.PZLinuxContractBlood == 3)
-        or (item and item:getFullType() == "Base.Bag_Mail" and bagContainsCorpse(item) and modData.PZLinuxContractCapture == 3)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractMedical == 1 and totalCountForContract)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractCar == 1 and totalCountForContract)
-        or (item and item:getFullType() == modData.PZLinuxContractInfo and modData.PZLinuxContractWeapon == 1 and totalCountForContract) then
-            if modData.PZLinuxContractInfoCount > 0 then
-                modData.PZLinuxActiveContract = 9
-                inventory:Remove(item)
-                modData.PZLinuxContractInfoCount = modData.PZLinuxContractInfoCount - 1
-            else
-                modData.PZLinuxActiveContract = 9
-                inventory:Remove(item)
-            end
+    PZLinuxRequestDeliver(playerObj, self.mailbox, function(result)
+        if result and result.ok == false then
+            HaloTextHelper.addBadText(playerObj, "Request delivery failed: " .. tostring(result.error or "unknown error"))
+        elseif result and result.lost then
+            HaloTextHelper.addBadText(playerObj, "Your order has been stolen during delivery!")
+        elseif result and result.ok and result.delivered and result.delivered > 0 then
+            HaloTextHelper.addGoodText(playerObj, "Request package delivered")
         end
-    end
+        PZLinuxMailBoxActionFinished()
+    end)
 
-    if modData.PZLinuxActiveRequest == 1 and modData.PZLinuxOnItemRequest then
-        local chanceLostOrder = ZombRand(1, 101)
-        if chanceLostOrder <= 10 then
-            modData.PZLinuxActiveRequest = 0
-            modData.PZLinuxOnItemRequest = {}
-            HaloTextHelper.addBadText(getPlayer(), "Your order has been stolen during delivery!");
-            return
+    PZLinuxRequestSellRedeemPackage(playerObj, self.mailbox, function(result)
+        if result and result.ok == false then
+            HaloTextHelper.addBadText(playerObj, "Sell surplus failed: " .. tostring(result.error or "unknown error"))
+        elseif result and result.ok and result.sold and result.sold > 0 then
+            saveAtmBalance(result.balance, playerObj)
+            HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.total) .. " for your surplus")
         end
-        while #modData.PZLinuxOnItemRequest > 0 do
-            local inv = getPlayer():getInventory()
-            local parcel = inv:AddItem('Base.Parcel_Large')
-            local parcelInv = parcel:getInventory()
-            local lastBatchWrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
-            if lastBatchWrapper and type(lastBatchWrapper) == "table" then
-                local lastBatch = lastBatchWrapper[1]
-                if lastBatch and type(lastBatch.items) == "table" then
-                    for _, item in ipairs(lastBatch.items) do
-                        parcelInv:AddItem(item.name)
-                    end
-                end
-            end
-            table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
-        end
-        modData.PZLinuxActiveRequest = 0
-    end
+        PZLinuxMailBoxActionFinished()
+    end)
 
-    if modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLinuxOnItemBuyOnDarkWebStatus then
-        local chanceLostOrder = ZombRand(1, 101)
-        if chanceLostOrder <= 10 then
-            modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-            modData.PZLinuxOnItemBuyOnDarkWeb = {}
-            HaloTextHelper.addBadText(getPlayer(), "Your order has been stolen during delivery!");
-            return
-        end
-        while #modData.PZLinuxOnItemBuyOnDarkWeb > 0 do
-            local inv = getPlayer():getInventory()
-            local parcel = inv:AddItem('Base.Parcel_Large')
-            local parcelInv = parcel:getInventory()
-            local lastBatchWrapper = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
-            if lastBatchWrapper and type(lastBatchWrapper) == "table" then
-                local lastBatch = lastBatchWrapper[1]
-                if lastBatch and type(lastBatch.items) == "table" then
-                    for _, item in ipairs(lastBatch.items) do
-                        parcelInv:AddItem(item.name)
-                    end
-                end
-            end
-            table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
-        end
-        modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-    end
 end
 
 function MailBoxUI:onClose()
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if playerObj then
+        playerObj:StopAllActionQueue()
+    end
 end
 
-function MailBoxMenu_ShowUI(player)
+function MailBoxMenu_ShowUI(player, mailboxObject)
     local texture = getTexture("media/ui/mailBox.png")
     if not texture then return end
 
@@ -257,9 +184,9 @@ function MailBoxMenu_ShowUI(player)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
     local uiX, uiY = (realScreenW - finalW) / 2, (realScreenH - finalH) / 2
 
-    local uiMailBox = MailBoxUI:new(uiX, uiY, finalW, finalH, player)
+    local uiMailBox = MailBoxUI:new(uiX, uiY, finalW, finalH, player, mailboxObject)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
-    
+
     centeredImage.scaled = true
     centeredImage.scaledWidth = finalW
     centeredImage.scaledHeight = finalH
@@ -284,7 +211,7 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
                     local square = obj:getSquare()
                     if square then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
-                        context:addOption("MailBox", obj, MailBoxMenu_OnUse, player, x, y, z, sprite:getName())
+                        context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_Mailbox"), obj, MailBoxMenu_OnUse, player, x, y, z, sprite:getName())
                         break
                     end
                 end
@@ -294,14 +221,17 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
 end
 
 function MailBoxMenu_OnUse(obj, player, x, y, z, sprite)
-    local playerSquare = getPlayer():getSquare()
-    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
-        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
+    local playerSquare = playerObj:getSquare()
+    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
+        local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISMailBoxAction:new(getPlayer()), obj)
+    ISTimedActionQueue.add(ISMailBoxAction:new(playerObj, obj))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(MailBoxMenu_AddContext)

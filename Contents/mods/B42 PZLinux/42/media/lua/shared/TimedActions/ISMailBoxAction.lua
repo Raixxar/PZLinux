@@ -1,6 +1,6 @@
 ISMailBoxAction = ISBaseTimedAction:derive("ISMailBoxAction")
 
-function ISMailBoxAction:isValid()
+function ISMailBoxAction.isValid(_self)
     return true
 end
 
@@ -11,17 +11,22 @@ end
 
 function ISMailBoxAction:update()
     self.character:faceThisObject(self.item)
+    if not self.ui or self.ui.removed then
+        self:forceComplete()
+    end
 end
 
 function ISMailBoxAction:start()
-    self.ui = MailBoxMenu_ShowUI(self.character)
+    self.ui = MailBoxMenu_ShowUI(self.character, self.item)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")
 end
 
 function ISMailBoxAction:stop()
-    self.ui:removeFromUIManager()
+    if self.ui then
+        self.ui:removeFromUIManager()
+    end
     ISBaseTimedAction.stop(self)
 end
 

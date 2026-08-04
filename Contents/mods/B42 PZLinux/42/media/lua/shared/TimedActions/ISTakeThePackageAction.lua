@@ -3,21 +3,21 @@ require "TimedActions/ISBaseTimedAction"
 ISTakeThePackageAction = ISBaseTimedAction:derive("ISTakeThePackageAction")
 
 function ISTakeThePackageAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISTakeThePackageAction:waitToStart()
-    self.character:faceThisObject(self.item)
-	return self.character:shouldBeTurning()
+    if not self.character then return false end
+    return false
 end
 
 function ISTakeThePackageAction:update()
-    self.character:faceThisObject(self.item)
+    if not self.character then return end
 end
 
 function ISTakeThePackageAction:start()
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    getSoundManager():PlayWorldSound("openCloseCabinet", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    getSoundManager():PlayWorldSound("openCloseCabinet", false, self.character:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")
@@ -28,38 +28,22 @@ function ISTakeThePackageAction:stop()
 end
 
 function ISTakeThePackageAction:perform()
-    local inv = self.character:getInventory()
-    local parcel = inv:AddItem('Base.Bag_ProtectiveCaseSmall')
-    parcel:setName("Contract case")
-
-    local bonusRand = ZombRand(1,6)
-    local parcelInv = parcel:getInventory()
-    if bonusRand == 1 then
-        local bonusTotal = ZombRand(1,2000)
-        parcelInv:AddItem("Base.Note")
-        parcelInv:AddItem("Base.Revolver")
-        for i = 1, bonusTotal do
-            parcelInv:AddItem("Base.Money")
+    PZLinuxRequestContractWorldEvent(self.character, "pickupPackage", {}, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(self.character, "Drop the contract case in a mailbox")
+        else
+            local errorCode = result and result.error or "no_server_response"
+            HaloTextHelper.addBadText(self.character, "Contract interaction failed: " .. tostring(errorCode))
         end
-    else
-        parcelInv:AddItem("Base.Note")
-    end
-
-    if bonusRand == 2 then
-        parcelInv:AddItem("Base.Revolver")
-    end
-
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractPickUp = 3
-    HaloTextHelper.addGoodText(getPlayer(), "Drop the contract case in a mailbox");
+    end)
+    ISBaseTimedAction.perform(self)
 end
 
-function ISTakeThePackageAction:new(character, item)
+function ISTakeThePackageAction:new(character)
     local o = ISBaseTimedAction.new(self, character)
     setmetatable(o, self)
     self.__index = self
     o.character = character
-    o.item = item
     o.stopOnWalk = true
     o.maxTime = 250
     return o

@@ -3,7 +3,7 @@ require "TimedActions/ISBaseTimedAction"
 ISDecapitateAction = ISBaseTimedAction:derive("ISDecapitateAction")
 
 function ISDecapitateAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISDecapitateAction:waitToStart()
@@ -17,7 +17,7 @@ end
 
 function ISDecapitateAction:start()
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    getSoundManager():PlayWorldSound("decapitate", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    getSoundManager():PlayWorldSound("decapitate", false, self.character:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Low")
     self.character:reportEvent("EventLootItem")
@@ -28,16 +28,14 @@ function ISDecapitateAction:stop()
 end
 
 function ISDecapitateAction:perform()
-    local inv = self.character:getInventory()
-    local parcel = inv:AddItem('Base.Bag_Mail')
-    parcel:setName("Cut target")
-    local parcelInv = parcel:getInventory()
-    parcelInv:AddItem("Base.CorpseMale")
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractManhunt = 3
-    self.body:removeFromWorld()
-    self.body:removeFromSquare()
-    HaloTextHelper.addGoodText(getPlayer(), "Drop the bag in a mailbox");
+    PZLinuxRequestContractWorldEvent(self.character, "decapitate", {
+        target = PZLinuxGetDeadBodyReference(self.body),
+    }, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(self.character, "Drop the bag in a mailbox")
+        end
+    end)
+    ISBaseTimedAction.perform(self)
 end
 
 function ISDecapitateAction:new(character, body)

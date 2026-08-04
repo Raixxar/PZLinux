@@ -1,53 +1,41 @@
--- Dark Web UI - by Raixxar 
+-- Dark Web UI - by Raixxar
 -- Updated : 25/01/25
 
 darkWebUI = ISPanel:derive("darkWebUI")
 
-local LAST_CONNECTION_TIME = 0
-local ITEMS_MAX = ZombRand(5,50)
+local ITEMS_MAX = 50
 local currentOffers = {}
-local PZLinuxOnItemBuyOnDarkWeb = {}
-local getItemName = nil
 
--- GEN WEB OFFERS
-function GenerateDarkWebOffers()
-    local getHourTime = math.ceil(getGameTime():getWorldAgeHours())
-
-    if getHourTime < 24 then
-        getHourTime = 24
+local function PZLinuxDarkWebTextWidth(text)
+    local managerProvider = rawget(_G, "getTextManager")
+    local manager = managerProvider and managerProvider() or nil
+    if manager and manager.MeasureStringX then
+        return manager:MeasureStringX(UIFont.Small, tostring(text or ""))
     end
+    return #tostring(text or "") * 7
+end
 
-    if (getHourTime - LAST_CONNECTION_TIME) < 24 then
-        return
+local function PZLinuxDarkWebRemoveLastCharacter(text)
+    local lastIndex = #text
+    if lastIndex == 0 then return "" end
+
+    while lastIndex > 1 do
+        local byte = text:byte(lastIndex)
+        if not byte or byte < 128 or byte > 191 then break end
+        lastIndex = lastIndex - 1
     end
-    
-    currentOffers = {}
-    LAST_CONNECTION_TIME = getHourTime
-    local player = getPlayer()
+    return text:sub(1, lastIndex - 1)
+end
 
-    for i = 1, ITEMS_MAX do
-        local randomItem = PZLinuxDarkWebItemsTable[ZombRand(#PZLinuxDarkWebItemsTable) + 1]
-        if randomItem.id and #randomItem.id > 0 then
+local function PZLinuxDarkWebFitText(text, maxWidth)
+    text = tostring(text or "")
+    if maxWidth <= 0 or PZLinuxDarkWebTextWidth(text) <= maxWidth then return text end
 
-            local perkLevel = player:getPerkLevel(Perks.PlantScavenging)
-            local buyMaxMultiplier = 3.0 - (2.0 * perkLevel / 10)
-            local sellMinMultiplier = 0.25 + (0.025 * perkLevel)
-            local sellMaxMultiplier = 0.5 + (0.025 * perkLevel)
-
-            local SandboxVarsPurchasePriceMultiplier = SandboxVars.PZLinux.PurchasePriceMultiplier or 1.0
-            local getHourTime = math.ceil(getGameTime():getWorldAgeHours()/2190)
-            local rawPrice = math.ceil((ZombRand(randomItem.Price, randomItem.Price * buyMaxMultiplier))/10) * 10 * getHourTime * SandboxVarsPurchasePriceMultiplier
-            local transactionType = "Buy"
-            local transactionQty = 1
-
-            table.insert(currentOffers, {
-                item = { id = randomItem.id },
-                price = rawPrice,
-                transactionType = transactionType,
-                transactionQty = transactionQty
-            })
-        end
+    local suffix = "..."
+    while text ~= "" and PZLinuxDarkWebTextWidth(text .. suffix) > maxWidth do
+        text = PZLinuxDarkWebRemoveLastCharacter(text)
     end
+    return text .. suffix
 end
 
 -- CONSTRUCTOR
@@ -78,7 +66,7 @@ function darkWebUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
+    function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
@@ -86,7 +74,7 @@ function darkWebUI:initialise()
         self.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
+    function self.topBar:onMouseMove(_x, _y)
         if self.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
@@ -97,11 +85,13 @@ function darkWebUI:initialise()
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
+    function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
-        local modData = getPlayer():getModData()
-        modData.PZLinuxUIX = self.parent:getX()
-        modData.PZLinuxUIY = self.parent:getY()
+        local modData = PZLinuxGetModData(self.parent.player)
+        if modData then
+            modData.PZLinuxUIX = self.parent:getX()
+            modData.PZLinuxUIY = self.parent:getY()
+        end
     end
 
     self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
@@ -112,30 +102,12 @@ function darkWebUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    self.titleLabel = ISLabel:new(self.width * 0.20, self.height * 0.17, self.height * 0.025, "Bank balance: $"  .. tostring(loadAtmBalance()), 0, 1, 0, 1, UIFont.Small, true)
+    self.titleLabel = ISLabel:new(self.width * 0.20, self.height * 0.17, self.height * 0.025, "Bank balance: $"  .. tostring(loadAtmBalance(self.player)), 0, 1, 0, 1, UIFont.Small, true)
     self.topBar.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabel:setVisible(false)
     self.titleLabel:initialise()
     self.topBar:addChild(self.titleLabel)
 
-    local modData = getPlayer():getModData()
-    if modData.PZLinuxUISFX == 0 then
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    else
-        self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-        self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-        self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        self.skipAnimationButton:setVisible(true)
-        self.skipAnimationButton:initialise()
-        self.topBar:addChild(self.skipAnimationButton)
-    end
 
     self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onMinimize)
     self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
@@ -198,7 +170,7 @@ function darkWebUI:initialise()
     self.topBar:addChild(self.shoppingHelpButton)
 
     self.searchField = ISTextEntryBox:new("", self.width * 0.363, self.height * 0.199, self.width * 0.399, self.height * 0.025)
-    self.searchField.onCommandEntered = function(entry) self:onCommandEnter() end
+    self.searchField.onCommandEntered = function(_entry) self:onCommandEnter() end
     self.searchField:setVisible(false)
     self.searchField:initialise()
     self:addChild(self.searchField)
@@ -224,10 +196,11 @@ function darkWebUI:initialise()
     self.offerIcons = {}
     self.offerLabels = {}
     self.offerPriceLabels = {}
+    self.offerTextWidths = {}
     self.transactionBtns = {}
     self.transactionQtys = {}
 
-    local rowHeight = self.height * 0.045
+    local rowHeight = math.max(38, self.height * 0.05)
     local totalHeight = 100 * rowHeight + 10
     self.scrollPanel:setScrollHeight(totalHeight)
     self.scrollPanel.onMouseWheel = function(self, del)
@@ -255,20 +228,27 @@ function darkWebUI:initialise()
         self.offerIcons[i] = iconImg
 
         local labelNameX = 5 + iconSize + 5
-        local labelNameY = (rowHeight - 16) / 2
+        local labelNameY = math.max(0, (rowHeight - 30) / 2)
         local nameLabel  = ISLabel:new(labelNameX, labelNameY, 20, "", 0, 1, 0, 1, UIFont.Small, true)
         nameLabel:initialise()
         offerBackground:addChild(nameLabel)
         self.offerLabels[i] = nameLabel
 
-        local labelPriceX = self.width * 0.355
-        local priceLabel = ISLabel:new(labelPriceX, labelNameY, 20, "", 0, 1, 0, 1, UIFont.Small, true)
+        local priceLabel = ISLabel:new(labelNameX, labelNameY + 15, 20, "", 0, 1, 0, 1, UIFont.Small, true)
         priceLabel:initialise()
         offerBackground:addChild(priceLabel)
         self.offerPriceLabels[i] = priceLabel
-        
-        local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
-        local transactionQty = ISTextEntryBox:new("0", self.width * 0.415, (rowHeight - buttonHeight - 2) / 2, self.width * 0.03, self.height * 0.024)
+
+        local buyWidth = PZLinuxDarkWebTextWidth(PZLinuxGetText("IGUI_PZLinux_DarkWeb_Buy"))
+        local soldOutWidth = PZLinuxDarkWebTextWidth(PZLinuxGetText("IGUI_PZLinux_DarkWeb_SoldOut"))
+        local buttonWidth = math.min(offerBackground.width * 0.25, math.max(58, buyWidth + 16, soldOutWidth + 16))
+        local buttonHeight = self.height * 0.025
+        local quantityWidth = math.max(32, self.width * 0.035)
+        local buttonX = offerBackground.width - buttonWidth - 6
+        local quantityX = buttonX - quantityWidth - 5
+        self.offerTextWidths[i] = math.max(40, quantityX - labelNameX - 8)
+
+        local transactionQty = ISTextEntryBox:new("0", quantityX, (rowHeight - buttonHeight - 2) / 2, quantityWidth, self.height * 0.024)
         transactionQty.backgroundColor = {r=0, g=0, b=0, a=1}
         transactionQty.internal = i
         transactionQty:setVisible(true)
@@ -276,8 +256,8 @@ function darkWebUI:initialise()
         transactionQty:setOnlyNumbers(true)
         offerBackground:addChild(transactionQty)
         self.transactionQtys[i] = transactionQty
-       
-        local transactionBtn = ISButton:new(offerBackground.width - buttonWidth - 10, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
+
+        local transactionBtn = ISButton:new(buttonX, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
             local quantityTrading = tonumber(transactionQty:getText()) or 0
             self:OnBuyItem(btn, quantityTrading)
         end)
@@ -288,17 +268,17 @@ function darkWebUI:initialise()
         self.transactionBtns[i] = transactionBtn
 
 
-        function offerBackground:onMouseMove(dx, dy)
+        function offerBackground:onMouseMove(_dx, _dy)
             self.backgroundColor = {r=0.5, g=0.5, b=0.5, a=0.3}
         end
-        function offerBackground:onMouseMoveOutside(dx, dy)
+        function offerBackground:onMouseMoveOutside(_dx, _dy)
             self.backgroundColor = {r=0, g=0, b=0, a=0}
         end
     end
 end
 
 -- STOP
-function darkWebUI:onStop(button)
+function darkWebUI:onStop(_button)
     self.isClosing = true
 
     Events.OnKeyStartPressed.Remove(self.onKeyEvent)
@@ -319,65 +299,43 @@ function darkWebUI:onStop(button)
         self.centeredImage:removeFromUIManager()
         self.centeredImage = nil
     end
-    
+
     self:removeFromUIManager()
     self.terminalCoroutine = nil
 end
 
 -- LOGOUT
-function darkWebUI:onMinimize(button)
+function darkWebUI:onMinimize(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 1
+    local modData = PZLinuxGetModData(self.player)
+    if modData then modData.PZLinuxUIOpenMenu = 1 end
 end
 
-function darkWebUI:onMinimizeBack(button)
+function darkWebUI:onMinimizeBack(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 3
+    local modData = PZLinuxGetModData(self.player)
+    if modData then modData.PZLinuxUIOpenMenu = 3 end
 end
 
 
 -- LOGOUT
-function darkWebUI:onClose(button)
+function darkWebUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUIOpenMenu = 1
+    local modData = PZLinuxGetModData(self.player)
+    if modData then modData.PZLinuxUIOpenMenu = 1 end
 end
 
-function darkWebUI:onCloseX(button)
+function darkWebUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    local player = PZLinuxGetPlayer(self.player)
+    if player then
+        player:StopAllActionQueue()
+    end
 end
 
-function darkWebUI:onSFXOn(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUISFX = 0
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOff)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=1, g=0, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
-
-function darkWebUI:onSFXOff(button)
-    local modData = getPlayer():getModData()
-    modData.PZLinuxUISFX = 1
-    self.skipAnimationButton:close()
-    self.skipAnimationButton = ISButton:new(self.width * 0.66, self.height * 0.17, self.width * 0.030, self.height * 0.025, "SFX", self, self.onSFXOn)
-    self.skipAnimationButton.textColor = {r=1, g=1, b=1, a=1}
-    self.skipAnimationButton.backgroundColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton.borderColor = {r=0, g=1, b=0, a=0.5}
-    self.skipAnimationButton:setVisible(true)
-    self.skipAnimationButton:initialise()
-    self.topBar:addChild(self.skipAnimationButton)
-end
 
 -- UPDATE UI
 function darkWebUI:startUI()
@@ -404,6 +362,26 @@ function darkWebUI:onBuy()
     self.searchBtn:setVisible(true)
     self.scrollPanel:setVisible(true)
     self.scrollPanel:addScrollBars(true)
+
+    if not self.darkWebBuyOffersLoaded then
+        if self.darkWebBuyOffersPending then return end
+        self.darkWebBuyOffersPending = true
+        PZLinuxRequestDarkWebOffers(self.player, function(result)
+            self.darkWebBuyOffersPending = false
+            if result and result.ok then
+                currentOffers = result.offers or {}
+                self.darkWebBuyOffersLoaded = true
+                if result.balance then
+                    saveAtmBalance(result.balance, self.player)
+                    self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+                end
+                if not self.isClosing then
+                    self:onBuy()
+                end
+            end
+        end)
+        return
+    end
 
     local lineIndex = 1
     for i, rowData in ipairs(currentOffers) do
@@ -432,23 +410,58 @@ function darkWebUI:onBuy()
 
                     if self.offerLabels[lineIndex] then
                         local displayName = scriptItem:getDisplayName()
-                        if #displayName > 37 then
-                            displayName = displayName:sub(1, 35) .. "..."
-                        end
-                        self.offerLabels[lineIndex]:setName(displayName)
+                        self.offerLabels[lineIndex]:setName(PZLinuxDarkWebFitText(
+                            displayName,
+                            self.offerTextWidths[lineIndex] or 120
+                        ))
                     end
 
+                    local offerDetails = "$" .. tostring(rowData.price) .. " | " .. string.format(
+                        PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
+                        tonumber(rowData.stock) or 0
+                    )
+                    local offerTooltip = scriptItem:getDisplayName() .. "\n" .. offerDetails
                     if self.offerPriceLabels[lineIndex] then
-                        self.offerPriceLabels[lineIndex]:setName("$" .. tostring(rowData.price))
+                        self.offerPriceLabels[lineIndex]:setName(PZLinuxDarkWebFitText(
+                            offerDetails,
+                            self.offerTextWidths[lineIndex] or 120
+                        ))
+                    end
+
+                    if self.transactionQtys[lineIndex] then
+                        self.transactionQtys[lineIndex]:setVisible(true)
                     end
 
                     if self.transactionBtns[lineIndex] then
                         self.transactionBtns[lineIndex].internal = i
                         if rowData.transactionType == "Buy" then
-                            self.transactionBtns[lineIndex]:setTitle("Buy")
+                            local titleKey = (tonumber(rowData.stock) or 0) > 0
+                                and "IGUI_PZLinux_DarkWeb_Buy"
+                                or "IGUI_PZLinux_DarkWeb_SoldOut"
+                            self.transactionBtns[lineIndex]:setTitle(PZLinuxGetText(titleKey))
                             self.transactionBtns[lineIndex].backgroundColor = {r=0, g=0.6, b=0, a=1}
                         end
                         self.transactionBtns[lineIndex]:setVisible(true)
+                        self.transactionBtns[lineIndex]:setEnable((tonumber(rowData.stock) or 0) > 0)
+                        if self.transactionBtns[lineIndex].setTooltip then
+                            self.transactionBtns[lineIndex]:setTooltip(offerTooltip)
+                        end
+                    end
+
+                    if self.offerBackgrounds[lineIndex].setTooltip then
+                        self.offerBackgrounds[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.offerIcons[lineIndex].setTooltip then
+                        self.offerIcons[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.offerLabels[lineIndex].setTooltip then
+                        self.offerLabels[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.offerPriceLabels[lineIndex].setTooltip then
+                        self.offerPriceLabels[lineIndex]:setTooltip(offerTooltip)
+                    end
+                    if self.transactionQtys[lineIndex].setTooltip then
+                        self.transactionQtys[lineIndex]:setTooltip(offerTooltip)
                     end
 
                     lineIndex = lineIndex + 1
@@ -489,61 +502,39 @@ function darkWebUI:onSell()
     self.minimizeButton:setVisible(false)
     self.minimizeBackButton:setVisible(true)
 
-    local yOffset = 30
-    local itemsToSell = {}
-    local itemCount = 0
-
-    local playerObj = getPlayer()
-    local containers = ISInventoryPaneContextMenu.getContainers(playerObj)
-
-    for _, itemData in ipairs(PZLinuxDarkWebItemsTable) do
-        local itemIds = itemData.id
-        local itemPrice = itemData.Price
-        local firstItemId = type(itemIds) == "table" and itemIds[1] or itemIds
-        
-        itemCount = 0
-        for i = 1, containers:size() do
-            local container = containers:get(i - 1)
-            local items = container:getItems()
-        
-            if type(itemIds) == "table" then
-                for _, id in ipairs(itemIds) do
-                    for j = 0, items:size() - 1 do
-                        local item = items:get(j)
-                        if item:getFullType() == id then
-                            itemCount = itemCount + 1
-                        end
-                    end
+    if not self.darkWebSellOffersLoaded then
+        if self.darkWebSellOffersPending then return end
+        self.darkWebSellOffersPending = true
+        PZLinuxRequestDarkWebSellOffers(self.player, function(result)
+            self.darkWebSellOffersPending = false
+            if result and result.ok then
+                self.darkWebSellOffers = result.offers or {}
+                self.darkWebSellOffersLoaded = true
+                if result.balance then
+                    saveAtmBalance(result.balance, self.player)
+                    self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
                 end
-            else
-                local foundItem = container:FindAndReturn(itemIds)
-                if foundItem then
-                    itemCount = container:getItemCount(itemIds)
+                if not self.isClosing then
+                    self:onSell()
                 end
             end
-        end
+        end)
+        return
+    end
 
-        if itemCount > 0 then
-            local scriptItem = getScriptManager():FindItem(firstItemId)
-            local itemName = scriptItem and scriptItem:getDisplayName() or "Unknown Item"
-            local iconName = scriptItem and scriptItem:getIcon()
-            local iconTex = iconName and (getTexture(iconName) or getTexture("Item_" .. iconName)) or nil
-
-            local player = getPlayer()
-            local perkLevel = player:getPerkLevel(Perks.PlantScavenging)
-            local sellMinMultiplier = 0.25 + (0.025 * perkLevel)
-            local sellMaxMultiplier = 0.50 + (0.025 * perkLevel)
-            local SandboxVarsSalePriceMultiplier = SandboxVars.PZLinux.SalePriceMultiplier or 1.0
-            local rawPrice = math.ceil(ZombRand(itemPrice * sellMinMultiplier, itemPrice * sellMaxMultiplier)) * SandboxVarsSalePriceMultiplier
-
-            table.insert(itemsToSell, { 
-                id = itemIds, 
-                name = itemName, 
-                count = itemCount, 
-                price = rawPrice, 
-                icon = iconTex 
-            })
-        end
+    local itemsToSell = {}
+    for _, offer in ipairs(self.darkWebSellOffers or {}) do
+        local scriptItem = getScriptManager():FindItem(offer.firstItemId)
+        local itemName = scriptItem and scriptItem:getDisplayName() or "Unknown Item"
+        local iconName = scriptItem and scriptItem:getIcon()
+        local iconTex = iconName and (getTexture(iconName) or getTexture("Item_" .. iconName)) or nil
+        table.insert(itemsToSell, {
+            index = offer.index,
+            name = itemName,
+            count = offer.count,
+            price = offer.price,
+            icon = iconTex,
+        })
     end
 
     self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.228, self.width * 0.568, self.height * 0.48)
@@ -588,17 +579,20 @@ function darkWebUI:onSell()
             self.scrollPanel:addChild(itemIcon)
         end
 
-        local iconSize = 28
         local itemSellLabel = ISLabel:new(self.width * 0.059, yOffset, 20, item.name, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(itemSellLabel)
 
-        local priceLabel = ISLabel:new(self.width * 0.41, yOffset, 20, " $" .. item.price, 0, 1, 0, 1, UIFont.Small, true)
+        local priceText = " $" .. tostring(item.price) .. " | " .. string.format(
+            PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
+            tonumber(item.count) or 0
+        )
+        local priceLabel = ISLabel:new(self.width * 0.35, yOffset, 20, priceText, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(priceLabel)
 
         local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
         local sellButton = ISButton:new(self.width * 0.48, yOffset, buttonWidth, buttonHeight, "SELL", self, self.onSellItem)
         sellButton.backgroundColor = {r=0.6, g=0, b=0, a=1}
-        sellButton.internal = item.id
+        sellButton.internal = item.index
         sellButton.price = item.price
         sellButton.count = item.count
         self.scrollPanel:addChild(sellButton)
@@ -618,19 +612,23 @@ function darkWebUI:OnFilter(button)
 end
 
 function darkWebUI:FilterMatch(rowData)
+    if rowData.transactionType == "Buy" and (tonumber(rowData.stock) or 0) <= 0 then
+        return false
+    end
     if self.filterMode == "all" then
         return true
-    elseif self.filterMode == "search" then    
+    elseif self.filterMode == "search" then
+        local firstId
         if type(rowData.item.id) == "table" then
             firstId = rowData.item.id[1]
         else
             firstId = rowData.item.id
-        end    
+        end
         local scriptItem = getScriptManager():FindItem(firstId)
         if not scriptItem then
             return false
         end
-        
+
         local itemName = scriptItem:getDisplayName()
         if type(itemName) ~= "string" then
             return false
@@ -675,109 +673,77 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
         return
     end
 
-    local playerObj = getPlayer()
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
+
     local offer = currentOffers[button.internal]
     if not offer then return end
-    local transactionType = offer.transactionType
     local transactionQty = tonumber(quantityTrading)
-    local inv = playerObj:getInventory()
-    
-    local batch = { items = {} }     
-    for i = 1, transactionQty do
-        local checkBalance = tonumber(loadAtmBalance())
-        if i > 1 then globalVolume = 0 end
-        if checkBalance >= offer.price then
-            local itemToAdd = nil
-            if type(offer.item.id) == "table" then
-                itemToAdd = offer.item.id[1]
-            else
-                itemToAdd = offer.item.id
-            end
-            table.insert(batch.items, { name = itemToAdd })
-            getSoundManager():PlayWorldSound("buy", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            HaloTextHelper.addGoodText(getPlayer(), "Item available in a mailbox");
+    if not transactionQty or transactionQty < 1 then return end
+    if transactionQty > (tonumber(offer.stock) or 0) then
+        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_DarkWeb_NotEnoughStock"))
+        return
+    end
 
-            local newBalance = checkBalance - offer.price
-            saveAtmBalance(newBalance)
-            self.titleLabel:setName("Bank balance: $"  .. tostring(loadAtmBalance()))
+    if button.setEnable then button:setEnable(false) end
+    PZLinuxRequestDarkWebBuy(self.player, button.internal, transactionQty, function(result)
+        if button.setEnable then button:setEnable(true) end
+        if self.isClosing then return end
+
+        if result and result.balance then
+            saveAtmBalance(result.balance, playerObj)
+            self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+        end
+
+        if result and result.offerIndex and result.stock ~= nil and currentOffers[result.offerIndex] then
+            currentOffers[result.offerIndex].stock = result.stock
+            self:onBuy()
+        end
+
+        if result and result.ok then
+            getSoundManager():PlayWorldSound("buy", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_Request_MailboxAvailable"))
         else
-            getSoundManager():PlayWorldSound("error", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            HaloTextHelper.addGoodText(getPlayer(), "I need money in my bank account");
+            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            if result and (result.error == "not_enough_stock" or result.error == "offer_expired") then
+                HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_DarkWeb_NotEnoughStock"))
+                if result.error == "offer_expired" then
+                    self.darkWebBuyOffersLoaded = false
+                    self:onBuy()
+                end
+            else
+                HaloTextHelper.addGoodText(playerObj, "I need money in my bank account")
+            end
         end
-    end
-
-    PZLinuxOnItemBuyOnDarkWeb = {}
-    table.insert(PZLinuxOnItemBuyOnDarkWeb, batch)
-    local modData = getPlayer():getModData()
-    if type(modData.PZLinuxOnItemBuyOnDarkWeb) ~= "table" then
-        modData.PZLinuxOnItemBuyOnDarkWeb = {}
-    end
-
-    if transactionQty > 0 then
-        modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-        table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, PZLinuxOnItemBuyOnDarkWeb)
-        addXp(getPlayer(), Perks.PlantScavenging, 3)
-    end
-end
-
-local function removeItemOnTick()
-    local playerObj = getPlayer()
-    local inventory = playerObj:getInventory()
-    local items = inventory:getItems()
-    for k = items:size() - 1, 0, -1 do
-        local checkItem = items:get(k)
-        if checkItem:getName() == getItemName then
-            inventory:Remove(checkItem)
-            Events.OnTick.Remove(removeItemOnTick)
-            break
-        end
-    end
+    end)
 end
 
 function darkWebUI:onSellItem(button)
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    local itemIds = button.internal
-    local price = button.price
-    local count = button.count
-    local playerObj = getPlayer()
-    local inv = playerObj:getInventory()
-    local itemsToSell = {}
+    local playerObj = PZLinuxGetPlayer(self.player)
+    if not playerObj then return end
 
-    local items = inv:getItems()
-    for j = 0, items:size() - 1 do
-        local item = items:get(j)
-        if type(itemIds) == "table" then
-            for _, id in ipairs(itemIds) do
-                if item:getFullType() == id then
-                    table.insert(itemsToSell, item)
-                end
-            end
+    if button.setEnable then button:setEnable(false) end
+    PZLinuxRequestDarkWebSell(self.player, button.internal, function(result)
+        if button.setEnable then button:setEnable(true) end
+        if self.isClosing then return end
+
+        if result and result.balance then
+            saveAtmBalance(result.balance, playerObj)
+            self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+        end
+
+        if result and result.ok then
+            getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addGoodText(playerObj, "Drop the package in a mailbox")
+            self.darkWebSellOffersLoaded = false
+            self:onSell()
         else
-            if item:getFullType() == itemIds then
-                table.insert(itemsToSell, item)
-            end
+            getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+            HaloTextHelper.addBadText(playerObj, "The item is not available")
         end
-    end
-
-    for _, item in ipairs(itemsToSell) do
-        getItemName = item:getName()
-        itemToSell = inv:FindAndReturn(item:getFullType())
-        if itemToSell then
-            inv:Remove(itemToSell)
-        end
-    end
-
-    if #itemsToSell > 0 then
-        getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        local newBalance = price * count
-        local parcel = inv:AddItem('Base.SuspiciousPackage')
-        parcel:setName("$" .. tostring(newBalance))
-        HaloTextHelper.addGoodText(getPlayer(), "Drop the package in a mailbox");
-        addXp(getPlayer(), Perks.PlantScavenging, 3)
-    else
-        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        HaloTextHelper.addBadText(getPlayer(), "The item is not in my main inventory");
-    end
+    end)
 end
 
 function darkWebUI:onHelp()
@@ -787,12 +753,9 @@ function darkWebUI:onHelp()
     self.minimizeButton:setVisible(false)
     self.minimizeBackButton:setVisible(true)
 
-    local yOffset = 30
-
     local helpMessageTitle = "To sell an item, it must be in the main inventory. Once in the inventory,\nclicking 'Sell' will sell all items of that type and a suspicious package\nwill appear in your inventory. To complete the sale, you need to send\nthe item via a mailbox\n\nHere is the list of items that can be bought and sold:"
     local helpMessage = ISLabel:new(self.width * 0.2, self.height * 0.25, 20, helpMessageTitle, 0, 1, 0, 1, UIFont.Small, true)
     self:addChild(helpMessage)
-    yOffset = yOffset + 30
 
     self.scrollPanel = ISPanel:new(self.width * 0.2, self.height * 0.34, self.width * 0.568, self.height * 0.35)
     self.scrollPanel:initialise()
@@ -825,7 +788,6 @@ function darkWebUI:onHelp()
     local yOffset = 0
     for _, itemData in ipairs(PZLinuxDarkWebItemsTable) do
         local itemIds = itemData.id
-        local itemPrice = itemData.Price
         local firstItemId = type(itemIds) == "table" and itemIds[1] or itemIds
 
         local scriptItem = getScriptManager():FindItem(firstItemId)
@@ -847,7 +809,6 @@ end
 
 -- UI
 function darkWebMenu_ShowUI(player)
-    GenerateDarkWebOffers()
     local texture = getTexture("media/ui/oldCRT.png")
     if not texture then return end
 
@@ -862,8 +823,9 @@ function darkWebMenu_ShowUI(player)
     local ratioX, ratioY = maxW / texW, maxH / texH
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
-    
-    local modData = getPlayer():getModData()
+
+    local modData = PZLinuxGetModData(player)
+    if not modData then return end
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
@@ -879,6 +841,6 @@ function darkWebMenu_ShowUI(player)
     ui:initialise()
     ui:addToUIManager()
     ui:startUI()
-    
-    return ui 
+
+    return ui
 end

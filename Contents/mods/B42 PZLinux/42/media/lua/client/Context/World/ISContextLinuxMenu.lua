@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v.0.1.12-rc1"
+local PZLinuxVersion = "v1.0.0"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -32,30 +32,32 @@ function linuxUI:initialise()
 
     self.topBar.parent = self
 
-    function self.topBar:onMouseDown(x, y)
-        self.parent.isDragging = true
-        self.parent.initialX = self.parent:getX()
-        self.parent.initialY = self.parent:getY()
-        self.parent.mouseStartX = getMouseX()
-        self.parent.mouseStartY = getMouseY()
+    function self.topBar.onMouseDown(topBar, _x, _y)
+        topBar.parent.isDragging = true
+        topBar.parent.initialX = topBar.parent:getX()
+        topBar.parent.initialY = topBar.parent:getY()
+        topBar.parent.mouseStartX = getMouseX()
+        topBar.parent.mouseStartY = getMouseY()
     end
 
-    function self.topBar:onMouseMove(x, y)
-        if self.parent.isDragging then
+    function self.topBar.onMouseMove(topBar, _x, _y)
+        if topBar.parent.isDragging then
             local curMouseX = getMouseX()
             local curMouseY = getMouseY()
-            local dx = curMouseX - self.parent.mouseStartX
-            local dy = curMouseY - self.parent.mouseStartY
-            self.parent:setX(self.parent.initialX + dx)
-            self.parent:setY(self.parent.initialY + dy)
+            local dx = curMouseX - topBar.parent.mouseStartX
+            local dy = curMouseY - topBar.parent.mouseStartY
+            topBar.parent:setX(topBar.parent.initialX + dx)
+            topBar.parent:setY(topBar.parent.initialY + dy)
         end
     end
 
-    function self.topBar:onMouseUp(x, y)
-        self.parent.isDragging = false
-        local modData = getPlayer():getModData()
-        modData.PZLinuxUIX = self.parent:getX()
-        modData.PZLinuxUIY = self.parent:getY()
+    function self.topBar.onMouseUp(topBar, _x, _y)
+        topBar.parent.isDragging = false
+        local modData = PZLinuxGetModData(topBar.parent.player)
+        if modData then
+            modData.PZLinuxUIX = topBar.parent:getX()
+            modData.PZLinuxUIY = topBar.parent:getY()
+        end
     end
 
     self.closeButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
@@ -75,7 +77,7 @@ function linuxUI:initialise()
     self.topBar:addChild(self.bootOutput)
 
     -- PROMPT CLI
-    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux v.0.1.9.", 0, 1, 0, 1, UIFont.Small, true)
+    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux " .. PZLinuxVersion .. ".", 0, 1, 0, 1, UIFont.Small, true)
     self.promptLabel:setVisible(false)
     self.promptLabel:initialise()
     self.topBar:addChild(self.promptLabel)
@@ -85,14 +87,14 @@ function linuxUI:initialise()
     self.helpLabel:initialise()
     self.topBar:addChild(self.helpLabel)
 
-    self.notConnectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05, self.height * 0.025, "NOT CONNECTED", self, self.onStop)
+    self.notConnectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05, self.height * 0.025, "NOT CONNECTED", self, self.onNetworkStatus)
     self.notConnectButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.notConnectButton.borderColor = {r=0, g=0, b=0, a=1}
     self.notConnectButton:setVisible(true)
     self.notConnectButton:initialise()
     self.topBar:addChild(self.notConnectButton)
 
-    self.connectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05, self.height * 0.025, "CONNECTED", self, self.onStop)
+    self.connectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05, self.height * 0.025, "CONNECTED", self, self.onNetworkStatus)
     self.connectButton.backgroundColor = {r=0, g=0.5, b=0, a=0.5}
     self.connectButton.borderColor = {r=0, g=0, b=0, a=1}
     self.connectButton:setVisible(false)
@@ -112,11 +114,13 @@ function linuxUI:initialise()
     self.mailLabel:initialise()
     self.topBar:addChild(self.mailLabel)
 
-    local md = getPlayer():getModData()
-    md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
-    for _, mail in ipairs(md.pzlinux.mails.inbox) do
-        if mail.read == false then
-            self.mailLabel:setVisible(true)
+    local md = PZLinuxGetModData(self.player)
+    if md then
+        md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
+        for _, mail in ipairs(md.pzlinux.mails.inbox) do
+            if mail.read == false then
+                self.mailLabel:setVisible(true)
+            end
         end
     end
 
@@ -144,7 +148,7 @@ function linuxUI:initialise()
     self.walletButton:initialise()
     self.topBar:addChild(self.walletButton)
 
-    self.hackingIdButton = ISButton:new(self.width * 0.20, self.height * 0.35, self.width * 0.05, self.height * 0.025, "HACK AN ID CARD", self, self.onHackingId)
+    self.hackingIdButton = ISButton:new(self.width * 0.20, self.height * 0.35, self.width * 0.05, self.height * 0.025, "HACK A CREDIT CARD", self, self.onHackingId)
     self.hackingIdButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.hackingIdButton.textColor = {r=0, g=1, b=0, a=1}
     self.hackingIdButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -160,7 +164,7 @@ function linuxUI:initialise()
     self.contractsButton:initialise()
     self.topBar:addChild(self.contractsButton)
 
-    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05, self.height * 0.025, "SEND A REQUEST", self, self.onRequest)
+    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05, self.height * 0.025, "BUY GOODS", self, self.onRequest)
     self.requestButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.requestButton.textColor = {r=0, g=1, b=0, a=1}
     self.requestButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -168,7 +172,18 @@ function linuxUI:initialise()
     self.requestButton:initialise()
     self.topBar:addChild(self.requestButton)
 
-    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, "ONLINE BETTING", self, self.onBetting)
+    -- Grouped directly below BUY GOODS since both are the same feature pair
+    -- (buying and selling everyday goods), rather than at the bottom of the
+    -- list.
+    self.sellButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, "SELL GOODS", self, self.onSell)
+    self.sellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.sellButton.textColor = {r=0, g=1, b=0, a=1}
+    self.sellButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.sellButton:setVisible(false)
+    self.sellButton:initialise()
+    self.topBar:addChild(self.sellButton)
+
+    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "ONLINE BETTING", self, self.onBetting)
     self.bettingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.bettingButton.textColor = {r=0, g=1, b=0, a=1}
     self.bettingButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -176,7 +191,7 @@ function linuxUI:initialise()
     self.bettingButton:initialise()
     self.topBar:addChild(self.bettingButton)
 
-    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "MAIL", self, self.onMail)
+    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, "MAIL", self, self.onMail)
     self.mailButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.mailButton.textColor = {r=0, g=1, b=0, a=1}
     self.mailButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -184,7 +199,15 @@ function linuxUI:initialise()
     self.mailButton:initialise()
     self.topBar:addChild(self.mailButton)
 
-    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
+    self.reputationButton = ISButton:new(self.width * 0.20, self.height * 0.53, self.width * 0.05, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Reputation_Button"), self, self.onReputation)
+    self.reputationButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.reputationButton.textColor = {r=0, g=1, b=0, a=1}
+    self.reputationButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.reputationButton:setVisible(false)
+    self.reputationButton:initialise()
+    self.topBar:addChild(self.reputationButton)
+
+    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.56, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
     self.conditionButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -194,26 +217,36 @@ function linuxUI:initialise()
 end
 
 -- CLOSE
-function linuxUI:onCloseX(button)
+function linuxUI:onCloseX(_button)
     self.isClosing = true
-    getPlayer():StopAllActionQueue()
+    local player = PZLinuxGetPlayer(self.player)
+    if player then
+        PZLinuxRequestContractSync(player)
+        player:StopAllActionQueue()
+    end
 end
 
-function linuxUI:onClose(button)
+function linuxUI:onClose(_button)
     self.isClosing = true
     self:removeFromUIManager()
 end
 
+function linuxUI.onNetworkStatus(_self, _button)
+end
+
 function linuxUI:onBoot()
-    local player = getPlayer()
+    local player = PZLinuxGetPlayer(self.player)
+    if not player then return end
+
+    local modData = player:getModData()
     local globalVolume = getCore():getOptionSoundVolume() / 50
 
-    if getPlayer():getModData().PZLinuxComputerCondition <= 25 then
-        getSoundManager():PlayWorldSound("computerBootLow", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-    elseif getPlayer():getModData().PZLinuxComputerCondition <= 50 then
-        getSoundManager():PlayWorldSound("computerBootMedium", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    if modData.PZLinuxComputerCondition <= 25 then
+        getSoundManager():PlayWorldSound("computerBootLow", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    elseif modData.PZLinuxComputerCondition <= 50 then
+        getSoundManager():PlayWorldSound("computerBootMedium", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     else
-        getSoundManager():PlayWorldSound("computerBoot", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        getSoundManager():PlayWorldSound("computerBoot", false, player:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     end
 
     self.bootMessages = {
@@ -309,7 +342,9 @@ function linuxUI:onPrompt()
     self.requestButton:setVisible(true)
     self.bettingButton:setVisible(true)
     self.mailButton:setVisible(true)
+    self.reputationButton:setVisible(true)
     self.conditionButton:setVisible(true)
+    self.sellButton:setVisible(true)
 end
 
 function linuxUI:onInternet()
@@ -319,10 +354,11 @@ function linuxUI:onInternet()
         self.helpLabel:setVisible(false)
         self:onClose()
         self.isConnected = true
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 2
-        PZLinuxTrading_initializePrices()
+        PZLinuxTrading_initializePrices(self.player)
     end
 end
 
@@ -332,7 +368,8 @@ function linuxUI:onDarkWeb()
         self.helpLabel:setVisible(false)
         self:onClose()
 
-        local modData = getPlayer():getModData()
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 3
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -344,8 +381,9 @@ function linuxUI:onTrading()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 4
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -357,8 +395,9 @@ function linuxUI:onWallet()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 5
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -370,8 +409,9 @@ function linuxUI:onHackingId()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 6
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -383,8 +423,9 @@ function linuxUI:onContracts()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 7
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -396,8 +437,9 @@ function linuxUI:onRequest()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 8
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -409,8 +451,9 @@ function linuxUI:onBetting()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 9
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
@@ -422,9 +465,24 @@ function linuxUI:onMail()
         self.promptLabel:setVisible(false)
         self.helpLabel:setVisible(false)
         self:onClose()
-        
-        local modData = getPlayer():getModData()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
         modData.PZLinuxUIOpenMenu = 10
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
+function linuxUI:onReputation()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
+        modData.PZLinuxUIOpenMenu = 11
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end
@@ -434,9 +492,24 @@ function linuxUI:onCondition()
     self.promptLabel:setVisible(false)
     self.helpLabel:setVisible(false)
     self:onClose()
-    
-    local modData = getPlayer():getModData()
+
+    local modData = PZLinuxGetModData(self.player)
+    if not modData then return end
     modData.PZLinuxUIOpenMenu = 20
+end
+
+function linuxUI:onSell()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
+        modData.PZLinuxUIOpenMenu = 12
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
 end
 
 function linuxUI:onConnect()
@@ -446,6 +519,9 @@ end
 
 -- UI
 function linuxMenu_ShowUI(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
     local texture = getTexture("media/ui/oldCRT.png")
     if not texture then return end
 
@@ -461,13 +537,13 @@ function linuxMenu_ShowUI(player)
     local scale  = math.min(ratioX, ratioY)
     local finalW, finalH = math.floor(texW * scale), math.floor(texH * scale)
 
-    local modData = getPlayer():getModData()
+    local modData = playerObj:getModData()
     local uiX = modData.PZLinuxUIX or (realScreenW - finalW) / 2
     local uiY = modData.PZLinuxUIY or (realScreenH - finalH) / 2
 
-    local ui = linuxUI:new(uiX, uiY, finalW, finalH, player)
+    local ui = linuxUI:new(uiX, uiY, finalW, finalH, playerObj)
     local centeredImage = ISImage:new(0, 0, finalW, finalH, texture)
-    
+
     centeredImage.scaled = true
     centeredImage.scaledWidth = finalW
     centeredImage.scaledHeight = finalH
@@ -499,10 +575,13 @@ end
 
 -- CONTEXT MENU
 function linuxMenu_AddContext(player, context, worldobjects)
-    local modData = getPlayer():getModData()
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
+    local modData = playerObj:getModData()
     modData.PZLinuxUIX = nil
     modData.PZLinuxUIY = nil
-    local squareClicked = getPlayer():getSquare()
+    local squareClicked = playerObj:getSquare()
     local targetX, targetY, targetZ = squareClicked:getX(), squareClicked:getY(), squareClicked:getZ()
     for _, obj in ipairs(worldobjects) do
         if instanceof(obj, "IsoObject") then
@@ -510,22 +589,22 @@ function linuxMenu_AddContext(player, context, worldobjects)
             if sprite and sprite:getName() then
                 if string.find(sprite:getName(), "appliances_com_01_75")
                 or string.find(sprite:getName(), "appliances_com_01_74")
-                or string.find(sprite:getName(), "appliances_com_01_73") 
+                or string.find(sprite:getName(), "appliances_com_01_73")
                 or string.find(sprite:getName(), "appliances_com_01_72") then
                     local square = obj:getSquare()
-                    if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or 
-                     (getSandboxOptions():getElecShutModifier() > -1 and 
+                    if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or
+                     (getSandboxOptions():getElecShutModifier() > -1 and
                      (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
                         local x, y, z = square:getX(), square:getY(), square:getZ()
                         if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
-                            
+
                             if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
                             if obj:getModData().statusCondition < 15 then
-                                context:addOption("Fix the computer", obj, linuxMenu_OnRepare, player, x, y, z, sprite:getName())
+                                context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_RepairComputer"), obj, linuxMenu_OnRepare, playerObj, x, y, z, sprite:getName())
                             end
 
                             if obj:getModData().statusCondition > 0 then
-                                context:addOption("PZLinux", obj, linuxMenu_OnUse, player, x, y, z, sprite:getName())
+                                context:addOption("PZLinux", obj, linuxMenu_OnUse, playerObj, x, y, z, sprite:getName())
                             end
                             break
                         end
@@ -536,27 +615,33 @@ function linuxMenu_AddContext(player, context, worldobjects)
     end
 end
 
-function linuxMenu_OnUse(obj, player, x, y, z, sprite, square)
-    local playerSquare = getPlayer():getSquare()
-    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
-        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+function linuxMenu_OnUse(obj, player, x, y, z, sprite, _square)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
+    local playerSquare = playerObj:getSquare()
+    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
+        local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    getPlayer():getModData().PZLinuxComputerCondition = obj:getModData().statusCondition
-    ISTimedActionQueue.add(ISPZLinuxAction:new(getPlayer(), obj))
+    playerObj:getModData().PZLinuxComputerCondition = obj:getModData().statusCondition
+    ISTimedActionQueue.add(ISPZLinuxAction:new(playerObj, obj))
 end
 
-function linuxMenu_OnRepare(obj, player, x, y, z, sprite, square)
-    local playerSquare = getPlayer():getSquare()
-    if not (math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) <= 1) then
-        local freeSquare = getAdjacentFreeSquare(x, y, z, sprite)
+function linuxMenu_OnRepare(obj, player, x, y, z, sprite, _square)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+
+    local playerSquare = playerObj:getSquare()
+    if math.abs(playerSquare:getX() - x) + math.abs(playerSquare:getY() - y) > 1 then
+        local freeSquare = PZLinuxGetAdjacentFreeSquare(x, y, z, sprite)
         if freeSquare then
-            ISTimedActionQueue.add(ISWalkToTimedAction:new(getPlayer(), freeSquare))
+            ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    ISTimedActionQueue.add(ISPZLinuxRepareAction:new(getPlayer(), obj))
+    ISTimedActionQueue.add(ISPZLinuxRepareAction:new(playerObj, obj))
 end
 
 Events.OnFillWorldObjectContextMenu.Add(linuxMenu_AddContext)

@@ -1,6 +1,6 @@
 ISStreetMailBoxAction = ISBaseTimedAction:derive("ISStreetMailBoxAction")
 
-function ISStreetMailBoxAction:isValid()
+function ISStreetMailBoxAction.isValid(_self)
     return true
 end
 
@@ -11,17 +11,22 @@ end
 
 function ISStreetMailBoxAction:update()
     self.character:faceThisObject(self.item)
+    if not self.ui or self.ui.removed then
+        self:forceComplete()
+    end
 end
 
 function ISStreetMailBoxAction:start()
-    self.ui = StreetMailBoxMenu_ShowUI(self.character)
+    self.ui = StreetMailBoxMenu_ShowUI(self.character, self.item)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")
 end
 
 function ISStreetMailBoxAction:stop()
-    self.ui:removeFromUIManager()
+    if self.ui then
+        self.ui:removeFromUIManager()
+    end
     ISBaseTimedAction.stop(self)
 end
 

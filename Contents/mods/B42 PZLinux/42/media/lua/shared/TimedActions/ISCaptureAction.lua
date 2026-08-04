@@ -3,7 +3,7 @@ require "TimedActions/ISBaseTimedAction"
 ISCaptureAction = ISBaseTimedAction:derive("ISCaptureAction")
 
 function ISCaptureAction:isValid()
-    return true
+    return self.character ~= nil
 end
 
 function ISCaptureAction:waitToStart()
@@ -26,16 +26,14 @@ function ISCaptureAction:stop()
 end
 
 function ISCaptureAction:perform()
-    local inv = self.character:getInventory()
-    local parcel = inv:AddItem('Base.Bag_Mail')
-    parcel:setName("Zombie captured alive")
-    local parcelInv = parcel:getInventory()
-    parcelInv:AddItem("Base.CorpseMale")
-    local modData = getPlayer():getModData()
-    modData.PZLinuxContractCapture = 3
-    self.zombie:removeFromWorld()
-    self.zombie:removeFromSquare()
-    HaloTextHelper.addGoodText(getPlayer(), "Drop the bag in a mailbox");
+    PZLinuxRequestContractWorldEvent(self.character, "capture", {
+        target = PZLinuxGetZombieReference(self.zombie),
+    }, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(self.character, "Drop the bag in a mailbox")
+        end
+    end)
+    ISBaseTimedAction.perform(self)
 end
 
 function ISCaptureAction:new(character, zombie)

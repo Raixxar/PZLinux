@@ -8,7 +8,7 @@ function ISPZLinuxRepareAction:isValid()
             return true
         end
     end
-    HaloTextHelper.addBadText(getPlayer(), "I need electronic parts");
+    HaloTextHelper.addBadText(self.character, "I need electronic parts");
     return false
 end
 
@@ -23,7 +23,7 @@ end
 
 function ISPZLinuxRepareAction:start()
     local globalVolume = getCore():getOptionSoundVolume() / 50
-    getSoundManager():PlayWorldSound("screw", false, getPlayer():getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+    getSoundManager():PlayWorldSound("screw", false, self.character:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
     self:setActionAnim("Loot")
     self.character:SetVariable("LootPosition", "Medium")
     self.character:reportEvent("EventLootItem")
@@ -44,7 +44,7 @@ function ISPZLinuxRepareAction:perform()
     end
     self.item:getModData().statusCondition = self.item:getModData().statusCondition + ZombRand(5,11) * (self.character:getPerkLevel(Perks.Electricity) + 1)
     if self.item:getModData().statusCondition > 100 then self.item:getModData().statusCondition = 100 end
-    addXp(getPlayer(), Perks.Electricity, 3)
+    addXp(self.character, Perks.Electricity, 3)
     ISBaseTimedAction.perform(self)
 end
 

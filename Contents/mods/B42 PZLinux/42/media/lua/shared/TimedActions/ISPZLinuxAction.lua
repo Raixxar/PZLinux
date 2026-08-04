@@ -1,6 +1,6 @@
 ISPZLinuxAction = ISBaseTimedAction:derive("ISPZLinuxAction")
 
-function ISPZLinuxAction:isValid()
+function ISPZLinuxAction.isValid(_self)
     return true
 end
 
@@ -13,7 +13,7 @@ function ISPZLinuxAction:update()
     self.character:faceThisObject(self.item)
     local modData = self.character:getModData()
 
-    if modData.PZLinuxUIOpenMenu == 1 then 
+    if modData.PZLinuxUIOpenMenu == 1 then
         self.ui = linuxMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
     end
@@ -63,9 +63,27 @@ function ISPZLinuxAction:update()
         modData.PZLinuxUIOpenMenu = 0
     end
 
+    if modData.PZLinuxUIOpenMenu == 11 then
+        self.ui = reputationMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
+
+    if modData.PZLinuxUIOpenMenu == 12 then
+        self.ui = sellMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
+
     if modData.PZLinuxUIOpenMenu == 20 then
         self.ui = conditionMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0
+    end
+
+    -- Some panels remove themselves from the UI manager (accept/cancel/complete a
+    -- contract, deposit, etc.) without always requesting a specific menu to
+    -- reopen. Without this, the character stays frozen in the loot animation
+    -- until the player manually moves or presses escape.
+    if modData.PZLinuxUIOpenMenu == 0 and (not self.ui or self.ui.removed) then
+        self:forceComplete()
     end
 end
 
@@ -80,8 +98,10 @@ function ISPZLinuxAction:start()
 end
 
 function ISPZLinuxAction:stop()
-    self.ui:removeFromUIManager()
-    getPlayer():getModData().PZLinuxIsPowered = 0
+    if self.ui then
+        self.ui:removeFromUIManager()
+    end
+    self.character:getModData().PZLinuxIsPowered = 0
     ISBaseTimedAction.stop(self)
 end
 
