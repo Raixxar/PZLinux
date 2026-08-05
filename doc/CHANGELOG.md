@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1]
+
+- Fixed Dark Web sell list rows overlapping after selling an item. The list
+  was rebuilt from scratch on every refresh (including right after a sale)
+  without removing the previous panel first, so each sale left one more
+  full copy of the list stacked on top of the last.
+
 ## [1.0.0]
 
 - Added hosted and dedicated multiplayer support, with server-side validation

@@ -537,6 +537,19 @@ function darkWebUI:onSell()
         })
     end
 
+    -- The Sell list is rebuilt from scratch every time this runs (including
+    -- right after selling an item, to refresh stock/prices) -- unlike the
+    -- Buy list, which pre-allocates a fixed pool of rows once and only
+    -- updates their content. Without removing the previous scrollPanel
+    -- first, each rebuild stacked a brand new full set of rows on top of
+    -- the old one (never detached, just no longer referenced), so every
+    -- sale left one more overlapping copy of the list behind, making rows
+    -- increasingly unreadable the more items were sold in a row.
+    if self.scrollPanel then
+        self:removeChild(self.scrollPanel)
+        self.scrollPanel = nil
+    end
+
     self.scrollPanel = ISPanel:new(self.width * 0.193, self.height * 0.228, self.width * 0.568, self.height * 0.48)
     self.scrollPanel:initialise()
     self.scrollPanel:instantiate()
