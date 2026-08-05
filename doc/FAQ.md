@@ -186,6 +186,14 @@ Yes. PZLinux keeps the same mod ID as earlier versions and stores its data in pe
 
 No, PZLinux has no additional mod dependency.
 
+[h3]Is it compatible with other mods, including other computer mods ?[/h3]
+
+PZLinux is designed to coexist with other mods: every function, network command and saved value is namespaced under a PZLinux-specific prefix, and it never overrides Project Zomboid's own global functions. It doesn't touch other mods' computer models directly, so it should sit alongside most other content mods without conflict — but as with any two large mods, always test together before committing to a save you care about.
+
+[h2]Roleplay Servers:[/h2]
+
+PZLinux was built with shared, persistent systems in mind, which makes it a natural fit for RP servers: a synchronized economy and Dark Web market, a reputation system players build (or lose) over time, a shared weekly contract board, banks and ATMs with real persistent balances, and goods you can actually buy, sell and deliver between characters. Combined with a future NPC system, it's meant to make the world feel like it still has an economy running in it, not just a survival checklist.
+
 [h2]Known Limitations:[/h2]
 
 Keyboard and mouse are required; full controller navigation and split-screen are not currently supported. Translation catalogs are included for 20 languages; a few remain untranslated for now, and community proofreading of the generated translations is ongoing.

@@ -127,6 +127,16 @@ PZLinuxTestAssert(darkWebUi:find("setTooltip%(offerTooltip%)"),
 PZLinuxTestAssert(darkWebUi:find('tonumber%(item%.count%) or 0'),
     "Dark Web sell offers must display the total inventory quantity")
 
+-- Regression test for a real gameplay bug: the sell list is rebuilt from
+-- scratch (a brand new ISPanel) every time onSell() runs, including right
+-- after selling an item to refresh stock/prices. Without removing the
+-- previous scrollPanel first, each sale stacked one more full copy of the
+-- list on top of the last, leaving overlapping, unreadable rows the more
+-- items were sold in a row.
+PZLinuxTestAssert(darkWebUi:find("if self%.scrollPanel then")
+    and darkWebUi:find("self:removeChild%(self%.scrollPanel%)"),
+    "onSell must remove any previous sell list panel before rebuilding it, or repeated sales stack overlapping rows")
+
 local darkWebSharedFile = assert(io.open(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua", "rb"))
 local darkWebShared = darkWebSharedFile:read("*a")
 darkWebSharedFile:close()
