@@ -223,6 +223,19 @@ PZLinuxTestAssert(contextMenu:find("%[PZLinux Contracts Context%] option missing
 PZLinuxTestAssert(variables:find('command == "PZLinuxContractDepositResult"'),
     "mailbox deposit results must synchronize the next contract stage")
 
+-- Regression test for a real gameplay bug: PZLinuxComputerCondition was
+-- stored and compared without ever going through tonumber. A ModData
+-- round-trip (save/reload, MP sync) can hand it back as a string instead
+-- of a number, and a raw "string < number" comparison throws a Lua error --
+-- which happened right after the CHECK CONDITION panel was created and
+-- added to the UI manager but before it was populated, leaving a blank,
+-- undraggable-but-unclosable panel stuck on screen until restart.
+PZLinuxTestAssert(linuxMenu:find("PZLinuxComputerCondition = tonumber%(obj:getModData%(%)%.statusCondition%) or 0"),
+    "the computer condition copied onto the player must be normalized to a number when set")
+local conditionUi = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxCondition.lua")
+PZLinuxTestAssert(conditionUi:find("local computerCondition = tonumber%(PZLinuxGetPlayer%(self%.player%):getModData%(%)%.PZLinuxComputerCondition%) or 0"),
+    "CHECK CONDITION must normalize the stored condition to a number before comparing it, or a non-numeric value crashes the panel mid-render")
+
 for _, helperName in ipairs({
     "PZLinuxContractsGiveContractCase",
     "PZLinuxContractsGiveMailCorpseBag",

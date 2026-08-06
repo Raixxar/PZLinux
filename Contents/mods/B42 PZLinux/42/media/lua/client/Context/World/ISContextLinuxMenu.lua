@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.1"
+local PZLinuxVersion = "v1.0.2"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -626,7 +626,7 @@ function linuxMenu_OnUse(obj, player, x, y, z, sprite, _square)
             ISTimedActionQueue.add(ISWalkToTimedAction:new(playerObj, freeSquare))
         end
     end
-    playerObj:getModData().PZLinuxComputerCondition = obj:getModData().statusCondition
+    playerObj:getModData().PZLinuxComputerCondition = tonumber(obj:getModData().statusCondition) or 0
     ISTimedActionQueue.add(ISPZLinuxAction:new(playerObj, obj))
 end
 

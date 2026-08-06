@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.2]
+
+- Fixed clicking "CHECK CONDITION" locking a blank, unclosable computer
+  panel on screen until restart. The computer's condition value could come
+  back as a string instead of a number after a ModData round-trip
+  (save/reload, MP sync), and comparing it directly against a number
+  crashed mid-render, right after the panel was created but before it was
+  populated or its close buttons were fully wired up. The condition is now
+  normalized with tonumber both where it's stored and where it's compared.
+
 ## [1.0.1]
 
 - Fixed Dark Web sell list rows overlapping after selling an item. The list
