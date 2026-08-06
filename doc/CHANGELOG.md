@@ -8,6 +8,12 @@
   a computer stacked on furniture in favor of the furniture itself; the
   menu now also checks everything actually sitting on the same tile, not
   just what the game already picked out.
+- Fixed the mailbox/ATM/computer context menu sometimes appearing on
+  unrelated B42 objects (e.g. a newspaper dispenser instead of the actual
+  mailbox), which then failed every action with a generic error. The menu
+  matched sprite names with a substring search instead of an exact match,
+  so a new object whose sprite name happened to start the same way (e.g.
+  "street_decoration_01_90") was wrongly treated as a mailbox.
 
 ## [1.0.3]
 
