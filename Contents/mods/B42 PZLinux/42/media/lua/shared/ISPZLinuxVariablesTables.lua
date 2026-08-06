@@ -624,10 +624,13 @@ function PZLinuxFindAtmObject(atmRef)
         local sprite = obj and obj:getSprite()
         local spriteName = sprite and sprite:getName()
         if spriteName and (not atmRef.sprite or spriteName == atmRef.sprite) then
-            if string.find(spriteName, "location_business_bank_01_67")
-            or string.find(spriteName, "location_business_bank_01_66")
-            or string.find(spriteName, "location_business_bank_01_65")
-            or string.find(spriteName, "location_business_bank_01_64") then
+            -- Exact match, not a substring search (see ISContextStreetMailBox.lua
+            -- for the bug class this avoids: a substring pattern can match an
+            -- unrelated sprite that merely starts with the same digits).
+            if spriteName == "location_business_bank_01_67"
+            or spriteName == "location_business_bank_01_66"
+            or spriteName == "location_business_bank_01_65"
+            or spriteName == "location_business_bank_01_64" then
                 return obj
             end
         end

@@ -211,10 +211,18 @@ function StreetMailBoxMenu_AddContext(player, context, worldobjects)
         if instanceof(obj, "IsoObject") then
             local sprite = obj:getSprite()
             if sprite and sprite:getName() then
-                if string.find(sprite:getName(), "street_decoration_01_9")
-                or string.find(sprite:getName(), "street_decoration_01_8")
-                or string.find(sprite:getName(), "street_decoration_01_11")
-                or string.find(sprite:getName(), "street_decoration_01_10") then
+                -- Exact match against the same sprite allowlist the server
+                -- validates with (PZLinuxIsMailboxSprite), not a substring
+                -- search: string.find("street_decoration_01_9") also
+                -- matched unrelated B42 objects like newspaper dispensers
+                -- (e.g. "street_decoration_01_90"), which opened this menu
+                -- on the wrong object and then failed every action with
+                -- "missing_mailbox_reference" once the server rejected it.
+                local spriteName = sprite:getName()
+                if spriteName == "street_decoration_01_9"
+                or spriteName == "street_decoration_01_8"
+                or spriteName == "street_decoration_01_11"
+                or spriteName == "street_decoration_01_10" then
                     local square = obj:getSquare()
                     if square then
                         local x, y, z = square:getX(), square:getY(), square:getZ()

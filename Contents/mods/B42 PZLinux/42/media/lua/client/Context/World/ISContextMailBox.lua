@@ -217,10 +217,15 @@ function MailBoxMenu_AddContext(player, context, worldobjects)
         if instanceof(obj, "IsoObject") then
             local sprite = obj:getSprite()
             if sprite and sprite:getName() then
-                if string.find(sprite:getName(), "street_decoration_01_18")
-                or string.find(sprite:getName(), "street_decoration_01_19")
-                or string.find(sprite:getName(), "street_decoration_01_20")
-                or string.find(sprite:getName(), "street_decoration_01_21") then
+                -- Exact match against the same sprite allowlist the server
+                -- validates with (PZLinuxIsMailboxSprite), not a substring
+                -- search -- see ISContextStreetMailBox.lua for the bug this
+                -- caused (unrelated B42 objects wrongly opening this menu).
+                local spriteName = sprite:getName()
+                if spriteName == "street_decoration_01_18"
+                or spriteName == "street_decoration_01_19"
+                or spriteName == "street_decoration_01_20"
+                or spriteName == "street_decoration_01_21" then
                     local square = obj:getSquare()
                     if square then
                         local x, y, z = square:getX(), square:getY(), square:getZ()

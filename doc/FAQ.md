@@ -32,9 +32,9 @@ To hack a credit card. Credit cards from zombies allow you to recover valuable i
 
 You can also accept contracts in the form of quests or missions that will require you to complete certain tasks, varying in difficulty.
 
-The Request submenu allows players to request services, enabling them to spend their hard-earned money to hope for a bit more survival!
+The BUY GOODS submenu allows players to request items by category, enabling them to spend their hard-earned money to hope for a bit more survival! SELL GOODS is the reverse: offload surplus loot when someone happens to want it that day.
 
-The last available submenu is Online Betting, where you can play Poker, Blackjack or bet on Zombie Races.
+Online Betting lets you play Poker, Blackjack or bet on Zombie Races. Mail is where mission offers and flavor spam show up, Reputation summarizes your current standing, and CHECK CONDITION tells you how close the computer itself is to breaking down.
 
 [h3]Why isn't any interface working ?[/h3]
 
@@ -44,17 +44,25 @@ To use the interfaces, you must first log in. Use the CONNECT button before acce
 
 The computer stays in sleep mode for 24 hours before automatically shutting down. It also remains connected to the internet for 1 hour if not in use. If you stay on the computer, there's no need to reconnect every 5 minutes with this setup.
 
+[h3]Does the computer need power to work ?[/h3]
+
+Yes. It needs electricity to turn on at all — either the town's power grid, for as long as it hasn't shut off yet under your sandbox settings, or a generator powering that square if your sandbox settings allow exterior generators. No power on that square means no working computer, regardless of its own condition.
+
 [h2] Connect:[/h2]
 
 [h3]How it works ?[/h3]
 
-The login mechanism is based on your character's name. He uses utilize the electrical skill to enhance the player’s connection speed. The higher their electrical skill, the faster they will be able to input this information.
+The login mechanism is based on your character's name, typed out on screen letter by letter with a short delay between each one. That delay scales with your current in-game time speed, not with any character skill — fast-forwarding time (2x, 3x, and so on) speeds up how quickly the login and every other typed-out message on the computer plays out, exactly as if you were watching in real time but faster.
 
 [h2]Dark Web:[/h2]
 
 [h3]How it works ?[/h3]
 
 Once you have deposited funds into your bank account, you can access the Dark Web to make your first purchases. If you don't have enough money yet, you can also sell items. The Dark Web draws its offers from a catalog of over 450 items. Each day, between 5 and 50 offers are randomly selected to be listed. Some items may appear multiple times at different prices, giving you the opportunity to choose the best deals for buying.
+
+[h3]How do buy offers work ?[/h3]
+
+Each listed offer has a limited stock — you can only buy up to the quantity still available on that specific offer, shown next to it. Once it runs out, that offer is sold out until the catalog refreshes. Buying doesn't hand you the item on the spot either: it's queued for delivery, and you have to pick it up at any mailbox afterward, the same way a Buy Goods order or a Sell Goods payout works. As with Buy Goods, there's about a 10% chance the whole order gets stolen before it reaches the mailbox — same harsh apocalypse logistics.
 
 [h3]How do I sell items ?[/h3]
 
@@ -66,13 +74,15 @@ The prices of items are also generated randomly, allowing you to find items list
 
 Once the base price is established, a purchase value is generated that falls between the initial price and three times that value. The selling price is calculated to be between the initial price and one-and-a-half times that price, divided by two. This initial pricing configuration ensures a balance between farming and acquiring rare items within the game.
 
+On top of that base pricing, prices also scale with how old the world save itself is, not just your own character's survival time — the older the save, the scarcer (and pricier) everything gets, capping out after roughly two in-game years. An old, long-running save will generally show noticeably higher prices across the board than a fresh save, even for two characters at the same personal survival time. See "Why do Dark Web and Buy Goods prices keep rising the longer I survive?" below for more detail.
+
 [h3]How much is an item available for on the dark web ?[/h3]
 
 The item list is generated randomly, as previously mentioned. The list of items is refreshed daily, meaning that each day spent in-game gives you the opportunity to buy or sell new items.
 
 This mechanism allows you sufficient time to gather items that can later be sold or to accrue enough currency to obtain the item you desire. If there is nothing that interests you, this one-hour window is short enough to wait for a new list to become available.
 
-[h3]Why do Dark Web and Request prices keep rising the longer I survive ?[/h3]
+[h3]Why do Dark Web and Buy Goods prices keep rising the longer I survive ?[/h3]
 
 The longer a world survives, the scarcer everything gets. Prices increase gradually over roughly the first two in-game years, then stop rising and stay capped. This is a slow background effect, separate from your reputation-based surcharge or discount.
 
@@ -80,35 +90,67 @@ The longer a world survives, the scarcer everything gets. Prices increase gradua
 
 [h3]How it works ?[/h3]
 
-'Trading is based on fictional companies you can invest in. To enhance all bank accounts, I've included various companies with different values. Each hour, the values are updated, and they can increase or decrease. Currently, these values are randomly assigned, but I am considering making them more reflective of the real world.
+Trading lets you invest your bank balance in around 30 fictional companies (Umbrella Corp, ZomboTrade Co, NecroTech Innovations, and so on), each with its own share price. Prices update every hour of in-game time and move up or down on their own — that background drift is randomized rather than tied to any in-world event, though that's something I'm considering for the future. Money spent stays "invested": as long as you don't sell, a price drop on paper isn't a loss you've actually locked in.
 
-You can buy as many shares as you want as long as your bank account allows it. Conversely, you can sell at any time. The trading interface currently has no commissions, so now is a great time to take advantage of it! 🙂
+Contracts are the one thing that currently pushes a company's price on top of that background drift: completing a contract offered by a company nudges its stock price upward, so which contracts you take (and finish) can actually influence the market instead of just watching it move on its own. See the Contracts section below.
 
-For a better simulation, I've recreated the trading interface using candlestick charts. By default, this interface is based on H1, but you can also view the value in D1 with button. Writing candlestick graphs in LUA is quite complex, so I'm not sure if I'll offer more than H1 and D1 for now.
+[h3]Step by step: how do I actually buy or sell a stock ?[/h3]
+
+1. Deposit money into your bank account at an ATM first — Trading spends from your bank balance, not your inventory cash.
+2. Log into a computer and open the Trading submenu.
+3. You'll see a list of every company with its code, name, and its H1 (last hour) and D1 (last day) percentage change.
+4. Click the small "i" button next to a company to open its detail view. This shows a candlestick price chart for that company's recent price history.
+5. Type how many shares you want in the QUANTITY box.
+6. Click BUY to purchase that quantity, or SOLD to sell that quantity from what you currently hold.
+7. The detail view's "Wallet Balance" line shows exactly how many shares of that specific company you currently hold, and "Account Balance" shows your current bank balance — both update immediately after a successful trade. For a combined view of everything you hold across every company at once, use the separate WALLET button instead (see below).
+
+[h3]Is there a fee ?[/h3]
+
+Yes — a 5% transaction fee applies to both buying and selling, shown directly on the trading screen as "Transaction fee: 5%". It's added on top of the price when you buy, and taken out of the proceeds when you sell.
 
 [h3]How can I view my purchased assets?[/h3]
 
-Your assets are grouped in your digital wallet, allowing you to track the real-time value of your portfolio, its evolution, and the stock prices of each company you have invested in.
+There's a dedicated WALLET button on the computer's home screen, separate from Trading itself — open it directly, no need to go through the Trading list first. It lists every company you actually hold shares in in one place (code, quantity, current price, H1/D1 change), shows a single combined "Wallet Balance" total across everything you own, and plots that total value over time on its own chart, so you can see at a glance whether your overall portfolio is trending up or down instead of checking each company one by one.
+
+[h3]I bought shares, and now I can't find them / my wallet looks empty. What happened ?[/h3]
+
+Nothing was lost — this is almost always about knowing where to look, not a bug. Open the WALLET button from the computer's home screen (not the Trading submenu) to see everything you hold in one list. Note that a company only shows up in the Wallet at all once you own at least one share of it — if you've never bought anything yet, or sold everything back, the list will legitimately be empty. Your bank balance and share holdings are tied to your character and persist through saves, reconnects and server restarts.
 
 [h2]Hacking:[/h2]
 
 [h3]How it works ?[/h3]
 
-The hacking interface is available as long as you have a credit card. Currently, there are no restrictions for hacking a credit card. Once you have a zombie's name, you try to retrieve the balance of their bank account by hacking the central bank. Your electrical skill level gives you the chance to find more money, but that's not all; to unlock access to the account, you must find the correct code. After six attempts without finding the correct code, the account will be locked and cannot be recovered. Similar to the game Mastermind, the code helps you find the right numbers. You need to find four unique digits; This means there will never be any duplicate or triplicate numbers in the code.
+The hacking interface is available as long as you have a credit card. Currently, there are no restrictions for hacking a credit card. It's the code printed on the card itself that identifies the account, not the zombie's name — loot a credit card off a zombie, and you try to retrieve the balance of that account by hacking the central bank. Your electrical skill level gives you the chance to find more money, but that's not all; to unlock access to the account, you must find the correct code. After six attempts without finding the correct code, the account will be locked and cannot be recovered. Similar to the game Mastermind, the code helps you find the right numbers: after each guess you're told how many digits are correctly placed and how many are the right digit but in the wrong spot. You need to find four unique digits, each between 0 and 9; this means there will never be any duplicate or triplicate numbers in the code.
+
+[h3]Do credit cards need to be in a specific place in my inventory ?[/h3]
+
+Yes — like every item this mod interacts with (mission items, mail deliveries, and so on), a credit card must be in your character's main inventory, not tucked away in a bag or container, for the interface to see it.
+
+[h3]What's the "Auto" hacking option ?[/h3]
+
+Auto skips the manual guessing entirely: it consumes every credit card you're carrying at once and instantly pays out a reduced but guaranteed amount per card (better with a higher electrical skill), with no risk of hitting the six-attempt lockout. It trades the chance at a bigger manual payout for a smaller, safe, no-effort one.
 
 [h2]Contracts:[/h2]
 
 [h3]How it works ?[/h3]
 
-Contracts are like quests in this mod. Once you connect to the contract interface, available companies on the stock market will offer contracts to meet their needs. Successfully completing a mission will increase the company's stock value.
+Contracts are like quests in this mod. Once you connect to the contract interface, available companies on the stock market will offer contracts to meet their needs. Successfully completing a contract for a company can nudge that company's Trading stock price upward — one more reason to pay attention to who's offering what.
 
-Contracts are a way to get you out of your hideout and earn a lot of money. They reset every week. In the first week of the game, contracts are intentionally unavailable to allow players to settle into the world.
+Contracts are a way to get you out of your hideout and earn a lot of money. They reset every week, and are available from the very start of the game — no waiting period.
+
+[h3]How do I accept a contract ?[/h3]
+
+Open the Contracts submenu from the computer and go through the conversation with the employer; accepting is one of the choices offered there. You can only hold one active contract at a time, so the board won't offer you a new one until you complete or cancel your current one.
+
+[h3]How do I know what to do and where to go without going back to the computer ?[/h3]
+
+Accepting a contract puts a physical "Contract" note in your main inventory, summarizing the task and the target location in plain text — check its pages like you would any other in-game note. A marker is also placed on the in-game map at the target location, so you don't have to memorize the conversation or manually figure out the coordinates.
 
 [h3]How do I complete my mission ?[/h3]
 
-Generally, contracts will require you to go to a specific location. The place is mentioned in the conversation with your employer. Once there, either kill your target or retrieve the contract item. The item isn't located in containers in the usual way; you validate your contract by right-clicking in the context menu to avoid interference with other game interactions.
+Generally, contracts will require you to go to a specific location. The place is mentioned in the conversation with your employer, on your Contract note, and on the map marker. Once there, either kill your target or retrieve the contract item. The item isn't located in containers in the usual way; you validate your contract by right-clicking in the context menu to avoid interference with other game interactions.
 
-Once you click on the context menu, your character will launch an animation to automatically retrieve the items related to the contract. Don't lose them, or you may have to cancel your mission. Keep the quest item in your main inventory, go to a mailbox, and send your package. When you return to the computer on the contract interface, your account will be credited with the quest amount.
+Once you click on the context menu, your character will launch an animation to automatically retrieve the items related to the contract. Don't lose them, or you may have to cancel your mission. Keep the quest item in your main inventory, go to a mailbox, and send your package. Your account isn't credited automatically at that point — go back to the computer's Contracts interface afterward to actually turn in the completed contract and get paid.
 
 Two contract types work differently: Protect the Building requires you to survive a horde attack at the target location instead of retrieving anything, and Refill an ATM requires you to withdraw enough physical cash from ATMs around town and carry it to one specific ATM to deposit it there.
 
@@ -128,7 +170,7 @@ Completing a contract or a mail mission raises your reputation. Cancelling a con
 
 [h3]What does reputation change ?[/h3]
 
-Your reputation tier — Blacklisted, Neutral, Reliable or Preferred — affects the prices you're offered on the Dark Web and on Requests. Higher reputation gets you a discount, capped at 25%; lower reputation adds a surcharge, capped at doubling the price. You can check your current score, tier and next threshold from the computer's Reputation screen.
+Your reputation tier — Blacklisted, Neutral, Reliable or Preferred — affects the prices you're offered on the Dark Web and on Buy Goods, as well as how often mail shows up. Higher reputation gets you a discount, capped at 25%, and more frequent mail; lower reputation adds a surcharge, capped at doubling the price, and stretches out how long you wait between mails. You can check your current score, tier, mail frequency and next threshold from the computer's Reputation screen.
 
 [h2]Online Betting:[/h2]
 
@@ -146,31 +188,85 @@ Play against the house with a real 52-card deck. Set your stake and play a norma
 
 [h3]Poker ?[/h3]
 
-Join a six-seat Texas Hold'em table against AI opponents, with side pots and table stakes. Your current hand and an estimated win percentage are shown, without revealing the AI's cards or difficulty.
+Join a six-seat Texas Hold'em table against AI opponents, with side pots and table stakes. Each AI seat is assigned one of 5 difficulty levels, which affects its bluffing tendency, decision noise and how aggressively it raises — without ever revealing that level or its cards to you. Your current hand and an estimated win percentage are shown; that percentage isn't a hand-strength formula, it's a Monte Carlo estimate — the engine runs 300 random simulations of how the remaining cards could play out and reports how often you'd actually win.
 
 [h3]What happens if I disconnect or close the game mid-game ?[/h3]
 
 Interrupted Blackjack, Poker or Zombie Race sessions are protected: your stake is refunded or the session is safely rolled back rather than silently lost.
 
-[h2]Requests:[/h2]
+[h2]Mail:[/h2]
 
 [h3]How it works ?[/h3]
 
-The requests interface works like contracts but in reverse; this time, you make a request on IRC to obtain something.
+Not every mail you receive is a mission — a lot of it is just flavor spam/ads with nothing to act on, the same way a real inbox is mostly junk. Mixed in are real mail missions, currently ammo or medical supply requests: someone needs a specific item, in a specific quantity, delivered to a specific place.
+
+How often mail shows up at all depends on your reputation: better reputation shortens the maximum wait between mails, so good standing gets you mail more frequently, while poor reputation stretches it out. You can see whether your current frequency is REDUCED, NORMAL or IMPROVED on the computer's Reputation screen.
+
+[h3]How do I accept and complete a mail mission ?[/h3]
+
+Open a mail that's an actual mission and accept it from there. To complete it, gather the requested quantity of the requested item, keep it in your main inventory, and deposit it at a mailbox within range of the mission's target location — the description tells you the city, the building or street, and the floor.
+
+Unlike Contracts, there's no one-at-a-time limit here: you can accept as many mail missions as you have mail for and work on them in any order, or all at once.
+
+[h3]What do I get for completing one ?[/h3]
+
+Reputation, plus a gift — a box containing a handful of random items drawn from the same catalog the Dark Web sells from, so what exactly you get is down to luck. The gift isn't handed to you the instant you finish the mission: like everything else that arrives by mail, you have to go check a mailbox afterward to actually pick it up.
+
+[h2]Buy Goods:[/h2]
+
+[h3]How it works ?[/h3]
+
+The Buy Goods interface works like Contracts but in reverse: instead of a company asking you to do something, you make a request on IRC to obtain something for yourself, organized by category — Canned Food, Meat, Fish, Fruits, Vegetables, Pickled Food, Drink, Book, Car, Repairing (glue/tape), Materials, Paint, Electronics and Seeds.
+
+[h3]How do I pick exactly what I want ?[/h3]
+
+You don't — you request a category, not a specific item. What's actually available in that category, and its price, is decided by whoever answers your request that day; you're offered a deal (item and price) and can accept or refuse it, but you can't cherry-pick a precise item out of the category yourself.
+
+[h3]What happens if I refuse the offer or cancel ?[/h3]
+
+Refusing burns your shot at that category: whoever was going to trade with you walks away, and that category has nothing available for you again until the next reset. Trying again immediately with the same category won't summon a new seller.
 
 [h3]How do I retrieve my order ?[/h3]
 
-Your order is sent directly by mail, contained in a large box. There is no delay between ordering and receiving it.
+Your order is sent directly by mail, contained in a large box. There is no delay between ordering and receiving it — go to any mailbox once you've accepted an offer. That said, there's about a 10% chance the package never shows up at all, stolen somewhere along the way — the harsh law of the jungle in the apocalypse. If that happens you'll be told your order was stolen, and there's no compensation for it; you'll need to place a new request.
 
 [h3]Why can't I place an order ? I have cash on me.[/h3]
 
-you need to deposit the money into your bank account via an ATM. Requests are automatically linked to your bank account; without money, you can't do anything online.
+you need to deposit the money into your bank account via an ATM. Buy Goods orders are automatically linked to your bank account; without money, you can't do anything online.
+
+[h2]Sell Goods:[/h2]
+
+[h3]How it works ?[/h3]
+
+This is a separate feature from the Dark Web's own buy/sell catalog. Each in-game day, demand for items is rolled: only some items end up wanted at all that day, each for a random quantity and price. If an item you're holding isn't on the list, nobody wants it today — that's not a bug, just try again tomorrow.
+
+[h3]How is the price decided ?[/h3]
+
+A wanted item is normally offered at roughly 15–25% of its usual value — deliberately low, so this isn't meant to be your main source of income, more a way to offload surplus loot for a bit of extra cash. Occasionally (about 1 in 10 chance per item) it becomes a "great deal" instead, offered at 25–75% of its value, because some buyer suddenly has an urgent need for it — those are worth watching for.
+
+[h3]Can I negotiate the price ?[/h3]
+
+Yes, there's a haggle option: it succeeds about half the time, raising the offer by a fixed amount and letting you negotiate again or just sell at that price. If it fails, the buyer walks away entirely and that specific item can't be sold again until tomorrow's demand roll — so know when to stop pushing.
+
+[h3]How do I actually get paid ?[/h3]
+
+You need to already have the full demanded quantity of the item on you — no partial sales. Selling removes it from your inventory immediately and hands you a single priced parcel instead, which still has to be dropped off at a mailbox to actually receive the money, exactly like a Dark Web sale.
+
+[h2]Check Condition:[/h2]
+
+[h3]How it works ?[/h3]
+
+Every computer has its own hidden condition value that slowly degrades. The "CHECK CONDITION" button on the computer shows you a status readout so you know when it's starting to fail, before it actually shuts you out of anything.
+
+[h3]When can I repair it, and how ?[/h3]
+
+Right-click the computer in the world: a "Repair" option only appears once its condition has dropped low enough to actually need it. Repairing consumes one Electronic Scrap from your main inventory, and how much condition you recover per repair scales with your electrical skill — a higher skill means each repair attempt fixes more, so the computer stays usable for longer between repairs.
 
 [h2]Multiplayer:[/h2]
 
 [h3]Does this mod work in multiplayer ?[/h3]
 
-Yes, on hosted multiplayer and dedicated servers running Build 42.20+. Banking, ATMs, Dark Web, Trading, Contracts, Requests, Mail, Hacking and Online Betting are all validated server-side, so balances and outcomes can't be forged client-side.
+Yes, on hosted multiplayer and dedicated servers running Build 42.20+. Banking, ATMs, Dark Web, Trading, Contracts, Buy Goods, Sell Goods, Mail, Hacking and Online Betting are all validated server-side, so balances and outcomes can't be forged client-side.
 
 [h3]Is anything shared between players ?[/h3]
 

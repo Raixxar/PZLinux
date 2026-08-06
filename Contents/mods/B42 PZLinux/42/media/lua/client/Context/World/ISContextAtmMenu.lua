@@ -550,10 +550,13 @@ function AtmMenu_AddContext(player, context, worldobjects)
         if instanceof(obj, "IsoObject") then
             local sprite = obj:getSprite()
             if sprite and sprite:getName() then
-                if string.find(sprite:getName(), "location_business_bank_01_67")
-                or string.find(sprite:getName(), "location_business_bank_01_66")
-                or string.find(sprite:getName(), "location_business_bank_01_65")
-                or string.find(sprite:getName(), "location_business_bank_01_64") then
+                -- Exact match, not a substring search -- see
+                -- ISContextStreetMailBox.lua for the bug class this avoids.
+                local spriteName = sprite:getName()
+                if spriteName == "location_business_bank_01_67"
+                or spriteName == "location_business_bank_01_66"
+                or spriteName == "location_business_bank_01_65"
+                or spriteName == "location_business_bank_01_64" then
                     local square = obj:getSquare()
                     if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or
                      (getSandboxOptions():getElecShutModifier() > -1 and

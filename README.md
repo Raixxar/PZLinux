@@ -3,7 +3,7 @@
 PZLinux gives cash a purpose in Project Zomboid by adding a persistent apocalypse
 economy accessed through computers, ATMs and mailboxes.
 
-**Release:** 1.0.0
+**Release:** 1.0.4
 
 **Game:** Project Zomboid Build 42.20 or newer
 
@@ -11,7 +11,7 @@ economy accessed through computers, ATMs and mailboxes.
 
 **Workshop ID:** `3414468585`
 
-**Documentation:** [1.0.0 release notes](doc/RELEASE.md) | [detailed changelog](doc/CHANGELOG.md)
+**Documentation:** [1.0.4 release notes](doc/RELEASE.md) | [detailed changelog](doc/CHANGELOG.md)
 
 ## Features
 

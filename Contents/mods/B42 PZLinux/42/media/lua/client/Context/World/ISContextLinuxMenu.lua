@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.3"
+local PZLinuxVersion = "v1.0.4"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -583,33 +583,59 @@ function linuxMenu_AddContext(player, context, worldobjects)
     modData.PZLinuxUIY = nil
     local squareClicked = playerObj:getSquare()
     local targetX, targetY, targetZ = squareClicked:getX(), squareClicked:getY(), squareClicked:getZ()
+
+    local function PZLinuxLinuxMenuTryObject(obj, square)
+        local sprite = obj and obj.getSprite and obj:getSprite()
+        local spriteName = sprite and sprite.getName and sprite:getName()
+        -- Exact match, not a substring search -- see
+        -- ISContextStreetMailBox.lua for the bug class this avoids.
+        if spriteName ~= "appliances_com_01_75"
+        and spriteName ~= "appliances_com_01_74"
+        and spriteName ~= "appliances_com_01_73"
+        and spriteName ~= "appliances_com_01_72" then
+            return false
+        end
+        if not ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or
+         (getSandboxOptions():getElecShutModifier() > -1 and
+         (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
+            return false
+        end
+        local x, y, z = square:getX(), square:getY(), square:getZ()
+        if not isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then return false end
+
+        if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
+        if obj:getModData().statusCondition < 15 then
+            context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_RepairComputer"), obj, linuxMenu_OnRepare, playerObj, x, y, z, spriteName)
+        end
+        if obj:getModData().statusCondition > 0 then
+            context:addOption("PZLinux", obj, linuxMenu_OnUse, playerObj, x, y, z, spriteName)
+        end
+        return true
+    end
+
+    -- worldobjects is the list vanilla decided to show a menu for on the
+    -- clicked square(s) -- it can skip a computer placed on top of
+    -- furniture (a counter, a table) in favor of the furniture itself,
+    -- even though the computer is still really there. Rescanning each of
+    -- those squares' FULL object list (not just what vanilla picked out)
+    -- catches that case without widening which squares get considered at
+    -- all -- isNearTargetCapture above still gates it to the player's
+    -- immediate surroundings either way.
+    local checkedSquares = {}
     for _, obj in ipairs(worldobjects) do
         if instanceof(obj, "IsoObject") then
-            local sprite = obj:getSprite()
-            if sprite and sprite:getName() then
-                if string.find(sprite:getName(), "appliances_com_01_75")
-                or string.find(sprite:getName(), "appliances_com_01_74")
-                or string.find(sprite:getName(), "appliances_com_01_73")
-                or string.find(sprite:getName(), "appliances_com_01_72") then
-                    local square = obj:getSquare()
-                    if square and ((SandboxVars.AllowExteriorGenerator and square:haveElectricity()) or
-                     (getSandboxOptions():getElecShutModifier() > -1 and
-                     (getGameTime():getWorldAgeHours() / 24 + (getSandboxOptions():getTimeSinceApo() - 1) * 30) < getSandboxOptions():getElecShutModifier())) then
-                        local x, y, z = square:getX(), square:getY(), square:getZ()
-                        if isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then
-
-                            if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
-                            if obj:getModData().statusCondition < 15 then
-                                context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_RepairComputer"), obj, linuxMenu_OnRepare, playerObj, x, y, z, sprite:getName())
-                            end
-
-                            if obj:getModData().statusCondition > 0 then
-                                context:addOption("PZLinux", obj, linuxMenu_OnUse, playerObj, x, y, z, sprite:getName())
-                            end
-                            break
-                        end
+            local square = obj.getSquare and obj:getSquare()
+            if square and not checkedSquares[square] then
+                checkedSquares[square] = true
+                local found = false
+                local squareObjects = square:getObjects()
+                for index = 0, squareObjects:size() - 1 do
+                    if PZLinuxLinuxMenuTryObject(squareObjects:get(index), square) then
+                        found = true
+                        break
                     end
                 end
+                if found then break end
             end
         end
     end

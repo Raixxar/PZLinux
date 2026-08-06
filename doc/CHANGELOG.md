@@ -1,7 +1,22 @@
 # Changelog
 
+## [1.0.4]
+
+- Fixed the computer's right-click menu sometimes not appearing at all when
+  the Desktop Computer was placed on top of furniture (e.g. a counter),
+  even standing right next to it. The game's own click detection can skip
+  a computer stacked on furniture in favor of the furniture itself; the
+  menu now also checks everything actually sitting on the same tile, not
+  just what the game already picked out.
+
 ## [1.0.3]
 
+- Fixed the mailbox/ATM/computer context menu sometimes appearing on
+  unrelated B42 objects (e.g. a newspaper dispenser instead of the actual
+  mailbox), which then failed every action with a generic error. The menu
+  matched sprite names with a substring search instead of an exact match,
+  so a new object whose sprite name happened to start the same way (e.g.
+  "street_decoration_01_90") was wrongly treated as a mailbox.
 - Translated the full body text of every mail mission (Ammo, Medical, and
   the flavor ADS spam mail) into all 20 supported languages. This text was
   100% hardcoded English before, unlike the rest of the mod.

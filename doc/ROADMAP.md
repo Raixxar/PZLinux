@@ -1,6 +1,4 @@
---- v1.0.1 (bug fixes from real player feedback, no new features) ---
-FIXED: Dark Web sell list rows overlapping after selling an item -- see
-    CHANGELOG.md [1.0.1].
+--- v1.0.4 (bug fixes from real player feedback, no new features) ---
 Bug: ATM/computer window gets stuck following the cursor if the mouse button
     is released outside the panel while dragging (ISContextLinuxMenu.lua
     onMouseUp only fires while still hovering the panel; isDragging never
@@ -91,6 +89,12 @@ New betting game: "Zombie Roulette" -- 5 zombies in a room, IDs 1-5 on the
     they can raise their bet or just continue. This repeats, one zombie
     eliminated per non-empty round, until a single zombie is left standing.
     If it's the player's pick, they win the pot.
+Bill denominations: right now zombies only ever drop $1 (occasionally $2)
+    bills, so physical cash farming means carrying a huge stack of single
+    bills around just to reach a meaningful deposit. Add $5/$10/$20 bills
+    at normal drop rates, with $50/$100 as rare finds -- fewer, higher-value
+    bills for the same total amount, which also caps how much bag space a
+    big cash haul eats up. From player feedback.
 
 --- v1.3.0 (tentative, nothing committed) ---
 Possibly boss encounters / tougher zombies -- still undecided, risk of
