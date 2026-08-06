@@ -251,7 +251,14 @@ function mailUI:onMailClicked()
     mail.read = true
     PZLinuxMailNormalizeRecord(self.player, mail.id)
 
-    self.selectedMailId = mail.id
+    -- Normalized to a number here (not just where it's read) because
+    -- md.pzlinux.mails is keyed by number (see PZLinuxMailNormalizeRecord's
+    -- own tonumber(mailId)); a string ID here would silently fail every
+    -- lookup against that table -- Lua treats t["42"] and t[42] as
+    -- unrelated keys, so mail.id coming back as a string after a ModData
+    -- round-trip (save/reload, MP sync) would make onAcceptMail's own
+    -- lookup find nothing and quietly do nothing, with no error shown.
+    self.selectedMailId = tonumber(mail.id) or mail.id
     local body = ""
     if mail.type == "ads" then body = PZLinuxMailGenerateBodyADS(mail.from, mail.id)
     elseif mail.type == "ammo" then body = PZLinuxMailGenerateBodyAmmo(mail.from, mail.id)
@@ -276,7 +283,7 @@ end
 function mailUI:onAcceptMail()
     local md = PZLinuxGetModData(self.player)
     if not md then return end
-    local id = self.selectedMailId
+    local id = tonumber(self.selectedMailId) or self.selectedMailId
     local mail = md.pzlinux.mails[id]
     if not mail or mail.status == 10 or mail.status == 2 or mail.type == "ads" then return end
 

@@ -99,4 +99,22 @@ assert(serverSource:find("PZLinuxDarkWebApplyDeliverOrders%(player, args and arg
 assert(serverSource:find("PZLinuxContractsApplyDeposit%(player, args and args%.mailbox,"), "contract deposit must pass a mailbox reference")
 assert(serverSource:find("PZLinuxRequestsApplyDelivery%(player, args and args%.mailbox,"), "Request delivery must pass a mailbox reference")
 
+-- Regression test for a real gameplay bug: accepting a mail mission
+-- silently did nothing (no error, contracts still worked fine). Root
+-- cause: md.pzlinux.mails is keyed by number (PZLinuxMailNormalizeRecord
+-- itself does tonumber(mailId)), but onAcceptMail read
+-- md.pzlinux.mails[self.selectedMailId] without ever coercing it. Lua
+-- treats t["42"] and t[42] as unrelated keys, so a mail ID that came back
+-- as a string after a ModData round-trip (save/reload, MP sync) made the
+-- lookup silently find nothing, and the accept request never even reached
+-- the server.
+local mailUiPath = repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua/client/Context/World/Features/PZLinuxMail.lua"
+local mailUiFile = assert(io.open(mailUiPath, "rb"))
+local mailUiSource = mailUiFile:read("*a")
+mailUiFile:close()
+assert(mailUiSource:find("self%.selectedMailId = tonumber%(mail%.id%) or mail%.id"),
+    "selecting a mail must normalize its ID to a number, or the accept lookup can silently miss")
+assert(mailUiSource:find("local id = tonumber%(self%.selectedMailId%) or self%.selectedMailId"),
+    "accepting a mail must normalize the selected ID to a number before looking it up")
+
 print("Mailbox proximity tests: OK")

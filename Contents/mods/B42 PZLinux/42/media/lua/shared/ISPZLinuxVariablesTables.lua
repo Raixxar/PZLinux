@@ -1340,6 +1340,9 @@ if Events and Events.OnServerCommand then
                     if args.contractSendFridge ~= nil then modData.PZLinuxContractSendFridge = args.contractSendFridge end
                     if args.contractAtmRefill ~= nil then modData.PZLinuxContractAtmRefill = args.contractAtmRefill end
                     if args.atmAmount ~= nil then modData.PZLinuxContractAtmAmount = args.atmAmount end
+                    if args.info ~= nil then modData.PZLinuxContractInfo = args.info end
+                    if args.infoName ~= nil then modData.PZLinuxContractInfoName = args.infoName end
+                    if args.infoCount ~= nil then modData.PZLinuxContractInfoCount = args.infoCount end
                     if args.contractId ~= nil then modData.PZLinuxContractTypeId = args.contractId end
                     if args.locationX ~= nil then modData.PZLinuxContractLocationX = args.locationX end
                     if args.locationY ~= nil then modData.PZLinuxContractLocationY = args.locationY end
@@ -2964,6 +2967,26 @@ function PZLinuxContractsAdminAddFunds(player, amount, requestId)
     return credit
 end
 
+function PZLinuxContractsAdminForceMail(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    -- Reuses the same random-mail generator as the normal scheduled flow
+    -- (PZLinuxMailCreateRandom), so a forced mail is indistinguishable from
+    -- one the player would have received naturally -- same random type
+    -- (ads/ammo/medical), same allowlist, same reward rules.
+    local result = PZLinuxMailCreateRandom(playerObj, requestId)
+    if result.ok then
+        print("[PZLinux Admin] " .. tostring(playerObj:getUsername())
+            .. " forced a random mail mission (id " .. tostring(result.mailId)
+            .. ", type " .. tostring(result.mailType) .. ")")
+    end
+    return result
+end
+
 function PZLinuxContractsFindBoardContract(contractId)
     contractId = tonumber(contractId)
     local boardData = PZLinuxContractsGetBoardData()
@@ -3263,6 +3286,15 @@ function PZLinuxContractsGetActiveState(player, requestId)
         contractSendFridge = modData.PZLinuxContractSendFridge,
         contractAtmRefill = modData.PZLinuxContractAtmRefill,
         atmAmount = record and record.atmAmount or modData.PZLinuxContractAtmAmount,
+        -- Needed by Auto Parts/Medical/Weapon contracts (5, 9, 10) to
+        -- recognize a matching item at a mailbox: without these, a
+        -- reconnect leaves modData.PZLinuxContractInfo stale/nil on the
+        -- client, so PZLinuxContractsHasDepositItems never finds a match
+        -- and the delivery option silently never appears again, even
+        -- though the world contract is still active server-side.
+        info = record and record.info or modData.PZLinuxContractInfo,
+        infoName = record and record.infoName or modData.PZLinuxContractInfoName,
+        infoCount = record and record.infoCount or modData.PZLinuxContractInfoCount,
         completionReceipt = pzlinux.contracts and pzlinux.contracts.pendingCompletion or nil,
         balance = PZLinuxLoadBankBalance(playerObj),
     }
@@ -4952,6 +4984,15 @@ function PZLinuxRequestAdminAddFunds(player, amount, callback)
     local args = { requestId = requestId, amount = tonumber(amount) }
     if PZLinuxSendClientCommand("PZLinuxContractAdminAddFunds", args) then return requestId end
     PZLinuxDispatchCallback(PZLinuxContractsAdminAddFunds(player, amount, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAdminForceMail(player, callback)
+    local requestId = PZLinuxNextRequestId("admin-force-mail")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId }
+    if PZLinuxSendClientCommand("PZLinuxContractAdminForceMail", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxContractsAdminForceMail(player, requestId))
     return requestId
 end
 

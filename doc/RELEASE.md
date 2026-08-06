@@ -114,7 +114,7 @@ compatibility. No additional mod dependency is required.
 [list]
 [*] Full controller navigation is not implemented; keyboard and mouse are
 currently required.
-[*] Split-screen is not officially supported or certified for 1.0.0.
+[*] Split-screen is not officially supported or certified yet.
 [*] The server-authoritative architecture has automated coverage and hosted-server
 live testing, but the final two-client dedicated-server restart/reconnect test
 campaign remains required before claiming broad public-server certification.

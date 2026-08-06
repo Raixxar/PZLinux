@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.3]
+
+- Fixed Auto Parts, Medical and Weapon contracts (5, 9, 10) never showing a
+  mailbox delivery option again after a multiplayer reconnect, even with
+  the exact right item in hand. The requested item's type, name and count
+  were only ever sent to the client at contract acceptance, never as part
+  of the reconnect resynchronization -- the same class of bug already fixed
+  for the ATM refill contract earlier, just not extended to these three.
+- Fixed accepting a mail mission silently doing nothing (contracts still
+  worked fine). The mail lookup used to check whether a mission could be
+  accepted was never normalized to a number, so a mail ID that came back
+  as a string after a ModData round-trip (save/reload, MP sync) made the
+  lookup silently miss and the request never reached the server.
+
 ## [1.0.2]
 
 - Fixed the "Check" button on the personal (white) mailbox overflowing well

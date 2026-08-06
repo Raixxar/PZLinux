@@ -202,6 +202,16 @@ PZLinuxTestAssert(syncBlock and syncBlock:find("contractAtmRefill = modData%.PZL
     "the accept response alone previously left these unset again after a reconnect")
 PZLinuxTestAssert(variables:find("atmAmount = PZLinuxNormalizeMoney%(mission%.atmAmount%)"),
     "the persistent world contract record must store the ATM refill amount for later resynchronization")
+PZLinuxTestAssert(syncBlock and syncBlock:find("info = record and record%.info or modData%.PZLinuxContractInfo")
+    and syncBlock:find("infoName = record and record%.infoName or modData%.PZLinuxContractInfoName")
+    and syncBlock:find("infoCount = record and record%.infoCount or modData%.PZLinuxContractInfoCount"),
+    "reconnect resynchronization must also restore the requested item type/name/count -- " ..
+    "without it, Auto Parts/Medical/Weapon contracts (5, 9, 10) can never find a matching item " ..
+    "at a mailbox again after a reconnect, even though the world contract is still active server-side")
+PZLinuxTestAssert(variables:find("args%.info ~= nil then modData%.PZLinuxContractInfo = args%.info")
+    and variables:find("args%.infoName ~= nil then modData%.PZLinuxContractInfoName = args%.infoName")
+    and variables:find("args%.infoCount ~= nil then modData%.PZLinuxContractInfoCount = args%.infoCount"),
+    "the client dispatch handler must mirror the requested item type/name/count from a sync response into local modData")
 PZLinuxTestAssert(variables:find("modData%.PZLinuxContractAtmAmount = PZLinuxNormalizeMoney%(record%.atmAmount%)"),
     "restoring a world record to a player must also restore the ATM refill amount")
 local linuxMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextLinuxMenu.lua")

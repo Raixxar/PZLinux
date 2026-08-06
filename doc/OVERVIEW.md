@@ -1,8 +1,8 @@
-version=1.0.0
+version=1.0.2
 id=3414468585
 title=PZLinux
 
-[h1]PZLinux 1.0.0[/h1]
+[h1]PZLinux 1.0.2[/h1]
 
 PZLinux gives cash a purpose in Project Zomboid by adding a persistent apocalypse
 economy accessed through computers, ATMs and mailboxes.
@@ -51,7 +51,7 @@ Translation catalogs are included for 20 Project Zomboid locales.
 [h2]Known Limitations[/h2]
 
 Keyboard and mouse are required. Full controller navigation and split-screen
-support are not certified for version 1.0.0.
+support are not certified yet.
 
 [hr][/hr]
 
