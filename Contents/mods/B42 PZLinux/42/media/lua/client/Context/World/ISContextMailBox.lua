@@ -110,7 +110,7 @@ function MailBoxUI:onSendTakePackage()
     if not playerObj then return end
 
     self.loginButton:setEnable(false)
-    local pendingActions = 5
+    local pendingActions = 6
     local function PZLinuxMailBoxActionFinished()
         pendingActions = pendingActions - 1
         if pendingActions <= 0 then self:refreshActionState() end
@@ -159,6 +159,13 @@ function MailBoxUI:onSendTakePackage()
         elseif result and result.ok and result.sold and result.sold > 0 then
             saveAtmBalance(result.balance, playerObj)
             HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.total) .. " for your surplus")
+        end
+        PZLinuxMailBoxActionFinished()
+    end)
+
+    PZLinuxRequestMailRewardDelivery(playerObj, self.mailbox, function(result)
+        if result and result.ok and result.delivered and result.delivered > 0 then
+            HaloTextHelper.addGoodText(playerObj, "A gift for your help arrived")
         end
         PZLinuxMailBoxActionFinished()
     end)

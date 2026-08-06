@@ -2,6 +2,22 @@
 
 ## [1.0.3]
 
+- Translated the full body text of every mail mission (Ammo, Medical, and
+  the flavor ADS spam mail) into all 20 supported languages. This text was
+  100% hardcoded English before, unlike the rest of the mod.
+- Fixed the delivery city always being missing from Ammo/Medical mail
+  mission descriptions. Mail descriptions now also include the building or
+  place name and a floor label (Ground Floor, Floor N above, Basement N
+  below), so the delivery target is actually findable from the mail text
+  alone. Contract locations (the seller's dialogue when offering a
+  contract, and the accepted contract's note) now show the same floor
+  label too.
+- Changed mail mission gifts to be picked up at any mailbox instead of
+  appearing directly in the player's inventory the instant the mission was
+  completed -- the same "check a mailbox" flow already used for Dark Web
+  and Request orders, instead of feeling like it materialized out of thin
+  air. Several completed missions can each still have their own separate
+  gift waiting.
 - Added an admin-only "Force a random mail mission" debug option, same
   access rules as the existing contract/funds debug tools.
 - Fixed completing an Ammo/Medical mail mission silently failing with a

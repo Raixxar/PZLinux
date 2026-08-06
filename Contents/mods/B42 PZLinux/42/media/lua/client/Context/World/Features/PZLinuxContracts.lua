@@ -627,6 +627,7 @@ function contractsUI:onContractPreview(contract, contractPreview)
                 questDescription = translated
             end
         end
+        questDescription = questDescription .. " (" .. PZLinuxFormatFloorLabel(contractPreview.locationZ) .. ")"
         dialogue.message = dialogue.message .. "\n" .. dialogue.sellerName .. questDescription
         PZLinuxContractsNotify(dialogue)
         self.loadingMessage:setName(dialogue.message)

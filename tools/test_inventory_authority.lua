@@ -71,14 +71,31 @@ local mailRemove = PZLinuxTestFunction(shared, "PZLinuxMailRemoveInventoryItems"
 assert(mailRemove:find("PZLinuxRemoveInventoryItem", 1, true), "Mail mission items must use synchronized removal")
 assert(not mailRemove:find("inventory:Remove(item)", 1, true), "Mail mission items must not use raw server removal")
 
-local mailReward = PZLinuxTestFunction(shared, "PZLinuxMailGiveReward", "PZLinuxMailApplyComplete")
+local mailReward = PZLinuxTestFunction(shared, "PZLinuxMailGiveReward", "PZLinuxMailApplyRewardDelivery")
 assert(mailReward:find("PZLinuxSyncAddedInventoryItem", 1, true), "Mail reward parcels must be synchronized")
 assert(mailReward:find("return 0, nil", 1, true), "Mail reward creation failures must be reported")
 
+-- Regression test for a real gameplay bug (design change): the reward gift
+-- used to be created directly in the player's inventory the instant a mail
+-- mission was completed, with no mailbox involved at all. It now works the
+-- same way Dark Web/Request orders already do in this mod: completing the
+-- mission only credits a pending-reward counter, and the actual parcel is
+-- only created once the player checks a mailbox (PZLinuxMailApplyRewardDelivery).
+local mailRewardDelivery = PZLinuxTestFunction(shared, "PZLinuxMailApplyRewardDelivery", "PZLinuxMailApplyComplete")
+assert(mailRewardDelivery:find("PZLinuxValidateMailboxInteraction", 1, true),
+    "picking up a mail mission gift must validate the real mailbox and player proximity")
+assert(mailRewardDelivery:find("PZLinuxMailGiveReward(playerObj)", 1, true),
+    "picking up a mail mission gift must reuse the same reward generator as before")
+assert(mailRewardDelivery:find("modData.PZLinuxOnMailReward = pending", 1, true),
+    "picking up a mail mission gift must persist how many gifts are still owed")
+
 local mailComplete = PZLinuxTestFunction(shared, "PZLinuxMailApplyComplete", "PZLinuxRequestMailAccept")
-PZLinuxTestAssertOrdered(mailComplete, "PZLinuxMailGiveReward", "PZLinuxMailRemoveInventoryItems",
-    "Mail rewards must exist before mission items are consumed")
-assert(mailComplete:find('error = "reward_creation_failed"', 1, true), "Mail completion must reject missing rewards")
+assert(not mailComplete:find("PZLinuxMailGiveReward", 1, true),
+    "completing a mail mission must not create the reward parcel immediately -- " ..
+    "it must be picked up at a mailbox instead, like Dark Web/Request orders")
+PZLinuxTestAssertOrdered(mailComplete, "PZLinuxMailRemoveInventoryItems", "PZLinuxOnMailReward",
+    "mission items must be consumed before the gift is credited as pending")
+assert(mailComplete:find('error = "remove_failed"', 1, true), "Mail completion must reject missing mission items")
 
 local hackingRemove = PZLinuxTestFunction(shared, "PZLinuxHackingRemoveCards", "PZLinuxHackingGeneratePassword")
 assert(hackingRemove:find("PZLinuxRemoveInventoryItem", 1, true), "consumed Hacking cards must use synchronized removal")

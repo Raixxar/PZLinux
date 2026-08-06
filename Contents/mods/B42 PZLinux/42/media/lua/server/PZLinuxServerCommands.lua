@@ -443,6 +443,12 @@ local function PZLinuxServerMailComplete(player, args)
     end)
 end
 
+local function PZLinuxServerMailRewardDelivery(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxMailRewardDelivery", args, "PZLinuxMailRewardDeliveryResult", function()
+        return PZLinuxMailApplyRewardDelivery(player, args and args.mailbox, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerMailGenerate(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxMailGenerate", args, "PZLinuxMailGenerateResult", function()
         return PZLinuxMailCreateRandom(player, args and args.requestId)
@@ -524,6 +530,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxMailAccept = PZLinuxServerMailAccept,
     PZLinuxMailDelete = PZLinuxServerMailDelete,
     PZLinuxMailComplete = PZLinuxServerMailComplete,
+    PZLinuxMailRewardDelivery = PZLinuxServerMailRewardDelivery,
     PZLinuxMailGenerate = PZLinuxServerMailGenerate,
     PZLinuxHackingStart = PZLinuxServerHackingStart,
     PZLinuxHackingAuto = PZLinuxServerHackingAuto,

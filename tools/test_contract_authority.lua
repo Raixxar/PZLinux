@@ -17,6 +17,13 @@ rawset(_G, "ZombRand", function(_minimum, maximum)
     return maximum - 1
 end)
 
+-- PZLinuxFormatFloorLabel is the real translated helper defined in
+-- ISPZLinuxVariablesTables.lua, which this narrower test harness doesn't
+-- load (it has its own top-level Events.* side effects). A minimal stub is
+-- enough here: the real wording/translation behavior is already covered by
+-- test_mailbox_proximity.lua's regression test against the real function.
+rawset(_G, "PZLinuxFormatFloorLabel", function(z) return "Floor " .. tostring(z) end)
+
 PZLinuxDarkWebItemsTable = {}
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxConfig.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxEconomy.lua")
@@ -385,5 +392,26 @@ for contractId, filename in pairs({
     PZLinuxTestAssert(not externalDialogue:sub(1, introAt):find("PZLinuxContractDialogue.wait", 1, true),
         "contract " .. tostring(contractId) .. " waits before displaying its intro")
 end
+
+-- Regression test: contract location text (both the accepted mission's
+-- note, and the seller's dialogue line when previewing the contract) must
+-- include a floor label built from the target's absolute Z level, the
+-- same way mail mission descriptions do.
+local missionSource = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxContractMission.lua")
+local missionNoteBlock = missionSource:match("function PZLinuxContractsMissionNote.-\nend")
+PZLinuxTestAssert(missionNoteBlock and missionNoteBlock:find("PZLinuxFormatFloorLabel(mission.locationZ)", 1, true),
+    "the accepted contract's location note must include a floor label")
+
+local contractsUiFloor = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua")
+PZLinuxTestAssert(contractsUiFloor:find("PZLinuxFormatFloorLabel(contractPreview.locationZ)", 1, true),
+    "the contract preview dialogue must include a floor label")
+
+-- Actually exercise PZLinuxContractsBuildMission end to end so a real
+-- crash in the note-building path (not just source text) would fail here.
+local floorMission = assert(PZLinuxContractsBuildMission({
+    id = 2, code = "TEST-FLOOR", questName = "Floor test", cityId = cityByContract[2], difficulty = 1, reward = 100,
+}))
+PZLinuxTestAssert(floorMission.fullNote:find("Floor " .. tostring(floorMission.locationZ), 1, true) ~= nil,
+    "the built mission note must actually contain the stubbed floor label output")
 
 print("PZLinux contract authority tests OK")

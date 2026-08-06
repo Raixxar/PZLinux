@@ -136,4 +136,42 @@ assert(mailCompleteBlock and mailCompleteBlock:find("math%.max%(") and mailCompl
     "completing a mail mission must use the same Chebyshev distance and threshold (<= 5) as the " ..
     "context menu that offers the deposit option, or a visible option can still be silently rejected")
 
+-- Regression test for a real gameplay bug: the city was reported as
+-- missing from mail mission descriptions. Root cause: mission location
+-- pool entries only ever have city/building fields (never a "name" field),
+-- so "mail.city = mail.city or loc.name" always resolved to nil and left
+-- the city permanently unset once a mail was generated.
+assert(not variablesSource:find("mail.city = mail.city or loc.name", 1, true),
+    "mail city must not be sourced from the nonexistent loc.name field")
+assert(variablesSource:find("mail.city = mail.city or loc.city", 1, true),
+    "mail city must be sourced from loc.city, the field mission locations actually have")
+assert(variablesSource:find("mail.building = mail.building or loc.building", 1, true),
+    "mail description must also carry the building/place name, not just the city")
+
+-- Regression test: mail descriptions must include a floor label built from
+-- the mission's absolute Z level, using the mod's z=0=ground-floor
+-- convention (matching the rest of the mod, e.g. the Ekron ATM target and
+-- RELEASE.md's "per absolute Z level" reward wording), with dedicated
+-- wording for ground level and basements instead of a bare "Floor 0"/"-1".
+assert(variablesSource:find("function PZLinuxFormatFloorLabel", 1, true),
+    "a floor-label helper must exist for mail descriptions")
+local floorFn = variablesSource:match("function PZLinuxFormatFloorLabel.-\nend")
+assert(floorFn and floorFn:find("IGUI_PZLinux_Mail_FloorGround", 1, true)
+    and floorFn:find("IGUI_PZLinux_Mail_FloorAbove", 1, true)
+    and floorFn:find("IGUI_PZLinux_Mail_FloorBelow", 1, true),
+    "the floor label must be translated (ground/above/below wording differs per language)")
+
+for _, relativePath in ipairs({
+    "/client/Context/World/Mails/PZLinuxMailAmmo.lua",
+    "/client/Context/World/Mails/PZLinuxMailMedical.lua",
+}) do
+    local mailFile = assert(io.open(repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua" .. relativePath, "rb"))
+    local mailSource = mailFile:read("*a")
+    mailFile:close()
+    assert(mailSource:find("PZLinuxFormatFloorLabel(mail.z)", 1, true),
+        relativePath .. " must include a floor label built from the mail's Z level")
+    assert(mailSource:find("locationLabel", 1, true) and not mailSource:find("displayName, mail.city, mail.sender)", 1, true),
+        relativePath .. " must describe the building, city and floor together instead of just the city")
+end
+
 print("Mailbox proximity tests: OK")
