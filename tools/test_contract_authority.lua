@@ -17,6 +17,13 @@ rawset(_G, "ZombRand", function(_minimum, maximum)
     return maximum - 1
 end)
 
+-- PZLinuxFormatFloorLabel is the real translated helper defined in
+-- ISPZLinuxVariablesTables.lua, which this narrower test harness doesn't
+-- load (it has its own top-level Events.* side effects). A minimal stub is
+-- enough here: the real wording/translation behavior is already covered by
+-- test_mailbox_proximity.lua's regression test against the real function.
+rawset(_G, "PZLinuxFormatFloorLabel", function(z) return "Floor " .. tostring(z) end)
+
 PZLinuxDarkWebItemsTable = {}
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxConfig.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxEconomy.lua")
@@ -202,6 +209,16 @@ PZLinuxTestAssert(syncBlock and syncBlock:find("contractAtmRefill = modData%.PZL
     "the accept response alone previously left these unset again after a reconnect")
 PZLinuxTestAssert(variables:find("atmAmount = PZLinuxNormalizeMoney%(mission%.atmAmount%)"),
     "the persistent world contract record must store the ATM refill amount for later resynchronization")
+PZLinuxTestAssert(syncBlock and syncBlock:find("info = record and record%.info or modData%.PZLinuxContractInfo")
+    and syncBlock:find("infoName = record and record%.infoName or modData%.PZLinuxContractInfoName")
+    and syncBlock:find("infoCount = record and record%.infoCount or modData%.PZLinuxContractInfoCount"),
+    "reconnect resynchronization must also restore the requested item type/name/count -- " ..
+    "without it, Auto Parts/Medical/Weapon contracts (5, 9, 10) can never find a matching item " ..
+    "at a mailbox again after a reconnect, even though the world contract is still active server-side")
+PZLinuxTestAssert(variables:find("args%.info ~= nil then modData%.PZLinuxContractInfo = args%.info")
+    and variables:find("args%.infoName ~= nil then modData%.PZLinuxContractInfoName = args%.infoName")
+    and variables:find("args%.infoCount ~= nil then modData%.PZLinuxContractInfoCount = args%.infoCount"),
+    "the client dispatch handler must mirror the requested item type/name/count from a sync response into local modData")
 PZLinuxTestAssert(variables:find("modData%.PZLinuxContractAtmAmount = PZLinuxNormalizeMoney%(record%.atmAmount%)"),
     "restoring a world record to a player must also restore the ATM refill amount")
 local linuxMenu = PZLinuxTestRead(luaRoot .. "/client/Context/World/ISContextLinuxMenu.lua")
@@ -222,6 +239,19 @@ PZLinuxTestAssert(contextMenu:find("%[PZLinux Contracts Context%] option missing
     "missing package actions must emit actionable diagnostics")
 PZLinuxTestAssert(variables:find('command == "PZLinuxContractDepositResult"'),
     "mailbox deposit results must synchronize the next contract stage")
+
+-- Regression test for a real gameplay bug: PZLinuxComputerCondition was
+-- stored and compared without ever going through tonumber. A ModData
+-- round-trip (save/reload, MP sync) can hand it back as a string instead
+-- of a number, and a raw "string < number" comparison throws a Lua error --
+-- which happened right after the CHECK CONDITION panel was created and
+-- added to the UI manager but before it was populated, leaving a blank,
+-- undraggable-but-unclosable panel stuck on screen until restart.
+PZLinuxTestAssert(linuxMenu:find("PZLinuxComputerCondition = tonumber%(obj:getModData%(%)%.statusCondition%) or 0"),
+    "the computer condition copied onto the player must be normalized to a number when set")
+local conditionUi = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxCondition.lua")
+PZLinuxTestAssert(conditionUi:find("local computerCondition = tonumber%(PZLinuxGetPlayer%(self%.player%):getModData%(%)%.PZLinuxComputerCondition%) or 0"),
+    "CHECK CONDITION must normalize the stored condition to a number before comparing it, or a non-numeric value crashes the panel mid-render")
 
 for _, helperName in ipairs({
     "PZLinuxContractsGiveContractCase",
@@ -362,5 +392,26 @@ for contractId, filename in pairs({
     PZLinuxTestAssert(not externalDialogue:sub(1, introAt):find("PZLinuxContractDialogue.wait", 1, true),
         "contract " .. tostring(contractId) .. " waits before displaying its intro")
 end
+
+-- Regression test: contract location text (both the accepted mission's
+-- note, and the seller's dialogue line when previewing the contract) must
+-- include a floor label built from the target's absolute Z level, the
+-- same way mail mission descriptions do.
+local missionSource = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxContractMission.lua")
+local missionNoteBlock = missionSource:match("function PZLinuxContractsMissionNote.-\nend")
+PZLinuxTestAssert(missionNoteBlock and missionNoteBlock:find("PZLinuxFormatFloorLabel(mission.locationZ)", 1, true),
+    "the accepted contract's location note must include a floor label")
+
+local contractsUiFloor = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxContracts.lua")
+PZLinuxTestAssert(contractsUiFloor:find("PZLinuxFormatFloorLabel(contractPreview.locationZ)", 1, true),
+    "the contract preview dialogue must include a floor label")
+
+-- Actually exercise PZLinuxContractsBuildMission end to end so a real
+-- crash in the note-building path (not just source text) would fail here.
+local floorMission = assert(PZLinuxContractsBuildMission({
+    id = 2, code = "TEST-FLOOR", questName = "Floor test", cityId = cityByContract[2], difficulty = 1, reward = 100,
+}))
+PZLinuxTestAssert(floorMission.fullNote:find("Floor " .. tostring(floorMission.locationZ), 1, true) ~= nil,
+    "the built mission note must actually contain the stubbed floor label output")
 
 print("PZLinux contract authority tests OK")

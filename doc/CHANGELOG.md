@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.0.3]
+
+- Translated the full body text of every mail mission (Ammo, Medical, and
+  the flavor ADS spam mail) into all 20 supported languages. This text was
+  100% hardcoded English before, unlike the rest of the mod.
+- Fixed the delivery city always being missing from Ammo/Medical mail
+  mission descriptions. Mail descriptions now also include the building or
+  place name and a floor label (Ground Floor, Floor N above, Basement N
+  below), so the delivery target is actually findable from the mail text
+  alone. Contract locations (the seller's dialogue when offering a
+  contract, and the accepted contract's note) now show the same floor
+  label too.
+- Changed mail mission gifts to be picked up at any mailbox instead of
+  appearing directly in the player's inventory the instant the mission was
+  completed -- the same "check a mailbox" flow already used for Dark Web
+  and Request orders, instead of feeling like it materialized out of thin
+  air. Several completed missions can each still have their own separate
+  gift waiting.
+- Added an admin-only "Force a random mail mission" debug option, same
+  access rules as the existing contract/funds debug tools.
+- Fixed completing an Ammo/Medical mail mission silently failing with a
+  generic "Mail delivery rejected" even with the exact right item in hand,
+  at a mailbox that visibly offered the deposit option. The context menu
+  and the server-side completion check used two different distance
+  metrics -- Chebyshev (max of dx/dy) for showing the option, Manhattan
+  (dx+dy) for validating it -- so an off-axis position the player was shown
+  as valid could still fail the stricter server check.
+- Fixed Auto Parts, Medical and Weapon contracts (5, 9, 10) never showing a
+  mailbox delivery option again after a multiplayer reconnect, even with
+  the exact right item in hand. The requested item's type, name and count
+  were only ever sent to the client at contract acceptance, never as part
+  of the reconnect resynchronization -- the same class of bug already fixed
+  for the ATM refill contract earlier, just not extended to these three.
+- Fixed accepting a mail mission silently doing nothing (contracts still
+  worked fine). The mail lookup used to check whether a mission could be
+  accepted was never normalized to a number, so a mail ID that came back
+  as a string after a ModData round-trip (save/reload, MP sync) made the
+  lookup silently miss and the request never reached the server.
+
+## [1.0.2]
+
+- Fixed the "Check" button on the personal (white) mailbox overflowing well
+  past the mail slot, toward the flag. It reused the same relative width as
+  the street (blue) mailbox's button, but the two textures have very
+  different proportions -- the personal mailbox's actual slot only spans
+  roughly the left third of its texture, unlike the street mailbox's, which
+  spans nearly the full width.
+- Fixed clicking "CHECK CONDITION" locking a blank, unclosable computer
+  panel on screen until restart. The computer's condition value could come
+  back as a string instead of a number after a ModData round-trip
+  (save/reload, MP sync), and comparing it directly against a number
+  crashed mid-render, right after the panel was created but before it was
+  populated or its close buttons were fully wired up. The condition is now
+  normalized with tonumber both where it's stored and where it's compared.
+
 ## [1.0.1]
 
 - Fixed Dark Web sell list rows overlapping after selling an item. The list

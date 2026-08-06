@@ -50,7 +50,13 @@ end
 local function PZLinuxContractsMissionNote(mission)
     local locationLine = ""
     if mission.locationCity ~= "" and mission.locationDescription ~= "" then
+        -- The floor is appended after the crafted location description
+        -- instead of baked into it, since that description text is fully
+        -- translated per-location across every language and a template
+        -- can't easily be inserted into it. Same wording/convention as the
+        -- mail mission descriptions (z=0 is always its own "Ground Floor").
         locationLine = mission.locationCity .. ":\n* " .. mission.locationDescription
+            .. " (" .. PZLinuxFormatFloorLabel(mission.locationZ) .. ")"
     end
     if mission.contractId == 8 then
         if locationLine ~= "" then locationLine = locationLine .. "\n" end

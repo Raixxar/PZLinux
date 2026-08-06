@@ -40,6 +40,20 @@ local function PZLinuxDebugAddFunds(player, amount)
     end)
 end
 
+local function PZLinuxDebugForceMail(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return end
+    PZLinuxRequestAdminForceMail(playerObj, function(result)
+        if result and result.ok then
+            HaloTextHelper.addGoodText(playerObj, "Mail #" .. tostring(result.mailId)
+                .. " (" .. tostring(result.mailType) .. ") added to inbox")
+        else
+            HaloTextHelper.addBadText(playerObj, "Admin command failed: "
+                .. tostring(result and result.error or "no response"))
+        end
+    end)
+end
+
 local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj or not PZLinuxDebugCanUseMenu(playerObj) then return end
@@ -65,6 +79,8 @@ local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
     for _, amount in ipairs(PZLinuxDebugAddFundsAmounts) do
         fundsMenu:addOption("+$" .. tostring(amount), player, PZLinuxDebugAddFunds, amount)
     end
+
+    adminMenu:addOption("Force a random mail mission", player, PZLinuxDebugForceMail)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(PZLinuxDebugMenuAddContext)

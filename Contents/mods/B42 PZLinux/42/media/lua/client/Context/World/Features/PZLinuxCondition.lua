@@ -110,7 +110,16 @@ function conditionUI:onCheckCondition()
     self.bootOutput:initialise()
     self.topBar:addChild(self.bootOutput)
 
-    if PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition < 25 then
+    -- PZLinuxComputerCondition can come back as a string (or nil) rather
+    -- than a number after a ModData round-trip (save/reload, MP sync),
+    -- which would otherwise throw a Lua error on this comparison and leave
+    -- the panel stuck half-initialized: created and draggable, but blank
+    -- and unresponsive to its own close/minimize buttons, since the error
+    -- interrupts the coroutine/dispatch flow that would normally handle
+    -- them. Only a game restart cleared it because that's what reset the
+    -- broken state.
+    local computerCondition = tonumber(PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition) or 0
+    if computerCondition < 25 then
         self.bootMessages = {
             "<RGB:0,1,0>Booting system...",
             "Initializing hardware check...",
@@ -168,7 +177,7 @@ function conditionUI:onCheckCondition()
             "System report: Critical issues detected! Immediate attention required.",
             "Disk failure imminent. Backup recommended.</RGB>"
         }
-    elseif PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition < 50 then
+    elseif computerCondition < 50 then
         self.bootMessages = {
             "<RGB:0,1,0>Booting system...",
             "Initializing hardware check...",
@@ -282,7 +291,8 @@ end
 
 function conditionUI:onConditionSummary()
     self.bootOutput:setVisible(false)
-    self.conditionSummaryButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, "Computer Condition: " .. PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition .. "%")
+    local displayCondition = math.floor(tonumber(PZLinuxGetPlayer(self.player):getModData().PZLinuxComputerCondition) or 0)
+    self.conditionSummaryButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, "Computer Condition: " .. tostring(displayCondition) .. "%")
     self.conditionSummaryButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionSummaryButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionSummaryButton.borderColor = {r=0, g=1, b=0, a=0.5}

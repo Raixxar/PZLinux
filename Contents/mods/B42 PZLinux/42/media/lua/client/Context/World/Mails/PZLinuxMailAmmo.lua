@@ -9,15 +9,23 @@ function PZLinuxMailGenerateBodyAmmo(sender, id)
 
     local scriptItem = getScriptManager():FindItem(mail.object)
     local displayName = scriptItem and scriptItem:getDisplayName() or mail.object
+    -- Building/place name, city and floor together, so the delivery target
+    -- is actually findable from the mail text alone (players were reporting
+    -- the city as missing, and even with it a bare city name isn't enough
+    -- to locate a specific building or floor).
+    local floorLabel = PZLinuxFormatFloorLabel(mail.z)
+    local locationLabel = mail.building
+        and (mail.building .. ", " .. tostring(mail.city) .. " (" .. floorLabel .. ")")
+        or (tostring(mail.city) .. " (" .. floorLabel .. ")")
 
     local message = ""
 
     if mail.seed == 1 then
-        message = string.format([[
+        message = PZLinuxFormatText("IGUI_PZLinux_MailAmmo_1", [[
 Hello %s,
-For several weeks now, we have been facing relentless waves of zombies, and our ammunition supplies are critically low. If these attacks continue at this pace, we won’t survive much longer. Could you provide us with These supplies could mean the difference between holding our ground or being overrun. Please deliver the ammunition.
+For several weeks now, we have been facing relentless waves of zombies, and our ammunition supplies are critically low. If these attacks continue at this pace, we won’t survive much longer. These supplies could mean the difference between holding our ground or being overrun. Please deliver the ammunition.
 
-Quantity : %d 
+Quantity : %s
 Object : %s
 Location : %s
 
@@ -25,14 +33,14 @@ Stay safe, and thank you for considering our request.
 
 Sincerely,
 %s
-]], name, mail.quantity, displayName, mail.city, mail.sender)
+]], name, mail.quantity, displayName, locationLabel, mail.sender)
 
     elseif mail.seed == 2 then
-        message = string.format([[
+        message = PZLinuxFormatText("IGUI_PZLinux_MailAmmo_2", [[
 Hello %s,
 We are reaching out because the situation here has become critical. Several survivors spoke highly of you, and we hope they were right. Zombie activity has increased drastically in our area, and we are almost out of ammunition. If you can deliver them to the location below, you may save more lives than you realize.
 
-Quantity : %d 
+Quantity : %s
 Object : %s
 Location : %s
 
@@ -40,13 +48,13 @@ We know this is dangerous. Whatever you decide, thank you for reading this.
 
 Regards,
 %s
-]], name, mail.quantity, displayName, mail.city, mail.sender)
+]], name, mail.quantity, displayName, locationLabel, mail.sender)
     elseif mail.seed == 3 then
-        message = string.format([[
+        message = PZLinuxFormatText("IGUI_PZLinux_MailAmmo_3", [[
 Hello %s,
-We don’t know how long we can keep this place secured, but we were told you might listen. Every night, the dead come closer, and every day our ammunition runs lower. We are doing everything we can, but it’s no longer enough. Please bring them to the following location as soon as possible: 
+We don’t know how long we can keep this place secured, but we were told you might listen. Every night, the dead come closer, and every day our ammunition runs lower. We are doing everything we can, but it’s no longer enough. Please bring them to the following location as soon as possible:
 
-Quantity : %d 
+Quantity : %s
 Object : %s
 Location : %s
 
@@ -54,7 +62,7 @@ No matter your answer, we appreciate you taking the time to read this.
 Stay alive out there.
 
 — %s
-]], name, mail.quantity, displayName, mail.city, mail.sender)
+]], name, mail.quantity, displayName, locationLabel, mail.sender)
     end
     return message
 end

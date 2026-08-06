@@ -39,7 +39,7 @@ function ISDropTheMailAction:perform()
         end
 
         HaloTextHelper.addGoodText(self.character, "Mail completed successfully!")
-        HaloTextHelper.addGoodText(self.character, "You received a gift for your help!")
+        HaloTextHelper.addGoodText(self.character, "A gift for your help is waiting at any mailbox")
         HaloTextHelper.addGoodText(self.character, "Reputation increased to +10")
         self.character:getStats():add(CharacterStat.BOREDOM, -2)
         self.character:getStats():add(CharacterStat.UNHAPPINESS, -4)

@@ -81,7 +81,13 @@ function MailBoxUI:showLoginMenu()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.60, self.height * 0.027, PZLinuxGetText("IGUI_PZLinux_Mailbox_Check"), self, self.onSendTakePackage)
+    -- mailBox.png (the personal mailbox) only shows its actual mail slot
+    -- across roughly the left third of the texture -- the rest of the
+    -- canvas is the box's side panel and the flag pole. Unlike
+    -- streetMailBox.png (where the slot spans nearly the full width),
+    -- reusing the same 0.60 relative width here overflowed well past the
+    -- slot, toward the flag.
+    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.25, self.height * 0.027, PZLinuxGetText("IGUI_PZLinux_Mailbox_Check"), self, self.onSendTakePackage)
     self.loginButton:setVisible(true)
     self.loginButton:setEnable(false)
     self.loginButton:initialise()
@@ -104,7 +110,7 @@ function MailBoxUI:onSendTakePackage()
     if not playerObj then return end
 
     self.loginButton:setEnable(false)
-    local pendingActions = 5
+    local pendingActions = 6
     local function PZLinuxMailBoxActionFinished()
         pendingActions = pendingActions - 1
         if pendingActions <= 0 then self:refreshActionState() end
@@ -153,6 +159,13 @@ function MailBoxUI:onSendTakePackage()
         elseif result and result.ok and result.sold and result.sold > 0 then
             saveAtmBalance(result.balance, playerObj)
             HaloTextHelper.addGoodText(playerObj, "$" .. tostring(result.total) .. " for your surplus")
+        end
+        PZLinuxMailBoxActionFinished()
+    end)
+
+    PZLinuxRequestMailRewardDelivery(playerObj, self.mailbox, function(result)
+        if result and result.ok and result.delivered and result.delivered > 0 then
+            HaloTextHelper.addGoodText(playerObj, "A gift for your help arrived")
         end
         PZLinuxMailBoxActionFinished()
     end)

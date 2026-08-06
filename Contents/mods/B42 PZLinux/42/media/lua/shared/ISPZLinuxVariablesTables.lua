@@ -1340,6 +1340,9 @@ if Events and Events.OnServerCommand then
                     if args.contractSendFridge ~= nil then modData.PZLinuxContractSendFridge = args.contractSendFridge end
                     if args.contractAtmRefill ~= nil then modData.PZLinuxContractAtmRefill = args.contractAtmRefill end
                     if args.atmAmount ~= nil then modData.PZLinuxContractAtmAmount = args.atmAmount end
+                    if args.info ~= nil then modData.PZLinuxContractInfo = args.info end
+                    if args.infoName ~= nil then modData.PZLinuxContractInfoName = args.infoName end
+                    if args.infoCount ~= nil then modData.PZLinuxContractInfoCount = args.infoCount end
                     if args.contractId ~= nil then modData.PZLinuxContractTypeId = args.contractId end
                     if args.locationX ~= nil then modData.PZLinuxContractLocationX = args.locationX end
                     if args.locationY ~= nil then modData.PZLinuxContractLocationY = args.locationY end
@@ -2964,6 +2967,26 @@ function PZLinuxContractsAdminAddFunds(player, amount, requestId)
     return credit
 end
 
+function PZLinuxContractsAdminForceMail(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    -- Reuses the same random-mail generator as the normal scheduled flow
+    -- (PZLinuxMailCreateRandom), so a forced mail is indistinguishable from
+    -- one the player would have received naturally -- same random type
+    -- (ads/ammo/medical), same allowlist, same reward rules.
+    local result = PZLinuxMailCreateRandom(playerObj, requestId)
+    if result.ok then
+        print("[PZLinux Admin] " .. tostring(playerObj:getUsername())
+            .. " forced a random mail mission (id " .. tostring(result.mailId)
+            .. ", type " .. tostring(result.mailType) .. ")")
+    end
+    return result
+end
+
 function PZLinuxContractsFindBoardContract(contractId)
     contractId = tonumber(contractId)
     local boardData = PZLinuxContractsGetBoardData()
@@ -3263,6 +3286,15 @@ function PZLinuxContractsGetActiveState(player, requestId)
         contractSendFridge = modData.PZLinuxContractSendFridge,
         contractAtmRefill = modData.PZLinuxContractAtmRefill,
         atmAmount = record and record.atmAmount or modData.PZLinuxContractAtmAmount,
+        -- Needed by Auto Parts/Medical/Weapon contracts (5, 9, 10) to
+        -- recognize a matching item at a mailbox: without these, a
+        -- reconnect leaves modData.PZLinuxContractInfo stale/nil on the
+        -- client, so PZLinuxContractsHasDepositItems never finds a match
+        -- and the delivery option silently never appears again, even
+        -- though the world contract is still active server-side.
+        info = record and record.info or modData.PZLinuxContractInfo,
+        infoName = record and record.infoName or modData.PZLinuxContractInfoName,
+        infoCount = record and record.infoCount or modData.PZLinuxContractInfoCount,
         completionReceipt = pzlinux.contracts and pzlinux.contracts.pendingCompletion or nil,
         balance = PZLinuxLoadBankBalance(playerObj),
     }
@@ -4955,6 +4987,15 @@ function PZLinuxRequestAdminAddFunds(player, amount, callback)
     return requestId
 end
 
+function PZLinuxRequestAdminForceMail(player, callback)
+    local requestId = PZLinuxNextRequestId("admin-force-mail")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId }
+    if PZLinuxSendClientCommand("PZLinuxContractAdminForceMail", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxContractsAdminForceMail(player, requestId))
+    return requestId
+end
+
 function PZLinuxRequestContractSync(player, callback)
     local requestId = PZLinuxNextRequestId("contract-sync")
     PZLinuxRegisterCallback(requestId, callback)
@@ -5184,6 +5225,26 @@ function PZLinuxMailRandomDeliveryItem(mailType)
     return items[ZombRand(#items) + 1]
 end
 
+-- Builds a localized floor label from an absolute Z level, matching this
+-- mod's existing convention that z=0 is street/ground level (see the Ekron
+-- ATM contract target and RELEASE.md's "per absolute Z level" reward
+-- wording). Ground floor and floors below street level get their own
+-- dedicated wording instead of "Floor 0"/"Floor -1", since a bare number
+-- there reads as a typo rather than a location. French and English name
+-- floors differently around ground level (rez-de-chaussée vs 1st Floor,
+-- depending on convention), so this always keeps z=0 as its own explicit
+-- "Ground Floor" label instead of trying to guess an offset per language.
+function PZLinuxFormatFloorLabel(z)
+    z = tonumber(z) or 0
+    if z == 0 then
+        return PZLinuxGetText("IGUI_PZLinux_Mail_FloorGround")
+    elseif z > 0 then
+        return PZLinuxFormatText("IGUI_PZLinux_Mail_FloorAbove", "Floor %s", z)
+    else
+        return PZLinuxFormatText("IGUI_PZLinux_Mail_FloorBelow", "Basement %s", -z)
+    end
+end
+
 function PZLinuxMailNormalizeRecord(player, mailId)
     local md, pzlinux = PZLinuxGetModData(player)
     if not pzlinux then return nil, nil, nil end
@@ -5217,7 +5278,12 @@ function PZLinuxMailNormalizeRecord(player, mailId)
             loc = PZLinuxGetRandomMissionLocation("mails", mail.type)
         end
         if loc then
-            mail.city = mail.city or loc.name
+            -- loc.name was never a field on mission location entries (they
+            -- use loc.city/loc.building), so this used to always resolve to
+            -- nil and leave mail.city unset -- the exact "city missing from
+            -- the mail description" bug reported by players.
+            mail.city = mail.city or loc.city
+            mail.building = mail.building or loc.building
             mail.x = mail.x or loc.x
             mail.y = mail.y or loc.y
             mail.z = mail.z or loc.z
@@ -5420,17 +5486,59 @@ function PZLinuxMailGiveReward(player)
     return added, parcel
 end
 
+-- Delivers any mail-mission gifts still owed to the player, one separate
+-- parcel per completed mission, the same way Dark Web/Request orders are
+-- picked up: only created once the player actually checks a mailbox,
+-- never handed over the instant the mission is completed.
+function PZLinuxMailApplyRewardDelivery(player, mailboxRef, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
+    if mailboxError then
+        return { ok = false, error = mailboxError, requestId = requestId }
+    end
+
+    local modData = playerObj:getModData()
+    local pending = math.max(0, tonumber(modData.PZLinuxOnMailReward) or 0)
+    if pending <= 0 then
+        return { ok = true, requestId = requestId, delivered = 0 }
+    end
+
+    local delivered = 0
+    while pending > 0 do
+        local _, parcel = PZLinuxMailGiveReward(playerObj)
+        if not parcel then break end
+        delivered = delivered + 1
+        pending = pending - 1
+    end
+
+    modData.PZLinuxOnMailReward = pending
+    PZLinuxTransmitPlayerModData(playerObj)
+    return { ok = true, requestId = requestId, delivered = delivered, remaining = pending }
+end
+
 function PZLinuxMailApplyComplete(player, mailId, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
-    local mail, _, pzlinux = PZLinuxMailNormalizeRecord(playerObj, mailId)
+    local mail, md, pzlinux = PZLinuxMailNormalizeRecord(playerObj, mailId)
     if not mail then return { ok = false, error = "missing_mail", requestId = requestId, mailId = mailId } end
     if mail.status ~= 2 then return { ok = false, error = "mail_not_accepted", requestId = requestId, mailId = mailId, status = mail.status } end
 
     local playerSquare = playerObj:getSquare()
     if playerSquare and mail.x and mail.y then
-        local distance = math.abs(playerSquare:getX() - tonumber(mail.x)) + math.abs(playerSquare:getY() - tonumber(mail.y))
-        if distance > 3 then
+        -- Must match isNearTarget's metric and threshold (client, PZLinuxUtils.lua):
+        -- Chebyshev distance, <= 5. The context-menu deposit option is only ever
+        -- shown to the player when a mailbox satisfies that same check, so
+        -- enforcing a tighter/different metric here (Manhattan <= 3) rejected
+        -- deliveries the player had no way to know would fail -- the option
+        -- was visible and the right item was in hand, yet completion silently
+        -- failed with a generic "Mail delivery rejected" every time the two
+        -- squares weren't roughly axis-aligned.
+        local distance = math.max(
+            math.abs(playerSquare:getX() - tonumber(mail.x)),
+            math.abs(playerSquare:getY() - tonumber(mail.y))
+        )
+        if distance > 5 then
             return { ok = false, error = "too_far", requestId = requestId, mailId = mailId, distance = distance }
         end
     end
@@ -5441,21 +5549,22 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
         return { ok = false, error = "missing_items", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, available = available }
     end
 
-    local rewardItems, rewardParcel = PZLinuxMailGiveReward(playerObj)
-    if not rewardParcel then
-        return { ok = false, error = "reward_creation_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity }
-    end
-
     local removed = PZLinuxMailRemoveInventoryItems(playerObj, mail.object, quantity)
     if removed < quantity then
-        PZLinuxRemoveInventoryItem(playerObj, rewardParcel)
         return { ok = false, error = "remove_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, removed = removed }
     end
+
+    -- The gift is no longer handed over immediately here -- it's deferred to
+    -- the next mailbox visit (PZLinuxMailApplyRewardDelivery), the same way
+    -- Dark Web and Request orders already work in this mod. A counter (not
+    -- a flag) supports several completed missions stacking up their own
+    -- separate gift before the player next checks a mailbox.
+    md.PZLinuxOnMailReward = (tonumber(md.PZLinuxOnMailReward) or 0) + 1
 
     local reputation = PZLinuxApplyReputationDelta(playerObj, PZLinux.Economy.contractCompleteReward())
     mail.status = 10
     PZLinuxTransmitPlayerModData(playerObj)
-    return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardItems = rewardItems, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }
+    return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardPending = true, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }
 end
 
 function PZLinuxRequestMailAccept(player, mailId, callback)
@@ -5485,6 +5594,17 @@ function PZLinuxRequestMailComplete(player, mailId, callback)
         return requestId
     end
     PZLinuxDispatchCallback(PZLinuxMailApplyComplete(player, mailId, requestId))
+    return requestId
+end
+
+function PZLinuxRequestMailRewardDelivery(player, mailboxRef, callback)
+    local requestId = PZLinuxNextRequestId("mail-reward-delivery")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, mailbox = mailboxRef }
+    if PZLinuxSendClientCommand("PZLinuxMailRewardDelivery", args) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxMailApplyRewardDelivery(player, mailboxRef, requestId))
     return requestId
 end
 
