@@ -1,6 +1,6 @@
 version=1
 id=3414468585
-title=PZLinux - Apocalypse Economy [Build 42]
+title=PZLinux
 description=[h1]PZLinux 1.0.3[/h1]
 description=Give cash a purpose with a persistent apocalypse economy accessed through computers, ATMs and mailboxes.
 description=
