@@ -5470,8 +5470,19 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
 
     local playerSquare = playerObj:getSquare()
     if playerSquare and mail.x and mail.y then
-        local distance = math.abs(playerSquare:getX() - tonumber(mail.x)) + math.abs(playerSquare:getY() - tonumber(mail.y))
-        if distance > 3 then
+        -- Must match isNearTarget's metric and threshold (client, PZLinuxUtils.lua):
+        -- Chebyshev distance, <= 5. The context-menu deposit option is only ever
+        -- shown to the player when a mailbox satisfies that same check, so
+        -- enforcing a tighter/different metric here (Manhattan <= 3) rejected
+        -- deliveries the player had no way to know would fail -- the option
+        -- was visible and the right item was in hand, yet completion silently
+        -- failed with a generic "Mail delivery rejected" every time the two
+        -- squares weren't roughly axis-aligned.
+        local distance = math.max(
+            math.abs(playerSquare:getX() - tonumber(mail.x)),
+            math.abs(playerSquare:getY() - tonumber(mail.y))
+        )
+        if distance > 5 then
             return { ok = false, error = "too_far", requestId = requestId, mailId = mailId, distance = distance }
         end
     end

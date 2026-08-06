@@ -2,6 +2,15 @@
 
 ## [1.0.3]
 
+- Added an admin-only "Force a random mail mission" debug option, same
+  access rules as the existing contract/funds debug tools.
+- Fixed completing an Ammo/Medical mail mission silently failing with a
+  generic "Mail delivery rejected" even with the exact right item in hand,
+  at a mailbox that visibly offered the deposit option. The context menu
+  and the server-side completion check used two different distance
+  metrics -- Chebyshev (max of dx/dy) for showing the option, Manhattan
+  (dx+dy) for validating it -- so an off-axis position the player was shown
+  as valid could still fail the stricter server check.
 - Fixed Auto Parts, Medical and Weapon contracts (5, 9, 10) never showing a
   mailbox delivery option again after a multiplayer reconnect, even with
   the exact right item in hand. The requested item's type, name and count

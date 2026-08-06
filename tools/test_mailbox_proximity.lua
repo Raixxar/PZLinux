@@ -117,4 +117,23 @@ assert(mailUiSource:find("self%.selectedMailId = tonumber%(mail%.id%) or mail%.i
 assert(mailUiSource:find("local id = tonumber%(self%.selectedMailId%) or self%.selectedMailId"),
     "accepting a mail must normalize the selected ID to a number before looking it up")
 
+-- Regression test for a real gameplay bug: completing a mail mission
+-- (Ammo/Medical) could silently fail with a generic "Mail delivery
+-- rejected" even with the exact right item in hand, at a mailbox that
+-- visibly offered the deposit option. Root cause: the context menu shows
+-- the option using isNearTarget's Chebyshev distance (<= 5), but
+-- PZLinuxMailApplyComplete enforced a different metric entirely --
+-- Manhattan distance (<= 3) -- which off-axis can reject a position the
+-- client had just approved (e.g. dx=3,dy=3 is Chebyshev 3 but Manhattan 6).
+local variablesFile = assert(io.open(
+    repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua/shared/ISPZLinuxVariablesTables.lua",
+    "rb"
+))
+local variablesSource = variablesFile:read("*a")
+variablesFile:close()
+local mailCompleteBlock = variablesSource:match("function PZLinuxMailApplyComplete.-\nend\n\nfunction PZLinuxRequestMailAccept")
+assert(mailCompleteBlock and mailCompleteBlock:find("math%.max%(") and mailCompleteBlock:find("distance > 5"),
+    "completing a mail mission must use the same Chebyshev distance and threshold (<= 5) as the " ..
+    "context menu that offers the deposit option, or a visible option can still be silently rejected")
+
 print("Mailbox proximity tests: OK")
