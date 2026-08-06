@@ -2,6 +2,12 @@
 
 ## [1.0.2]
 
+- Fixed the "Check" button on the personal (white) mailbox overflowing well
+  past the mail slot, toward the flag. It reused the same relative width as
+  the street (blue) mailbox's button, but the two textures have very
+  different proportions -- the personal mailbox's actual slot only spans
+  roughly the left third of its texture, unlike the street mailbox's, which
+  spans nearly the full width.
 - Fixed clicking "CHECK CONDITION" locking a blank, unclosable computer
   panel on screen until restart. The computer's condition value could come
   back as a string instead of a number after a ModData round-trip

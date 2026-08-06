@@ -81,7 +81,13 @@ function MailBoxUI:showLoginMenu()
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.60, self.height * 0.027, PZLinuxGetText("IGUI_PZLinux_Mailbox_Check"), self, self.onSendTakePackage)
+    -- mailBox.png (the personal mailbox) only shows its actual mail slot
+    -- across roughly the left third of the texture -- the rest of the
+    -- canvas is the box's side panel and the flag pole. Unlike
+    -- streetMailBox.png (where the slot spans nearly the full width),
+    -- reusing the same 0.60 relative width here overflowed well past the
+    -- slot, toward the flag.
+    self.loginButton = ISButton:new(self.width * 0.132, self.height * 0.355, self.width * 0.30, self.height * 0.027, PZLinuxGetText("IGUI_PZLinux_Mailbox_Check"), self, self.onSendTakePackage)
     self.loginButton:setVisible(true)
     self.loginButton:setEnable(false)
     self.loginButton:initialise()
