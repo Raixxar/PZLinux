@@ -174,4 +174,55 @@ for _, relativePath in ipairs({
         relativePath .. " must describe the building, city and floor together instead of just the city")
 end
 
+-- Regression test for a real gameplay bug: a player's context menu offered
+-- the mailbox option on an unrelated B42 object (a newspaper dispenser),
+-- and every action on it then failed with "missing_mailbox_reference".
+-- Root cause: the context-menu builders matched sprite names with
+-- string.find (a substring search), while the server-side allowlist
+-- (PZLinuxIsMailboxSprite) does an exact match. A single-digit pattern
+-- like "street_decoration_01_9" matches ANY sprite name that merely
+-- starts with it, e.g. "street_decoration_01_90" -- a real B42 object
+-- added since this code was written. The menu then opened on the wrong
+-- object, PZLinuxGetMailboxReference correctly refused to recognize it
+-- (exact match), and every action failed downstream with a nil reference.
+for _, spec in ipairs({
+    { path = "/client/Context/World/ISContextStreetMailBox.lua", fn = "StreetMailBoxMenu_AddContext" },
+    { path = "/client/Context/World/ISContextMailBox.lua", fn = "MailBoxMenu_AddContext" },
+    { path = "/client/Context/World/ISContextAtmMenu.lua", fn = "AtmMenu_AddContext" },
+    { path = "/client/Context/World/ISContextLinuxMenu.lua", fn = "linuxMenu_AddContext" },
+}) do
+    local specFile = assert(io.open(repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua" .. spec.path, "rb"))
+    local source = specFile:read("*a")
+    specFile:close()
+    local block = source:match("function " .. spec.fn .. ".-\nend")
+    assert(block, spec.path .. " must define " .. spec.fn)
+    assert(not block:find("string.find(sprite", 1, true) and not block:find("string.find(spriteName", 1, true),
+        spec.path .. "'s " .. spec.fn .. " must match sprite names exactly (==), not with a substring search " ..
+        "that can false-positive on an unrelated object whose sprite name happens to start the same way")
+end
+
+-- Regression test for a real gameplay bug: a player reported the computer
+-- context menu not appearing at all when the Desktop Computer was placed
+-- on top of a piece of furniture (a counter), even standing right next to
+-- it. Vanilla's own worldobjects list for a right-click can skip a computer
+-- stacked on furniture in favor of the furniture itself, even though the
+-- computer object is still really on that tile. The fix rescans each
+-- worldobjects square's FULL object list (square:getObjects()) instead of
+-- only checking the objects vanilla already chose to list.
+do
+    local linuxMenuPath = repoRoot .. "/Contents/mods/B42 PZLinux/42/media/lua/client/Context/World/ISContextLinuxMenu.lua"
+    local linuxMenuFile = assert(io.open(linuxMenuPath, "rb"))
+    local linuxMenuSource = linuxMenuFile:read("*a")
+    linuxMenuFile:close()
+    local addContextBlock = linuxMenuSource:match("function linuxMenu_AddContext.-\nend")
+    assert(addContextBlock, "linuxMenu_AddContext must exist")
+    assert(addContextBlock:find("square:getObjects()", 1, true),
+        "linuxMenu_AddContext must rescan each candidate square's full object list, " ..
+        "not just the objects vanilla's worldobjects already picked out, " ..
+        "or a computer stacked on furniture can be silently invisible to the menu")
+    assert(addContextBlock:find("isNearTargetCapture(x, y, z, targetX, targetY, targetZ)", 1, true),
+        "the extra scan must still be gated by the same player-proximity check as before, " ..
+        "so it cannot offer the menu for a computer far from the player")
+end
+
 print("Mailbox proximity tests: OK")
