@@ -68,6 +68,7 @@ function darkWebUI:initialise()
 
     function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
+        PZLinuxTrackDragging(self.parent)
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
         self.parent.mouseStartX = getMouseX()
@@ -433,6 +434,16 @@ function darkWebUI:onBuy()
                     end
 
                     if self.transactionBtns[lineIndex] then
+                        -- Defense in depth on top of the FilterMatch fix
+                        -- above: if this row slot ever ends up bound to a
+                        -- different offer than last render for any other
+                        -- reason (e.g. the search filter changing what's
+                        -- shown), clear out whatever quantity was typed
+                        -- for the PREVIOUS offer at this position instead
+                        -- of silently carrying it over to a new item.
+                        if self.transactionBtns[lineIndex].internal ~= i and self.transactionQtys[lineIndex] then
+                            self.transactionQtys[lineIndex]:setText("0")
+                        end
                         self.transactionBtns[lineIndex].internal = i
                         if rowData.transactionType == "Buy" then
                             local titleKey = (tonumber(rowData.stock) or 0) > 0
@@ -625,9 +636,17 @@ function darkWebUI:OnFilter(button)
 end
 
 function darkWebUI:FilterMatch(rowData)
-    if rowData.transactionType == "Buy" and (tonumber(rowData.stock) or 0) <= 0 then
-        return false
-    end
+    -- A sold-out offer used to be filtered out of the list entirely here,
+    -- which silently shifted every offer after it up by one visual row.
+    -- Since each row is a reused button/quantity-box pair whose bound
+    -- offer index gets reassigned on every re-render (see the onBuy loop
+    -- below), that shift could leave a player's already-typed quantity
+    -- sitting in a row that now points at a completely different item --
+    -- clicking BUY there purchases whatever silently slid into that slot,
+    -- not what was on screen a moment ago. Sold-out offers now stay in
+    -- place and simply render disabled with a "SOLD OUT" label (the rest
+    -- of this function already assumed that), so row positions never move
+    -- just because stock ran out.
     if self.filterMode == "all" then
         return true
     elseif self.filterMode == "search" then

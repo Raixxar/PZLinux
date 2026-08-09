@@ -49,6 +49,7 @@ function MailBoxUI:showLoginMenu()
 
     function self.topBar.onMouseDown(topBar, _x, _y)
         topBar.parent.isDragging = true
+        PZLinuxTrackDragging(topBar.parent)
         topBar.parent.initialX = topBar.parent:getX()
         topBar.parent.initialY = topBar.parent:getY()
         topBar.parent.mouseStartX = getMouseX()

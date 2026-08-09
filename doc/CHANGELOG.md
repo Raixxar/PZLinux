@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.0.5]
+
+- Fixed a sold-out Dark Web offer disappearing from the buy list instead of
+  staying shown disabled. Every offer after it in the list would silently
+  shift up one row to fill the gap, but each row is a reused button and
+  quantity box -- so a quantity already typed for one item could end up
+  attached to a completely different item that slid into that same row,
+  making it possible to buy (and receive) something other than what was
+  on screen when you typed the quantity. Rows also now clear their typed
+  quantity whenever they get rebound to a different offer, as an extra
+  safeguard against the same kind of mix-up from any other cause (e.g.
+  the search filter).
+- Fixed closing or minimizing the betting panel mid-hand of Blackjack
+  silently abandoning it: the bet already taken at Deal time was never
+  settled or refunded, unlike Race and Poker which were already protected
+  the same way. Walking away from a hand now refunds the bet (treated as
+  a push) instead of the money just vanishing with the orphaned hand.
+- Added a short cooldown between Blackjack Deal/Hit/Stand clicks to guard
+  against a click landing twice almost simultaneously (a worn mouse's
+  double-click defect, a fast real double-click, or a click racing the
+  button's own disable-on-click before it takes effect), which could let
+  a hand's outcome resolve faster than intended.
+- Fixed a PZLinux window sometimes getting stuck glued to the mouse cursor
+  after certain click sequences (e.g. clicking the bet amount field then a
+  runner's name on the Zombie Races screen), with no way out except ESC.
+  Every PZLinux panel drags itself manually and relies on its own title bar
+  catching the mouse release to stop -- if a click landed on the wrong
+  child widget that release could get missed, leaving the panel chasing
+  the cursor forever. Releasing the mouse button anywhere now reliably
+  lets go of any panel currently being dragged, on every PZLinux screen.
+
 ## [1.0.4]
 
 - Fixed the computer's right-click menu sometimes not appearing at all when

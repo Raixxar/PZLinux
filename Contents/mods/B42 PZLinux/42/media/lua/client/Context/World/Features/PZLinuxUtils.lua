@@ -1,3 +1,31 @@
+-- Defensive safety net for the manual window-dragging pattern used across
+-- this mod's UI panels: each panel's topBar sets isDragging = true on
+-- mouseDown and relies on its own topBar.onMouseUp to clear it. A click
+-- landing on certain child widgets (a focused text entry losing focus, a
+-- selection button placed on top of the topBar) can end up not routing
+-- that release back to topBar's own onMouseUp, leaving the panel glued to
+-- the cursor with no clean way to let go except ESC. Events.OnMouseUp is a
+-- real vanilla PZ event that fires on every left-click release regardless
+-- of which specific widget handled it, so hooking it as a second,
+-- independent path to clear isDragging fixes that without changing normal
+-- drag behavior at all -- the panel's own onMouseUp still fires and does
+-- the same thing in the ordinary case; this is purely a fallback for when
+-- it doesn't.
+local PZLinuxDraggingPanels = {}
+
+function PZLinuxTrackDragging(panel)
+    table.insert(PZLinuxDraggingPanels, panel)
+end
+
+local function PZLinuxReleaseAllDragging()
+    for _, panel in ipairs(PZLinuxDraggingPanels) do
+        panel.isDragging = false
+    end
+    PZLinuxDraggingPanels = {}
+end
+Events.OnMouseUp.Add(PZLinuxReleaseAllDragging)
+Events.OnRightMouseUp.Add(PZLinuxReleaseAllDragging)
+
 function isNearTarget(x, y, z, targetX, targetY, targetZ)
     return math.max(math.abs(x - targetX), math.abs(y - targetY)) <= 5 and z == targetZ
 end

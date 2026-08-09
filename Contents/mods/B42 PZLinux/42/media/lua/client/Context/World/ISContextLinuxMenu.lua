@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.4"
+local PZLinuxVersion = "v1.0.5"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -34,6 +34,7 @@ function linuxUI:initialise()
 
     function self.topBar.onMouseDown(topBar, _x, _y)
         topBar.parent.isDragging = true
+        PZLinuxTrackDragging(topBar.parent)
         topBar.parent.initialX = topBar.parent:getX()
         topBar.parent.initialY = topBar.parent:getY()
         topBar.parent.mouseStartX = getMouseX()

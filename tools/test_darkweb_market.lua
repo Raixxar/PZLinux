@@ -112,8 +112,22 @@ local darkWebUiFile = assert(io.open(
 ))
 local darkWebUi = darkWebUiFile:read("*a")
 darkWebUiFile:close()
-PZLinuxTestAssert(darkWebUi:find('rowData%.transactionType == "Buy".-rowData%.stock.-<= 0'),
-    "the Dark Web UI must hide exhausted buy offers")
+-- Regression test for a real gameplay bug: a sold-out offer used to be
+-- filtered out of the buy list entirely, which silently shifted every
+-- offer after it up by one visual row. Each row is a reused button and
+-- quantity box whose bound offer index gets reassigned on every
+-- re-render, so that shift could leave a player's already-typed quantity
+-- sitting in a row that now points at a completely different item --
+-- clicking BUY there purchases whatever slid into that slot, not what
+-- was on screen a moment ago.
+local filterMatchBlock = darkWebUi:match("function darkWebUI:FilterMatch.-\nend")
+PZLinuxTestAssert(filterMatchBlock, "darkWebUI:FilterMatch must exist")
+PZLinuxTestAssert(not filterMatchBlock:find('rowData%.stock.-<= 0'),
+    "sold-out offers must stay in the list (shown disabled) instead of being filtered out, " ..
+    "or row positions can silently shift underneath the player")
+PZLinuxTestAssert(darkWebUi:find("transactionQtys[lineIndex]:setText(\"0\")", 1, true),
+    "a row must clear its typed quantity whenever it gets rebound to a different offer, " ..
+    "as defense in depth against any other cause of row positions shifting (e.g. search filtering)")
 PZLinuxTestAssert(darkWebUi:find('IGUI_PZLinux_DarkWeb_Stock'),
     "the Dark Web UI must display the available quantity")
 PZLinuxTestAssert(darkWebUi:find("PZLinuxDarkWebFitText")
