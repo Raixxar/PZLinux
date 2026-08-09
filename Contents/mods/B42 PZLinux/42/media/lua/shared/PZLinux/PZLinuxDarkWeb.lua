@@ -196,6 +196,15 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
     modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb or {}
     modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
     table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, { batch })
+    -- Temporary diagnostic logging for a reported bug (wrong/stale items
+    -- showing up at the mailbox instead of what was just bought). Prints
+    -- the exact queue state right after every purchase so a server log can
+    -- show whether stale batches are already sitting there before this one
+    -- was even added. Safe to remove once the root cause is confirmed.
+    print(string.format(
+        "[PZLinux DarkWeb] BUY player=%s item=%s qty=%d queueLenAfter=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(itemToAdd), quantity,
+        #modData.PZLinuxOnItemBuyOnDarkWeb))
     marketOffer.stock = availableStock - quantity
     offer.stock = marketOffer.stock
     PZLinuxDarkWebTransmitMarket()
@@ -410,6 +419,30 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
     local modData = playerObj:getModData()
     if modData.PZLinuxOnItemBuyOnDarkWebStatus ~= 1 or type(modData.PZLinuxOnItemBuyOnDarkWeb) ~= "table" then
         return { ok = true, requestId = requestId, delivered = 0, lost = false, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    -- Temporary diagnostic logging for a reported bug (wrong/stale items
+    -- showing up at the mailbox instead of what was just bought). Dumps the
+    -- full queue -- every batch and every item name in it -- right before
+    -- delivery consumes it, so a server log can show whether stale batches
+    -- from earlier purchases were still sitting there. Safe to remove once
+    -- the root cause is confirmed.
+    do
+        local summary = {}
+        for batchIndex, wrapper in ipairs(modData.PZLinuxOnItemBuyOnDarkWeb) do
+            local batch = type(wrapper) == "table" and wrapper[1] or nil
+            local names = {}
+            if batch and type(batch.items) == "table" then
+                for _, item in ipairs(batch.items) do
+                    table.insert(names, tostring(item.name))
+                end
+            end
+            table.insert(summary, batchIndex .. ":[" .. table.concat(names, ",") .. "]")
+        end
+        print(string.format(
+            "[PZLinux DarkWeb] DELIVER player=%s queueLenBefore=%d batches=%s",
+            tostring(PZLinuxGetPlayerKey(playerObj)), #modData.PZLinuxOnItemBuyOnDarkWeb,
+            table.concat(summary, " ")))
     end
 
     local chanceLostOrder = ZombRand(1, 101)

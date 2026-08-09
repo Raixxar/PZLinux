@@ -302,6 +302,7 @@ function PZLinuxBettingUI:initialise()
 
     function self.topBar.onMouseDown(topBar, _x, _y)
         topBar.parent.isDragging = true
+        PZLinuxTrackDragging(topBar.parent)
         topBar.parent.initialX = topBar.parent:getX()
         topBar.parent.initialY = topBar.parent:getY()
         topBar.parent.mouseStartX = getMouseX()
@@ -1162,7 +1163,28 @@ function PZLinuxBettingUI:showBlackjackMenu()
     table.insert(self.blackjackControls, self.blackjackStandButton)
 end
 
+-- Debounce guard against a click landing twice in a very short window --
+-- a mechanical mouse double-click defect, a rapid real double-click, or a
+-- click racing the button's own :setEnable(false) before it takes effect
+-- can all fire this handler twice almost simultaneously. Without this, a
+-- second call can slip through and, depending on timing, land on
+-- whatever action the (by-then-changed) button layout shows next -- e.g.
+-- Hit or Stand appearing where Deal just was -- fast enough to blow
+-- through a hand before the player consciously acts on it.
+local PZLINUX_BLACKJACK_DEBOUNCE_MS = 250
+local function PZLinuxBlackjackDebounced(self)
+    local timestampProvider = rawget(_G, "getTimestampMs")
+    local now = timestampProvider and tonumber(timestampProvider())
+    if not now then return true end
+    if self.blackjackLastActionMs and now - self.blackjackLastActionMs < PZLINUX_BLACKJACK_DEBOUNCE_MS then
+        return false
+    end
+    self.blackjackLastActionMs = now
+    return true
+end
+
 function PZLinuxBettingUI:onBlackjackDeal()
+    if not PZLinuxBlackjackDebounced(self) then return end
     local amount = tonumber(self.blackjackAmountInput:getText())
     if not amount or amount < 1 then
         PZLinuxBettingPlaySound(self, "error")
@@ -1181,6 +1203,7 @@ function PZLinuxBettingUI:onBlackjackDeal()
 end
 
 function PZLinuxBettingUI:onBlackjackHit()
+    if not PZLinuxBlackjackDebounced(self) then return end
     self.blackjackHitButton:setEnable(false)
     self.blackjackStandButton:setEnable(false)
     PZLinuxRequestBlackjackHit(self.player, function(result)
@@ -1190,6 +1213,7 @@ function PZLinuxBettingUI:onBlackjackHit()
 end
 
 function PZLinuxBettingUI:onBlackjackStand()
+    if not PZLinuxBlackjackDebounced(self) then return end
     self.blackjackHitButton:setEnable(false)
     self.blackjackStandButton:setEnable(false)
     PZLinuxRequestBlackjackStand(self.player, function(result)
@@ -1330,9 +1354,29 @@ function PZLinuxBettingUI:settleRaceBeforeClose(afterSettlement)
     end)
 end
 
+-- Closing the panel used to just abandon an in-progress Blackjack hand:
+-- the bet had already been taken at Deal time, and nothing settled or
+-- refunded it, unlike Race and Poker just above. Always asking the server
+-- to forfeit is safe even when there's no hand in progress -- see
+-- PZLinuxBlackjackForfeit, it's a no-op in that case -- so this doesn't
+-- need to duplicate the client's own idea of whether a hand is active.
+function PZLinuxBettingUI:forfeitBlackjackBeforeClose(afterForfeit)
+    if self.blackjackForfeitInProgress then return end
+    self.blackjackForfeitInProgress = true
+    PZLinuxRequestBlackjackForfeit(self.player, function(result)
+        self.blackjackForfeitInProgress = false
+        if result and result.balance then
+            self:updateBalanceLabel(result.balance)
+        end
+        afterForfeit()
+    end)
+end
+
 function PZLinuxBettingUI:settleGamesBeforeClose(afterSettlement)
     self:settleRaceBeforeClose(function()
-        self:cashOutPokerBeforeClose(afterSettlement)
+        self:cashOutPokerBeforeClose(function()
+            self:forfeitBlackjackBeforeClose(afterSettlement)
+        end)
     end)
 end
 

@@ -54,6 +54,7 @@ local player = {
 
 PZLinux = {}
 PZLinuxGetPlayer = function(value) return value end
+PZLinuxGetPlayerKey = function() return "test-player" end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxLoadBankBalance = function() return 1000 end
 PZLinuxTransmitPlayerModData = function() end

@@ -31,6 +31,7 @@ function mailUI:initialise()
 
     function self.topBar:onMouseDown(_x, _y)
         self.parent.isDragging = true
+        PZLinuxTrackDragging(self.parent)
         self.parent.initialX = self.parent:getX()
         self.parent.initialY = self.parent:getY()
         self.parent.mouseStartX = getMouseX()

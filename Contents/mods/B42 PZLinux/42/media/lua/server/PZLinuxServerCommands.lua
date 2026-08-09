@@ -72,6 +72,15 @@ local function PZLinuxServerProcessIdempotent(player, command, args, responseCom
     local key = tostring(command) .. ":" .. tostring(requestId)
     local cached = bucket.records[key]
     if cached then
+        -- Temporary diagnostic logging for a reported bug (Blackjack bets
+        -- sometimes not being taken). If a client ever resends the same
+        -- requestId for what the player experiences as a NEW action, this
+        -- idempotency cache silently replays the OLD result instead of
+        -- re-running worker() -- which would explain a bet never actually
+        -- being re-debited. Safe to remove once the root cause is confirmed.
+        print(string.format(
+            "[PZLinux Idempotency] REPLAY cached result player=%s command=%s requestId=%s",
+            tostring(PZLinuxGetPlayerKey(player)), tostring(command), tostring(requestId)))
         PZLinuxServerSend(player, responseCommand, cached.result)
         return
     end
@@ -135,6 +144,12 @@ end
 local function PZLinuxServerBlackjackStand(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxBlackjackStand", args, "PZLinuxBlackjackState", function()
         return PZLinuxBlackjackStand(player, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerBlackjackForfeit(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxBlackjackForfeit", args, "PZLinuxBlackjackState", function()
+        return PZLinuxBlackjackForfeit(player, args and args.requestId)
     end)
 end
 
@@ -488,6 +503,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxBlackjackStart = PZLinuxServerBlackjackStart,
     PZLinuxBlackjackHit = PZLinuxServerBlackjackHit,
     PZLinuxBlackjackStand = PZLinuxServerBlackjackStand,
+    PZLinuxBlackjackForfeit = PZLinuxServerBlackjackForfeit,
     PZLinuxRaceSchedule = PZLinuxServerRaceSchedule,
     PZLinuxRaceScheduleBet = PZLinuxServerRaceScheduleBet,
     PZLinuxPokerStart = PZLinuxServerPokerStart,

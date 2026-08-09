@@ -934,6 +934,16 @@ function PZLinuxBlackjackFinish(player, session, outcome)
         PZLinuxApplyBankCredit(player, session.payout, "blackjack", session.requestId)
     end
 
+    -- Temporary diagnostic logging, see PZLinuxBlackjackStart. Logs the
+    -- final outcome, bet and payout for every hand, so a server log can be
+    -- matched up against the START logs to see exactly which hands did or
+    -- didn't actually move money. Safe to remove once the root cause is
+    -- confirmed.
+    print(string.format(
+        "[PZLinux Blackjack] FINISH player=%s requestId=%s outcome=%s bet=%d payout=%d",
+        tostring(PZLinuxGetPlayerKey(player)), tostring(session.requestId), tostring(outcome),
+        session.bet, session.payout))
+
     PZLinuxClearInterruptedSession(player, "blackjack")
     local state = PZLinuxBlackjackBuildState(player, session)
     PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)] = nil
@@ -942,7 +952,21 @@ end
 
 function PZLinuxBlackjackStart(player, amount, requestId)
     amount = PZLinuxNormalizeMoney(amount)
+    -- Temporary diagnostic logging for a reported bug (bets sometimes not
+    -- taken, letting several hands be played "for free"). Logs whether a
+    -- previous session was still sitting around unfinished when a new hand
+    -- starts, and the exact debit outcome/balance for every single hand.
+    -- Safe to remove once the root cause is confirmed.
+    local staleSession = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
+    print(string.format(
+        "[PZLinux Blackjack] START player=%s requestId=%s amount=%d staleSessionPresent=%s staleSessionFinished=%s",
+        tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), amount,
+        tostring(staleSession ~= nil), tostring(staleSession and staleSession.finished)))
+
     local debit = PZLinuxApplyBankDebit(player, amount, "blackjack", requestId)
+    print(string.format(
+        "[PZLinux Blackjack] START DEBIT player=%s requestId=%s ok=%s balanceAfter=%s",
+        tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), tostring(debit.ok), tostring(debit.balance)))
     if not debit.ok then
         debit.game = "blackjack"
         return debit
@@ -1015,6 +1039,37 @@ function PZLinuxBlackjackStand(player, requestId)
     end
 
     return PZLinuxBlackjackFinish(player, session, "lose")
+end
+
+-- Closing/minimizing the betting panel mid-hand used to just abandon the
+-- hand outright: Race and Poker are settled first (settleRaceBeforeClose /
+-- cashOutPokerBeforeClose), but Blackjack had no equivalent, so the
+-- in-progress session was silently left behind server-side. If the player
+-- reopened the panel and dealt a new hand, PZLinuxBlackjackStart would
+-- overwrite that orphaned session without ever crediting back the bet it
+-- had already taken -- money debited for a hand that was never played to
+-- a result and never refunded. Treated as a push (the bet is simply
+-- returned) since walking away isn't a loss the player actually played
+-- out, and the dealer's hidden hole card is never revealed for it either.
+function PZLinuxBlackjackForfeit(player, requestId)
+    local session = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
+    if not session or session.finished then
+        return { ok = true, requestId = requestId, forfeited = false, balance = PZLinuxLoadBankBalance(player) }
+    end
+
+    local state = PZLinuxBlackjackFinish(player, session, "push")
+    state.forfeited = true
+    return state
+end
+
+function PZLinuxRequestBlackjackForfeit(player, callback)
+    local requestId = PZLinuxNextRequestId("blackjack-forfeit")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxBlackjackForfeit", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxBlackjackForfeit(player, requestId))
+    return requestId
 end
 
 function PZLinuxRequestBlackjackStart(player, amount, callback)
