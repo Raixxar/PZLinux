@@ -466,5 +466,6 @@
     "IGUI_PZLinux_MailAds_17": "1 survivor.\n1000 zombies.\nAnd YOU won a prize.\nDon’t ask how.\nJust take it.\n%s\n",
     "IGUI_PZLinux_MailAds_18": "Hello USER_0001, %s\nOur system detected a WIN event.\nPrize: ???\nLocation: UNKNOWN\nProceed anyway? Y/N\n%s\n",
     "IGUI_PZLinux_MailAds_19": "Hi Knox Country,\nYou have been selected for SELECT * FROM rewards;\nIf error persists, blame the apocalypse.\nDo not reply.\nActually, reply.\n- %s\n",
-    "IGUI_PZLinux_MailAds_20": "Nothing beats a Knox 2 holiday and right now you can save £50 per person.\nThat's £200 off for a family of 4. we've got millions of free child place holidays available with 22kg of baggage included.\nbook now with Knox 2 holidays. package holidays you can trust!\n- %s\n"
+    "IGUI_PZLinux_MailAds_20": "Nothing beats a Knox 2 holiday and right now you can save £50 per person.\nThat's £200 off for a family of 4. we've got millions of free child place holidays available with 22kg of baggage included.\nbook now with Knox 2 holidays. package holidays you can trust!\n- %s\n",
+    "IGUI_PZLinux_Betting_BlackjackBetRange": "This table's bet range is $%s-$%s"
 }

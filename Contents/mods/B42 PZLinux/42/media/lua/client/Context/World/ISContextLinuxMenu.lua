@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.5"
+local PZLinuxVersion = "v1.0.6"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -604,8 +604,17 @@ function linuxMenu_AddContext(player, context, worldobjects)
         local x, y, z = square:getX(), square:getY(), square:getZ()
         if not isNearTargetCapture(x, y, z, targetX, targetY, targetZ) then return false end
 
+        -- Repair used to only ever appear below 15%, so a single repair
+        -- attempt (which adds a random amount well above that threshold
+        -- almost every time) immediately made the option disappear again,
+        -- leaving the computer stuck well short of full health instead of
+        -- being repairable back to 100% over multiple attempts. It now
+        -- shows any time the computer is below a "healthy" 80% buffer, so
+        -- players can keep repairing (spending Electronic Scrap each time)
+        -- until it's actually back to full condition, without the option
+        -- nagging over every single point of cosmetic wear near 100%.
         if not obj:getModData().statusCondition then obj:getModData().statusCondition = ZombRand(1,100) end
-        if obj:getModData().statusCondition < 15 then
+        if obj:getModData().statusCondition < 80 then
             context:addOption(PZLinuxGetText("IGUI_PZLinux_Context_RepairComputer"), obj, linuxMenu_OnRepare, playerObj, x, y, z, spriteName)
         end
         if obj:getModData().statusCondition > 0 then

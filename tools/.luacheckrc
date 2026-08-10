@@ -120,6 +120,7 @@ globals = {
     "PZLinuxBlackjackDraw",
     "PZLinuxBlackjackFinish",
     "PZLinuxBlackjackForfeit",
+    "PZLinuxBlackjackGetTable",
     "PZLinuxBlackjackHandValue",
     "PZLinuxBlackjackHit",
     "PZLinuxBlackjackIsNatural",

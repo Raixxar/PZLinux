@@ -902,6 +902,7 @@ function PZLinuxBlackjackBuildState(player, session)
     return {
         ok = true,
         requestId = session.requestId,
+        tableId = session.tableId,
         bet = session.bet,
         balance = PZLinuxLoadBankBalance(player),
         previousBalance = session.previousBalance,
@@ -950,8 +951,30 @@ function PZLinuxBlackjackFinish(player, session, outcome)
     return state
 end
 
-function PZLinuxBlackjackStart(player, amount, requestId)
+function PZLinuxBlackjackStart(player, tableId, amount, requestId)
     amount = PZLinuxNormalizeMoney(amount)
+
+    -- Fixed-stakes tables (like the Poker lobbies): each table caps how
+    -- much a single hand can risk, regardless of bankroll, so a lucky
+    -- streak can't compound a small bet into an enormous one in just a
+    -- couple of hands the way an unbounded bet could. See
+    -- PZLinuxBlackjackGetTable in PZLinuxConfig.lua.
+    local tableDef = PZLinuxBlackjackGetTable(tableId)
+    if not tableDef then
+        return { ok = false, error = "invalid_table", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
+    end
+    if amount < tableDef.minBet or amount > tableDef.maxBet then
+        return {
+            ok = false,
+            error = "bet_out_of_range",
+            requestId = requestId,
+            tableId = tableId,
+            minBet = tableDef.minBet,
+            maxBet = tableDef.maxBet,
+            balance = PZLinuxLoadBankBalance(player),
+        }
+    end
+
     -- Temporary diagnostic logging for a reported bug (bets sometimes not
     -- taken, letting several hands be played "for free"). Logs whether a
     -- previous session was still sitting around unfinished when a new hand
@@ -959,8 +982,8 @@ function PZLinuxBlackjackStart(player, amount, requestId)
     -- Safe to remove once the root cause is confirmed.
     local staleSession = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
     print(string.format(
-        "[PZLinux Blackjack] START player=%s requestId=%s amount=%d staleSessionPresent=%s staleSessionFinished=%s",
-        tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), amount,
+        "[PZLinux Blackjack] START player=%s requestId=%s table=%s amount=%d staleSessionPresent=%s staleSessionFinished=%s",
+        tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), tostring(tableId), amount,
         tostring(staleSession ~= nil), tostring(staleSession and staleSession.finished)))
 
     local debit = PZLinuxApplyBankDebit(player, amount, "blackjack", requestId)
@@ -980,6 +1003,7 @@ function PZLinuxBlackjackStart(player, amount, requestId)
     local deck = PZLinuxBlackjackCreateDeck()
     local session = {
         requestId = requestId,
+        tableId = tableId,
         bet = amount,
         previousBalance = debit.previousBalance,
         deck = deck,
@@ -1072,13 +1096,13 @@ function PZLinuxRequestBlackjackForfeit(player, callback)
     return requestId
 end
 
-function PZLinuxRequestBlackjackStart(player, amount, callback)
+function PZLinuxRequestBlackjackStart(player, tableId, amount, callback)
     local requestId = PZLinuxNextRequestId("blackjack-start")
     PZLinuxRegisterCallback(requestId, callback)
-    if PZLinuxSendClientCommand("PZLinuxBlackjackStart", { requestId = requestId, amount = amount }) then
+    if PZLinuxSendClientCommand("PZLinuxBlackjackStart", { requestId = requestId, tableId = tableId, amount = amount }) then
         return requestId
     end
-    PZLinuxDispatchCallback(PZLinuxBlackjackStart(player, amount, requestId))
+    PZLinuxDispatchCallback(PZLinuxBlackjackStart(player, tableId, amount, requestId))
     return requestId
 end
 

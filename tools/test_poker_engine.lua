@@ -84,7 +84,7 @@ assert(PZLinuxPokerEstimateEquity(equitySession, 500) == 100, "a private royal f
 
 PZLinux.Poker.Sessions = {}
 local foldPlayer = {}
-local foldSnapshot = PZLinuxPokerCreateSession(foldPlayer, "micro", 500, "fold-start")
+local foldSnapshot = PZLinuxPokerCreateSession(foldPlayer, "micro", 150, "fold-start")
 assert(foldSnapshot.ok and foldSnapshot.legalActions.fold, "the regression hand must allow the player to fold")
 assert(#foldSnapshot.seats == 6, "the Poker table must contain the player and five opponents")
 for index = 2, #foldSnapshot.seats do
@@ -94,5 +94,31 @@ local foldedResult = PZLinuxPokerAction(foldPlayer, "fold", 0, foldSnapshot.sess
 assert(foldedResult.phase == "hand_complete", "AI must finish the hand after the player folds, got " .. tostring(foldedResult.phase))
 assert(not foldedResult.legalActions.fold and not foldedResult.legalActions.check, "a folded player must not receive another betting action")
 assert(foldedResult.seats[1].lastAction == "FOLD", "the snapshot must expose the player's latest table action")
+
+-- Design goal confirmed with the mod's author: gambling must stay a fun
+-- distraction, never a substitute for Contracts as the mod's one reliable
+-- income source. The top lobby's max buy-in (100x its big blind) is the
+-- most a player can ever bring to a single hand, so it must stay below
+-- the single best-paying contract, or a lucky session at the tables could
+-- out-earn actually playing the game.
+local contractsFile = assert(io.open("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxContractsData.lua", "rb"))
+local contractsSource = contractsFile:read("*a")
+contractsFile:close()
+local bestContractReward = 0
+for reward in contractsSource:gmatch("reward%s*=%s*(%d+)") do
+    bestContractReward = math.max(bestContractReward, tonumber(reward))
+end
+assert(bestContractReward > 0, "must find at least one contract reward to compare against")
+
+local highestBigBlind = 0
+for _, lobby in ipairs(PZLinux.Poker.Config.lobbies) do
+    highestBigBlind = math.max(highestBigBlind, lobby.bigBlind)
+end
+local _, topMaxBuyIn = PZLinuxPokerGetBuyInLimits({ bigBlind = highestBigBlind })
+assert(topMaxBuyIn < bestContractReward,
+    string.format(
+        "the top Poker lobby's max buy-in ($%d) must stay below the best contract reward ($%d), " ..
+        "or gambling can out-earn actually playing",
+        topMaxBuyIn, bestContractReward))
 
 print("PZLinux poker engine tests OK")

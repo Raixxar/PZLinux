@@ -131,7 +131,7 @@ end
 
 local function PZLinuxServerBlackjackStart(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxBlackjackStart", args, "PZLinuxBlackjackState", function()
-        return PZLinuxBlackjackStart(player, args and args.amount, args and args.requestId)
+        return PZLinuxBlackjackStart(player, args and args.tableId, args and args.amount, args and args.requestId)
     end)
 end
 
