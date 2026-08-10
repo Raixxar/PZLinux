@@ -466,5 +466,6 @@
     "IGUI_PZLinux_MailAds_17": "1名倖存者。\n1000隻殭屍。\n而你贏得了一份獎品。\n別問怎麼回事。\n拿著就是了。\n%s\n",
     "IGUI_PZLinux_MailAds_18": "你好 USER_0001，%s\n我們的系統偵測到一次中獎事件。\n獎品：？？？\n地點：未知\n仍要繼續嗎？是/否\n%s\n",
     "IGUI_PZLinux_MailAds_19": "你好 Knox Country，\n你被選中執行 SELECT * FROM 獎勵;\n如果錯誤持續出現，那就怪末日吧。\n請勿回覆。\n其實，還是回覆吧。\n- %s\n",
-    "IGUI_PZLinux_MailAds_20": "沒有什麼比得上Knox 2度假村的假期，現在每人可省£50。\n四口之家就是省£200。我們有數百萬免費兒童名額，含22公斤行李額度。\n現在就預訂Knox 2假期，值得信賴的套裝旅行！\n- %s\n"
+    "IGUI_PZLinux_MailAds_20": "沒有什麼比得上Knox 2度假村的假期，現在每人可省£50。\n四口之家就是省£200。我們有數百萬免費兒童名額，含22公斤行李額度。\n現在就預訂Knox 2假期，值得信賴的套裝旅行！\n- %s\n",
+    "IGUI_PZLinux_Betting_BlackjackBetRange": "這張桌子的下注範圍是 $%s-$%s"
 }

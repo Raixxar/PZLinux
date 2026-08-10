@@ -260,7 +260,7 @@ Every computer has its own hidden condition value that slowly degrades. The "CHE
 
 [h3]When can I repair it, and how ?[/h3]
 
-Right-click the computer in the world: a "Repair" option only appears once its condition has dropped low enough to actually need it. Repairing consumes one Electronic Scrap from your main inventory, and how much condition you recover per repair scales with your electrical skill — a higher skill means each repair attempt fixes more, so the computer stays usable for longer between repairs.
+Right-click the computer in the world: a "Repair" option appears any time its condition is below 80%, and stays available across as many repair attempts as it takes to get back to 100% — you're not limited to a single repair. Each attempt consumes one Electronic Scrap from your main inventory, and how much condition you recover per repair scales with your electrical skill — a higher skill means each repair attempt fixes more, so fewer attempts (and less scrap) are needed to get back to full health.
 
 [h2]Multiplayer:[/h2]
 

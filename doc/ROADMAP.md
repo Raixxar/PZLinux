@@ -1,16 +1,3 @@
---- v1.0.4 (bug fixes from real player feedback, no new features) ---
-Bug: ATM/computer window gets stuck following the cursor if the mouse button
-    is released outside the panel while dragging (ISContextLinuxMenu.lua
-    onMouseUp only fires while still hovering the panel; isDragging never
-    clears). Needs a drag-stop check that isn't tied to hovering the panel
-    (e.g. Events.OnMouseUp, or checking isMouseButtonDown in onMouseMove).
-Bug/design: computer repair only ever shows up while condition < 15%, so a
-    player can only ever repair once before the option disappears again
-    (statusCondition rises above 15% from a single repair almost every
-    time), leaving it well short of 100% instead of being repairable back to
-    full health over multiple attempts. Confirm intended design before
-    changing the threshold/gating logic.
-
 --- v1.1.0 ---
 Mail quest chains: procedural multi-step mail missions built from the
     existing contract activities (retrieve an item, go to a location, kill

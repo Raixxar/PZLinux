@@ -223,6 +223,18 @@ do
     assert(addContextBlock:find("isNearTargetCapture(x, y, z, targetX, targetY, targetZ)", 1, true),
         "the extra scan must still be gated by the same player-proximity check as before, " ..
         "so it cannot offer the menu for a computer far from the player")
+
+    -- Regression test for a real design bug: the "Repair" option only ever
+    -- appeared below 15% condition, but a single repair attempt adds a
+    -- random amount that almost always pushes it back above 15% -- so the
+    -- option immediately disappeared again, leaving the computer stuck
+    -- well short of full health instead of being repairable back to 100%
+    -- over multiple attempts.
+    assert(not addContextBlock:find("statusCondition < 15", 1, true),
+        "the Repair option must not gate on the old 15% threshold that only ever allowed one repair attempt")
+    assert(addContextBlock:find("statusCondition < 80", 1, true),
+        "the Repair option must stay available any time condition is below the 80% healthy buffer, " ..
+        "so a computer can be repaired back to 100% over multiple attempts instead of getting stuck partway")
 end
 
 print("Mailbox proximity tests: OK")

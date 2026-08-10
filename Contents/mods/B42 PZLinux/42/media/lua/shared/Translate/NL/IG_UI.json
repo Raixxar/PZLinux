@@ -466,5 +466,6 @@
     "IGUI_PZLinux_MailAds_17": "1 overlevende.\n1000 zombies.\nEn JIJ won een prijs.\nVraag niet hoe.\nNeem het gewoon aan.\n%s\n",
     "IGUI_PZLinux_MailAds_18": "Hallo USER_0001, %s\nOns systeem detecteerde een WIN-gebeurtenis.\nPrijs: ???\nLocatie: ONBEKEND\nToch doorgaan? J/N\n%s\n",
     "IGUI_PZLinux_MailAds_19": "Hoi Knox Country,\nJe bent geselecteerd voor SELECT * FROM beloningen;\nAls de fout aanhoudt, geef de apocalyps de schuld.\nNiet reageren.\nReageer eigenlijk toch.\n- %s\n",
-    "IGUI_PZLinux_MailAds_20": "Niets gaat boven een Knox 2-vakantie, en nu kun je 50£ per persoon besparen.\nDat is 200£ korting voor een gezin van 4. We hebben miljoenen gratis kinderplekken met 22kg bagage inbegrepen.\nBoek nu bij Knox 2-vakanties. Pakketreizen die je kunt vertrouwen!\n- %s\n"
+    "IGUI_PZLinux_MailAds_20": "Niets gaat boven een Knox 2-vakantie, en nu kun je 50£ per persoon besparen.\nDat is 200£ korting voor een gezin van 4. We hebben miljoenen gratis kinderplekken met 22kg bagage inbegrepen.\nBoek nu bij Knox 2-vakanties. Pakketreizen die je kunt vertrouwen!\n- %s\n",
+    "IGUI_PZLinux_Betting_BlackjackBetRange": "De inzetlimiet van deze tafel is $%s-$%s"
 }

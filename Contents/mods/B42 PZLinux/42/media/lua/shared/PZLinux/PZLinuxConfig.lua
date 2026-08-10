@@ -175,4 +175,24 @@ PZLinux.Config.Sell.negotiateSuccessChancePercent =
 PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {
     ranks = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" },
     suits = { "C", "D", "H", "S" },
+    -- Fixed-stakes tables, same idea as the Poker lobbies (PZLinuxPokerConfig.lua):
+    -- a real casino caps every table's bet regardless of bankroll, rather than
+    -- letting a lucky streak compound a small bet into an enormous one in just
+    -- a couple of hands. Deliberately NOT scaled by world-age price inflation --
+    -- these are fixed stakes, like a real table's posted limits never move.
+    tables = {
+        { id = "micro", minBet = 10, maxBet = 250 },
+        { id = "low", minBet = 100, maxBet = 1000 },
+        { id = "high", minBet = 1000, maxBet = 10000 },
+        { id = "elite", minBet = 10000, maxBet = 50000 },
+    },
 }
+
+function PZLinuxBlackjackGetTable(tableId)
+    for _, tableDef in ipairs(PZLinux.Config.Blackjack.tables or {}) do
+        if tableDef.id == tableId then
+            return tableDef
+        end
+    end
+    return nil
+end

@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.6]
+
+- Fixed the computer's "Repair" option only ever appearing below 15%
+  condition. A single repair attempt almost always pushes condition back
+  above that threshold on its own, so the option immediately disappeared
+  again, leaving the computer stuck well short of full health instead of
+  being repairable back to 100% over as many attempts (and as much
+  Electronic Scrap) as it takes. It now stays available any time condition
+  is below a healthy 80% buffer.
+- Added fixed-stakes Blackjack tables (Micro $10-$250, Low $100-$1,000,
+  High $1,000-$10,000, Elite $10,000-$50,000), the same idea as the
+  existing Poker lobbies: pick a table before dealing, and your bet is
+  capped to that table's own posted limits. Without any cap, a lucky
+  streak could compound a small bankroll into an enormous one in just a
+  handful of hands. The payout odds themselves are untouched -- 1:1 for a
+  normal win and 3:2 for a natural blackjack, the real casino odds -- since
+  the fix for unlimited growth is a table limit, not worse odds. Stakes
+  are deliberately fixed rather than scaled with world-age price
+  inflation, like a real table's posted limits never move.
+
 ## [1.0.5]
 
 - Fixed a sold-out Dark Web offer disappearing from the buy list instead of

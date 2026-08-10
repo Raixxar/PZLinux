@@ -286,6 +286,7 @@ function PZLinuxBettingUI:new(x, y, width, height, player)
     o.blackjackCardControls = {}
     o.pokerControls = {}
     o.blackjackStakeMoodApplied = false
+    o.blackjackSelectedTableId = (PZLinux.Config.Blackjack.tables[1] or {}).id
     return o
 end
 
@@ -1111,6 +1112,27 @@ function PZLinuxBettingUI:showBlackjackMenu()
     self.topBar:addChild(self.blackjackTitle)
     table.insert(self.blackjackControls, self.blackjackTitle)
 
+    -- Fixed-stakes table picker, same idea as the Poker lobby list: pick a
+    -- table before betting, and the amount you can type is capped to that
+    -- table's own posted limits instead of being open-ended.
+    self.blackjackTableButtons = {}
+    local tableButtonWidth = self.width * 0.135
+    local tableButtonX = self.width * 0.20
+    for _, tableDef in ipairs(PZLinux.Config.Blackjack.tables) do
+        local tableLabel = string.format("%s $%d-$%d", tableDef.id, tableDef.minBet, tableDef.maxBet)
+        local tableButton = ISButton:new(tableButtonX, self.height * 0.565, tableButtonWidth, self.height * 0.03, tableLabel, self, self.onBlackjackSelectTable)
+        tableButton.tableId = tableDef.id
+        tableButton.textColor = {r=0, g=1, b=0, a=1}
+        tableButton.backgroundColor = (tableDef.id == self.blackjackSelectedTableId) and {r=0, g=0.4, b=0, a=1} or {r=0, g=0, b=0, a=0.5}
+        tableButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        tableButton:setVisible(true)
+        tableButton:initialise()
+        self.topBar:addChild(tableButton)
+        table.insert(self.blackjackControls, tableButton)
+        table.insert(self.blackjackTableButtons, tableButton)
+        tableButtonX = tableButtonX + tableButtonWidth + self.width * 0.005
+    end
+
     self.blackjackAmountInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_Amount"), self.width * 0.20, self.height * 0.603, self.width * 0.18, self.height * 0.028)
     self.blackjackAmountInput:initialise()
     self.blackjackAmountInput:instantiate()
@@ -1183,6 +1205,15 @@ local function PZLinuxBlackjackDebounced(self)
     return true
 end
 
+function PZLinuxBettingUI:onBlackjackSelectTable(button)
+    self.blackjackSelectedTableId = button.tableId
+    for _, tableButton in ipairs(self.blackjackTableButtons or {}) do
+        tableButton.backgroundColor = (tableButton.tableId == self.blackjackSelectedTableId)
+            and {r=0, g=0.4, b=0, a=1} or {r=0, g=0, b=0, a=0.5}
+    end
+    self:showBlackjackError("")
+end
+
 function PZLinuxBettingUI:onBlackjackDeal()
     if not PZLinuxBlackjackDebounced(self) then return end
     local amount = tonumber(self.blackjackAmountInput:getText())
@@ -1192,11 +1223,24 @@ function PZLinuxBettingUI:onBlackjackDeal()
         return
     end
 
+    -- Client-side pre-check, same courtesy as Poker's onPokerSelectLobby --
+    -- the server re-validates this regardless (see PZLinuxBlackjackStart),
+    -- this just avoids a round trip for an obviously out-of-range bet.
+    local tableDef = PZLinuxBlackjackGetTable(self.blackjackSelectedTableId)
+    if not tableDef or amount < tableDef.minBet or amount > tableDef.maxBet then
+        PZLinuxBettingPlaySound(self, "error")
+        self:showBlackjackError(PZLinuxFormatText(
+            "IGUI_PZLinux_Betting_BlackjackBetRange",
+            "This table's bet range is $%s-$%s",
+            tableDef and tableDef.minBet or 0, tableDef and tableDef.maxBet or 0))
+        return
+    end
+
     self.blackjackStakeMoodApplied = false
     self.blackjackDealButton:setEnable(false)
     self:showBlackjackError(PZLinuxGetText("IGUI_PZLinux_Betting_Dealing"))
 
-    PZLinuxRequestBlackjackStart(self.player, amount, function(result)
+    PZLinuxRequestBlackjackStart(self.player, self.blackjackSelectedTableId, amount, function(result)
         if self.isClosing then return end
         self:showBlackjackState(result)
     end)
@@ -1226,7 +1270,14 @@ function PZLinuxBettingUI:showBlackjackState(result)
     if not result or not result.ok then
         PZLinuxBettingPlaySound(self, "error")
         self.blackjackDealButton:setEnable(true)
-        self:showBlackjackError(PZLinuxGetText("IGUI_PZLinux_Betting_NotEnoughMoney"))
+        if result and result.error == "bet_out_of_range" then
+            self:showBlackjackError(PZLinuxFormatText(
+                "IGUI_PZLinux_Betting_BlackjackBetRange",
+                "This table's bet range is $%s-$%s",
+                result.minBet, result.maxBet))
+        else
+            self:showBlackjackError(PZLinuxGetText("IGUI_PZLinux_Betting_NotEnoughMoney"))
+        end
         return
     end
 
@@ -1276,6 +1327,7 @@ function PZLinuxBettingUI:showBlackjackState(result)
         self.blackjackDealButton:setEnable(true)
         self.blackjackDealButton:setVisible(true)
         self.blackjackAmountInput:setVisible(true)
+        PZLinuxBettingSetVisible(self.blackjackTableButtons, true)
         self.blackjackStakeMoodApplied = false
         if result.outcome == "win" or result.outcome == "blackjack" then
             PZLinuxBettingPlaySound(self, "sold")
@@ -1285,6 +1337,7 @@ function PZLinuxBettingUI:showBlackjackState(result)
 
     self.blackjackDealButton:setVisible(false)
     self.blackjackAmountInput:setVisible(false)
+    PZLinuxBettingSetVisible(self.blackjackTableButtons, false)
     self.blackjackHitButton:setVisible(true)
     self.blackjackStandButton:setVisible(true)
     self.blackjackHitButton:setEnable(true)

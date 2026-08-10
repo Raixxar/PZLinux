@@ -466,5 +466,6 @@
     "IGUI_PZLinux_MailAds_17": "1 hayatta kalan.\n1000 zombi.\nVe SEN bir ödül kazandın.\nNasıl olduğunu sorma.\nSadece al.\n%s\n",
     "IGUI_PZLinux_MailAds_18": "Merhaba USER_0001, %s\nSistemimiz bir KAZANÇ olayı tespit etti.\nÖdül: ???\nKonum: BİLİNMİYOR\nYine de devam edilsin mi? E/H\n%s\n",
     "IGUI_PZLinux_MailAds_19": "Merhaba Knox Country,\nSELECT * FROM ödüller için seçildin;\nHata devam ederse, kıyameti suçla.\nCevap verme.\nAslında, cevap ver.\n- %s\n",
-    "IGUI_PZLinux_MailAds_20": "Knox 2 tatili gibisi yok, ve tam şimdi kişi başı 50£ tasarruf edebilirsin.\n4 kişilik bir aile için 200£ indirim demek bu. 22kg bagaj dahil milyonlarca ücretsiz çocuk yeri var.\nKnox 2 tatilleriyle şimdi rezervasyon yap. Güvenebileceğin paket turlar!\n- %s\n"
+    "IGUI_PZLinux_MailAds_20": "Knox 2 tatili gibisi yok, ve tam şimdi kişi başı 50£ tasarruf edebilirsin.\n4 kişilik bir aile için 200£ indirim demek bu. 22kg bagaj dahil milyonlarca ücretsiz çocuk yeri var.\nKnox 2 tatilleriyle şimdi rezervasyon yap. Güvenebileceğin paket turlar!\n- %s\n",
+    "IGUI_PZLinux_Betting_BlackjackBetRange": "Bu masanın bahis aralığı $%s-$%s"
 }
