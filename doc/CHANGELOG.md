@@ -9,16 +9,23 @@
   being repairable back to 100% over as many attempts (and as much
   Electronic Scrap) as it takes. It now stays available any time condition
   is below a healthy 80% buffer.
-- Added fixed-stakes Blackjack tables (Micro $10-$250, Low $100-$1,000,
-  High $1,000-$10,000, Elite $10,000-$50,000), the same idea as the
-  existing Poker lobbies: pick a table before dealing, and your bet is
-  capped to that table's own posted limits. Without any cap, a lucky
-  streak could compound a small bankroll into an enormous one in just a
-  handful of hands. The payout odds themselves are untouched -- 1:1 for a
-  normal win and 3:2 for a natural blackjack, the real casino odds -- since
-  the fix for unlimited growth is a table limit, not worse odds. Stakes
-  are deliberately fixed rather than scaled with world-age price
-  inflation, like a real table's posted limits never move.
+- Added fixed-stakes Blackjack tables (Micro $10-$100, Low $50-$500, High
+  $200-$1,000, Elite $1,000-$5,000), the same idea as the existing Poker
+  lobbies: pick a table before dealing, and your bet is capped to that
+  table's own posted limits. Without any cap, a lucky streak could
+  compound a small bankroll into an enormous one in just a handful of
+  hands. The payout odds themselves are untouched -- 1:1 for a normal win
+  and 3:2 for a natural blackjack, the real casino odds -- since the fix
+  for unlimited growth is a table limit, not worse odds. Stakes are
+  deliberately fixed rather than scaled with world-age price inflation,
+  like a real table's posted limits never move.
+- Rebalanced the Poker lobby blinds/buy-ins down (Micro $100-$200, Low
+  $500-$1,000, High $2,000-$4,000, Elite $5,000-$10,000) to match the same
+  design goal as the new Blackjack tables: even the top lobby's maximum
+  buy-in now stays below the single best-paying contract, so gambling
+  stays a fun distraction rather than a way to out-earn actually playing.
+  The old lobbies (up to $10,000/$5,000 blinds, $1,000,000 max buy-in)
+  predated that goal by a wide margin.
 
 ## [1.0.5]
 

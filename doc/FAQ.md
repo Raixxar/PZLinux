@@ -184,11 +184,11 @@ Bet on a runner before the race starts and watch it play out. The payout is sett
 
 [h3]Blackjack ?[/h3]
 
-Play against the house with a real 52-card deck. Set your stake and play a normal hand of Blackjack; win, lose or push against the dealer.
+Play against the house with a real 52-card deck. Pick one of four fixed-stakes tables (Micro $10-$100, Low $50-$500, High $200-$1,000, Elite $1,000-$5,000) — you need at least that table's minimum bet in your bank account to sit down. Payouts are the real casino odds: 1:1 on a normal win, 3:2 on a natural blackjack. The tables are capped on purpose so that even the luckiest possible hand stays below what a good contract pays — gambling is meant to be a fun distraction, not a substitute for actually working for your money.
 
 [h3]Poker ?[/h3]
 
-Join a six-seat Texas Hold'em table against AI opponents, with side pots and table stakes. Each AI seat is assigned one of 5 difficulty levels, which affects its bluffing tendency, decision noise and how aggressively it raises — without ever revealing that level or its cards to you. Your current hand and an estimated win percentage are shown; that percentage isn't a hand-strength formula, it's a Monte Carlo estimate — the engine runs 300 random simulations of how the remaining cards could play out and reports how often you'd actually win.
+Join a six-seat Texas Hold'em table against AI opponents, with side pots and table stakes. Like Blackjack, there are four fixed-stakes lobbies (Micro, Low, High, Elite) with their own blinds and buy-in range, capped the same way so a lucky run at the tables can't out-earn playing the game. Each AI seat is assigned one of 5 difficulty levels, which affects its bluffing tendency, decision noise and how aggressively it raises — without ever revealing that level or its cards to you. Your current hand and an estimated win percentage are shown; that percentage isn't a hand-strength formula, it's a Monte Carlo estimate — the engine runs 300 random simulations of how the remaining cards could play out and reports how often you'd actually win.
 
 [h3]What happens if I disconnect or close the game mid-game ?[/h3]
 

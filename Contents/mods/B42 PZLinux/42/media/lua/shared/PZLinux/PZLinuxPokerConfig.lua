@@ -12,11 +12,16 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
     aiDecisionDelayTicks = 20,
     rakePercent = 0,
     maxActionHistory = 12,
+    -- Capped so even the top table's max buy-in ($10,000, at 100x its big
+    -- blind) stays well below the single best-paying contract ($14,000) --
+    -- gambling is meant to stay a fun distraction, never a substitute for
+    -- Contracts as the mod's one reliable income source. Same philosophy
+    -- as the Blackjack tables (PZLinuxConfig.lua).
     lobbies = {
-        { id = "micro", smallBlind = 5, bigBlind = 10 },
-        { id = "low", smallBlind = 50, bigBlind = 100 },
-        { id = "high", smallBlind = 500, bigBlind = 1000 },
-        { id = "elite", smallBlind = 5000, bigBlind = 10000 },
+        { id = "micro", smallBlind = 1, bigBlind = 2 },
+        { id = "low", smallBlind = 5, bigBlind = 10 },
+        { id = "high", smallBlind = 20, bigBlind = 40 },
+        { id = "elite", smallBlind = 50, bigBlind = 100 },
     },
     aiDifficultyWeights = { 25, 25, 25, 15, 10 },
     aiBluffChance = {

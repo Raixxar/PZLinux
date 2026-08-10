@@ -27,14 +27,36 @@ dofile(luaRoot .. "/shared/PZLinux/PZLinuxConfig.lua")
 assert(type(PZLinux.Config.Blackjack.tables) == "table" and #PZLinux.Config.Blackjack.tables >= 2,
     "Blackjack must offer more than one fixed-stakes table")
 
+-- Design goal confirmed with the mod's author: gambling must stay a fun
+-- distraction, never a substitute for Contracts as the mod's one reliable
+-- income source. Even the best possible outcome (a natural blackjack, 2.5x,
+-- at the top table's max bet) must stay below the single best-paying
+-- contract, so no amount of luck at the tables can out-earn actually
+-- playing the game.
+local contractsSource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxContractsData.lua")
+local bestContractReward = 0
+for reward in contractsSource:gmatch("reward%s*=%s*(%d+)") do
+    bestContractReward = math.max(bestContractReward, tonumber(reward))
+end
+assert(bestContractReward > 0, "must find at least one contract reward to compare against")
+
 local previousMin = -1
+local highestMaxBet = 0
 for _, tableDef in ipairs(PZLinux.Config.Blackjack.tables) do
     assert(tableDef.id and tableDef.minBet and tableDef.maxBet, "every table needs an id, minBet and maxBet")
     assert(tableDef.minBet < tableDef.maxBet, "a table's minimum bet must be below its maximum")
     assert(tableDef.minBet > previousMin,
         "tables must be listed in ascending stakes order, so the UI lists them from lowest to highest")
     previousMin = tableDef.minBet
+    highestMaxBet = math.max(highestMaxBet, tableDef.maxBet)
 end
+
+local bestPossibleBlackjackPayout = math.floor(highestMaxBet * 2.5)
+assert(bestPossibleBlackjackPayout < bestContractReward,
+    string.format(
+        "the best possible Blackjack payout ($%d, a natural blackjack at the top table's max bet) " ..
+        "must stay below the best contract reward ($%d), or gambling can out-earn actually playing",
+        bestPossibleBlackjackPayout, bestContractReward))
 
 assert(PZLinuxBlackjackGetTable("micro"), "the micro table must be resolvable by id")
 assert(PZLinuxBlackjackGetTable("does-not-exist") == nil,

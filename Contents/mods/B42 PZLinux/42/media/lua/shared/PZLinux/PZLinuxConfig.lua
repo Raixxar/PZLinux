@@ -180,11 +180,15 @@ PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {
     -- letting a lucky streak compound a small bet into an enormous one in just
     -- a couple of hands. Deliberately NOT scaled by world-age price inflation --
     -- these are fixed stakes, like a real table's posted limits never move.
+    -- Capped so even the best case (a natural blackjack, 2.5x, at the top
+    -- table's max bet) stays below the single best-paying contract ($14,000)
+    -- -- gambling is meant to stay a fun distraction, never a substitute for
+    -- Contracts as the mod's one reliable income source.
     tables = {
-        { id = "micro", minBet = 10, maxBet = 250 },
-        { id = "low", minBet = 100, maxBet = 1000 },
-        { id = "high", minBet = 1000, maxBet = 10000 },
-        { id = "elite", minBet = 10000, maxBet = 50000 },
+        { id = "micro", minBet = 10, maxBet = 100 },
+        { id = "low", minBet = 50, maxBet = 500 },
+        { id = "high", minBet = 200, maxBet = 1000 },
+        { id = "elite", minBet = 1000, maxBet = 5000 },
     },
 }
 
