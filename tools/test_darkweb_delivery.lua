@@ -67,6 +67,11 @@ getScriptManager = function()
     return { FindItem = function(_, itemType) return itemType == "Base.Axe" end }
 end
 
+local stolenNoteCalls = {}
+PZLinuxCreateStolenOrderNote = function(playerArg)
+    table.insert(stolenNoteCalls, playerArg)
+end
+
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua")
 
 local result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-1")
@@ -86,6 +91,21 @@ result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-2")
 PZLinuxTestAssert(not result.ok and result.error == "parcel_creation_failed", "parcel creation failure must be reported")
 PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and #modData.PZLinuxOnItemBuyOnDarkWeb == 1,
     "a failed delivery must preserve the pending order")
+
+-- A player reported being confused when a Dark Web order simply never
+-- arrived: the 10% theft roll wiped the queue with only an easy-to-miss
+-- HaloText bubble as feedback. A stolen order must now also leave a
+-- findable note in the player's inventory (PZLinuxCreateStolenOrderNote,
+-- shared with Buy Goods -- see test_request_delivery.lua for its half).
+modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
+modData.PZLinuxOnItemBuyOnDarkWeb = {
+    { { items = { { name = "Base.Axe" } } } },
+}
+ZombRand = function() return 1 end
+result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-stolen")
+PZLinuxTestAssert(result.ok and result.lost == true and result.delivered == 0, "a stolen order must report lost = true")
+PZLinuxTestAssert(#stolenNoteCalls == 1, "a stolen Dark Web order must create exactly one stolen-order note")
+ZombRand = function() return 100 end
 
 local variables = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
 PZLinuxTestAssert(variables:find("sendAddItemToContainer%(container, item%)"),

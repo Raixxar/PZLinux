@@ -650,19 +650,32 @@ end
 function PZLinuxBettingUI:onPokerAction(button)
     if not self.pokerSession or not self.pokerSession.sessionId then return end
     button:setEnable(false)
+    -- Same race as Blackjack's Deal/Hit/Stand (see forfeitBlackjackBeforeClose):
+    -- Close/Minimize/Leave stay clickable while this action is in flight, so
+    -- closing the panel right after clicking Call/Raise/etc. could send the
+    -- auto-cashout before this action's own effect on the stack is applied
+    -- -- cashing out a stack that hasn't been debited/credited by the bet
+    -- that's still on its way. Waiting for this to land first closes that gap.
+    self.pokerActionInFlight = true
     if button.pokerAction == "cashout" then
         PZLinuxRequestPokerCashOut(self.player, self.pokerSession.sessionId, function(result)
-            if self.isClosing then return end
-            self.pokerSession = nil
-            self:showPokerCashOut(result)
+            self.pokerActionInFlight = false
+            if not self.isClosing then
+                self.pokerSession = nil
+                self:showPokerCashOut(result)
+            end
+            self:pokerRunPendingCashOut()
         end)
         return
     end
 
     local amount = tonumber(self.pokerActionInput and self.pokerActionInput:getText()) or 0
     PZLinuxRequestPokerAction(self.player, self.pokerSession.sessionId, button.pokerAction, amount, function(result)
-        if self.isClosing then return end
-        self:showPokerState(result)
+        self.pokerActionInFlight = false
+        if not self.isClosing then
+            self:showPokerState(result)
+        end
+        self:pokerRunPendingCashOut()
     end)
 end
 
@@ -1240,9 +1253,16 @@ function PZLinuxBettingUI:onBlackjackDeal()
     self.blackjackDealButton:setEnable(false)
     self:showBlackjackError(PZLinuxGetText("IGUI_PZLinux_Betting_Dealing"))
 
+    -- See blackjackActionInFlight's use in forfeitBlackjackBeforeClose: this
+    -- flag lets a close-panel forfeit wait for this request's own response
+    -- instead of racing ahead of it.
+    self.blackjackActionInFlight = true
     PZLinuxRequestBlackjackStart(self.player, self.blackjackSelectedTableId, amount, function(result)
-        if self.isClosing then return end
-        self:showBlackjackState(result)
+        self.blackjackActionInFlight = false
+        if not self.isClosing then
+            self:showBlackjackState(result)
+        end
+        self:blackjackRunPendingForfeit()
     end)
 end
 
@@ -1250,9 +1270,13 @@ function PZLinuxBettingUI:onBlackjackHit()
     if not PZLinuxBlackjackDebounced(self) then return end
     self.blackjackHitButton:setEnable(false)
     self.blackjackStandButton:setEnable(false)
+    self.blackjackActionInFlight = true
     PZLinuxRequestBlackjackHit(self.player, function(result)
-        if self.isClosing then return end
-        self:showBlackjackState(result)
+        self.blackjackActionInFlight = false
+        if not self.isClosing then
+            self:showBlackjackState(result)
+        end
+        self:blackjackRunPendingForfeit()
     end)
 end
 
@@ -1260,9 +1284,13 @@ function PZLinuxBettingUI:onBlackjackStand()
     if not PZLinuxBlackjackDebounced(self) then return end
     self.blackjackHitButton:setEnable(false)
     self.blackjackStandButton:setEnable(false)
+    self.blackjackActionInFlight = true
     PZLinuxRequestBlackjackStand(self.player, function(result)
-        if self.isClosing then return end
-        self:showBlackjackState(result)
+        self.blackjackActionInFlight = false
+        if not self.isClosing then
+            self:showBlackjackState(result)
+        end
+        self:blackjackRunPendingForfeit()
     end)
 end
 
@@ -1382,6 +1410,13 @@ end
 
 function PZLinuxBettingUI:cashOutPokerBeforeClose(afterCashOut)
     if self.pokerAutoCashoutInProgress then return end
+    -- See onPokerAction: wait for any in-flight Call/Raise/Fold/etc. to land
+    -- before deciding whether (and for how much) to auto-cash-out, or this
+    -- can race ahead of that action's effect on the stack.
+    if self.pokerActionInFlight then
+        self.pokerPendingCashOutAfterAction = afterCashOut
+        return
+    end
 
     local session = self.pokerSession
     if not session or not session.sessionId or session.phase == "finished" or session.status == "closed" then
@@ -1401,6 +1436,16 @@ function PZLinuxBettingUI:cashOutPokerBeforeClose(afterCashOut)
     end)
 end
 
+-- Runs a forfeit-on-close that got deferred by the guard above because a
+-- Poker action was still in flight when the panel tried to close. Called
+-- from that action's own callback once it lands.
+function PZLinuxBettingUI:pokerRunPendingCashOut()
+    if not self.pokerPendingCashOutAfterAction then return end
+    local afterCashOut = self.pokerPendingCashOutAfterAction
+    self.pokerPendingCashOutAfterAction = nil
+    self:cashOutPokerBeforeClose(afterCashOut)
+end
+
 function PZLinuxBettingUI:settleRaceBeforeClose(afterSettlement)
     self:requestRaceSettlement(function()
         afterSettlement()
@@ -1409,12 +1454,29 @@ end
 
 -- Closing the panel used to just abandon an in-progress Blackjack hand:
 -- the bet had already been taken at Deal time, and nothing settled or
--- refunded it, unlike Race and Poker just above. Always asking the server
--- to forfeit is safe even when there's no hand in progress -- see
--- PZLinuxBlackjackForfeit, it's a no-op in that case -- so this doesn't
--- need to duplicate the client's own idea of whether a hand is active.
+-- refunded it, unlike Race and Poker just above. Asking the server to
+-- forfeit is safe whenever there's no hand in progress -- see
+-- PZLinuxBlackjackForfeit, it's a no-op in that case.
+--
+-- It is NOT safe while a Deal/Hit/Stand request for the current hand is
+-- still awaiting its server response, though: the Close/Minimize/Leave
+-- buttons are never disabled the way Hit/Stand disable each other, so a
+-- player can click Stand and then immediately click Leave before that
+-- round trip completes. If the forfeit reaches the server first (or even
+-- just before the in-flight action's own effects are accounted for on the
+-- client), it refunds the hand as a "push" -- and when the real action's
+-- result lands a moment later, the hand has already been wiped, so its
+-- actual win/lose outcome is silently discarded. Net effect: the player
+-- watches a hand play out and lose, but the earlier bet comes right back,
+-- balance unchanged -- reported as "it's like free gambling". Waiting for
+-- any in-flight action to land first (see blackjackActionInFlight in
+-- onBlackjackDeal/Hit/Stand) closes that race.
 function PZLinuxBettingUI:forfeitBlackjackBeforeClose(afterForfeit)
     if self.blackjackForfeitInProgress then return end
+    if self.blackjackActionInFlight then
+        self.blackjackPendingForfeitAfterAction = afterForfeit
+        return
+    end
     self.blackjackForfeitInProgress = true
     PZLinuxRequestBlackjackForfeit(self.player, function(result)
         self.blackjackForfeitInProgress = false
@@ -1423,6 +1485,18 @@ function PZLinuxBettingUI:forfeitBlackjackBeforeClose(afterForfeit)
         end
         afterForfeit()
     end)
+end
+
+-- Runs a forfeit-on-close that got deferred by the guard above because a
+-- Deal/Hit/Stand request was still in flight when the panel tried to
+-- close. Called from that action's own callback once it lands, so the
+-- forfeit (if the panel still wants to close) always sees the hand's real,
+-- fully-settled state instead of racing ahead of it.
+function PZLinuxBettingUI:blackjackRunPendingForfeit()
+    if not self.blackjackPendingForfeitAfterAction then return end
+    local afterForfeit = self.blackjackPendingForfeitAfterAction
+    self.blackjackPendingForfeitAfterAction = nil
+    self:forfeitBlackjackBeforeClose(afterForfeit)
 end
 
 function PZLinuxBettingUI:settleGamesBeforeClose(afterSettlement)

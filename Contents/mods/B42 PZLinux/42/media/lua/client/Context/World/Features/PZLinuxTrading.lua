@@ -402,11 +402,25 @@ end
 function tradingUI.onFilter(_self, _button)
 end
 
+-- Unlike every other buy/sell button in the mod (Dark Web, Sell Surplus,
+-- Blackjack/Poker actions), these never disabled themselves during the
+-- round trip -- a double-click (or a mechanical mouse double-click defect)
+-- could fire two independent buy/sell orders for one intended click. Each
+-- order is validated and priced independently server-side, so this never
+-- lost money or created free items -- it just silently charged/sold twice
+-- -- but every other similar action in the mod guards against it, so this
+-- closes the one remaining gap for consistency, before a player notices
+-- getting double-billed for a single click.
 function tradingUI:onTradingSold(code, _lastPrice, quantityTrading)
     local player = PZLinuxGetPlayer(self.player)
     if not player then return end
 
+    self.tradingSoldButton:setEnable(false)
+    self.tradingBuyButton:setEnable(false)
     PZLinuxRequestTradingSell(self.player, code, quantityTrading, function(result)
+        self.tradingSoldButton:setEnable(true)
+        self.tradingBuyButton:setEnable(true)
+        if self.isClosing then return end
         if not result or not result.ok then return end
 
         if result.balance then
@@ -439,7 +453,12 @@ function tradingUI:onTradingBuy(code, _lastPrice, quantityTrading)
     local player = PZLinuxGetPlayer(self.player)
     if not player then return end
 
+    self.tradingSoldButton:setEnable(false)
+    self.tradingBuyButton:setEnable(false)
     PZLinuxRequestTradingBuy(self.player, code, quantityTrading, function(result)
+        self.tradingSoldButton:setEnable(true)
+        self.tradingBuyButton:setEnable(true)
+        if self.isClosing then return end
         if not result or not result.ok then return end
 
         if result.balance then
