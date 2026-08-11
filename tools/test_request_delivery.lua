@@ -66,6 +66,10 @@ PZLinuxGetPlayer = function(value) return value end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxLoadBankBalance = function() return 1000 end
 PZLinuxTransmitPlayerModData = function() end
+local stolenNoteCalls = {}
+PZLinuxCreateStolenOrderNote = function(playerArg)
+    table.insert(stolenNoteCalls, playerArg)
+end
 rawset(_G, "ZombRand", function() return 100 end)
 assert(loadstring(deliveryBlock))()
 
@@ -104,6 +108,15 @@ PZLinuxTestAssert(not result.ok and result.error == "parcel_sync_failed", "netwo
 PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and #player.modData.PZLinuxOnItemRequest == 1,
     "network synchronization failure must preserve the paid pending order")
 PZLinuxTestAssert(#player.inventory.items == 0, "network synchronization failure must roll back the server parcel")
+
+-- Same shared stolen-order note as Dark Web -- see test_darkweb_delivery.lua
+-- for its half of this regression coverage.
+rawset(_G, "ZombRand", function() return 1 end)
+player = PZLinuxTestNewPlayer()
+result = PZLinuxRequestsApplyDelivery(player, {}, "request-delivery-stolen")
+PZLinuxTestAssert(result.ok and result.lost == true and result.delivered == 0, "a stolen Request order must report lost = true")
+PZLinuxTestAssert(#stolenNoteCalls == 1, "a stolen Request order must create exactly one stolen-order note")
+rawset(_G, "ZombRand", function() return 100 end)
 
 for _, uiPath in ipairs({
     "/client/Context/World/ISContextMailBox.lua",

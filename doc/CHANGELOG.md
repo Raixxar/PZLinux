@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.0.7]
+
+- Proactive audit after the Blackjack race-condition fix below, looking for
+  the same bug class elsewhere before a player hits it. Found and fixed two
+  more:
+  - Poker had the identical race: closing the betting panel right after
+    Call/Raise/Fold/etc. could auto-cash-out before that action's own
+    effect on the stack was applied, same fix as Blackjack (wait for any
+    in-flight action to land first).
+  - The Trading BUY/SOLD buttons and the Buy Goods order confirmation never
+    disabled themselves during their server round trip, unlike every other
+    buy/sell/confirm button in the mod -- a double-click could silently
+    charge twice for one intended click. Neither lost money or created
+    free items (each order/trade is independently validated and priced),
+    but both now guard against it for consistency.
+- Fixed a multiplayer-only Blackjack bug where a hand could resolve for a
+  real win or loss and then have its bet silently refunded anyway, leaving
+  the balance unchanged ("it's like free gambling"). The Close/Minimize/
+  Leave buttons on the betting panel were never disabled while a Hit or
+  Stand request was in flight, unlike Hit and Stand which disable each
+  other -- so clicking Stand and then immediately leaving (very natural
+  right after seeing you've lost) could send a forfeit-on-close request
+  that raced the still-pending Stand response for the same hand. Since
+  forfeiting refunds any hand it still finds open, it could cancel out a
+  result that was already on its way. Closing the panel now waits for any
+  in-flight Deal/Hit/Stand response to land before deciding whether there's
+  still a hand to abandon.
+- Added a small explanation when a Dark Web or Buy Goods order is stolen
+  during delivery (the same pre-existing 10% theft roll shared by both
+  systems). Previously the only feedback was a small HaloText bubble over
+  the character's head, easy to miss entirely if the player looked away or
+  was mid-fight, leading to reports that were actually just this chance
+  roll going unnoticed. A stolen order now also drops a small torn note
+  into the player's inventory, with one of twenty random flavor messages,
+  translated into all 20 supported languages. The note is shared code, so
+  Dark Web and Buy Goods can never drift out of sync on this again.
+
 ## [1.0.6]
 
 - Fixed the computer's "Repair" option only ever appearing below 15%

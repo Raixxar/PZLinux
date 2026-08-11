@@ -450,6 +450,7 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
         modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
         modData.PZLinuxOnItemBuyOnDarkWeb = {}
         PZLinuxTransmitPlayerModData(playerObj)
+        PZLinuxCreateStolenOrderNote(playerObj)
         return { ok = true, requestId = requestId, delivered = 0, lost = true, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 

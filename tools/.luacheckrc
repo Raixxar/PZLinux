@@ -442,6 +442,7 @@ globals = {
     "PZLinuxSetBankBalance",
     "PZLinuxTransmitPlayerModData",
     "PZLinuxTrackDragging",
+    "PZLinuxCreateStolenOrderNote",
     "PZLinuxSyncAddedInventoryItem",
     "PZLinuxSyncAddedContainerItem",
     "PZLinuxRemoveContainerItem",

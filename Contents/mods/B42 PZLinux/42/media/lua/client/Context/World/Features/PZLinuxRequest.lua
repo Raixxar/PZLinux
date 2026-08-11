@@ -462,12 +462,23 @@ function requestUI:onContractId(contract)
     Events.OnTick.Add(self.updateCoroutineFunc)
 end
 
+-- Unlike Dark Web/Sell Surplus/Blackjack-Poker's own confirm buttons, this
+-- never disabled itself during the round trip. A double-click here doesn't
+-- lose money or create free items (regular item orders correctly queue as
+-- a second paid batch -- see PZLinuxRequestsApplyOrder), but it does mean
+-- an accidental double-click silently charges the player twice for what
+-- they meant as one order. Guarding it matches every other confirm button
+-- in the mod and avoids that surprise before a player reports it.
 function requestUI:onYesButton(button)
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
+    button:setEnable(false)
     local modData = PZLinuxGetModData(playerObj)
-    if not modData then return end
+    if not modData then
+        button:setEnable(true)
+        return
+    end
     local totalPrice = button.totalPrice or self.pendingRequestTotal
     if not totalPrice then
         local requestPrice = PZLinuxCalculateRequestUnitPrice(playerObj, PZLinuxRequestCatalog[button.id])
@@ -476,6 +487,7 @@ function requestUI:onYesButton(button)
 
     local playerBalance = loadAtmBalance(playerObj)
     if playerBalance < totalPrice then
+        button:setEnable(true)
         getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(getCore():getOptionSoundVolume() / 50)
         HaloTextHelper.addBadText(playerObj, PZLinuxRequestText("IGUI_PZLinux_Request_NotEnoughMoney"))
         return
@@ -501,6 +513,7 @@ function requestUI:onYesButton(button)
 
     PZLinuxRequestOrder(playerObj, requestState, function(result)
         if not result or not result.ok then
+            if not self.isClosing then button:setEnable(true) end
             getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(getCore():getOptionSoundVolume() / 50)
             if result and result.error == "category_unavailable" then
                 HaloTextHelper.addBadText(playerObj, PZLinuxFormatText(

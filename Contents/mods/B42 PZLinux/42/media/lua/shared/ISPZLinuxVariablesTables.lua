@@ -181,6 +181,27 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Contracts_CompletionPaid = "You have been paid for your contract.",
     IGUI_PZLinux_Contracts_CompletionAmount = "Total money earned: $%s",
     IGUI_PZLinux_Contracts_CompletionZombies = "Total zombies killed: %s",
+    IGUI_PZLinux_StolenNote_Title = "Torn Note",
+    IGUI_PZLinux_StolenNote_1 = "Sorry, survival comes first!",
+    IGUI_PZLinux_StolenNote_2 = "That's life!",
+    IGUI_PZLinux_StolenNote_3 = "Should've hidden it better.",
+    IGUI_PZLinux_StolenNote_4 = "Finders keepers.",
+    IGUI_PZLinux_StolenNote_5 = "Better luck with the next delivery.",
+    IGUI_PZLinux_StolenNote_6 = "The apocalypse has bills too.",
+    IGUI_PZLinux_StolenNote_7 = "Consider it a survival tax.",
+    IGUI_PZLinux_StolenNote_8 = "Someone needed it more than you. Or just wanted it.",
+    IGUI_PZLinux_StolenNote_9 = "Not all heroes wear masks. This one did.",
+    IGUI_PZLinux_StolenNote_10 = "Thanks for the donation!",
+    IGUI_PZLinux_StolenNote_11 = "Someone's apocalypse just got a little easier. Not yours.",
+    IGUI_PZLinux_StolenNote_12 = "Guess it wasn't meant to be.",
+    IGUI_PZLinux_StolenNote_13 = "Easy come, easy go.",
+    IGUI_PZLinux_StolenNote_14 = "The Knox Event doesn't do refunds.",
+    IGUI_PZLinux_StolenNote_15 = "You snooze, you lose. Someone else didn't snooze.",
+    IGUI_PZLinux_StolenNote_16 = "Well, that's one way to lose weight.",
+    IGUI_PZLinux_StolenNote_17 = "At least it wasn't your legs.",
+    IGUI_PZLinux_StolenNote_18 = "Free enterprise, zombie-apocalypse style.",
+    IGUI_PZLinux_StolenNote_19 = "Karma's just late on some deliveries.",
+    IGUI_PZLinux_StolenNote_20 = "Next time, maybe tip the courier.",
 }
 
 function PZLinuxGetText(key)
@@ -279,6 +300,43 @@ function PZLinuxRemoveInventoryItem(player, item)
     return PZLinuxRemoveContainerItem(playerObj:getInventory(), item)
 end
 
+-- Dark Web and Buy Goods deliveries share the exact same 10% theft roll
+-- (see PZLinuxDarkWebApplyDeliverOrders and PZLinuxRequestsApplyDelivery).
+-- The existing HaloText bad-text bubble on theft is easy to miss, so this
+-- also drops a small torn note into the player's inventory with one of 20
+-- random flavor lines -- a tangible, findable explanation even if the
+-- HaloText is missed. (A centered ISModalDialog popup was tried and
+-- dropped: forcing a click-through confirmation while the player might be
+-- mid-danger is worse than the confusion it was meant to fix; plain
+-- HaloText plus this note is the shipped design.) Shared by both callers
+-- so the note and its message pool never drift apart between the systems.
+--
+-- The note text is resolved with PZLinuxGetText, same as every other
+-- shared/server-executed string in this file (see PZLinuxFormatFloorLabel):
+-- on a dedicated server this resolves in the server's own configured
+-- language rather than each connecting player's individual client
+-- language. That's an accepted, pre-existing trade-off in this codebase,
+-- not something new introduced here.
+local PZLINUX_STOLEN_NOTE_MESSAGE_COUNT = 20
+
+function PZLinuxCreateStolenOrderNote(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    local inventory = playerObj and playerObj:getInventory()
+    if not inventory then return nil end
+
+    local note = inventory:AddItem("Base.Note")
+    if not note then return nil end
+
+    local messageIndex = ZombRand(1, PZLINUX_STOLEN_NOTE_MESSAGE_COUNT + 1)
+    local message = PZLinuxGetText("IGUI_PZLinux_StolenNote_" .. messageIndex)
+
+    note:setName(PZLinuxGetText("IGUI_PZLinux_StolenNote_Title"))
+    note:setCanBeWrite(true)
+    note:addPage(1, message)
+    PZLinuxSyncAddedInventoryItem(playerObj, note)
+    return note
+end
+
 function PZLinuxLoadBankBalance(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end
@@ -372,6 +430,20 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
             local credit = PZLinuxApplyBankCredit(playerObj, amount, "rollback-blackjack", blackjack.requestId)
             applied.blackjack = credit.amount or amount
         end
+        -- Temporary diagnostic logging for a reported bug (a Blackjack bet
+        -- sometimes not actually being lost -- balance unchanged after a
+        -- loss, "like free gambling"). This refund path exists to make a
+        -- player whole if their hand never gets a Finish call (server
+        -- restart/reload mid-hand, since PZLinux.blackjackSessions is
+        -- memory-only while this interrupted-session flag is persisted in
+        -- modData) -- but it runs before EVERY single idempotent command,
+        -- for any reason, so if it is ever misfiring on top of a hand that
+        -- actually did resolve normally, this is exactly where a spurious
+        -- refund canceling out a real loss would happen. Safe to remove
+        -- once the root cause is confirmed.
+        print(string.format(
+            "[PZLinux Blackjack] ROLLBACK player=%s originalRequestId=%s amount=%d",
+            tostring(playerKey), tostring(blackjack.requestId), amount))
         sessions.blackjack = nil
     end
 
@@ -1796,6 +1868,7 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
         modData.PZLinuxActiveRequest = 0
         modData.PZLinuxOnItemRequest = {}
         PZLinuxTransmitPlayerModData(playerObj)
+        PZLinuxCreateStolenOrderNote(playerObj)
         return { ok = true, requestId = requestId, lost = true, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
