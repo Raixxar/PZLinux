@@ -70,8 +70,12 @@ end
 function PZLinuxGetReputationPurchaseMultiplier(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 1 end
-    local modData = playerObj:getModData()
-    local reputation = modData and modData.pzlinux and modData.pzlinux.player and modData.pzlinux.player.reputation
+    -- Goes through PZLinuxGetModData rather than a raw playerObj:getModData()
+    -- read, so this benefits from the same nil-reputation backup recovery
+    -- as every other reader (see PZLinux.getModData) instead of silently
+    -- treating a lost value as reputation 1 on its own.
+    local _, pzlinux = PZLinuxGetModData(playerObj)
+    local reputation = pzlinux and pzlinux.player and pzlinux.player.reputation
     return PZLinux.Economy.reputationPurchaseMultiplier(reputation)
 end
 
@@ -144,6 +148,27 @@ function PZLinuxDarkWebGetSaleMultiplier()
         return SandboxVars.PZLinux.SalePriceMultiplier
     end
     return 1.0
+end
+
+-- A player pointed out that a fresh character (no PZLinuxBank in modData
+-- yet -- see PZLinuxLoadBankBalance) always receives a random starting
+-- balance, with no way to opt out: dying and making a new character is
+-- "free money" every time, farmable by repeated suicide. Exposing the
+-- range as sandbox options lets a server admin set both to 0 for a hard
+-- $0 start (or tune the range) without editing Lua; the defaults keep the
+-- exact $500-$4000 range this mod has always used.
+function PZLinuxGetStartingBalanceMin()
+    if SandboxVars and SandboxVars.PZLinux and SandboxVars.PZLinux.StartingBalanceMin ~= nil then
+        return math.max(0, math.floor(SandboxVars.PZLinux.StartingBalanceMin))
+    end
+    return 500
+end
+
+function PZLinuxGetStartingBalanceMax()
+    if SandboxVars and SandboxVars.PZLinux and SandboxVars.PZLinux.StartingBalanceMax ~= nil then
+        return math.max(0, math.floor(SandboxVars.PZLinux.StartingBalanceMax))
+    end
+    return 4000
 end
 
 function PZLinuxDarkWebCalculateBuyPrice(player, itemData)

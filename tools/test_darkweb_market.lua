@@ -69,6 +69,9 @@ function PZLinuxTransmitPlayerModData() end
 function PZLinuxDarkWebCalculateBuyPrice(_, itemData) return itemData.Price end
 function PZLinuxDarkWebGetHourMultiplier() return 1 end
 function PZLinuxDarkWebGetPurchaseMultiplier() return 1 end
+-- Normally defined in PZLinuxDarkWebData.lua (not loaded by this isolated
+-- test); the custom sandbox items feature has its own dedicated test.
+function PZLinuxDarkWebLoadCustomItems() end
 function getScriptManager()
     return { FindItem = function(_, itemId) return itemId and true or nil end }
 end

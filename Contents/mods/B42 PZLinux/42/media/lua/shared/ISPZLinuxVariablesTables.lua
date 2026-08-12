@@ -35,6 +35,20 @@ function PZLinux.getPlayer(player)
     return nil
 end
 
+-- Belt and suspenders (v1.0.8): reputation lives in a nested table
+-- (md.pzlinux.player.reputation), unlike almost every other value in this
+-- mod, which uses flat top-level modData keys -- the pattern this mod has
+-- actually exercised for years (328 usages) without a reported persistence
+-- issue, versus this nested one (a couple dozen, reputation/mail/contract-
+-- receipt bookkeeping only). A player reported their reputation looking
+-- reset to neutral after restarting the game, alongside their bank balance
+-- looking wrong too -- exactly what a nested value failing to round-trip
+-- through a save/reload would look like, since every reader here already
+-- silently falls back to the neutral baseline (1) when it reads nil, with
+-- no way to tell "genuinely new character" from "value was lost". Mirroring
+-- it onto a flat backup key gives it the same round-trip guarantee as
+-- everything else, and lets a lost nested value be recovered instead of
+-- silently resetting.
 function PZLinux.getModData(player)
     local playerObj = PZLinux.getPlayer(player)
     if not playerObj then return nil, nil, nil end
@@ -45,7 +59,21 @@ function PZLinux.getModData(player)
     md.pzlinux.mails = md.pzlinux.mails or {}
     md.pzlinux.mails.inbox = md.pzlinux.mails.inbox or {}
     md.pzlinux.mails.nextid = md.pzlinux.mails.nextid or 1
-    md.pzlinux.player.reputation = tonumber(md.pzlinux.player.reputation) or 1
+
+    local reputation = tonumber(md.pzlinux.player.reputation)
+    if reputation == nil then
+        local backupReputation = tonumber(md.PZLinuxReputationBackup)
+        if backupReputation ~= nil then
+            print(string.format(
+                "[PZLinux Reputation] RECOVERED reputation from backup key player=%s reputation=%d (nested value was nil)",
+                tostring(PZLinuxGetPlayerKey(playerObj)), backupReputation))
+            reputation = backupReputation
+        else
+            reputation = 1
+        end
+    end
+    md.pzlinux.player.reputation = reputation
+    md.PZLinuxReputationBackup = reputation
 
     return md, md.pzlinux, playerObj
 end
@@ -337,6 +365,18 @@ function PZLinuxCreateStolenOrderNote(player)
     return note
 end
 
+-- Belt and suspenders (v1.0.8): a player reported their bank balance
+-- looking "really different" after restarting the game. If modData.PZLinuxBank
+-- ever comes back nil for a reason other than "this character never had a
+-- balance" -- a save/reload round-trip glitch, most plausibly -- the code
+-- below couldn't tell that apart from a genuinely new character, and just
+-- rolled a fresh random $500-$4000 starting balance over the real one,
+-- with no record anywhere of what happened. PZLinuxBankBackup mirrors the
+-- balance onto a second, independent top-level key on every write; if the
+-- primary key is ever missing, this recovers the last known real balance
+-- from the backup instead of silently replacing it with a random one. A
+-- genuinely new character has both keys nil, so the random roll still
+-- happens exactly as before in that case.
 function PZLinuxLoadBankBalance(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end
@@ -344,13 +384,28 @@ function PZLinuxLoadBankBalance(player)
     local modData = playerObj:getModData()
     local balance = tonumber(modData.PZLinuxBank)
     if balance == nil then
-        balance = ZombRand(500, 4000)
+        local backupBalance = tonumber(modData.PZLinuxBankBackup)
+        if backupBalance ~= nil then
+            print(string.format(
+                "[PZLinux Bank] RECOVERED balance from backup key player=%s balance=%d (primary key was nil)",
+                tostring(PZLinuxGetPlayerKey(playerObj)), backupBalance))
+            balance = backupBalance
+        else
+            -- Configurable via sandbox options (PZLinux.StartingBalanceMin/
+            -- Max) so a server can set both to 0 and remove the "die, make
+            -- a new character, get free money" loop entirely -- see
+            -- PZLinuxGetStartingBalanceMin/Max.
+            local minStart = PZLinuxGetStartingBalanceMin()
+            local maxStart = math.max(minStart, PZLinuxGetStartingBalanceMax())
+            balance = maxStart > minStart and ZombRand(minStart, maxStart) or minStart
+        end
         modData.PZLinuxBank = balance
         PZLinuxTransmitPlayerModData(playerObj)
     end
 
     balance = math.max(0, math.floor(balance))
     modData.PZLinuxBank = balance
+    modData.PZLinuxBankBackup = balance
     return balance
 end
 
@@ -359,7 +414,9 @@ function PZLinuxSetBankBalance(player, balance)
     if not playerObj then return 0 end
 
     balance = PZLinuxNormalizeMoney(balance)
-    playerObj:getModData().PZLinuxBank = balance
+    local modData = playerObj:getModData()
+    modData.PZLinuxBank = balance
+    modData.PZLinuxBankBackup = balance
     PZLinuxTransmitPlayerModData(playerObj)
     return balance
 end
@@ -1840,6 +1897,10 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         modData.PZLinuxOnItemRequestCar = 0
         modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest or {}
         table.insert(modData.PZLinuxOnItemRequest, { { items = order.items } })
+        -- Belt and suspenders (v1.0.8): see the matching comment on the
+        -- Dark Web buy path (PZLinuxDarkWeb.lua) -- re-assigning the key
+        -- after an in-place table.insert makes sure the change is noticed.
+        modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest
         if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
     end
     PZLinuxTransmitPlayerModData(playerObj)
@@ -1907,6 +1968,12 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
         end
 
         table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
+        -- Belt and suspenders (v1.0.8): see the matching comment on the
+        -- Dark Web delivery loop (PZLinuxDarkWeb.lua) -- the identical
+        -- symptom (repeatedly re-collecting an order already delivered,
+        -- surviving reconnects) is possible here too, via the same shared
+        -- 10%-theft delivery pattern.
+        modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest
         delivered = delivered + batchDelivered
         PZLinuxTransmitPlayerModData(playerObj)
     end

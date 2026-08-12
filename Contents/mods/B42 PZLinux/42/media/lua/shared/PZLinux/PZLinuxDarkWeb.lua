@@ -91,6 +91,7 @@ local function PZLinuxDarkWebGenerateMarket(market, generation)
 end
 
 local function PZLinuxDarkWebEnsureMarket()
+    PZLinuxDarkWebLoadCustomItems()
     local market = PZLinuxDarkWebGetMarketState()
     local generation = PZLinuxDarkWebGetMarketGeneration()
     if tonumber(market.generation) ~= generation or type(market.offers) ~= "table" or #market.offers == 0 then
@@ -196,6 +197,13 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
     modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb or {}
     modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
     table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, { batch })
+    -- Belt and suspenders (v1.0.8): table.insert mutates the array table
+    -- in place. Re-assigning the modData key itself right after -- even
+    -- though it's the exact same table -- makes sure any change-detection
+    -- keyed on assignment (rather than a deep scan) actually notices this
+    -- write, instead of risking it silently not being picked up for
+    -- network sync/save the way a plain in-place mutation might be.
+    modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb
     -- Temporary diagnostic logging for a reported bug (wrong/stale items
     -- showing up at the mailbox instead of what was just bought). Prints
     -- the exact queue state right after every purchase so a server log can
@@ -265,6 +273,7 @@ function PZLinuxDarkWebRemoveInventoryItems(player, itemIds)
 end
 
 function PZLinuxDarkWebBuildSellOffers(player, requestId)
+    PZLinuxDarkWebLoadCustomItems()
     local offers = {}
     for _, itemData in ipairs(PZLinuxDarkWebItemsTable) do
         local itemIds = PZLinuxDarkWebGetItemIds(itemData)
@@ -489,6 +498,19 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
         end
         delivered = delivered + batchDelivered
         table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
+        -- Belt and suspenders (v1.0.8): a player reported being able to
+        -- repeatedly re-collect Dark Web orders already delivered, surviving
+        -- log-outs and reconnects -- exactly what would happen if this
+        -- removal's effect on the queue never actually got persisted/synced,
+        -- so a reconnect reloads the pre-delivery state and the same batch
+        -- delivers again. Re-assigning the key (even to the same table)
+        -- makes sure assignment-keyed change-detection notices this write,
+        -- and transmitting after every single removal (not just once after
+        -- the whole loop) means a mid-loop disconnect leaves the already-
+        -- delivered batches marked gone rather than betting on the final
+        -- transmit at the end of the loop to have covered all of them.
+        modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb
+        PZLinuxTransmitPlayerModData(playerObj)
     end
 
     modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
