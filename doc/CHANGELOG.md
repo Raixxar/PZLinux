@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.0.8]
+
+- Added a sandbox option (PZLinux.CustomDarkWebItems, in the server's
+  PZLinux settings page) letting a server admin add or re-price Dark Web
+  items without editing any Lua file: free text, comma-separated
+  "Base.ItemName:Price" pairs (e.g. "Base.Machete:1000,Base.MyItem:250").
+  An item ID that already exists in the catalog has its price overridden
+  instead of appearing as a duplicate entry; unknown item IDs and
+  malformed entries are skipped safely. Applies everywhere the item
+  catalog is used -- the daily buy offers, sell offers, and the in-game
+  reference list -- with no default-behavior change if the option is left
+  blank.
+- Investigated a player report of reputation and bank balance both looking
+  reset after restarting the game. Reputation lived in a nested modData
+  table (md.pzlinux.player.reputation), unlike almost every other value in
+  the mod, which uses flat top-level modData keys -- the pattern proven
+  reliable across roughly 330 other usages. Both the reputation reader and
+  the bank balance loader silently fell back to a default (neutral
+  reputation; a random $500-$4000 balance) whenever their value read nil,
+  with no way to tell "genuinely new character" from "the value was lost".
+  Both now mirror their real value onto an independent flat backup key on
+  every write, and recover from that backup before ever assuming a nil
+  read means a fresh character -- belt and suspenders, so a save/reload
+  round-trip glitch can no longer silently discard either value. Also
+  closed the one place that read reputation through a raw getModData()
+  call instead of the shared, now-repaired accessor.
+- Fixed a related MP report: a player could repeatedly re-collect a Dark
+  Web order they had already received at the mailbox, surviving log-outs
+  and reconnects. The pending-order queues (Dark Web and Buy Goods alike)
+  were only ever mutated in place with table.insert/table.remove -- the
+  modData key itself was never re-assigned afterward, so a change could go
+  unnoticed by sync/save and a reconnect could reload the pre-delivery
+  state, delivering the same batch again. Every queue mutation now
+  re-assigns its key right after (even to the same table), and the Dark
+  Web delivery loop now transmits modData after every single batch
+  removal instead of only once at the end, matching how the Buy Goods
+  delivery loop already worked -- so a disconnect mid-delivery can't leave
+  an already-collected batch still marked pending either.
+- Addressed a player-reported exploit: a fresh character (no bank balance
+  yet) always received a random $500-$4000 starting balance with no way to
+  opt out, farmable for free money by repeatedly dying and creating a new
+  character. The range is now sandbox-configurable (PZLinux.StartingBalanceMin/
+  Max, in the server's PZLinux settings page) so an admin can set both to 0
+  and remove the loop entirely, or tune the range; the defaults keep the
+  exact $500-$4000 range this mod has always used. Also confirmed a
+  separate hypothesis raised alongside this report -- that reusing a dead
+  character's name might let a new character inherit their balance -- does
+  not hold: the balance lives exclusively on modData, the same per-
+  character storage PZ itself uses, never looked up by username or
+  character name anywhere in this mod's code.
+
 ## [1.0.7]
 
 - Proactive audit after the Blackjack race-condition fix below, looking for

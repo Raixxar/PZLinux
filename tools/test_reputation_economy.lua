@@ -29,6 +29,14 @@ local player = {
     end,
 }
 PZLinuxGetPlayer = function(value) return value end
+-- PZLinuxGetReputationPurchaseMultiplier goes through PZLinuxGetModData
+-- (see PZLinux.getModData's backup-key recovery, added in v1.0.8) rather
+-- than a raw getModData() read; stub it the same shape the real one
+-- returns (md, pzlinux, playerObj) for this isolated test.
+PZLinuxGetModData = function(value)
+    local md = value:getModData()
+    return md, md.pzlinux, value
+end
 
 PZLinuxTestAssertEqual(PZLinux.Economy.contractCancelPenalty(), 10, "contract cancellation penalty")
 PZLinuxTestAssertEqual(PZLinux.Economy.contractCompleteReward(), 10, "contract completion reputation")

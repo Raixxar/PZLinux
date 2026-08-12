@@ -779,6 +779,7 @@ function darkWebUI:onSellItem(button)
 end
 
 function darkWebUI:onHelp()
+    PZLinuxDarkWebLoadCustomItems()
     self.shoppingBuyButton:setVisible(false)
     self.shoppingSellButton:setVisible(false)
     self.shoppingHelpButton:setVisible(false)

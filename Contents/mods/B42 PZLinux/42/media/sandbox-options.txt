@@ -19,3 +19,31 @@ option PZLinux.SalePriceMultiplier
 	page = PZLinux_Settings,
 	translation = PZLinux_SalePriceMultiplier,
 }
+
+option PZLinux.StartingBalanceMin
+{
+	type = integer,
+	default = 500,
+	min = 0,
+	max = 100000,
+	page = PZLinux_Settings,
+	translation = PZLinux_StartingBalanceMin,
+}
+
+option PZLinux.StartingBalanceMax
+{
+	type = integer,
+	default = 4000,
+	min = 0,
+	max = 100000,
+	page = PZLinux_Settings,
+	translation = PZLinux_StartingBalanceMax,
+}
+
+option PZLinux.CustomDarkWebItems
+{
+	type = string,
+	default = "",
+	page = PZLinux_Settings,
+	translation = PZLinux_CustomDarkWebItems,
+}

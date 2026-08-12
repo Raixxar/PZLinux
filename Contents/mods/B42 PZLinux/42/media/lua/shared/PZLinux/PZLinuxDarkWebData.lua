@@ -502,3 +502,55 @@ PZLinuxDarkWebItemsTable = {
     { id = {"Base.BellyButton_StudSilverDiamond"}, Price = 75 },
     { id = {"Base.BellyButton_StudSilver"}, Price = 50 }
 }
+
+-- Lets a server admin add (or re-price) Dark Web items without editing
+-- this file, via a sandbox option (PZLinux.CustomDarkWebItems, free-text):
+-- comma-separated "Base.ItemName:Price" pairs, e.g.
+-- "Base.Machete:1000,Base.MyCustomItem:250". An entry whose item ID
+-- already exists in PZLinuxDarkWebItemsTable overrides that entry's price
+-- instead of adding a duplicate row.
+--
+-- SandboxVars isn't populated yet when this file is first parsed at mod
+-- boot -- a save/server hasn't loaded yet at that point -- so this must
+-- never be read at file scope. This function is only meant to be called
+-- lazily, from real gameplay code, once SandboxVars is guaranteed to
+-- reflect the actual joined server/save. It's idempotent (guarded by
+-- PZLinux.DarkWeb.customItemsLoaded) so every caller can invoke it
+-- defensively without worrying about double-adding entries; each of
+-- client and (in real MP) server independently runs it once on their own
+-- copy of this shared table.
+PZLinux.DarkWeb = PZLinux.DarkWeb or {}
+
+function PZLinuxDarkWebLoadCustomItems()
+    if PZLinux.DarkWeb.customItemsLoaded then return end
+    PZLinux.DarkWeb.customItemsLoaded = true
+
+    local raw = SandboxVars and SandboxVars.PZLinux and SandboxVars.PZLinux.CustomDarkWebItems
+    if not raw or raw == "" then return end
+
+    for entry in tostring(raw):gmatch("[^,]+") do
+        local itemName, priceText = entry:match("^%s*([%w%._]+)%s*:%s*(%d+)%s*$")
+        local price = itemName and tonumber(priceText)
+        if not (itemName and price and price > 0) then
+            print("[PZLinux DarkWeb] custom item entry could not be parsed (expected Base.ItemName:Price): " .. tostring(entry))
+        elseif not (getScriptManager and getScriptManager():FindItem(itemName)) then
+            print("[PZLinux DarkWeb] custom item ignored (unknown item): " .. tostring(itemName))
+        else
+            price = math.floor(price)
+            local existing = nil
+            for _, itemData in ipairs(PZLinuxDarkWebItemsTable) do
+                local ids = type(itemData.id) == "table" and itemData.id or { itemData.id }
+                for _, existingId in ipairs(ids) do
+                    if existingId == itemName then existing = itemData end
+                end
+            end
+            if existing then
+                existing.Price = price
+                print(string.format("[PZLinux DarkWeb] custom item override: %s price=%d", itemName, price))
+            else
+                table.insert(PZLinuxDarkWebItemsTable, { id = { itemName }, Price = price })
+                print(string.format("[PZLinux DarkWeb] custom item added: %s price=%d", itemName, price))
+            end
+        end
+    end
+end
