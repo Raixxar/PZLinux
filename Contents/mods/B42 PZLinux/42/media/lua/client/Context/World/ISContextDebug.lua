@@ -81,6 +81,7 @@ local function PZLinuxDebugMenuAddContext(player, context, _worldobjects)
     end
 
     adminMenu:addOption("Force a random mail mission", player, PZLinuxDebugForceMail)
+    adminMenu:addOption("Manage player balances", player, PZLinuxAdminBalanceMenu_ShowUI)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(PZLinuxDebugMenuAddContext)

@@ -1,5 +1,70 @@
 # Changelog
 
+## [1.0.9]
+
+- Added a "Manage player balances" tool to the existing PZLinux Admin
+  context menu: a panel listing every currently connected player with
+  their bank balance, letting an admin correct one directly by clicking
+  their row, then setting a new balance. The target player is only ever
+  settable by clicking a real row, never free-typed -- since this is
+  scoped to online players only (below), every valid target is already a
+  row in the list, so a separate editable username field would only add a
+  typo risk (mistarget real money) for no actual capability gained.
+  Deliberately scoped to online players only -- reaching an offline
+  player's saved data would mean reading their save file directly, out of
+  scope here. Directly useful after the Hacking/Poker money bugs fixed
+  this release: previously the only admin money tool was "add funds to my
+  own balance", with no way to inspect or fix another player's account.
+  Every server-side function re-checks admin access itself, independent
+  of the client menu being admin-gated. Also fixed a real, unrelated gap
+  found while wiring this up: PZLinuxContractAdminForceMailResult was
+  never recognized by the client's server-command dispatcher, so in real
+  MP (not solo) the existing "Force a random mail mission" admin action
+  would silently never report back to the client, even though the
+  server-side mail really was created.
+- Fixed a real, player-reported Hacking exploit plus a matching game
+  crash: with multiple credit cards in inventory, clicking AUTO, then
+  TRANSFER, then AUTO again *while the first transfer's countdown
+  animation was still playing* (repeating that cycle) generated money
+  without ever consuming more than the first hack's cards, and eventually
+  crashed with a Lua error ("missing argument #1 to 'status'"). Root cause:
+  the transfer countdown animation shared its coroutine/tick-handler
+  fields with the unrelated boot-sequence animation, and every new
+  transfer just overwrote those fields with a fresh coroutine/handler pair
+  without ever unregistering the previous one from the game's tick event --
+  reassigning the field doesn't unregister the old handler, which keeps
+  running, orphaned, reading and clearing the very same fields the new one
+  is using. Fixed with dedicated fields per animation (never shared again),
+  a cleanup step that always tears down any previous animation by its own
+  captured reference before starting a new one (on every transfer, and on
+  closing the panel), stale buttons/labels now properly removed instead of
+  merely hidden, and a server-side guard refusing to start a new hack while
+  an existing one is unlocked and not yet transferred.
+- Proactive audit for more money-related exploits after the v1.0.9 Hacking
+  fix, across every coroutine/tick-driven animation, session-creation
+  path (Race, Blackjack, Poker, Hacking) and reward-granting flow
+  (Contracts, Mail, ATM refill) in the mod. One real bug found, in the
+  opposite direction from the Hacking one: PZLinuxPokerCreateSession
+  overwrote the player's active table unconditionally, with no check for
+  one already in progress. A player seated with real winnings (built up
+  over several hands) who re-triggered "join table" -- reachable simply by
+  navigating back to the Betting menu and clicking POKER again, since the
+  client's own lobby screen unconditionally forgets its local session
+  tracking regardless of whether a real table is still active server-side
+  -- would have that entire stack silently discarded: not refunded, not
+  credited anywhere, just gone. Fixed with a guard that refuses to start a
+  new table while one is still active, plus a restore-session path so the
+  player lands back on their actual table (and stack) instead of getting
+  stuck on a rejected join attempt. Also closed two lower-severity, non-
+  exploitable hygiene gaps found along the way: every Poker control
+  (buttons, labels) was only ever hidden, never actually removed from the
+  UI tree (the same "stale accumulating widget" class fixed for Hacking/
+  Trading previously, since ISButton/ISLabel don't have the :close()
+  method the old cleanup code assumed they did), and the Contract
+  completion button had no double-click guard, unlike every other money-
+  moving button in the mod (the underlying payout function was already
+  provably safe against a real double-payout on its own).
+
 ## [1.0.8]
 
 - Added a sandbox option (PZLinux.CustomDarkWebItems, in the server's

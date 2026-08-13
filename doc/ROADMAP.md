@@ -28,7 +28,70 @@ Sandbox option: a daily (per-Zomboid-day) sell limit on the Dark Web,
     are applied, add the Sandbox.json translation, verify in the world
     creation screen.
 More sandbox options in general, so players/hosts can tune the mod to their
-    own taste instead of relying on hardcoded defaults.
+    own taste instead of relying on hardcoded defaults. Full audit of every
+    hardcoded, host-meaningful value across PZLinuxConfig.lua,
+    PZLinuxEconomy.lua, PZLinuxPokerConfig.lua and PZLinuxRaceEngine.lua,
+    grouped by area -- nothing committed to yet, triage which ones are
+    actually worth shipping (vs. leaving as internal defaults) once it's
+    time to build this, same declare-option/read-it/translate/verify
+    pattern as every sandbox option already shipped:
+    - ATM: minCash/maxCash per machine, restockPerHour/restockCap.
+    - Contracts: boardRefreshHours (board refresh rate), the reputation
+      reward/penalty per contract (contractCompleteReward/
+      contractCancelPenalty).
+    - Reputation: minimum/maximum bounds, purchase surcharge/discount per
+      point (how much reputation actually swings prices).
+    - Market scarcity: scarcityPeriodHours/scarcityMaximumMultiplier (how
+      wide Dark Web prices swing over time).
+    - Buy Goods (Requests): the daily chance a category has no seller at
+      all, and how many game-days that chance ramps up over.
+    - Sell Surplus: daily demand chance, base price percent range, "great
+      deal" chance/range.
+    - Trading: the transaction fee rate (currently a flat 5%).
+    - Blackjack/Poker: bet ranges per table / blinds per lobby -- likely a
+      free-text option like CustomDarkWebItems rather than one option per
+      number, given how many values that is.
+    - Zombie Race: maximum player bet, takeoutRate (the house cut).
+    - Hacking: money-per-card range, max password tries, password length.
+Sandbox option: let the host set the Dark Web/Buy Goods package theft
+    chance themselves, instead of the current hardcoded 10% roll shared by
+    both delivery paths (see PZLinuxDarkWebApplyDeliverOrders/
+    PZLinuxRequestsApplyDelivery, the ZombRand(1, 101) <= 10 check). Same
+    pattern as the existing PurchasePriceMultiplier/StartingBalanceMin/Max
+    options in sandbox-options.txt: declare a 0-100 option, read it from
+    both delivery functions instead of the hardcoded 10, add the
+    Sandbox.json translation. From player feedback: "Could we have that
+    chance for the package to be lost as a sandbox variable please?"
+Keeping money/portfolio across character death, for more casual/"journal-
+    style" servers that let players respawn and recover progress instead of
+    a strict permadeath economy. Two mechanisms surfaced, not mutually
+    exclusive, need a real design decision before implementation:
+    (a) Automatic, sandbox-configured retention on death -- player-proposed
+    options like WealthLostOnDeathPercentage/StocksLostOnDeathPercentage
+    (0 = keep everything, 100 = current behavior, lose it all). Simplest for
+    the player (nothing to do), but needs a real "on character death" hook
+    this mod doesn't have yet, and somewhere to actually hold the retained
+    value until the new character exists to receive it.
+    (b) Raixxar's own idea: a named recovery code, redeemable at any PC --
+    on death, the account gets an account-bound code (possibly plus a
+    percentage retained, same knob as (a)); a new character enters it on a
+    computer to reclaim the balance/portfolio. Player-initiated rather than
+    silent, which fits a survival game's stakes better and sidesteps
+    needing an automatic death hook, at the cost of the player having to
+    remember/note the code down.
+    Either way, this needs money (and eventually the Trading portfolio) to
+    become recoverable by something OTHER than the dying character's own
+    modData -- everything in this mod is currently scoped strictly to the
+    character object, by design (confirmed while investigating an unrelated
+    "does reusing a dead character's name recover their balance" question --
+    it doesn't, today, precisely because nothing is account-scoped). Needs
+    to stay opt-in/host-configured, not default behavior, since it's a real
+    philosophical fork away from Contracts being the only reliable income
+    and death having real economic stakes -- exactly the "more casual"
+    framing the requesting player used themselves. From player feedback:
+    "It would be nice if we had the option to keep our money/stocks/etc on
+    death, or keep a configurable percentage of them on death... And more
+    casual servers like mine could set that to 0."
 Reputation-gated Dark Web offers: certain rare items only appear in the
     catalog once the player's reputation crosses the Preferred tier, giving
     another concrete reason to care about reputation beyond the price

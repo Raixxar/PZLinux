@@ -1,7 +1,7 @@
 version=1
 id=3414468585
 title=PZLinux
-description=[h1]PZLinux 1.0.8[/h1]
+description=[h1]PZLinux 1.0.9[/h1]
 description=Give cash a purpose with a persistent apocalypse economy accessed through computers, ATMs and mailboxes.
 description=
 description=[h2]Banking and ATMs[/h2]
@@ -26,10 +26,10 @@ description=[h2]Languages[/h2]
 description=Includes translation catalogs for 20 Project Zomboid locales.
 description=
 description=[h2]Known Limitations[/h2]
-description=Keyboard and mouse are required. Full controller navigation and split-screen support are not certified for version 1.0.8.
+description=Keyboard and mouse are required. Full controller navigation and split-screen support are not certified for version 1.0.9.
 description=
 description=Mod ID: B42_PZLinux
-description=Version: 1.0.8
+description=Version: 1.0.9
 description=
 description=[url=buymeacoffee.com/raixxar][img]https://i.imgur.com/4xVmWvK.png[/img][/url]
 tags=Build 42
