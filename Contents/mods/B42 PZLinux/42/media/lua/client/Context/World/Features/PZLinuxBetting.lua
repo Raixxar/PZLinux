@@ -439,12 +439,18 @@ function PZLinuxBettingUI:addPokerControl(control)
     return control
 end
 
+-- ISButton/ISLabel (everything this builds) have no :close() method, so
+-- the old "call :close() if it exists, else just hide it" logic always
+-- fell through to :setVisible(false) -- every single poker control ever
+-- created stayed a live child of self.topBar forever, just invisible,
+-- piling up across every hand/action for the whole session. Actually
+-- removing them (they're already invisible via ~setVisible either way,
+-- but now genuinely gone from the tree) closes the same class of stale-
+-- widget bug already fixed for Hacking/Trading elsewhere this cycle.
 function PZLinuxBettingUI:clearPokerControls()
     for _, control in ipairs(self.pokerControls or {}) do
-        if control and control.close then
-            control:close()
-        elseif control then
-            control:setVisible(false)
+        if control then
+            self.topBar:removeChild(control)
         end
     end
     self.pokerControls = {}
@@ -492,6 +498,19 @@ function PZLinuxBettingUI:onPokerSelectLobby(button)
     self.pokerMessageLabel:setName(PZLinuxGetText("IGUI_PZLinux_Betting_PokerJoining"))
     PZLinuxRequestPokerStart(self.player, button.lobbyId, buyIn, function(result)
         if self.isClosing then return end
+        -- The server refused because a table this client had already lost
+        -- track of (e.g. after navigating back to this lobby screen without
+        -- properly leaving the table first) is still active -- see the
+        -- comment above PZLinuxPokerCreateSession. Fetching that session's
+        -- own state instead of just showing a raw error code lets the
+        -- player actually get back to their table (and their stack).
+        if result and result.error == "session_already_active" then
+            PZLinuxRequestPokerRestoreSession(self.player, function(sessionResult)
+                if self.isClosing then return end
+                self:showPokerState(sessionResult)
+            end)
+            return
+        end
         self:showPokerState(result)
     end)
 end

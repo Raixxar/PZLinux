@@ -784,9 +784,26 @@ function PZLinuxPokerBuildSnapshot(session)
     }
 end
 
+-- Belt and suspenders (v1.0.9), found while auditing for the same bug
+-- class as the Hacking exploit fixed just above in this same release: this
+-- used to overwrite PZLinux.Poker.Sessions[playerKey] unconditionally, with
+-- no check for an existing, still-active table. A player already seated
+-- with real chips at risk (won hands, stack above their buy-in) who
+-- somehow triggers another
+-- "join table" -- a stale lobby-select screen still reachable without
+-- properly leaving the current table, a double click, a UI desync -- would
+-- have their entire current stack silently discarded (not refunded, not
+-- credited anywhere) the instant the new session overwrote the old one in
+-- memory. A genuine money-LOSS bug, the mirror image of the Hacking
+-- exploit, but the same root mistake: state that can be silently replaced
+-- instead of requiring the player to resolve it first.
 function PZLinuxPokerCreateSession(player, lobbyId, buyIn, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local existingSession = PZLinuxPokerGetSession(playerObj)
+    if existingSession then
+        return { ok = false, error = "session_already_active", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
     local lobby = PZLinuxPokerGetLobby(lobbyId)
     if not lobby then return { ok = false, error = "invalid_lobby", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) } end
     buyIn = PZLinuxNormalizeMoney(buyIn)
@@ -832,6 +849,25 @@ function PZLinuxPokerCreateSession(player, lobbyId, buyIn, requestId)
     PZLinux.Poker.Sessions[session.playerKey] = session
     PZLinuxRegisterInterruptedSession(playerObj, "poker", { sessionId = session.sessionId, stack = buyIn, buyIn = buyIn, requestId = requestId })
     PZLinuxPokerStartHand(session)
+    local snapshot = PZLinuxPokerBuildSnapshot(session)
+    snapshot.requestId = requestId
+    return snapshot
+end
+
+-- Companion to the session_already_active guard above: lets a client that
+-- lost track of its own active table (see PZLinuxBettingUI:onSelectBet /
+-- showPokerLobby) get back to it -- and see its real stack -- instead of
+-- being stuck looking at a rejected join attempt with no way forward
+-- short of reconnecting.
+function PZLinuxPokerRestoreSession(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local session = PZLinuxPokerGetSession(playerObj)
+    if not session then
+        return { ok = false, error = "no_active_session", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
     local snapshot = PZLinuxPokerBuildSnapshot(session)
     snapshot.requestId = requestId
     return snapshot

@@ -1447,6 +1447,16 @@ function PZLinuxRequestPokerCashOut(player, sessionId, callback)
     return requestId
 end
 
+function PZLinuxRequestPokerRestoreSession(player, callback)
+    local requestId = PZLinuxNextRequestId("poker-restore")
+    PZLinuxRegisterCallback(requestId, callback)
+    if PZLinuxSendClientCommand("PZLinuxPokerRestoreSession", { requestId = requestId }) then
+        return requestId
+    end
+    PZLinuxDispatchCallback(PZLinuxPokerRestoreSession(player, requestId))
+    return requestId
+end
+
 if Events and Events.OnServerCommand then
     Events.OnServerCommand.Add(function(module, command, args)
         if module ~= "PZLinux" then return end
@@ -1489,6 +1499,16 @@ if Events and Events.OnServerCommand then
         or command == "PZLinuxContractWorldEventResult"
         or command == "PZLinuxContractAdminForceResult"
         or command == "PZLinuxContractAdminAddFundsResult"
+        -- This one was never listed here at all -- in real MP (not solo,
+        -- which calls the callback directly without going through this
+        -- dispatcher) the "Force a random mail mission" admin action would
+        -- silently never report back to the client, even though the
+        -- server-side mail really was created. Found while adding the
+        -- three admin-balance results just below.
+        or command == "PZLinuxContractAdminForceMailResult"
+        or command == "PZLinuxAdminListOnlinePlayersResult"
+        or command == "PZLinuxAdminGetPlayerBalanceResult"
+        or command == "PZLinuxAdminSetPlayerBalanceResult"
         or command == "PZLinuxRequestOrderResult"
         or command == "PZLinuxRequestGetCategoriesResult"
         or command == "PZLinuxRequestRejectCategoryResult"
@@ -3207,6 +3227,110 @@ function PZLinuxContractsAdminForceMail(player, requestId)
             .. ", type " .. tostring(result.mailType) .. ")")
     end
     return result
+end
+
+-- Player-balance moderation tools (v1.0.9): after fixing several real
+-- money bugs (Hacking, Poker) this session, an admin still had no way to
+-- actually inspect or correct an affected player's account -- only
+-- "add funds to my own balance" existed. Scoped deliberately to currently
+-- CONNECTED players only: reaching an offline player's saved data would
+-- mean reading their save file directly, a much bigger and riskier
+-- undertaking than resolving an online IsoPlayer through getOnlinePlayers().
+local function PZLinuxAdminFindOnlinePlayerByUsername(username)
+    if not username or username == "" or not getOnlinePlayers then return nil end
+    local target = tostring(username):lower()
+    local players = getOnlinePlayers()
+    if not players then return nil end
+    for index = 0, players:size() - 1 do
+        local candidate = players:get(index)
+        if candidate and candidate.getUsername and tostring(candidate:getUsername()):lower() == target then
+            return candidate
+        end
+    end
+    return nil
+end
+
+function PZLinuxAdminListOnlinePlayers(player, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    local list = {}
+    if getOnlinePlayers then
+        local players = getOnlinePlayers()
+        if players then
+            for index = 0, players:size() - 1 do
+                local candidate = players:get(index)
+                if candidate and candidate.getUsername then
+                    table.insert(list, {
+                        username = tostring(candidate:getUsername()),
+                        balance = PZLinuxLoadBankBalance(candidate),
+                    })
+                end
+            end
+        end
+    end
+    if #list == 0 then
+        -- Solo, or getOnlinePlayers() returned nothing usable: list the
+        -- admin's own character so the panel isn't just empty in solo.
+        table.insert(list, {
+            username = tostring(playerObj.getUsername and playerObj:getUsername() or "you"),
+            balance = PZLinuxLoadBankBalance(playerObj),
+        })
+    end
+
+    return { ok = true, requestId = requestId, players = list }
+end
+
+function PZLinuxAdminGetPlayerBalance(player, targetUsername, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    local target = PZLinuxAdminFindOnlinePlayerByUsername(targetUsername)
+    if not target then
+        return { ok = false, error = "player_not_found", requestId = requestId }
+    end
+
+    return {
+        ok = true,
+        requestId = requestId,
+        username = tostring(target:getUsername()),
+        balance = PZLinuxLoadBankBalance(target),
+    }
+end
+
+function PZLinuxAdminSetPlayerBalance(player, targetUsername, amount, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    if not PZLinuxContractsHasAdminAccess(playerObj) then
+        return { ok = false, error = "admin_required", requestId = requestId }
+    end
+
+    local target = PZLinuxAdminFindOnlinePlayerByUsername(targetUsername)
+    if not target then
+        return { ok = false, error = "player_not_found", requestId = requestId }
+    end
+
+    local previousBalance = PZLinuxLoadBankBalance(target)
+    local newBalance = PZLinuxSetBankBalance(target, amount)
+
+    print(string.format(
+        "[PZLinux Admin] %s set %s's bank balance from $%d to $%d",
+        tostring(playerObj.getUsername and playerObj:getUsername() or "unknown"),
+        tostring(target:getUsername()), previousBalance, newBalance))
+
+    return {
+        ok = true,
+        requestId = requestId,
+        username = tostring(target:getUsername()),
+        previousBalance = previousBalance,
+        balance = newBalance,
+    }
 end
 
 function PZLinuxContractsFindBoardContract(contractId)
@@ -5218,6 +5342,33 @@ function PZLinuxRequestAdminForceMail(player, callback)
     return requestId
 end
 
+function PZLinuxRequestAdminListOnlinePlayers(player, callback)
+    local requestId = PZLinuxNextRequestId("admin-list-players")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId }
+    if PZLinuxSendClientCommand("PZLinuxAdminListOnlinePlayers", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxAdminListOnlinePlayers(player, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAdminGetPlayerBalance(player, targetUsername, callback)
+    local requestId = PZLinuxNextRequestId("admin-get-balance")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, targetUsername = targetUsername }
+    if PZLinuxSendClientCommand("PZLinuxAdminGetPlayerBalance", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxAdminGetPlayerBalance(player, targetUsername, requestId))
+    return requestId
+end
+
+function PZLinuxRequestAdminSetPlayerBalance(player, targetUsername, amount, callback)
+    local requestId = PZLinuxNextRequestId("admin-set-balance")
+    PZLinuxRegisterCallback(requestId, callback)
+    local args = { requestId = requestId, targetUsername = targetUsername, amount = tonumber(amount) }
+    if PZLinuxSendClientCommand("PZLinuxAdminSetPlayerBalance", args) then return requestId end
+    PZLinuxDispatchCallback(PZLinuxAdminSetPlayerBalance(player, targetUsername, amount, requestId))
+    return requestId
+end
+
 function PZLinuxRequestContractSync(player, callback)
     local requestId = PZLinuxNextRequestId("contract-sync")
     PZLinuxRegisterCallback(requestId, callback)
@@ -5963,9 +6114,27 @@ function PZLinuxHackingBuildGuessFeedback(session, guess)
     }
 end
 
+-- Belt and suspenders (v1.0.9), alongside the client-side fix for a real
+-- duplicate-money exploit + crash (see the comment above hackTransfert in
+-- PZLinuxHacking.lua for the full client-side mechanism): starting a new
+-- hack used to unconditionally overwrite any existing session, with no
+-- check for one already sitting there unlocked and not yet transferred.
+-- Refusing that here closes the possibility from the server's side too,
+-- regardless of whatever state the client's UI is in.
+local function PZLinuxHackingRejectIfPendingTransfer(playerObj, requestId)
+    local session = PZLinuxHackingGetSession(playerObj)
+    if session and session.unlocked and not session.transferred then
+        return { ok = false, error = "session_pending_transfer", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    return nil
+end
+
 function PZLinuxHackingStartManual(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local pendingRejection = PZLinuxHackingRejectIfPendingTransfer(playerObj, requestId)
+    if pendingRejection then return pendingRejection end
 
     local removed, cardName, cardTypes = PZLinuxHackingRemoveCards(playerObj, 1)
     if removed <= 0 then
@@ -6008,6 +6177,9 @@ end
 function PZLinuxHackingAuto(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local pendingRejection = PZLinuxHackingRejectIfPendingTransfer(playerObj, requestId)
+    if pendingRejection then return pendingRejection end
 
     local available = PZLinuxHackingCountCards(playerObj)
     if available <= 0 then

@@ -189,6 +189,12 @@ local function PZLinuxServerPokerCashOut(player, args)
     end)
 end
 
+local function PZLinuxServerPokerRestoreSession(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxPokerRestoreSession", args, "PZLinuxPokerState", function()
+        return PZLinuxPokerRestoreSession(player, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerDarkWebRequestOffers(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxDarkWebRequestOffers", args, "PZLinuxDarkWebOffersResult", function()
         return PZLinuxDarkWebGetBuyOffers(player, args and args.requestId)
@@ -281,6 +287,42 @@ local function PZLinuxServerContractAdminForceMail(player, args)
         "PZLinuxContractAdminForceMailResult",
         function()
             return PZLinuxContractsAdminForceMail(player, args and args.requestId)
+        end
+    )
+end
+
+local function PZLinuxServerAdminListOnlinePlayers(player, args)
+    PZLinuxServerProcessIdempotent(
+        player,
+        "PZLinuxAdminListOnlinePlayers",
+        args,
+        "PZLinuxAdminListOnlinePlayersResult",
+        function()
+            return PZLinuxAdminListOnlinePlayers(player, args and args.requestId)
+        end
+    )
+end
+
+local function PZLinuxServerAdminGetPlayerBalance(player, args)
+    PZLinuxServerProcessIdempotent(
+        player,
+        "PZLinuxAdminGetPlayerBalance",
+        args,
+        "PZLinuxAdminGetPlayerBalanceResult",
+        function()
+            return PZLinuxAdminGetPlayerBalance(player, args and args.targetUsername, args and args.requestId)
+        end
+    )
+end
+
+local function PZLinuxServerAdminSetPlayerBalance(player, args)
+    PZLinuxServerProcessIdempotent(
+        player,
+        "PZLinuxAdminSetPlayerBalance",
+        args,
+        "PZLinuxAdminSetPlayerBalanceResult",
+        function()
+            return PZLinuxAdminSetPlayerBalance(player, args and args.targetUsername, args and args.amount, args and args.requestId)
         end
     )
 end
@@ -509,6 +551,7 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxPokerStart = PZLinuxServerPokerStart,
     PZLinuxPokerAction = PZLinuxServerPokerAction,
     PZLinuxPokerCashOut = PZLinuxServerPokerCashOut,
+    PZLinuxPokerRestoreSession = PZLinuxServerPokerRestoreSession,
     PZLinuxDarkWebRequestOffers = PZLinuxServerDarkWebRequestOffers,
     PZLinuxDarkWebBuy = PZLinuxServerDarkWebBuy,
     PZLinuxDarkWebSellOffers = PZLinuxServerDarkWebSellOffers,
@@ -522,6 +565,9 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxContractAdminForce = PZLinuxServerContractAdminForce,
     PZLinuxContractAdminAddFunds = PZLinuxServerContractAdminAddFunds,
     PZLinuxContractAdminForceMail = PZLinuxServerContractAdminForceMail,
+    PZLinuxAdminListOnlinePlayers = PZLinuxServerAdminListOnlinePlayers,
+    PZLinuxAdminGetPlayerBalance = PZLinuxServerAdminGetPlayerBalance,
+    PZLinuxAdminSetPlayerBalance = PZLinuxServerAdminSetPlayerBalance,
     PZLinuxContractPreview = PZLinuxServerContractPreview,
     PZLinuxContractSync = PZLinuxServerContractSync,
     PZLinuxContractAccept = PZLinuxServerContractAccept,

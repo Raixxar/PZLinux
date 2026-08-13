@@ -459,7 +459,15 @@ function contractsUI:onSelectContract(button)
     self:onContractId(button.contractId)
 end
 
+-- PZLinuxContractsApplyComplete is already safe against being entered
+-- twice for the same contract on its own (it atomically resets
+-- PZLinuxActiveContract before returning, in the same synchronous call --
+-- no window for a second call to see the old, still-completable state).
+-- This guard is pure hygiene/consistency with the rest of the mod's
+-- money-moving actions (Trading, Buy Goods, etc. all guard their own
+-- button), not a fix for a proven double-payout.
 function contractsUI:onContractComplete()
+    if self.contractCompleteInProgress then return end
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
@@ -470,7 +478,9 @@ function contractsUI:onContractComplete()
         contractsRemoveDrawOnMap(modData.PZLinuxContractLocationX + 20, modData.PZLinuxContractLocationY)
     end
 
+    self.contractCompleteInProgress = true
     PZLinuxRequestContractComplete(self.player, function(result)
+        self.contractCompleteInProgress = false
         if self.isClosing or not result or not result.ok then return end
 
         saveAtmBalance(result.balance, playerObj)

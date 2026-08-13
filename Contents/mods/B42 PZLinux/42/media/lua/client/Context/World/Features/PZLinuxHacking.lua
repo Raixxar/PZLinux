@@ -84,9 +84,19 @@ function hackingUI:initialise()
     self.topBar:addChild(self.closeButton)
 end
 
+function hackingUI:stopBootAnimation()
+    if self.bootTickHandler then
+        Events.OnTick.Remove(self.bootTickHandler)
+    end
+    self.bootTickHandler = nil
+    self.terminalCoroutine = nil
+end
+
 -- LOGOUT
 function hackingUI:onMinimize(_button)
     self.isClosing = true
+    self:stopBootAnimation()
+    self:stopTransferAnimation()
     self:removeFromUIManager()
     local modData = PZLinuxGetModData(self.player)
     if not modData then return end
@@ -96,6 +106,8 @@ end
 -- LOGOUT
 function hackingUI:onClose(_button)
     self.isClosing = true
+    self:stopBootAnimation()
+    self:stopTransferAnimation()
     self:removeFromUIManager()
     local modData = PZLinuxGetModData(self.player)
     if not modData then return end
@@ -104,6 +116,8 @@ end
 
 function hackingUI:onCloseX(_button)
     self.isClosing = true
+    self:stopBootAnimation()
+    self:stopTransferAnimation()
     local player = PZLinuxGetPlayer(self.player)
     if player then
         player:StopAllActionQueue()
@@ -221,17 +235,23 @@ function hackingUI:startBootSequence()
         end
     end)
 
-    self.updateCoroutineFunc = function()
+    -- A dedicated field/handler for this boot animation only, never shared
+    -- with the transfer animation below (see hackTransfert): they used to
+    -- both read/write self.updateCoroutineFunc and self.hackingCoroutine,
+    -- which is a different bug class but the same underlying mistake as
+    -- what actually caused the reported crash/duplicate-money bug -- see
+    -- hackTransfert's comment for the full explanation.
+    self.bootTickHandler = function()
         if coroutine.status(self.terminalCoroutine) ~= "dead" then
             coroutine.resume(self.terminalCoroutine)
         else
-            Events.OnTick.Remove(self.updateCoroutineFunc)
-            self.updateCoroutineFunc = nil
+            Events.OnTick.Remove(self.bootTickHandler)
+            self.bootTickHandler = nil
             self.terminalCoroutine = nil
             self:onHack()
         end
     end
-    Events.OnTick.Add(self.updateCoroutineFunc)
+    Events.OnTick.Add(self.bootTickHandler)
 end
 
 function hackingUI:onHack()
@@ -382,12 +402,46 @@ function hackingUI:onCommandEnter()
     end)
 end
 
+-- A player found a real duplicate-money exploit (and a matching Lua crash,
+-- "missing argument #1 to 'status'") by clicking AUTO, then TRANSFER, then
+-- AUTO again *while the first transfer's countdown animation was still
+-- playing*, repeating that cycle. Root cause: the transfer countdown
+-- animation used to share its coroutine/tick-handler fields
+-- (self.hackingCoroutine / self.updateCoroutineFunc) with the UNRELATED
+-- boot-sequence animation, AND every new call to hackTransfert() just
+-- overwrote those same fields with a fresh coroutine/handler pair without
+-- ever removing the PREVIOUS handler from Events.OnTick first (reassigning
+-- self.updateCoroutineFunc to a new closure does not unregister the old
+-- one -- Events.OnTick.Remove needs the exact old function reference,
+-- which was lost the moment it got overwritten). Every stale, orphaned
+-- handler kept reading/resuming/clearing the SAME self.hackingCoroutine
+-- field the newest handler was also using: multiple redundant resumes per
+-- tick, and -- the actual crash -- an orphaned handler's cleanup branch
+-- nil-ing self.hackingCoroutine out from under a still-active handler's
+-- next coroutine.status(self.hackingCoroutine) call.
+-- The fix: this animation now gets its own dedicated fields
+-- (self.transferCoroutine / self.transferTickHandler, never shared with
+-- the boot sequence), and stopTransferAnimation() always tears down any
+-- previous instance -- using the actual captured handler reference, not
+-- whatever self.transferTickHandler happens to currently point to -- before
+-- a new one is ever created.
+function hackingUI:stopTransferAnimation()
+    if self.transferTickHandler then
+        Events.OnTick.Remove(self.transferTickHandler)
+    end
+    self.transferTickHandler = nil
+    self.transferCoroutine = nil
+end
+
 function hackingUI:hackTransfert()
     local player = PZLinuxGetPlayer(self.player)
     if not player then return end
 
+    self:stopTransferAnimation()
+
     hackZombieName = nil
     self.hackTransfertButton:setVisible(false)
+    if self.titleLabelPlayer then self.topBar:removeChild(self.titleLabelPlayer) end
     self.titleLabelPlayer = ISLabel:new(self.width * 0.20, self.height * 0.59, self.height * 0.025,"Bank balance: $" .. tostring(loadAtmBalance(player)) .. " < $" .. tostring(hackingBankBalance), 0, 1, 0, 1, UIFont.Small, true)
     self.titleLabelPlayer.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabelPlayer:setVisible(true)
@@ -410,13 +464,19 @@ function hackingUI:hackTransfert()
             HaloTextHelper.addBadText(player, "Transfer rejected")
             return
         end
+        if self.isClosing then return end
+
+        -- Another transfer may have started (and been torn down again) while
+        -- this request was in flight; tear down whatever's there right now,
+        -- one more time, before this response's animation takes over.
+        self:stopTransferAnimation()
 
         local targetBalance = tonumber(result.balance) or loadAtmBalance(player)
         local creditedAmount = tonumber(result.hackedAmount or result.amount) or hackingBankBalance
         saveAtmBalance(targetBalance, player)
         hackingBankBalance = creditedAmount
 
-        self.hackingCoroutine = coroutine.create(function()
+        self.transferCoroutine = coroutine.create(function()
             local playerBankBalance = targetBalance - creditedAmount
             if playerBankBalance < 0 then playerBankBalance = 0 end
             local remainingBalance = creditedAmount
@@ -424,6 +484,7 @@ function hackingUI:hackTransfert()
             local elapsed = math.ceil(getGameTime():getWorldAgeHours() * 3600)
 
             while remainingBalance > 0 do
+                if self.isClosing then return end
                 local chunk = 1
 
                 if remainingBalance >= 1000 then
@@ -447,23 +508,27 @@ function hackingUI:hackTransfert()
             end
         end)
 
-        self.updateCoroutineFunc = function()
-            if coroutine.status(self.hackingCoroutine) ~= "dead" then
-                local ok = coroutine.resume(self.hackingCoroutine)
+        self.transferTickHandler = function()
+            if coroutine.status(self.transferCoroutine) ~= "dead" then
+                local ok = coroutine.resume(self.transferCoroutine)
                 if not ok then
-                    Events.OnTick.Remove(self.updateCoroutineFunc)
+                    Events.OnTick.Remove(self.transferTickHandler)
+                    self.transferTickHandler = nil
+                    self.transferCoroutine = nil
                 end
             else
-                Events.OnTick.Remove(self.updateCoroutineFunc)
-                self.updateCoroutineFunc = nil
-                self.hackingCoroutine = nil
+                Events.OnTick.Remove(self.transferTickHandler)
+                self.transferTickHandler = nil
+                self.transferCoroutine = nil
                 hackingBankBalance = 0
-                self.titleLabelPlayer:setName("Bank balance: $" .. tostring(targetBalance) .. " < $0\nTransfer completed")
-                self.hackLabelTitle:setName("Hack Balance: $0\n")
+                if not self.isClosing then
+                    self.titleLabelPlayer:setName("Bank balance: $" .. tostring(targetBalance) .. " < $0\nTransfer completed")
+                    self.hackLabelTitle:setName("Hack Balance: $0\n")
+                end
             end
         end
 
-        Events.OnTick.Add(self.updateCoroutineFunc)
+        Events.OnTick.Add(self.transferTickHandler)
     end)
 end
 
@@ -471,19 +536,28 @@ function hackingUI:hackAuto()
     local player = PZLinuxGetPlayer(self.player)
     if not player then return end
 
+    self.hackAutoButton:setEnable(false)
     PZLinuxRequestHackingAuto(player, function(result)
+        self.hackAutoButton:setEnable(true)
+        if self.isClosing then return end
         if not result or not result.ok then
-            HaloTextHelper.addBadText(player, "No Credit Card...");
+            if result and result.error == "session_pending_transfer" then
+                HaloTextHelper.addBadText(player, "Transfer the current hack before starting another one")
+            else
+                HaloTextHelper.addBadText(player, "No Credit Card...")
+            end
             return
         end
 
         hackingBankBalance = tonumber(result.amount) or 0
+        if self.hackTransfertButton then self.topBar:removeChild(self.hackTransfertButton) end
         self.hackTransfertButton = ISButton:new(self.width * 0.20, self.height * 0.52, self.width * 0.05, self.height * 0.025, "TRANSFER", self, self.hackTransfert)
         self.hackTransfertButton:setVisible(true)
         self.hackTransfertButton:initialise()
         self.topBar:addChild(self.hackTransfertButton)
 
         local cardCount = tonumber(result.cardCount) or 0
+        if self.titleLabelAuto then self.topBar:removeChild(self.titleLabelAuto) end
         self.titleLabelAuto = ISLabel:new(self.width * 0.20, self.height * 0.45, self.height * 0.025,"Total money hacked. $" .. tostring(hackingBankBalance) .. " from " .. tostring(cardCount) .. " card(s)", 0, 1, 0, 1, UIFont.Small, true)
         self.titleLabelAuto.backgroundColor = {r=0, g=0, b=0, a=0}
         self.titleLabelAuto:setVisible(true)
@@ -498,7 +572,11 @@ function hackingUI:hackNext()
 
     PZLinuxRequestHackingStart(playerObj, function(result)
         if not result or not result.ok then
-            HaloTextHelper.addBadText(playerObj, "No Credit Card...")
+            if result and result.error == "session_pending_transfer" then
+                HaloTextHelper.addBadText(playerObj, "Transfer the current hack before starting another one")
+            else
+                HaloTextHelper.addBadText(playerObj, "No Credit Card...")
+            end
             return
         end
 
