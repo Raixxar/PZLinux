@@ -15,8 +15,12 @@ function trainingUI:new(x, y, width, height, player)
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
-    o.backgroundColor = {r=0.05, g=0.05, b=0.05, a=0.95}
-    o.borderColor = {r=0, g=0.5, b=0, a=1}
+    -- Fully transparent: like every other PZLinux computer app (Dark Web,
+    -- Reputation, Trading, Check Condition, ...), the visible frame is the
+    -- oldCRT.png bezel image drawn behind this panel in trainingMenu_ShowUI,
+    -- not the panel's own background/border.
+    o.backgroundColor = {r=0, g=0, b=0, a=0}
+    o.borderColor = {r=0, g=0, b=0, a=0}
     o.width = width
     o.height = height
     o.player = player
@@ -58,29 +62,53 @@ function trainingUI:initialise()
 
     function self.topBar:onMouseUp(_x, _y)
         self.parent.isDragging = false
+        local modData = PZLinuxGetModData(self.parent.player)
+        if modData then
+            modData.PZLinuxUIX = self.parent:getX()
+            modData.PZLinuxUIY = self.parent:getY()
+        end
     end
 
-    self.titleLabel = ISLabel:new(self.width * 0.05, self.height * 0.04, self.height * 0.03, PZLinuxGetText("IGUI_PZLinux_Training_Title"), 0, 1, 0, 1, UIFont.Medium, true)
-    self.titleLabel:initialise()
-    self.topBar:addChild(self.titleLabel)
+    -- Standard PZLinux computer-screen chrome, matching every other feature
+    -- panel drawn over the oldCRT.png bezel (Reputation, Dark Web, Check
+    -- Condition, ...): a bottom-left "X" over the screen's own physical
+    -- stop button, and a minimize/close pair near the top-right corner.
+    self.stopButton = ISButton:new(self.width * 0.0728, self.height * 0.923, self.width * 0.045, self.height * 0.027, "X", self, self.onCloseX)
+    self.stopButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
+    self.stopButton.borderColor = {r=0, g=0, b=0, a=1}
+    self.stopButton:initialise()
+    self.topBar:addChild(self.stopButton)
 
-    self.closeButton = ISButton:new(self.width * 0.90, self.height * 0.03, self.width * 0.06, self.height * 0.04, "X", self, self.onClose)
-    self.closeButton.backgroundColor = {r=0.4, g=0, b=0, a=1}
+    self.minimizeButton = ISButton:new(self.width * 0.70, self.height * 0.17, self.width * 0.030, self.height * 0.025, "-", self, self.onClose)
+    self.minimizeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.minimizeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.minimizeButton.borderColor = {r=0, g=1, b=0, a=0.5}
+    self.minimizeButton:initialise()
+    self.topBar:addChild(self.minimizeButton)
+
+    self.closeButton = ISButton:new(self.width * 0.73, self.height * 0.17, self.width * 0.030, self.height * 0.025, "x", self, self.onClose)
+    self.closeButton.textColor = {r=0, g=1, b=0, a=1}
+    self.closeButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.closeButton.borderColor = {r=0, g=1, b=0, a=0.5}
     self.closeButton:initialise()
     self.topBar:addChild(self.closeButton)
 
-    self.statusLabel = ISLabel:new(self.width * 0.05, self.height * 0.10, self.height * 0.03, "", 0.8, 0.8, 0.8, 1, UIFont.Small, true)
+    self.titleLabel = ISLabel:new(self.width * 0.20, self.height * 0.20, self.height * 0.03, PZLinuxGetText("IGUI_PZLinux_Training_Title"), 0, 1, 0, 1, UIFont.Medium, true)
+    self.titleLabel:initialise()
+    self.topBar:addChild(self.titleLabel)
+
+    self.statusLabel = ISLabel:new(self.width * 0.20, self.height * 0.26, self.height * 0.025, "", 0.8, 0.8, 0.8, 1, UIFont.Small, true)
     self.statusLabel:initialise()
     self.topBar:addChild(self.statusLabel)
 
     -- Active-course view: a progress bar plus a label, both hidden unless
-    -- there's actually a course in progress (see refreshFromState).
-    self.progressBar = ISProgressBar:new(self.width * 0.05, self.height * 0.18, self.width * 0.90, self.height * 0.06)
+    -- there's actually a course in progress (see applyState).
+    self.progressBar = ISProgressBar:new(self.width * 0.20, self.height * 0.34, self.width * 0.57, self.height * 0.06)
     self.progressBar:initialise()
     self.progressBar:setVisible(false)
     self.topBar:addChild(self.progressBar)
 
-    self.activeLabel = ISLabel:new(self.width * 0.05, self.height * 0.26, self.height * 0.03, "", 0, 1, 0, 1, UIFont.Small, true)
+    self.activeLabel = ISLabel:new(self.width * 0.20, self.height * 0.43, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
     self.activeLabel:initialise()
     self.activeLabel:setVisible(false)
     self.topBar:addChild(self.activeLabel)
@@ -88,20 +116,22 @@ function trainingUI:initialise()
     -- Offers view: up to 3 rows, only shown when nothing is in progress.
     self.offerRows = {}
     for i = 1, 3 do
-        local yOffset = self.height * (0.18 + (i - 1) * 0.14)
+        local yOffset = self.height * (0.34 + (i - 1) * 0.15)
 
-        local nameLabel = ISLabel:new(self.width * 0.05, yOffset, self.height * 0.03, "", 0, 1, 0, 1, UIFont.Small, true)
+        local nameLabel = ISLabel:new(self.width * 0.20, yOffset, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
         nameLabel:initialise()
         nameLabel:setVisible(false)
         self.topBar:addChild(nameLabel)
 
-        local detailLabel = ISLabel:new(self.width * 0.05, yOffset + self.height * 0.035, self.height * 0.025, "", 0.7, 0.7, 0.7, 1, UIFont.Small, true)
+        local detailLabel = ISLabel:new(self.width * 0.20, yOffset + self.height * 0.035, self.height * 0.022, "", 0.7, 0.7, 0.7, 1, UIFont.Small, true)
         detailLabel:initialise()
         detailLabel:setVisible(false)
         self.topBar:addChild(detailLabel)
 
-        local buyButton = ISButton:new(self.width * 0.75, yOffset, self.width * 0.20, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Training_Buy"), self, self.onBuyCourse)
-        buyButton.backgroundColor = {r=0, g=0.3, b=0, a=1}
+        local buyButton = ISButton:new(self.width * 0.63, yOffset, self.width * 0.14, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Training_Buy"), self, self.onBuyCourse)
+        buyButton.textColor = {r=0, g=1, b=0, a=1}
+        buyButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        buyButton.borderColor = {r=0, g=1, b=0, a=0.5}
         buyButton:initialise()
         buyButton:setVisible(false)
         self.topBar:addChild(buyButton)
@@ -267,16 +297,25 @@ end
 
 function trainingMenu_ShowUI(player)
     local playerObj = PZLinuxGetPlayer(player)
-    if not playerObj then return end
+    local texture = getTexture("media/ui/oldCRT.png")
+    if not playerObj or not texture then return end
 
-    local realScreenW = getCore():getScreenWidth()
-    local realScreenH = getCore():getScreenHeight()
-    local finalW = math.min(600, realScreenW * 0.45)
-    local finalH = math.min(520, realScreenH * 0.65)
-    local uiX = (realScreenW - finalW) / 2
-    local uiY = (realScreenH - finalH) / 2
+    local screenWidth = getCore():getScreenWidth()
+    local screenHeight = getCore():getScreenHeight()
+    local scale = math.min(screenWidth * 0.70 / texture:getWidth(), screenHeight * 0.70 / texture:getHeight())
+    local width = math.floor(texture:getWidth() * scale)
+    local height = math.floor(texture:getHeight() * scale)
+    local modData = playerObj:getModData()
+    local x = modData.PZLinuxUIX or (screenWidth - width) / 2
+    local y = modData.PZLinuxUIY or (screenHeight - height) / 2
 
-    local ui = trainingUI:new(uiX, uiY, finalW, finalH, player)
+    local ui = trainingUI:new(x, y, width, height, player)
+    local background = ISImage:new(0, 0, width, height, texture)
+    background.scaled = true
+    background.scaledWidth = width
+    background.scaledHeight = height
+    ui:addChild(background)
+    ui.centeredImage = background
     ui:initialise()
     ui:addToUIManager()
     ui:setVisible(true)

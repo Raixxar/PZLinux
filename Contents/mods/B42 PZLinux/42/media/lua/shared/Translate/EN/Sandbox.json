@@ -4,5 +4,6 @@
     "Sandbox_PZLinux_SalePriceMultiplier": "Sale Price Multiplier",
     "Sandbox_PZLinux_StartingBalanceMin": "Starting Bank Balance (Minimum)",
     "Sandbox_PZLinux_StartingBalanceMax": "Starting Bank Balance (Maximum)",
-    "Sandbox_PZLinux_CustomDarkWebItems": "Custom Dark Web Items (Base.ItemName:Price, comma-separated)"
+    "Sandbox_PZLinux_CustomDarkWebItems": "Custom Dark Web Items (Base.ItemName:Price, comma-separated)",
+    "Sandbox_PZLinux_CustomMoneyItems": "Custom Money Items (ItemName, comma-separated -- treated as $1 cash for ATM/bank purposes, e.g. from a weightless-money mod)"
 }

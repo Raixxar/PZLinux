@@ -934,6 +934,9 @@ function PZLinuxApplyAtmDeposit(player, atmRef, amount, requestId)
         return { ok = false, error = "atm_not_found", requestId = requestId, amount = amount, balance = previousBalance, atmCash = 0, inventoryCash = inventoryCash }
     end
     if inventoryCash < amount then
+        print(string.format(
+            "[PZLinux ATM] DEPOSIT REJECTED player=%s requested=%d detectedInventoryCash=%d -- if this looks wrong, check for a money-reskin mod whose item isn't being recognized as cash (see PZLinux.CustomMoneyItems in sandbox-options.txt)",
+            tostring(PZLinuxGetPlayerKey(player)), amount, inventoryCash))
         return { ok = false, error = "not_enough_inventory_cash", requestId = requestId, amount = amount, balance = previousBalance, atmCash = atmCash, inventoryCash = inventoryCash }
     end
     -- Capped, not just clamped on load: without this, one player could

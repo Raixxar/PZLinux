@@ -1,3 +1,5 @@
+PZLinux = PZLinux or {}
+
 local function PZLinuxInventoryCashNestedContainer(item)
     if not item then return nil end
 
@@ -10,6 +12,64 @@ local function PZLinuxInventoryCashNestedContainer(item)
     return nil
 end
 
+-- Lets a server admin register a third-party mod's own currency item as
+-- valid PZLinux cash, via a sandbox option (PZLinux.CustomMoneyItems,
+-- free-text): a comma-separated list of item IDs (module.ItemName), each
+-- treated as worth $1 for ATM deposit/withdrawal and everywhere else this
+-- mod counts "cash on hand". This is the supported way to make PZLinux
+-- compatible with a mod that reskins or replaces vanilla money -- e.g. a
+-- "weightless money" mod that ships its own item (so it can coexist with
+-- normal-weight Base.Money) instead of patching the vanilla one, which
+-- this mod has no way to discover on its own without being told.
+--
+-- Same lazy-load pattern as PZLinuxDarkWebLoadCustomItems
+-- (PZLinuxDarkWebData.lua): SandboxVars isn't populated yet when this file
+-- is first parsed at mod boot, so this must never be read at file scope --
+-- only from real gameplay code, once SandboxVars reflects the actual
+-- joined server/save. Idempotent (guarded by PZLinux.customMoneyItemsLoaded)
+-- so every caller can invoke it defensively without re-parsing every call.
+PZLinux.customMoneyItemIds = PZLinux.customMoneyItemIds or {}
+
+local function PZLinuxLoadCustomMoneyItems()
+    if PZLinux.customMoneyItemsLoaded then return end
+    PZLinux.customMoneyItemsLoaded = true
+
+    local raw = SandboxVars and SandboxVars.PZLinux and SandboxVars.PZLinux.CustomMoneyItems
+    if not raw or raw == "" then return end
+
+    for entry in tostring(raw):gmatch("[^,]+") do
+        local itemName = entry:match("^%s*([%w%._]+)%s*$")
+        if not itemName then
+            print("[PZLinux ATM] custom money item entry could not be parsed (expected Base.ItemName): " .. tostring(entry))
+        elseif not (getScriptManager and getScriptManager():FindItem(itemName)) then
+            print("[PZLinux ATM] custom money item ignored (unknown item): " .. tostring(itemName))
+        else
+            PZLinux.customMoneyItemIds[itemName] = true
+            print("[PZLinux ATM] custom money item registered: " .. itemName)
+        end
+    end
+end
+
+-- Recognizes any item this mod treats as spendable cash: PZLinux's own
+-- Base.Money ($1) and Base.MoneyBundle ($100), any item whose vanilla
+-- "Type" tag is Money regardless of which mod/module it actually comes
+-- from (the same flag the base game itself uses to mark an item as
+-- currency, so most money-reskin mods keep it even while changing the
+-- item's weight/name/module), and anything explicitly registered through
+-- PZLinux.CustomMoneyItems above. Returns the $ value of a single
+-- instance of the item, or 0 if it isn't recognized as money at all.
+function PZLinuxMoneyItemValue(item)
+    if not item then return 0 end
+    PZLinuxLoadCustomMoneyItems()
+
+    local fullType = item:getFullType()
+    if fullType == "Base.MoneyBundle" then return 100 end
+    if fullType == "Base.Money" then return 1 end
+    if item:getType() == "Money" then return 1 end
+    if PZLinux.customMoneyItemIds[fullType] then return 1 end
+    return 0
+end
+
 local function PZLinuxInventoryCashCollect(container, entries, visited)
     if not container or visited[container] then return end
     visited[container] = true
@@ -18,13 +78,13 @@ local function PZLinuxInventoryCashCollect(container, entries, visited)
     for index = 0, items:size() - 1 do
         local item = items:get(index)
         if item then
-            local fullType = item:getFullType()
-            if fullType == "Base.MoneyBundle" then
+            local value = PZLinuxMoneyItemValue(item)
+            if value == 100 then
                 table.insert(entries.bundles, { container = container, item = item })
-                entries.total = entries.total + 100
-            elseif fullType == "Base.Money" or item:getType() == "Money" then
+                entries.total = entries.total + value
+            elseif value > 0 then
                 table.insert(entries.singles, { container = container, item = item })
-                entries.total = entries.total + 1
+                entries.total = entries.total + value
             end
 
             local nested = PZLinuxInventoryCashNestedContainer(item)

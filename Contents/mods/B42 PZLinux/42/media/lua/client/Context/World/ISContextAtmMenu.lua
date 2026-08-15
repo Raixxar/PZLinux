@@ -412,7 +412,7 @@ function AtmUI:onDeposite()
         local items = container:getItems()
         for j = 0, items:size() - 1 do
             local item = items:get(j)
-            if item:getFullType() == "Base.Money" or item:getFullType() == "Base.MoneyBundle" then
+            if PZLinuxMoneyItemValue(item) > 0 then
                 ISInventoryPaneContextMenu.transferIfNeeded(playerObj, item)
             end
         end

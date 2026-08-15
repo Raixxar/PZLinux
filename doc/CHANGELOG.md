@@ -2,6 +2,37 @@
 
 ## [1.0.10]
 
+- Fixed a player-reported visual bug: the Training panel rendered as a
+  plain floating dark box instead of appearing on the computer's own
+  screen like every other PZLinux feature. Root cause: Training was built
+  by reusing PZLinuxAdminBalance.lua's drag/close boilerplate for
+  convenience -- a debug-only admin tool deliberately styled as an opaque
+  panel with a red border so it never looks like part of the in-world
+  computer -- and that styling came along for the ride by accident. Now
+  drawn over the same oldCRT.png computer-screen bezel every real feature
+  panel uses (Dark Web, Trading, Reputation, Check Condition, the boot
+  menu itself, ...), with its own panel background made fully transparent
+  so only the CRT texture shows as the frame, and its buttons restyled to
+  match the shared green terminal look instead of solid red/green blocks.
+- Fixed a player-reported compatibility issue: money from a "weightless
+  money" mod (or any other mod reskinning/replacing vanilla cash) couldn't
+  be deposited at an ATM, always rejected as if the player were carrying
+  none at all. PZLinux never reads item weight anywhere, so a plain weight
+  edit on the vanilla item was never the real problem -- the actual gap
+  was that this mod only ever recognized its own Base.Money/
+  Base.MoneyBundle items as cash, plus a partial fallback (any item whose
+  vanilla "Type" tag is Money) that existed in the inventory-counting code
+  but was missing from the ATM's own "gather money from bags before
+  showing the deposit menu" step. Added a new sandbox option,
+  PZLinux.CustomMoneyItems (free-text, comma-separated item IDs), letting
+  a host explicitly register a third-party mod's currency item as valid
+  $1 PZLinux cash -- the same supported extension pattern already used for
+  PZLinux.CustomDarkWebItems. Every place this mod checks whether an item
+  is spendable cash now goes through one shared function so the two never
+  drift apart again. Also added a diagnostic server log line when a
+  deposit is rejected for insufficient cash, printing what was actually
+  detected vs. requested, to make this kind of report easier to root-cause
+  from `docker logs -f` in the future.
 - Added Training, a new PZLinux computer app -- moved up from the v1.1.0
   roadmap as a goodwill feature after a heavy bugfix cycle. Buy XP with
   money: 3 courses are rolled weekly (one at a time -- finish the current

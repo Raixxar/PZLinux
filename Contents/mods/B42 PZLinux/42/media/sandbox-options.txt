@@ -47,3 +47,11 @@ option PZLinux.CustomDarkWebItems
 	page = PZLinux_Settings,
 	translation = PZLinux_CustomDarkWebItems,
 }
+
+option PZLinux.CustomMoneyItems
+{
+	type = string,
+	default = "",
+	page = PZLinux_Settings,
+	translation = PZLinux_CustomMoneyItems,
+}
