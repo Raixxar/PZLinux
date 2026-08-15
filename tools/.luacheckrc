@@ -362,6 +362,7 @@ globals = {
     "PZLinuxMailScheduleNext",
     "PZLinuxMailTable",
     "PZLinuxMailTickPlayer",
+    "PZLinuxMoneyItemValue",
     "PZLinuxOnItemRequestPriceDelta",
     "PZLinuxPrettifyName",
     "PZLinuxRemoveInventoryCash",

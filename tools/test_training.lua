@@ -278,6 +278,51 @@ do
     end
 end
 
+-- --- Finishing ALL of this week's offers must NOT trigger an early
+-- reroll -- the player must still wait out the full 7 in-game days,
+-- exactly like finishing only one does. From player feedback: completing
+-- every offer made a brand new list appear immediately instead of
+-- waiting for the week to roll over. ---
+do
+    local player = resetPlayer()
+    local state = PZLinuxTrainingGetState(player, "req-f")
+    local weekAtStart = tonumber(playerModData.PZLinuxTrainingOffersWeek)
+    local offerIds = { state.offers[1].id, state.offers[2].id, state.offers[3].id }
+
+    for _, offerId in ipairs(offerIds) do
+        local _, tier = PZLinuxTrainingResolveOffer(offerId)
+        PZLinuxTrainingApplyPurchase(player, offerId, "req-buy-f-" .. offerId)
+        local elapsed = 0
+        local stepHours = 0.5
+        local result
+        while elapsed < tier.durationHours do
+            worldAgeHours = worldAgeHours + stepHours
+            elapsed = elapsed + stepHours
+            result = PZLinuxTrainingApplyProgressTick(player, "req-tick-f-" .. offerId .. "-" .. tostring(elapsed))
+        end
+        PZLinuxTestAssert(result.completed, "each of this week's 3 offers must be completable in turn")
+    end
+
+    PZLinuxTestAssert(playerModData.PZLinuxTrainingOffersList == "",
+        "finishing every offer this week must leave the list genuinely empty, not silently refilled")
+
+    -- Re-opening the panel (PZLinuxTrainingGetState, same call a reopened
+    -- UI makes) must NOT reroll just because the list is empty -- only a
+    -- real 7-day boundary may do that.
+    local afterAllDone = PZLinuxTrainingGetState(player, "req-g")
+    PZLinuxTestAssert(#afterAllDone.offers == 0,
+        "finishing every offer must leave zero offers until the week actually rolls over, not refill immediately")
+    PZLinuxTestAssert(tonumber(playerModData.PZLinuxTrainingOffersWeek) == weekAtStart,
+        "the tracked offer week must not advance just because the list emptied out")
+
+    -- Only once the 7-day boundary is actually crossed does a fresh set
+    -- of 3 appear again.
+    worldAgeHours = worldAgeHours + 24 * 7
+    local nextWeekState = PZLinuxTrainingGetState(player, "req-h")
+    PZLinuxTestAssert(#nextWeekState.offers == 3,
+        "crossing the 7-day boundary after finishing every offer must roll a fresh set of 3")
+end
+
 -- --- No permanent "completed forever" record exists anywhere in the
 -- source -- structural guard against this regressing back to the
 -- original (rejected) design. ---
@@ -298,9 +343,12 @@ print("PZLinux Training functional tests OK")
 -- ---------------------------------------------------------------------
 
 local trainingKeys = {
-    "IGUI_PZLinux_Training_Title", "IGUI_PZLinux_Training_Buy", "IGUI_PZLinux_Training_Completed",
+    "IGUI_PZLinux_Training_Title", "IGUI_PZLinux_Training_Buy", "IGUI_PZLinux_Training_Cancel",
+    "IGUI_PZLinux_Training_Completed",
     "IGUI_PZLinux_Training_InProgress", "IGUI_PZLinux_Training_StayHere", "IGUI_PZLinux_Training_ChooseCourse",
     "IGUI_PZLinux_Training_Detail", "IGUI_PZLinux_Training_AlreadyInProgress",
+    "IGUI_PZLinux_Training_NotEnoughMoney", "IGUI_PZLinux_Training_CourseNoLongerAvailable",
+    "IGUI_PZLinux_Training_PurchaseFailed",
     "IGUI_PZLinux_Training_Electricity", "IGUI_PZLinux_Training_Mechanics", "IGUI_PZLinux_Training_Cooking",
     "IGUI_PZLinux_Training_Farming", "IGUI_PZLinux_Training_Woodwork", "IGUI_PZLinux_Training_Metalworking",
     "IGUI_PZLinux_Training_Tailoring", "IGUI_PZLinux_Training_FirstAid", "IGUI_PZLinux_Training_Fishing",

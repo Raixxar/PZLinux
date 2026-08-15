@@ -2,6 +2,113 @@
 
 ## [1.0.10]
 
+- Fixed a player-reported bug in Training: a player with $100,000 in their
+  bank account was told they didn't have enough money to buy an $80,000
+  course. Root cause: onPayCourse showed the same hardcoded "not enough
+  money" message for EVERY purchase failure other than
+  "training_in_progress", regardless of the real reason -- most likely an
+  "invalid_course" rejection (the offer clicked was no longer valid
+  server-side, e.g. the week rolled over or it got consumed between
+  refreshes) had nothing to do with the player's balance at all. Every
+  real server error now maps to its own honest message instead of one
+  wrong catch-all claim: not_enough_money still says exactly that,
+  invalid_course clears the stale selection and resyncs the list from the
+  server automatically (instead of leaving a phantom card the player
+  could keep retrying forever), and any other/unexpected error falls back
+  to a generic "purchase failed, try again" rather than blaming money.
+- Fixed a player-reported performance bug in Training: clicking a course
+  card sometimes appeared to do nothing, needing several clicks to
+  register. Root cause: same underlying native-Translator behavior as the
+  In Progress log-spam fix above, but far more frequent here -- rendering
+  the offer list calls the game's own getText() on a "%s"-containing
+  string once per card (up to 3 times) on every click (selecting a card,
+  cancelling back to the list, a fresh refresh), and 3 real Java
+  exceptions thrown, caught and logged back to back on the same thread
+  was enough to cause a visible client hitch. Training's own
+  placeholder-bearing keys (Detail, InProgress, Completed) now use
+  "{1}"/"{2}"/"{3}" instead of "%s" -- the native lookup never sees a
+  percent sign to trip over in the first place, while PZLinux's own
+  substitution (still entirely in Lua, via a small new
+  PZLinuxTrainingFormat helper) works exactly as before.
+- Redesigned Training's offer list to match Buy Goods' clickable-row
+  interaction instead of a name/detail label pair sitting next to its own
+  small "Start" button: each of the 3 weekly offers is now a full
+  clickable card with its name and price/duration stacked inside. From
+  player feedback, clicking a card never spends money by itself anymore
+  -- it only selects that one card and reveals a separate recap plus
+  explicit Pay/Cancel buttons below it, so an accidental click can no
+  longer charge the player; paying (or backing out with Cancel) is always
+  a deliberate second step. A stale selection (the offer got bought
+  elsewhere, or the week rolled over between refreshes) safely falls back
+  to the list instead of trying to confirm a purchase that can no longer
+  succeed.
+- Fixed a player-reported bug: finishing every one of this week's 3
+  Training offers made a brand new set appear immediately instead of
+  waiting for the actual 7-day reroll. Root cause: the reroll check
+  required the offer list to be non-empty as well as being the same
+  week, so once all 3 were bought and completed (leaving an empty list --
+  by design, see PZLinuxTrainingRemoveFromList) it looked exactly like a
+  stale list that had never been rolled at all, and rerolled immediately.
+  Now gated purely on the tracked week number, so an empty list within
+  the current week is correctly treated as "nothing left until next
+  week", not "never rolled yet".
+- Changed the sound Training plays on completing a course from the plain
+  string "levelup" (which resolves directly to a leftover legacy
+  media/sound/levelup.ogg/.wav file, no longer used by vanilla gameplay --
+  its own SoundBanks.lua alias is commented out) to "GainExperienceLevel",
+  vanilla's own currently-used, properly-scripted sound for actually
+  leveling up a skill. From player feedback: the old file's fuller fanfare
+  mix included a vocal chant layer that didn't match the plain guitar
+  sting vanilla itself uses for this moment.
+- Fixed a player-reported log-spam bug in Training: the server log filled
+  up with `Translator.reportMissingArgumentsFromPastAbuse ... Missing
+  arguments for "IGUI_PZLinux_Training_InProgress"` warnings while a
+  course was in progress. Root cause: the active-course label was rebuilt
+  -- re-resolving and re-formatting its translation -- on every ~500ms
+  tick response, even though the course name never actually changes
+  between ticks (only the progress bar does). Since that translation
+  string contains a raw "%s", every such lookup also made the game's own
+  native Translator log this warning: it defensively tries to format the
+  raw string itself before PZLinux's own gsub-based substitution ever
+  runs (see PZLinuxGetText/PZLinuxFormatText's own comment on why this mod
+  deliberately never passes real arguments to the native getText() call
+  directly -- doing so once caused a worse, silent blank-value bug). At
+  twice a second for a multi-hour course, that added up to a lot of
+  avoidable noise in exactly the docker logs -f output this mod's own
+  logging pass (see below) is meant to keep clean. Purely cosmetic --
+  the label always displayed correctly regardless -- but now only
+  rebuilt when the active course itself actually changes.
+- Fixed a player-reported visual bug: the Training panel rendered as a
+  plain floating dark box instead of appearing on the computer's own
+  screen like every other PZLinux feature. Root cause: Training was built
+  by reusing PZLinuxAdminBalance.lua's drag/close boilerplate for
+  convenience -- a debug-only admin tool deliberately styled as an opaque
+  panel with a red border so it never looks like part of the in-world
+  computer -- and that styling came along for the ride by accident. Now
+  drawn over the same oldCRT.png computer-screen bezel every real feature
+  panel uses (Dark Web, Trading, Reputation, Check Condition, the boot
+  menu itself, ...), with its own panel background made fully transparent
+  so only the CRT texture shows as the frame, and its buttons restyled to
+  match the shared green terminal look instead of solid red/green blocks.
+- Fixed a player-reported compatibility issue: money from a "weightless
+  money" mod (or any other mod reskinning/replacing vanilla cash) couldn't
+  be deposited at an ATM, always rejected as if the player were carrying
+  none at all. PZLinux never reads item weight anywhere, so a plain weight
+  edit on the vanilla item was never the real problem -- the actual gap
+  was that this mod only ever recognized its own Base.Money/
+  Base.MoneyBundle items as cash, plus a partial fallback (any item whose
+  vanilla "Type" tag is Money) that existed in the inventory-counting code
+  but was missing from the ATM's own "gather money from bags before
+  showing the deposit menu" step. Added a new sandbox option,
+  PZLinux.CustomMoneyItems (free-text, comma-separated item IDs), letting
+  a host explicitly register a third-party mod's currency item as valid
+  $1 PZLinux cash -- the same supported extension pattern already used for
+  PZLinux.CustomDarkWebItems. Every place this mod checks whether an item
+  is spendable cash now goes through one shared function so the two never
+  drift apart again. Also added a diagnostic server log line when a
+  deposit is rejected for insufficient cash, printing what was actually
+  detected vs. requested, to make this kind of report easier to root-cause
+  from `docker logs -f` in the future.
 - Added Training, a new PZLinux computer app -- moved up from the v1.1.0
   roadmap as a goodwill feature after a heavy bugfix cycle. Buy XP with
   money: 3 courses are rolled weekly (one at a time -- finish the current
