@@ -62,36 +62,135 @@ Sandbox option: let the host set the Dark Web/Buy Goods package theft
     both delivery functions instead of the hardcoded 10, add the
     Sandbox.json translation. From player feedback: "Could we have that
     chance for the package to be lost as a sandbox variable please?"
-Keeping money/portfolio across character death, for more casual/"journal-
-    style" servers that let players respawn and recover progress instead of
-    a strict permadeath economy. Two mechanisms surfaced, not mutually
-    exclusive, need a real design decision before implementation:
-    (a) Automatic, sandbox-configured retention on death -- player-proposed
-    options like WealthLostOnDeathPercentage/StocksLostOnDeathPercentage
-    (0 = keep everything, 100 = current behavior, lose it all). Simplest for
-    the player (nothing to do), but needs a real "on character death" hook
-    this mod doesn't have yet, and somewhere to actually hold the retained
-    value until the new character exists to receive it.
-    (b) Raixxar's own idea: a named recovery code, redeemable at any PC --
-    on death, the account gets an account-bound code (possibly plus a
-    percentage retained, same knob as (a)); a new character enters it on a
-    computer to reclaim the balance/portfolio. Player-initiated rather than
-    silent, which fits a survival game's stakes better and sidesteps
-    needing an automatic death hook, at the cost of the player having to
-    remember/note the code down.
-    Either way, this needs money (and eventually the Trading portfolio) to
-    become recoverable by something OTHER than the dying character's own
-    modData -- everything in this mod is currently scoped strictly to the
-    character object, by design (confirmed while investigating an unrelated
-    "does reusing a dead character's name recover their balance" question --
-    it doesn't, today, precisely because nothing is account-scoped). Needs
-    to stay opt-in/host-configured, not default behavior, since it's a real
-    philosophical fork away from Contracts being the only reliable income
-    and death having real economic stakes -- exactly the "more casual"
-    framing the requesting player used themselves. From player feedback:
+Recovery interface: a new in-world computer app for reclaiming what a dead
+    character left behind, for more casual/"journal-style" servers that let
+    players respawn and recover progress instead of a strict permadeath
+    economy. Builds on the "named recovery code" idea already raised for
+    this (Raixxar's own suggestion, previously noted here) with a concrete
+    two-option design:
+    (a) Balance recovery via a hacking-style minigame: reuses the existing
+    Hacking password-guessing mechanic (PZLinuxHacking.lua /
+    PZLinuxHackingStartManual, today used to steal from a locked account) for
+    the inverse case -- cracking the player's OWN dead account. Limited
+    number of attempts to find the code; success returns the full balance,
+    running out of attempts loses it forever (no retry, no cooldown -- a
+    real stakes decision, worth confirming that's really intended before
+    building it, since every other money-loss path in this mod is either
+    fully preventable or capped, not permanent-and-final like this).
+    Open question not yet resolved: in MP a player could have died more than
+    once with balances left behind each time -- does recovery target only
+    the most recent death, or does the player pick which one, and how is
+    that surfaced in the UI?
+    (b) Skill points recovery for a steep flat price (proposed: $50,000) --
+    penalizing enough that death still matters, but not permanent. Must be
+    additive-only per skill: for every perk, compare the dead character's
+    recorded level against the new character's CURRENT level
+    (playerObj:getPerkLevel(Perks.X), same read already used by
+    PZLinuxEconomy.lua/ISPZLinuxRepareAction.lua) and only raise it, never
+    lower it, so a new character who already leveled a skill higher than the
+    old one never gets overwritten downward. Needs real verification before
+    committing to an approach: the mod's existing XP grants (addXp(playerObj,
+    Perks.X, amount)) add raw XP, not a level directly, and PZ's XP-per-level
+    curve is non-linear -- restoring "up to level N" precisely likely means
+    computing the exact XP delta from the game's own per-level thresholds
+    rather than guessing a flat XP amount per level.
+    Together, (a) and (b) also work as an expensive, entirely optional way to
+    "reroll" a character on purpose (die, then buy back the balance and
+    skills on the new one) rather than a dedicated separate feature -- worth
+    keeping in mind for pricing so that path stays a real sink, not a cheap
+    loophole.
+    Either option still needs money (and skill levels) to become
+    recoverable by something OTHER than the dying character's own modData --
+    everything in this mod is currently scoped strictly to the character
+    object, by design (confirmed while investigating an unrelated "does
+    reusing a dead character's name recover their balance" question -- it
+    doesn't, today, precisely because nothing is account-scoped). The
+    recovery code itself needs to be the account-scoped key that survives
+    the old character's death to make either option reachable at all.
+    Needs to stay opt-in/host-configured, not default behavior, since it's a
+    real philosophical fork away from Contracts being the only reliable
+    income and death having real economic stakes -- exactly the "more
+    casual" framing this was originally raised with. From player feedback:
     "It would be nice if we had the option to keep our money/stocks/etc on
     death, or keep a configurable percentage of them on death... And more
     casual servers like mine could set that to 0."
+Formation (training courses) interface: a new in-world computer app to buy
+    XP directly with money, playing the same role as VHS tapes/TV shows
+    already do in vanilla PZ but as an instant, always-available purchase
+    instead of a real-time-gated one -- worth being explicit about that
+    difference when designing it, rather than silently reinventing VHS.
+    Grounded in the mod's existing XP-grant precedent (addXp(playerObj,
+    Perks.X, amount), Perks.Electricity/PlantScavenging already used this
+    way in PZLinuxEconomy.lua/ISPZLinuxVariablesTables.lua). Example given:
+    an Electricity course grants 200 XP for $20,000 -- a $100-per-XP anchor
+    to seed pricing for the rest of the skill list once this gets built.
+    Only 3 courses offered at a time, refreshed daily (per in-game day), so
+    players can't just repeatedly buy the same skill -- the same shape as
+    the existing daily-refresh mechanics already in the mod (contract board
+    refresh via boardRefreshHours, Buy Goods' daily seller-availability
+    roll), likely reusable as a pattern rather than new infrastructure.
+    Open question not yet resolved: is the daily set of 3 the same for
+    every player on the server (one shared roll, like Dark Web restock), or
+    rolled separately per player? Matters for the next requirement:
+    once a player completes a course, it must disappear from THEIR list
+    permanently (never re-offered to them again, so a skill isn't trained
+    twice) while staying available to every other player -- so completion
+    has to be tracked per-player/per-character, even if the daily pool of
+    which 3 are on offer ends up shared server-wide.
+Trading overhaul: several new order types layered onto the current simple
+    "buy X now / sell X now" market-order-only system
+    (PZLinuxTradingApplyBuy/PZLinuxTradingApplySell -- immediate execution
+    at the latest price, no concept of a pending/conditional order at all
+    today). From player feedback, aimed at making Trading feel like real
+    trading and teaching it to players who've never traded before, not
+    just giving more options to people who already know the terms:
+    - Short selling: bet on a price drop by selling borrowed shares now and
+      buying them back later. A short's loss is theoretically unlimited if
+      the price keeps rising, unlike a normal buy where the most you can
+      ever lose is what you paid -- downside-risk decision made: the bank
+      balance is allowed to go negative (debt) rather than being hard-
+      capped/margin-called. Debt is tied into the EXISTING reputation
+      system rather than building a separate one: while debt is
+      outstanding, reputation drops (reusing the existing decay-toward-
+      baseline machinery, just pointed downward instead of back to
+      neutral), which automatically triggers the purchase surcharge
+      PZLinux.Economy.reputationPurchaseMultiplier already applies below
+      baseline -- no new pricing code needed, prices just get worse the
+      deeper in debt the player stays. Settling the debt stops the drop
+      and lets reputation recover normally over time, same as any other
+      reputation hit today.
+      Also raised: below -50 reputation (deep negative territory on the
+      real -99 to 200 scale, baseline 1), zombie hordes start coming for
+      the player. This is a broader consequence than just debt -- reputation
+      is a single shared stat today (contract cancellations already lower
+      it too), so this would apply to ANY path down to -50, not only
+      unpaid debt; worth deciding whether that's intended before building
+      it. Likely reuses the horde-spawn logic already built for Protect the
+      Building/the Radio Station contract idea above, rather than a new
+      spawn system.
+    - Leverage: trade a bigger position than the cash actually put up,
+      amplifying both gains and losses. Same debt-via-reputation handling
+      as short selling above, and directly compounds it if the two combine.
+    - Limit orders: buy/sell only executes once the price reaches a chosen
+      level or better, instead of immediately at the current price.
+    - Stop orders: the mirror of a limit order -- triggers a market order
+      once the price crosses a chosen level, commonly used to enter on a
+      breakout rather than to protect an existing position.
+    - Stop-loss / take-profit: attached to an existing position, auto-sell
+      if the price drops below (stop-loss) or rises above (take-profit) a
+      chosen level, without the player needing to watch the market.
+    Limit/stop/stop-loss/take-profit are all "pending order" types that
+    don't execute immediately -- nothing like that exists today, so this
+    needs a real background system checking every pending order against
+    the price whenever it updates, executing (and notifying the player)
+    the moment a condition is met, even while they're not looking at the
+    Trading screen.
+    Every new option needs an explanatory tooltip -- setTooltip already has
+    a working, low-risk precedent in this mod (the Dark Web buy list's
+    item tooltips, PZLinuxDarkWeb.lua) -- so a player who has never traded
+    before can learn what each term means just by hovering over it, in
+    keeping with the explicit goal of teaching real trading through play,
+    not only adding options for players who already know the jargon.
 Reputation-gated Dark Web offers: certain rare items only appear in the
     catalog once the player's reputation crosses the Preferred tier, giving
     another concrete reason to care about reputation beyond the price

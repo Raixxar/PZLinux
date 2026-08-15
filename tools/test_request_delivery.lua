@@ -46,9 +46,7 @@ local function PZLinuxTestNewPlayer(options)
     local inventory = PZLinuxTestNewInventory(options)
     local modData = {
         PZLinuxActiveRequest = 1,
-        PZLinuxOnItemRequest = {
-            { { items = { { name = "Base.Axe" }, { name = "Base.Hammer" } } } },
-        },
+        PZLinuxOnItemRequestQueue = "Base.Axe,Base.Hammer",
     }
     return {
         inventory = inventory,
@@ -61,8 +59,12 @@ end
 local runtimeSource = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
 local deliveryBlock = runtimeSource:match("function PZLinuxRequestsApplyDelivery.-\nend")
 PZLinuxTestAssert(deliveryBlock, "Request delivery handler must exist")
+local queueDecodeBlock = runtimeSource:match("function PZLinuxRequestsQueueDecode.-\nend")
+local queueEncodeBlock = runtimeSource:match("function PZLinuxRequestsQueueEncode.-\nend")
+PZLinuxTestAssert(queueDecodeBlock and queueEncodeBlock, "Request queue encode/decode helpers must exist")
 
 PZLinuxGetPlayer = function(value) return value end
+PZLinuxGetPlayerKey = function() return "test-player" end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxLoadBankBalance = function() return 1000 end
 PZLinuxTransmitPlayerModData = function() end
@@ -71,6 +73,8 @@ PZLinuxCreateStolenOrderNote = function(playerArg)
     table.insert(stolenNoteCalls, playerArg)
 end
 rawset(_G, "ZombRand", function() return 100 end)
+assert(loadstring(queueDecodeBlock))()
+assert(loadstring(queueEncodeBlock))()
 assert(loadstring(deliveryBlock))()
 
 local synchronized = {}
@@ -86,7 +90,7 @@ PZLinuxTestAssert(#player.inventory.items == 1, "the completed parcel must remai
 PZLinuxTestAssert(#player.inventory.items[1]:getInventory().items == 2, "all requested items must be inside the parcel")
 PZLinuxTestAssert(#synchronized == 1 and synchronized[1] == player.inventory.items[1],
     "the completed parcel must be synchronized to the owning client")
-PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 0 and #player.modData.PZLinuxOnItemRequest == 0,
+PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 0 and player.modData.PZLinuxOnItemRequestQueue == "",
     "the pending Request order must clear only after synchronization")
 
 for _, failure in ipairs({
@@ -96,7 +100,7 @@ for _, failure in ipairs({
     player = PZLinuxTestNewPlayer(failure.options)
     result = PZLinuxRequestsApplyDelivery(player, {}, "request-delivery-failure")
     PZLinuxTestAssert(not result.ok and result.error == failure.error, failure.error .. " must be reported")
-    PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and #player.modData.PZLinuxOnItemRequest == 1,
+    PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and player.modData.PZLinuxOnItemRequestQueue == "Base.Axe,Base.Hammer",
         failure.error .. " must preserve the paid pending order")
     PZLinuxTestAssert(#player.inventory.items == 0, failure.error .. " must not leave an empty parcel")
 end
@@ -105,7 +109,7 @@ PZLinuxSyncAddedInventoryItem = function() return false end
 player = PZLinuxTestNewPlayer()
 result = PZLinuxRequestsApplyDelivery(player, {}, "request-delivery-sync-failure")
 PZLinuxTestAssert(not result.ok and result.error == "parcel_sync_failed", "network synchronization failure must be reported")
-PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and #player.modData.PZLinuxOnItemRequest == 1,
+PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and player.modData.PZLinuxOnItemRequestQueue == "Base.Axe,Base.Hammer",
     "network synchronization failure must preserve the paid pending order")
 PZLinuxTestAssert(#player.inventory.items == 0, "network synchronization failure must roll back the server parcel")
 

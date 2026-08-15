@@ -230,6 +230,59 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_StolenNote_18 = "Free enterprise, zombie-apocalypse style.",
     IGUI_PZLinux_StolenNote_19 = "Karma's just late on some deliveries.",
     IGUI_PZLinux_StolenNote_20 = "Next time, maybe tip the courier.",
+    -- Auto Parts/Medical/Weapon contract item names (see
+    -- PZLinuxContractRequestData.lua). The Auto Parts ones exist to
+    -- disambiguate between three quality tiers that PZ's own vanilla item
+    -- name can't tell apart (Base.NormalSuspension1/2/3 all display as the
+    -- same "Suspension - Regular", etc.) -- Medical/Weapon names are
+    -- translated here too for consistency, since the physical contract
+    -- note always uses this text regardless of contract type.
+    IGUI_PZLinux_ContractPart_CarBattery3 = "Battery: Resistant",
+    IGUI_PZLinux_ContractPart_CarBattery2 = "Battery: Sport",
+    IGUI_PZLinux_ContractPart_CarBattery1 = "Battery: Standard",
+    IGUI_PZLinux_ContractPart_ModernBrake3 = "Performance brakes: Resistant",
+    IGUI_PZLinux_ContractPart_ModernBrake2 = "Performance brakes: Sport",
+    IGUI_PZLinux_ContractPart_ModernBrake1 = "Performance brakes: Standard",
+    IGUI_PZLinux_ContractPart_ModernCarMuffler3 = "Performance silencers: Resistant",
+    IGUI_PZLinux_ContractPart_ModernCarMuffler2 = "Performance silencers: Sport",
+    IGUI_PZLinux_ContractPart_ModernCarMuffler1 = "Performance silencers: Standard",
+    IGUI_PZLinux_ContractPart_ModernSuspension3 = "Performance suspension: Resistant",
+    IGUI_PZLinux_ContractPart_ModernSuspension2 = "Performance suspension: Sport",
+    IGUI_PZLinux_ContractPart_ModernSuspension1 = "Performance suspension: Standard",
+    IGUI_PZLinux_ContractPart_NormalBrake3 = "Standard brakes: Resistant",
+    IGUI_PZLinux_ContractPart_NormalBrake2 = "Standard brakes: Sport",
+    IGUI_PZLinux_ContractPart_NormalBrake1 = "Standard brakes: Standard",
+    IGUI_PZLinux_ContractPart_NormalCarMuffler3 = "Standard silencers: Resistant",
+    IGUI_PZLinux_ContractPart_NormalCarMuffler2 = "Standard silencers: Sport",
+    IGUI_PZLinux_ContractPart_NormalCarMuffler1 = "Standard silencers: Standard",
+    IGUI_PZLinux_ContractPart_NormalSuspension3 = "Standard suspension: Resistant",
+    IGUI_PZLinux_ContractPart_NormalSuspension2 = "Standard suspension: Sport",
+    IGUI_PZLinux_ContractPart_NormalSuspension1 = "Standard suspension: Standard",
+    IGUI_PZLinux_ContractPart_Bandaid = "Bandage: Adhesive",
+    IGUI_PZLinux_ContractPart_Bandage = "Bandage",
+    IGUI_PZLinux_ContractPart_AlcoholWipes = "Alcohol Wipes",
+    IGUI_PZLinux_ContractPart_Disinfectant = "Bottle of Disinfectant",
+    IGUI_PZLinux_ContractPart_AlcoholedCottonBalls = "Cotton Balls Doused in Alcohol",
+    IGUI_PZLinux_ContractPart_Antibiotics = "Antibiotics",
+    IGUI_PZLinux_ContractPart_PillsAntiDep = "Antidepressants",
+    IGUI_PZLinux_ContractPart_PillsBeta = "Beta Blockers",
+    IGUI_PZLinux_ContractPart_Pills = "Painkillers",
+    IGUI_PZLinux_ContractPart_PillsSleepingTablets = "Sleeping Pills",
+    IGUI_PZLinux_ContractPart_PillsVitamins = "Caffeine Pills",
+    IGUI_PZLinux_ContractPart_Pistol3 = "B-F Pistol",
+    IGUI_PZLinux_ContractPart_Pistol2 = "M1911 Pistol",
+    IGUI_PZLinux_ContractPart_RevolverShort = "SN38 Revolver",
+    IGUI_PZLinux_ContractPart_Revolver = "Patrol Revolver",
+    IGUI_PZLinux_ContractPart_Pistol = "M9 Pistol",
+    IGUI_PZLinux_ContractPart_RevolverLong = "Magnum",
+    IGUI_PZLinux_ContractPart_DoubleBarrelShotgun = "Double Barrel Shotgun",
+    IGUI_PZLinux_ContractPart_Shotgun = "JS-2000 Shotgun",
+    IGUI_PZLinux_ContractPart_DoubleBarrelShotgunSawnoff = "Sawed-off Double Barrel Shotgun",
+    IGUI_PZLinux_ContractPart_ShotgunSawnoff = "Sawed-off JS-2000 Shotgun",
+    IGUI_PZLinux_ContractPart_AssaultRifle2 = "M1A Rifle",
+    IGUI_PZLinux_ContractPart_AssaultRifle = "M16 Assault Rifle",
+    IGUI_PZLinux_ContractPart_VarmintRifle = "MSR700 Rifle",
+    IGUI_PZLinux_ContractPart_HuntingRifle = "MSR788 Rifle",
 }
 
 function PZLinuxGetText(key)
@@ -282,6 +335,28 @@ PZLinux.darkWebBuySessions = PZLinux.darkWebBuySessions or {}
 PZLinux.darkWebSellSessions = PZLinux.darkWebSellSessions or {}
 PZLinux.hackingSessions = PZLinux.hackingSessions or {}
 PZLinux.contractPreviews = PZLinux.contractPreviews or {}
+
+-- A fresh, unique-per-process value (a bare table's own tostring() is its
+-- memory address, which is as good as guaranteed unique for the lifetime of
+-- this Lua state) used to tell "this process just started, so any
+-- memory-only session table is legitimately empty" apart from "this process
+-- has been running the whole time and a memory-only session went missing
+-- for some OTHER reason". See PZLinuxRegisterInterruptedSession/
+-- PZLinuxApplyInterruptedSessionRollbacks below -- a player found a real
+-- money exploit in Hacking's Auto mode built on exactly this ambiguity
+-- (v1.0.10): "when I close the computer, my cards come back, and I can
+-- redo Auto with them indefinitely" -- the interrupted-session rollback,
+-- meant only to make a player whole after a genuine server restart mid-hack
+-- (PZLinux.hackingSessions is memory-only, sessions.hacking is persisted),
+-- has no way today to tell that apart from any other reason
+-- PZLinux.hackingSessions[key] might be empty while sessions.hacking is
+-- still set -- restoring the cards either way. Stamping every interrupted-
+-- session entry with the boot ID active when it was written, and only ever
+-- rolling one back once that boot ID no longer matches the current one,
+-- makes the rollback fire only across an actual restart -- which is the
+-- only way this SHOULD legitimately happen, since nothing else can make a
+-- memory-only table forget an entry mid-process.
+PZLinux.serverBootId = PZLinux.serverBootId or tostring({})
 
 function PZLinuxGetPlayerKey(player)
     local playerObj = PZLinuxGetPlayer(player)
@@ -460,6 +535,8 @@ function PZLinuxRegisterInterruptedSession(player, key, data)
     local playerObj = PZLinuxGetPlayer(player)
     local sessions = PZLinuxGetInterruptedSessions(playerObj)
     if not sessions or not key then return end
+    data = data or {}
+    data.bootId = PZLinux.serverBootId
     sessions[key] = data
     PZLinuxTransmitPlayerModData(playerObj)
 end
@@ -481,7 +558,7 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
     local applied = {}
 
     local blackjack = sessions.blackjack
-    if blackjack and not PZLinux.blackjackSessions[playerKey] then
+    if blackjack and blackjack.bootId ~= PZLinux.serverBootId and not PZLinux.blackjackSessions[playerKey] then
         local amount = PZLinuxNormalizeMoney(blackjack.amount)
         if amount > 0 then
             local credit = PZLinuxApplyBankCredit(playerObj, amount, "rollback-blackjack", blackjack.requestId)
@@ -505,7 +582,7 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
     end
 
     local race = sessions.race
-    if race and not PZLinux.raceSessions[playerKey] then
+    if race and race.bootId ~= PZLinux.serverBootId and not PZLinux.raceSessions[playerKey] then
         local amount = PZLinuxNormalizeMoney(race.amount)
         if amount > 0 then
             local credit = PZLinuxApplyBankCredit(playerObj, amount, "rollback-zombie-race", race.requestId)
@@ -515,7 +592,7 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
     end
 
     local hacking = sessions.hacking
-    if hacking and not PZLinux.hackingSessions[playerKey] then
+    if hacking and hacking.bootId ~= PZLinux.serverBootId and not PZLinux.hackingSessions[playerKey] then
         local inventory = playerObj:getInventory()
         local restored = 0
         local pendingCardTypes = {}
@@ -541,7 +618,8 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
     end
 
     local poker = sessions.poker
-    if poker and (not PZLinux.Poker or not PZLinux.Poker.Sessions or not PZLinux.Poker.Sessions[playerKey]) then
+    if poker and poker.bootId ~= PZLinux.serverBootId
+    and (not PZLinux.Poker or not PZLinux.Poker.Sessions or not PZLinux.Poker.Sessions[playerKey]) then
         local refund = PZLinuxNormalizeMoney(poker.stack)
         if refund > 0 then
             local credit = PZLinuxApplyBankCredit(playerObj, refund, "rollback-poker", poker.requestId)
@@ -800,6 +878,10 @@ function PZLinuxApplyAtmWithdrawal(player, atmRef, amount, requestId)
     local modData = atmObject:getModData()
     modData.PZLinuxAtmWithdrawnTotal = (tonumber(modData.PZLinuxAtmWithdrawnTotal) or 0) + amount
 
+    print(string.format(
+        "[PZLinux ATM] WITHDRAW player=%s amount=%d balance=%d atmCash=%d",
+        tostring(PZLinuxGetPlayerKey(player)), amount, balance, atmCash))
+
     return { ok = true, type = "withdrawal", requestId = requestId, amount = amount, balance = balance, previousBalance = previousBalance, atmCash = atmCash }
 end
 
@@ -844,6 +926,10 @@ function PZLinuxApplyAtmDeposit(player, atmRef, amount, requestId)
 
     local balance = PZLinuxSetBankBalance(player, previousBalance + amount)
     atmCash = PZLinuxAtmSaveCash(atmObject, atmCash + amount)
+
+    print(string.format(
+        "[PZLinux ATM] DEPOSIT player=%s amount=%d balance=%d atmCash=%d",
+        tostring(PZLinuxGetPlayerKey(player)), amount, balance, atmCash))
 
     return { ok = true, type = "deposit", requestId = requestId, amount = amount, balance = balance, previousBalance = previousBalance, atmCash = atmCash, inventoryCash = PZLinuxCountInventoryCash(player) }
 end
@@ -1338,6 +1424,11 @@ function PZLinuxRaceStart(player, selectedRunner, amount, requestId)
         requestId = requestId,
     })
 
+    print(string.format(
+        "[PZLinux Race] BET player=%s amount=%d selectedRunner=%d winnerId=%d outcome=%s payout=%d balance=%d",
+        tostring(PZLinuxGetPlayerKey(player)), amount, selectedRunner, winnerId, tostring(session.outcome),
+        payout, debit.balance))
+
     return {
         ok = true,
         requestId = requestId,
@@ -1368,6 +1459,10 @@ function PZLinuxRaceFinish(player, raceId, requestId)
     if session.payout > 0 then
         PZLinuxApplyBankCredit(player, session.payout, "zombie-race", requestId)
     end
+
+    print(string.format(
+        "[PZLinux Race] SETTLE player=%s raceId=%s payout=%d balance=%d",
+        tostring(playerKey), tostring(session.raceId), session.payout, PZLinuxLoadBankBalance(player)))
 
     PZLinuxClearInterruptedSession(player, "race")
     PZLinux.raceSessions[playerKey] = nil
@@ -1819,6 +1914,43 @@ function PZLinuxRequestsRejectCategory(player, contractId, requestId)
     return { ok = true, requestId = requestId, contractId = tonumber(contractId) }
 end
 
+-- Same fix, same reason as PZLinuxDarkWebQueueDecode/Encode
+-- (PZLinuxDarkWeb.lua): the pending Buy Goods delivery queue used to be an
+-- array of tables (modData.PZLinuxOnItemRequest = { { {items=...} }, ... })
+-- -- the same nested-modData shape a real player's server logs confirmed
+-- doesn't reliably persist between separate purchase commands for the
+-- structurally identical Dark Web queue. A Buy Goods order can be up to 6
+-- different item names at once (not just one item repeated, like Dark
+-- Web), so each queued order is encoded as its item names joined with ",",
+-- and separate orders are joined with ";" -- e.g.
+-- "Base.Apple,Base.Apple,Base.Banana;Base.CannedBeans".
+function PZLinuxRequestsQueueDecode(queueString)
+    local queue = {}
+    if type(queueString) ~= "string" or queueString == "" then return queue end
+    for batchString in queueString:gmatch("[^;]+") do
+        local items = {}
+        for itemName in batchString:gmatch("[^,]+") do
+            table.insert(items, { name = itemName })
+        end
+        if #items > 0 then
+            table.insert(queue, { items = items })
+        end
+    end
+    return queue
+end
+
+function PZLinuxRequestsQueueEncode(queue)
+    local batchParts = {}
+    for _, batch in ipairs(queue or {}) do
+        local itemNames = {}
+        for _, item in ipairs(batch.items or {}) do
+            table.insert(itemNames, tostring(item.name))
+        end
+        table.insert(batchParts, table.concat(itemNames, ","))
+    end
+    return table.concat(batchParts, ";")
+end
+
 function PZLinuxRequestsApplyOrder(player, state, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
@@ -1843,7 +1975,7 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
     end
 
     local hasPendingVehicle = tonumber(modData.PZLinuxOnItemRequestCar) == 1
-    local hasPendingItems = type(modData.PZLinuxOnItemRequest) == "table" and #modData.PZLinuxOnItemRequest > 0
+    local hasPendingItems = type(modData.PZLinuxOnItemRequestQueue) == "string" and modData.PZLinuxOnItemRequestQueue ~= ""
 
     -- A vehicle delivery only clears PZLinuxOnItemRequestCar once the client
     -- visually confirms it while standing next to it. The vehicle (and its
@@ -1911,16 +2043,19 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         }, "-")
         modData.PZLinuxRequestVehicleKeyId = 0
         modData.PZLinuxRequestVehicleOrderedHour = getGameTime and getGameTime():getWorldAgeHours() or 0
-        modData.PZLinuxOnItemRequest = {}
+        modData.PZLinuxOnItemRequestQueue = ""
         order.deliveryId = modData.PZLinuxRequestVehicleDeliveryId
     else
         modData.PZLinuxOnItemRequestCar = 0
-        modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest or {}
-        table.insert(modData.PZLinuxOnItemRequest, { { items = order.items } })
-        -- Belt and suspenders (v1.0.8): see the matching comment on the
-        -- Dark Web buy path (PZLinuxDarkWeb.lua) -- re-assigning the key
-        -- after an in-place table.insert makes sure the change is noticed.
-        modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest
+        local queue = PZLinuxRequestsQueueDecode(modData.PZLinuxOnItemRequestQueue)
+        table.insert(queue, { items = order.items })
+        modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)
+        -- Same diagnostic pattern as the Dark Web buy path
+        -- (PZLinuxDarkWeb.lua) -- kept alongside it since it's what
+        -- actually surfaced the real root cause there.
+        print(string.format(
+            "[PZLinux Requests] ORDER player=%s contractId=%s queueLenAfter=%d",
+            tostring(PZLinuxGetPlayerKey(playerObj)), tostring(order.contractId), #queue))
         if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
     end
     PZLinuxTransmitPlayerModData(playerObj)
@@ -1941,13 +2076,29 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
         return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
     local modData = playerObj:getModData()
-    if modData.PZLinuxActiveRequest ~= 1 or type(modData.PZLinuxOnItemRequest) ~= "table" or #modData.PZLinuxOnItemRequest == 0 then
+    local queue = PZLinuxRequestsQueueDecode(modData.PZLinuxOnItemRequestQueue)
+    -- Same unconditional-before-any-early-return diagnostic as the Dark Web
+    -- delivery path (PZLinuxDarkWeb.lua) -- printed no matter what state is
+    -- found, so a mailbox visit that turns up nothing still leaves a log
+    -- trace showing exactly why.
+    print(string.format(
+        "[PZLinux Requests] DELIVER player=%s activeRequest=%s rawQueueLen=%d decodedQueueLen=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(modData.PZLinuxActiveRequest),
+        #tostring(modData.PZLinuxOnItemRequestQueue or ""), #queue))
+
+    if modData.PZLinuxActiveRequest ~= 1 then
+        return { ok = true, requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    if #queue == 0 then
+        modData.PZLinuxActiveRequest = 0
+        modData.PZLinuxOnItemRequestQueue = ""
         return { ok = true, requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     if ZombRand(1, 101) <= 10 then
         modData.PZLinuxActiveRequest = 0
-        modData.PZLinuxOnItemRequest = {}
+        modData.PZLinuxOnItemRequestQueue = ""
         PZLinuxTransmitPlayerModData(playerObj)
         PZLinuxCreateStolenOrderNote(playerObj)
         return { ok = true, requestId = requestId, lost = true, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
@@ -1959,10 +2110,11 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
         return { ok = false, error = "missing_inventory", requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    while #modData.PZLinuxOnItemRequest > 0 do
-        local wrapper = modData.PZLinuxOnItemRequest[#modData.PZLinuxOnItemRequest]
-        local batch = wrapper and wrapper[1]
-        if not batch or type(batch.items) ~= "table" or #batch.items == 0 then
+    while #queue > 0 do
+        local batch = queue[#queue]
+        if not batch.items or #batch.items == 0 then
+            table.remove(queue, #queue)
+            modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)
             return { ok = false, error = "invalid_pending_request", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
         end
 
@@ -1987,13 +2139,13 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
             return { ok = false, error = "parcel_sync_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
         end
 
-        table.remove(modData.PZLinuxOnItemRequest, #modData.PZLinuxOnItemRequest)
-        -- Belt and suspenders (v1.0.8): see the matching comment on the
-        -- Dark Web delivery loop (PZLinuxDarkWeb.lua) -- the identical
-        -- symptom (repeatedly re-collecting an order already delivered,
-        -- surviving reconnects) is possible here too, via the same shared
-        -- 10%-theft delivery pattern.
-        modData.PZLinuxOnItemRequest = modData.PZLinuxOnItemRequest
+        table.remove(queue, #queue)
+        -- v1.0.8 (kept): transmitting after every single removal, not just
+        -- once at the end, means a mid-loop disconnect leaves the
+        -- already-delivered entries marked gone rather than betting on one
+        -- final transmit at the end of the loop to have covered all of
+        -- them.
+        modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)
         delivered = delivered + batchDelivered
         PZLinuxTransmitPlayerModData(playerObj)
     end
@@ -2260,6 +2412,12 @@ function PZLinuxSellApplyRedeemPackage(player, mailboxRef, requestId)
     end
 
     PZLinuxTransmitPlayerModData(playerObj)
+    if redeemed > 0 then
+        print(string.format(
+            "[PZLinux Sell] REDEEM player=%s packages=%d total=%d balance=%d",
+            tostring(PZLinuxGetPlayerKey(playerObj)), redeemed, amount,
+            credit and credit.balance or PZLinuxLoadBankBalance(playerObj)))
+    end
     return {
         ok = true,
         requestId = requestId,
@@ -2878,6 +3036,11 @@ function PZLinuxTradingApplyBuy(player, code, quantity, requestId)
     modData[walletKey] = PZLinuxNormalizeMoney(modData[walletKey]) + quantity
     PZLinuxTransmitPlayerModData(playerObj)
 
+    print(string.format(
+        "[PZLinux Trading] BUY player=%s code=%s qty=%d price=%d netAmount=%d balance=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(company.code), quantity, price,
+        transaction.netAmount, PZLinuxLoadBankBalance(playerObj)))
+
     return {
         ok = true,
         requestId = requestId,
@@ -2940,6 +3103,11 @@ function PZLinuxTradingApplySell(player, code, quantity, requestId)
 
     modData[walletKey] = currentQuantity - quantity
     PZLinuxTransmitPlayerModData(playerObj)
+
+    print(string.format(
+        "[PZLinux Trading] SELL player=%s code=%s qty=%d price=%d netAmount=%d balance=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(company.code), quantity, price,
+        transaction.netAmount, PZLinuxLoadBankBalance(playerObj)))
 
     return {
         ok = true,
@@ -3856,6 +4024,9 @@ function PZLinuxContractsApplyAccept(player, state, requestId)
     PZLinux.contractPreviews[cacheKey] = nil
 
     PZLinuxTransmitPlayerModData(playerObj)
+    print(string.format(
+        "[PZLinux Contracts] ACCEPT player=%s contractId=%d worldRecord=%s reward=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), contractId, tostring(worldRecord.id), effectiveReward))
     return {
         ok = true,
         requestId = requestId,
@@ -3920,6 +4091,10 @@ function PZLinuxContractsApplyCancel(player, requestId)
     PZLinuxContractsRemoveContractNote(playerObj)
     PZLinuxContractsClearState(modData)
     PZLinuxTransmitPlayerModData(playerObj)
+
+    print(string.format(
+        "[PZLinux Contracts] CANCEL player=%s reputationPenalty=%d reputation=%s",
+        tostring(PZLinuxGetPlayerKey(playerObj)), reputationPenalty, tostring(reputation)))
 
     return {
         ok = true,
@@ -4060,11 +4235,11 @@ function PZLinuxMailboxGetActionState(player, mailboxRef, requestId)
 
     local modData = playerObj:getModData()
     local hasDarkWebPickup = modData.PZLinuxOnItemBuyOnDarkWebStatus == 1
-        and type(modData.PZLinuxOnItemBuyOnDarkWeb) == "table"
-        and #modData.PZLinuxOnItemBuyOnDarkWeb > 0
+        and type(modData.PZLinuxOnItemBuyOnDarkWebQueue) == "string"
+        and modData.PZLinuxOnItemBuyOnDarkWebQueue ~= ""
     local hasRequestPickup = modData.PZLinuxActiveRequest == 1
-        and type(modData.PZLinuxOnItemRequest) == "table"
-        and #modData.PZLinuxOnItemRequest > 0
+        and type(modData.PZLinuxOnItemRequestQueue) == "string"
+        and modData.PZLinuxOnItemRequestQueue ~= ""
 
     return {
         ok = true,
@@ -5887,6 +6062,11 @@ function PZLinuxMailApplyRewardDelivery(player, mailboxRef, requestId)
 
     modData.PZLinuxOnMailReward = pending
     PZLinuxTransmitPlayerModData(playerObj)
+    if delivered > 0 then
+        print(string.format(
+            "[PZLinux Mail] REWARD DELIVERED player=%s delivered=%d remaining=%d",
+            tostring(PZLinuxGetPlayerKey(playerObj)), delivered, pending))
+    end
     return { ok = true, requestId = requestId, delivered = delivered, remaining = pending }
 end
 
@@ -5937,6 +6117,10 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
     local reputation = PZLinuxApplyReputationDelta(playerObj, PZLinux.Economy.contractCompleteReward())
     mail.status = 10
     PZLinuxTransmitPlayerModData(playerObj)
+    print(string.format(
+        "[PZLinux Mail] COMPLETE player=%s mailId=%s object=%s quantity=%d reputation=%s pendingRewards=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(mailId), tostring(mail.object), quantity,
+        tostring(reputation), tonumber(md.PZLinuxOnMailReward) or 0))
     return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardPending = true, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }
 end
 
@@ -6000,6 +6184,16 @@ function PZLinuxHackingIsCard(item)
     return item and item.getFullType and PZLinuxHackingCardTypes[item:getFullType()] == true
 end
 
+-- A player reported carrying credit cards that Hacking still reported as
+-- "No Credit Card...". They were inside an equipped bag rather than the
+-- top-level inventory -- an earlier version of this fix recursed into
+-- nested containers to find them there too, but that was deliberately
+-- reverted: this mod consistently only ever looks at the player's direct,
+-- top-level inventory for every other "do I have item X" check (Dark
+-- Web's sell/buy matching, Contract deposit checks, etc.), and the
+-- request was to keep Hacking consistent with that -- cards need to be in
+-- the main inventory, not buried in a bag, same as everywhere else in
+-- this mod.
 function PZLinuxHackingCountCards(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end
@@ -6027,12 +6221,20 @@ function PZLinuxHackingRemoveCards(player, maxCount)
     for index = inventory:getItems():size() - 1, 0, -1 do
         local item = inventory:getItems():get(index)
         if PZLinuxHackingIsCard(item) then
-            firstName = firstName or item:getName()
-            table.insert(cardTypes, item:getFullType())
+            -- Only record the name/type -- and count it -- once removal
+            -- actually succeeds, so a failed removal can never leave
+            -- cardTypes claiming a card was taken that's still physically
+            -- there (this used to insert unconditionally, before the
+            -- success check -- kept from the reverted fix, still a real
+            -- correctness improvement on its own).
+            local itemName = item:getName()
+            local itemFullType = item:getFullType()
             if PZLinuxRemoveInventoryItem(playerObj, item) then
+                firstName = firstName or itemName
+                table.insert(cardTypes, itemFullType)
                 removed = removed + 1
+                if removed >= maxCount then break end
             end
-            if removed >= maxCount then break end
         end
     end
     return removed, firstName, cardTypes
@@ -6163,6 +6365,14 @@ function PZLinuxHackingStartManual(player, requestId)
     PZLinuxHackingSetSession(playerObj, session)
     if addXp then addXp(playerObj, Perks.Electricity, 1) end
 
+    -- Never logs the password itself, or anything derived from it -- only
+    -- the amount at stake and how many tries are available. Same rule for
+    -- every hacking log below: the code stays exclusively in-session,
+    -- server-side, never printed.
+    print(string.format(
+        "[PZLinux Hacking] START MANUAL player=%s amount=%d maxTries=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), amount, session.maxTries))
+
     return {
         ok = true,
         requestId = requestId,
@@ -6206,6 +6416,10 @@ function PZLinuxHackingAuto(player, requestId)
     PZLinuxHackingSetSession(playerObj, session)
     if addXp then addXp(playerObj, Perks.Electricity, math.max(1, removed)) end
 
+    print(string.format(
+        "[PZLinux Hacking] START AUTO player=%s cardCount=%d amount=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), removed, amount))
+
     return { ok = true, requestId = requestId, amount = amount, cardCount = removed, balance = PZLinuxLoadBankBalance(playerObj) }
 end
 
@@ -6233,6 +6447,21 @@ function PZLinuxHackingGuess(player, guess, requestId)
         session.tries = (tonumber(session.tries) or 0) + 1
         if session.tries >= session.maxTries then
             session.locked = true
+            -- The cards are already gone for good at this point (removed
+            -- from inventory the moment the hack started) -- a locked-out
+            -- session has nothing left worth restoring. Clearing the
+            -- in-memory session too (not just the persisted interrupted-
+            -- session flag) matters: leaving it behind used to mean
+            -- PZLinux.hackingSessions[key] stayed occupied by a dead,
+            -- locked session with sessions.hacking already nil -- the exact
+            -- inverted mismatch of the bug fixed above (session present,
+            -- interrupted-session flag absent, instead of the other way
+            -- around), just one this asymmetry can't turn into a card
+            -- duplication since there was nothing left to restore either
+            -- way. Still worth closing so PZLinuxHackingClearSession/
+            -- PZLinuxClearInterruptedSession are called together on every
+            -- path that ends a session, with no exceptions to keep track of.
+            PZLinuxHackingClearSession(playerObj)
             PZLinuxClearInterruptedSession(playerObj, "hacking")
         end
     end
@@ -6243,6 +6472,16 @@ function PZLinuxHackingGuess(player, guess, requestId)
     feedback.maxTries = session.maxTries
     feedback.locked = session.locked == true
     feedback.balance = PZLinuxLoadBankBalance(playerObj)
+
+    -- Deliberately never logs the guess itself, the real password, or the
+    -- correct/misplaced breakdown -- only whether this attempt succeeded
+    -- and how many tries have been used, which reveals nothing about the
+    -- code.
+    print(string.format(
+        "[PZLinux Hacking] GUESS player=%s result=%s tries=%d/%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), feedback.unlocked and "correct" or (feedback.locked and "locked_out" or "wrong"),
+        session.tries, session.maxTries))
+
     return feedback
 end
 
@@ -6267,6 +6506,10 @@ function PZLinuxHackingTransfer(player, requestId)
     session.remaining = 0
     PZLinuxHackingClearSession(playerObj)
     PZLinuxClearInterruptedSession(playerObj, "hacking")
+
+    print(string.format(
+        "[PZLinux Hacking] TRANSFER player=%s mode=%s amount=%d balance=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(session.mode), amount, credit.balance))
 
     credit.mode = session.mode
     credit.hackedAmount = amount

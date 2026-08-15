@@ -1,5 +1,139 @@
 # Changelog
 
+## [1.0.10]
+
+- Added server-side logging across every player-facing money/progress
+  feature, for live monitoring via `docker logs -f` (or any server console)
+  instead of only finding out about a bug from a player report after the
+  fact: Trading (buy/sell), Poker (join/cash-out/table finished), Zombie
+  Race (bet placed and settled), ATM (withdraw/deposit), Mail (mission
+  completed, reward delivered), Sell Surplus (redeem), and Contracts
+  (accept/cancel) all now print a one-line summary of the action, the
+  player and the resulting balance -- on top of the Dark Web, Buy Goods,
+  Blackjack, Admin and Vehicle-delivery logging this mod already had.
+  Deliberate exception: Hacking's password is never logged, in any form --
+  not the code itself, not a player's guess, not the correct/misplaced
+  digit breakdown a guess produces, since that could be used to
+  reconstruct the code across attempts just from watching the log. Only
+  the non-sensitive lifecycle (a hack started, how many tries were used,
+  whether an attempt was right or wrong, the amount transferred) is
+  logged. Locked in by a dedicated test that scans every Hacking function
+  for a print() call referencing the password/guess/digit-breakdown
+  variables and fails the build if it ever finds one.
+- Investigated a player report: credit cards not directly in the main
+  inventory (e.g. sitting inside an equipped bag) made Hacking's Auto say
+  "No Credit Card...", since PZLinuxHackingCountCards/RemoveCards only
+  ever look at the character's own top-level inventory container, not
+  nested bags -- a well-known Project Zomboid modding gotcha (the vanilla
+  inventory panel shows everything a player is carrying merged across
+  every equipped container, broader than a plain getInventory():getItems()
+  check). A first pass made both functions recurse into nested containers,
+  but that was deliberately reverted: this mod consistently only checks
+  the player's direct, top-level inventory everywhere else (Dark Web's
+  sell/buy matching, Contract deposit checks, etc.), and the call was to
+  keep Hacking consistent with that rather than make it the one feature
+  that reaches into bags -- cards need to be in the main inventory, same
+  as everywhere else in this mod. Still fixed along the way: a card's
+  name/type used to be recorded as "removed" even if the actual removal
+  failed, which could have left a hack's recorded card list claiming more
+  cards were taken than what actually left the player's inventory.
+- Fixed a player-reported money exploit in Hacking's Auto mode: "when I
+  close the computer after Auto + Transfer, my credit cards come back in
+  my inventory, and I can redo Auto with them indefinitely." Root cause:
+  the interrupted-session rollback that restores a player's cards after a
+  genuine SERVER RESTART mid-hack (PZLinux.hackingSessions is memory-only,
+  while the matching flag is persisted in modData -- a restart between
+  "cards removed" and "hack resolved" would otherwise lose them forever
+  with no trace) had no way to tell a real restart apart from any other
+  reason those two independently-tracked flags might drift apart within
+  the same running process -- restoring the cards either way, even after a
+  fully successful, fully paid-out hack. Fixed without needing to pin down
+  every possible way that drift could happen: every interrupted-session
+  entry is now stamped with a value unique to the current server process,
+  and the rollback only fires once that no longer matches -- i.e. only
+  across an actual restart, the only way a memory-only table can
+  legitimately forget an entry mid-process. Also fixed a real, confirmed
+  asymmetry found while auditing this: a manual hack locked out after too
+  many wrong password guesses cleared its persisted flag but left the dead
+  session sitting in memory -- the mirror image of the bug above, closed
+  the same way (both are now always cleared together, with no path left
+  that clears only one of the two).
+- Fixed a player-reported bug: a Dark Web purchase (money debited,
+  confirmed) was never delivered at the mailbox -- no parcel, no "stolen"
+  note, no error message either. Initial testing of the reported sequences
+  (a single buy; buying twice before visiting the mailbox; a sell followed
+  by a buy) found no logic bug against a simple, always-persistent fake
+  modData table, which pointed a first fix at server commands failing
+  silently instead (still shipped: every server command now runs through a
+  safety net turning any uncaught error into a real, visible error message
+  plus a server log line naming the command, instead of silence). The
+  player's own server logs then caught the REAL root cause directly: two
+  separate purchase log lines both showed the pending-order queue's length
+  as 1 right after insertion -- the second purchase should have appended to
+  the first (length 2), not reset it. The queue was an array of tables
+  stored directly as a modData value; the previous v1.0.8 fix for a related
+  symptom (re-assigning the modData key after every in-place table.insert/
+  remove) was a good instinct but not enough, because the deeper problem is
+  that this shape -- a nested value inside modData -- does not reliably
+  survive between separate commands at all, the exact same failure mode
+  already confirmed once before in this mod for reputation (see the
+  backup-key fix at the top of ISPZLinuxVariablesTables.lua). Fixed by
+  encoding both the Dark Web and Buy Goods pending-order queues as a single
+  flat string instead of a nested array of tables -- the same simple,
+  flat-value shape already proven reliable everywhere else in this mod --
+  so a second purchase now reliably appends to the first regardless of
+  whether anything else survives between the two commands.
+- Following up on that report, audited every "Base.*" item id referenced
+  anywhere in the mod against the currently installed Build 42 item/vehicle
+  list and found 9 genuinely dead entries in the Dark Web catalog: Base.223
+  Box/Base.223Clip (.223 was removed from the game in Build 42.14, replaced
+  by 5.56 -- 556Box/556Clip already existed as their own correct entries,
+  so these were removed rather than renamed onto a duplicate), Base.308Clip
+  and the four "BulletsMold" entries (never had a current equivalent --
+  .308 has no clip-fed variant, and no "mold" item exists in the current
+  Reloading system), Base.IronSight (no current equivalent found), and
+  Base.PigIronIngot (renamed to Base.IronIngot, the current basic-tier
+  ingot). The same stale .223 Box id was also duplicated into the Dark Web
+  price-balancing table and the "Need Ammo" mail-reward pool (both fixed to
+  match), plus one more in the mail pool's live item-roll function where a
+  stale id would have actively failed to hand the player their reward
+  instead of just never being offered for sale. A stale Base.Stone (the
+  current generic loose stone item is Base.Stone2) was also found and fixed
+  in the Buy Goods (Requests) Materials category while at it. None of these
+  explain the mailbox non-delivery report on their own -- a dead Dark Web
+  catalog entry just never gets offered for sale in the first place, it
+  doesn't get bought and then vanish -- but they were real, worth fixing
+  regardless, and the mail-ammo one was a genuine (separate) silent-failure
+  risk.
+- Fixed a player-reported bug: repairing the in-world computer never
+  granted Electricity XP, even though the repair itself visibly worked
+  (electronics scrap consumed, condition improved). Root cause: this
+  action runs client-side, like every other timed action in this mod, but
+  the XP-granting function is a server-side-only native, nil on the
+  client -- and this was the one place in the whole mod that called it
+  without the "if it exists" guard already used at every other of its 46+
+  call sites, so it threw an error right there every time, silently
+  swallowing the XP grant (and the rest of the action's cleanup) without
+  crashing the game or otherwise being visible to the player.
+- Fixed a player-reported issue: an Auto Parts contract's request didn't
+  always say whether a Standard/Sport/Resistant part was needed, leaving
+  players guessing which item to actually bring back. Root cause: PZ's own
+  vanilla item name is identical across all three quality tiers of a given
+  part (e.g. Base.NormalSuspension1/2/3 all display as the same
+  "Suspension - Regular"), and the dialogue text tried that ambiguous
+  vanilla name first, only falling back to the mod's own curated,
+  disambiguating name if the vanilla lookup failed -- which it essentially
+  never does, so the curated name (which already existed) was never
+  actually shown. Now the curated name is used whenever one is provided.
+  Along the way: three Weapon request names (a B-F Pistol, an SN38
+  Revolver, a Patrol Revolver) had gone stale, still referencing their
+  B41-era nicknames instead of their current B42 vanilla names -- fixed to
+  match. Every one of these part/item names (46 total, across the Auto
+  Parts/Medical/Weapon request pools) is now a proper translation key
+  instead of hardcoded English, translated into all 20 supported
+  languages, since the physical contract note has always shown this exact
+  text regardless of the player's language.
+
 ## [1.0.9]
 
 - Added a "Manage player balances" tool to the existing PZLinux Admin

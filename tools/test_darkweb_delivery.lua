@@ -43,9 +43,7 @@ end
 
 local modData = {
     PZLinuxOnItemBuyOnDarkWebStatus = 1,
-    PZLinuxOnItemBuyOnDarkWeb = {
-        { { items = { { name = "Base.Axe" } } } },
-    },
+    PZLinuxOnItemBuyOnDarkWebQueue = "Base.Axe|1",
 }
 local player = {
     getInventory = function() return inventory end,
@@ -79,17 +77,15 @@ PZLinuxTestAssert(result.ok and result.delivered == 1, "a valid pending order mu
 PZLinuxTestAssert(#inventoryItems == 1 and inventoryItems[1].fullType == "Base.Parcel_Large", "the parcel must be placed in server inventory")
 PZLinuxTestAssert(#nestedItems == 1 and nestedItems[1].fullType == "Base.Axe", "the purchased item must be inside the parcel")
 PZLinuxTestAssert(#networkItems == 1 and networkItems[1] == inventoryItems[1], "the completed parcel must be synchronized to the client")
-PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 0 and #modData.PZLinuxOnItemBuyOnDarkWeb == 0,
+PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 0 and modData.PZLinuxOnItemBuyOnDarkWebQueue == "",
     "the pending order must be cleared only after delivery")
 
 inventory.failCreation = true
 modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-modData.PZLinuxOnItemBuyOnDarkWeb = {
-    { { items = { { name = "Base.Axe" } } } },
-}
+modData.PZLinuxOnItemBuyOnDarkWebQueue = "Base.Axe|1"
 result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-2")
 PZLinuxTestAssert(not result.ok and result.error == "parcel_creation_failed", "parcel creation failure must be reported")
-PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and #modData.PZLinuxOnItemBuyOnDarkWeb == 1,
+PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLinuxOnItemBuyOnDarkWebQueue == "Base.Axe|1",
     "a failed delivery must preserve the pending order")
 
 -- A player reported being confused when a Dark Web order simply never
@@ -98,9 +94,7 @@ PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and #modData.PZLi
 -- findable note in the player's inventory (PZLinuxCreateStolenOrderNote,
 -- shared with Buy Goods -- see test_request_delivery.lua for its half).
 modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-modData.PZLinuxOnItemBuyOnDarkWeb = {
-    { { items = { { name = "Base.Axe" } } } },
-}
+modData.PZLinuxOnItemBuyOnDarkWebQueue = "Base.Axe|1"
 ZombRand = function() return 1 end
 result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-stolen")
 PZLinuxTestAssert(result.ok and result.lost == true and result.delivered == 0, "a stolen order must report lost = true")

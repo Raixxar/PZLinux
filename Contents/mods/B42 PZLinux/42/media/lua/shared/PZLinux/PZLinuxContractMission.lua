@@ -135,21 +135,21 @@ function PZLinuxContractsBuildMission(selectedContract)
         local request, count = PZLinuxContractsMissionRequest(PZLinuxContractAutoPartRequests, 1, 1)
         if not request then return nil, "missing_contract_request" end
         mission.info = request.baseName
-        mission.infoName = request.name
+        mission.infoName = PZLinuxGetText(request.nameKey)
         mission.infoCount = count
         mission.reward = mission.reward * request.delta
     elseif contractId == 9 then
         local request, count = PZLinuxContractsMissionRequest(PZLinuxContractMedicalRequests, 1, 10)
         if not request then return nil, "missing_contract_request" end
         mission.info = request.baseName
-        mission.infoName = request.name
+        mission.infoName = PZLinuxGetText(request.nameKey)
         mission.infoCount = count
         mission.reward = mission.reward * request.delta
     elseif contractId == 10 then
         local request, count = PZLinuxContractsMissionRequest(PZLinuxContractWeaponRequests, 1, 5)
         if not request then return nil, "missing_contract_request" end
         mission.info = request.baseName
-        mission.infoName = request.name
+        mission.infoName = PZLinuxGetText(request.nameKey)
         mission.infoCount = count
         mission.reward = mission.reward * request.delta
     elseif contractId == 11 or contractId == 12 then

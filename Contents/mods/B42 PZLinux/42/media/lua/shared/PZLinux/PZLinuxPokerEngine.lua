@@ -848,6 +848,9 @@ function PZLinuxPokerCreateSession(player, lobbyId, buyIn, requestId)
     end
     PZLinux.Poker.Sessions[session.playerKey] = session
     PZLinuxRegisterInterruptedSession(playerObj, "poker", { sessionId = session.sessionId, stack = buyIn, buyIn = buyIn, requestId = requestId })
+    print(string.format(
+        "[PZLinux Poker] JOIN player=%s lobby=%s buyIn=%d balance=%d",
+        tostring(session.playerKey), tostring(lobby.id), buyIn, PZLinuxLoadBankBalance(playerObj)))
     PZLinuxPokerStartHand(session)
     local snapshot = PZLinuxPokerBuildSnapshot(session)
     snapshot.requestId = requestId
@@ -990,6 +993,10 @@ function PZLinuxPokerCashOut(player, sessionId, requestId)
     if refund > 0 then
         credit = PZLinuxApplyBankCredit(playerObj, refund, "poker-cashout", requestId)
     end
+    print(string.format(
+        "[PZLinux Poker] CASHOUT player=%s buyIn=%d refund=%d net=%d balance=%d",
+        tostring(session.playerKey), session.buyIn, refund, refund - session.buyIn,
+        credit and credit.balance or PZLinuxLoadBankBalance(playerObj)))
     return {
         ok = true,
         requestId = requestId,
@@ -1012,5 +1019,9 @@ function PZLinuxPokerSettleFinished(player, session, requestId)
     if session.status == "won" and finalStack > 0 then
         credit = PZLinuxApplyBankCredit(playerObj, finalStack, "poker-win", requestId)
     end
+    print(string.format(
+        "[PZLinux Poker] TABLE FINISHED player=%s buyIn=%d status=%s finalStack=%d balance=%d",
+        tostring(session.playerKey), session.buyIn, tostring(session.status), finalStack,
+        credit and credit.balance or PZLinuxLoadBankBalance(playerObj)))
     return credit and credit.balance or PZLinuxLoadBankBalance(playerObj)
 end

@@ -24,6 +24,13 @@ end)
 -- test_mailbox_proximity.lua's regression test against the real function.
 rawset(_G, "PZLinuxFormatFloorLabel", function(z) return "Floor " .. tostring(z) end)
 
+-- Likewise a minimal stand-in for the real PZLinuxGetText (also defined in
+-- ISPZLinuxVariablesTables.lua): PZLinuxContractsBuildMission resolves each
+-- Auto Parts/Medical/Weapon request's translated name through it. The
+-- real translation/fallback behavior has its own dedicated coverage in
+-- test_contract_part_names.lua; this just needs it to not be nil here.
+rawset(_G, "PZLinuxGetText", function(key) return tostring(key) end)
+
 PZLinuxDarkWebItemsTable = {}
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxConfig.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxEconomy.lua")

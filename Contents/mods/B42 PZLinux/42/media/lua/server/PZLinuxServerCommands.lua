@@ -56,13 +56,37 @@ local function PZLinuxServerTrimIdempotencyBucket(bucket)
     end
 end
 
+-- A player reported buying items on the Dark Web (real money debited) and
+-- never receiving anything back at the mailbox -- no delivered parcel, no
+-- "stolen" note, no error message either, nothing at all -- most
+-- reproducible when a Dark Web sale (redeem) and a pending order landed at
+-- the mailbox together. No logic bug reproduces that combination under
+-- test (see test_darkweb_deliver_orders.lua), which points at an uncaught
+-- Lua error somewhere in that command's worker(): every command in this
+-- mod funnels through here uncaught, so a single unexpected nil/error deep
+-- in any of them (there are dozens) would abort worker() before
+-- PZLinuxServerSend ever runs -- the client's callback simply never fires,
+-- which is indistinguishable from "nothing happened" to the player. This
+-- pcall doesn't identify which command or line throws, but it turns that
+-- failure mode from total silence into a visible error plus a server-side
+-- log line naming the exact command and player, for every command in the
+-- mod at once, regardless of which one it turns out to be.
+local function PZLinuxServerRunIdempotentWorker(worker, command, player, requestId)
+    local ok, result = pcall(worker)
+    if ok then return result end
+    print(string.format(
+        "[PZLinux] ERROR command=%s player=%s requestId=%s: %s",
+        tostring(command), tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), tostring(result)))
+    return { ok = false, error = "internal_error", requestId = requestId }
+end
+
 local function PZLinuxServerProcessIdempotent(player, command, args, responseCommand, worker)
     args = args or {}
     PZLinuxApplyInterruptedSessionRollbacks(player)
 
     local requestId = args.requestId
     if not requestId then
-        PZLinuxServerSend(player, responseCommand, worker())
+        PZLinuxServerSend(player, responseCommand, PZLinuxServerRunIdempotentWorker(worker, command, player, requestId))
         return
     end
 
@@ -85,7 +109,7 @@ local function PZLinuxServerProcessIdempotent(player, command, args, responseCom
         return
     end
 
-    local result = worker()
+    local result = PZLinuxServerRunIdempotentWorker(worker, command, player, requestId)
     bucket.records[key] = {
         createdAt = PZLinuxServerGetWorldHours(),
         result = result,

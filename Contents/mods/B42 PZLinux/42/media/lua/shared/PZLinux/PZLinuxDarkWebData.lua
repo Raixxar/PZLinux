@@ -33,10 +33,22 @@ PZLinuxDarkWebItemsTable = {
     { id = {"Base.AssaultRifle2"}, Price = 2400 },
     { id = {"Base.HuntingRifle"}, Price = 2400 },
     -- AMMOS
+    -- .223 was removed from the game in Build 42.14, replaced by 5.56
+    -- (556Bullets/556Box/556Carton/556Clip) -- Base.223Box/Base.223Clip
+    -- below used to be dead catalog entries (getScriptManager():FindItem
+    -- fails for them, so PZLinuxDarkWebGenerateMarket silently never rolls
+    -- them into a shop rotation -- not a purchase/delivery bug, just an
+    -- offer that could never appear), and 556Box/556Clip were already
+    -- present as their own separate, correct entries below, so this is a
+    -- straight removal rather than a rename (renaming either onto 556 would
+    -- have just duplicated the existing row). Base.308Clip was never a real
+    -- item at all -- .308 only has Box/Carton, no clip-fed variant -- and
+    -- none of the four "BulletsMold" entries correspond to anything in the
+    -- current Reloading system (no mold item of any kind exists for any
+    -- caliber), so all five are removed outright, no replacement.
     { id = {"Base.Bullets9mmBox"}, Price = 100},
     { id = {"Base.Bullets38Box"}, Price = 175},
     { id = {"Base.Bullets44Box"}, Price = 190},
-    { id = {"Base.223Box"}, Price = 300 },
     { id = {"Base.308Box"}, Price = 300 },
     { id = {"Base.ShotgunShellsBox"}, Price = 450 },
     { id = {"Base.Bullets45Box"}, Price = 500 },
@@ -44,16 +56,13 @@ PZLinuxDarkWebItemsTable = {
     { id = {"Base.9mmClip"}, Price = 500 },
     { id = {"Base.45Clip"}, Price = 500 },
     { id = {"Base.44Clip"}, Price = 500 },
-    { id = {"Base.223Clip"}, Price = 700 },
-    { id = {"Base.308Clip"}, Price = 700 },
     { id = {"Base.556Clip"}, Price = 1000 },
     { id = {"Base.M14Clip"}, Price = 1000 },
-    { id = {"Base.223BulletsMold"}, Price = 800 },
-    { id = {"Base.308BulletsMold"}, Price = 800 },
-    { id = {"Base.9mmBulletsMold"}, Price = 800 },
-    { id = {"Base.ShotgunShellsMold"}, Price = 800 },
     --SCOPE
-    { id = {"Base.IronSight"}, Price = 500 },
+    -- Base.IronSight was also a dead entry (same silent-never-offered
+    -- effect as above) -- no current B42 item corresponds to it, and unlike
+    -- the ammo entries above there's no unambiguous current replacement to
+    -- rename it to, so it's removed rather than guessed at.
     { id = {"Base.RedDot"}, Price = 1000 },
     { id = {"Base.x8Scope"}, Price = 4000 },
     { id = {"Base.x2Scope"}, Price = 1500 },
@@ -368,7 +377,13 @@ PZLinuxDarkWebItemsTable = {
     { id = {"Base.RadioTransmitter"}, Price = 50 },
     { id = {"Base.Receiver"}, Price = 50 },
     -- BAR/INGOT
-    { id = {"Base.PigIronIngot"}, Price = 100 },
+    -- Base.PigIronIngot was another dead entry -- no such item exists in
+    -- the current Build 42 metallurgy rework (Iron and Steel are now
+    -- distinguished materials, but there's no separate "pig iron" tier);
+    -- renamed to Base.IronIngot, the current basic-tier ingot, which
+    -- wasn't already listed elsewhere in this catalog so this is a real
+    -- fix rather than a duplicate.
+    { id = {"Base.IronIngot"}, Price = 100 },
     { id = {"Base.BrassIngot"}, Price = 500 },
     { id = {"Base.CopperIngot"}, Price = 600 },
     { id = {"Base.SteelIngot"}, Price = 1000 },
