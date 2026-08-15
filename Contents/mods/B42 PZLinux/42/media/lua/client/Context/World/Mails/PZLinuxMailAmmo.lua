@@ -67,8 +67,14 @@ Stay alive out there.
     return message
 end
 
+-- Base.223Box used to be in this list too -- dead since .223 was removed
+-- from the game in Build 42.14 (replaced by 5.56, already covered here as
+-- Base.556Box). Unlike the Dark Web catalog, this one wasn't just
+-- self-limiting: whatever mail reward rolled it would have tried to hand
+-- the player an item that no longer exists. See PZLinuxDarkWebData.lua's
+-- own cleanup of the same stale id for the full explanation.
 function PZLinuxMailAmmoType()
-    local ammoTypes = {"Base.223Box", "Base.308Box", "Base.Bullets38Box", "Base.Bullets44Box", "Base.Bullets45Box", "Base.556Box", "Base.Bullets9mmBox", "Base.ShotgunShellsBox" }
+    local ammoTypes = {"Base.308Box", "Base.Bullets38Box", "Base.Bullets44Box", "Base.Bullets45Box", "Base.556Box", "Base.Bullets9mmBox", "Base.ShotgunShellsBox" }
     local idx = ZombRand(#ammoTypes) + 1
     return ammoTypes[idx]
 end

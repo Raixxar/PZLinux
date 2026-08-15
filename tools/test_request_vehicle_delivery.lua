@@ -173,7 +173,7 @@ local pendingVehiclePlayer = {
     getModData = function()
         return {
             PZLinuxOnItemRequestCar = 1,
-            PZLinuxOnItemRequest = {},
+            PZLinuxOnItemRequestQueue = "",
             -- Matches the mocked getGameTime() world age (12h): a delivery
             -- ordered "now" is still fresh and must not be self-healed away.
             PZLinuxRequestVehicleOrderedHour = 12,
@@ -186,7 +186,7 @@ PZLinuxTestAssert(not blockedItemOrder.ok and blockedItemOrder.error == "request
 
 local pendingItemPlayer = {
     getModData = function()
-        return { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequest = { { "paid-batch" } } }
+        return { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequestQueue = "paid-batch" }
     end,
 }
 local blockedVehicleOrder = PZLinuxRequestsApplyOrder(pendingItemPlayer, { contractId = 9 }, "blocked-vehicle-order")
@@ -200,7 +200,7 @@ PZLinuxTestAssert(debitCalls == 0, "conflicting Request orders must never debit 
 -- the vehicle and key they already paid for with no way to ever collect them.
 local neverSpawnedModData = {
     PZLinuxOnItemRequestCar = 1,
-    PZLinuxOnItemRequest = {},
+    PZLinuxOnItemRequestQueue = "",
     PZLinuxRequestVehicleDeliveryId = "PZLinuxVehicle-never-spawned-1-1",
     PZLinuxRequestVehicleOrderedHour = 0,
 }
@@ -223,7 +223,7 @@ table.insert(vehicles.values, staleDeliveredVehicle)
 
 local staleVehicleModData = {
     PZLinuxOnItemRequestCar = 1,
-    PZLinuxOnItemRequest = {},
+    PZLinuxOnItemRequestQueue = "",
     PZLinuxRequestVehicleDeliveryId = "PZLinuxVehicle-stale-1-1",
     -- Ordered well over the grace period ago (world age is mocked at 12h).
     PZLinuxRequestVehicleOrderedHour = 0,
@@ -320,7 +320,7 @@ PZLinuxTestAssert(vehicleSelection:find("itemCount = 1", 1, true),
 -- once per game day whether a seller exists at all. With the mocked ZombRand
 -- always returning the minimum, every category rolls available by default
 -- (day 0's chance is the configured 50% start, and 1 <= 50).
-local searchModData = { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequest = {} }
+local searchModData = { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequestQueue = "" }
 local searchPlayer = { getModData = function() return searchModData end }
 
 local categoriesDay0 = PZLinuxRequestsGetAvailableCategories(searchPlayer, "categories-day0")
@@ -378,7 +378,7 @@ PZLinuxTestAssert(listedAgain, "a refused category must become available again o
 -- No seller today: force every category's roll to fail, then verify the
 -- category list is empty and ordering is refused -- the simplified fallback
 -- the player explicitly agreed to (only ever show categories with a seller).
-local noSellerModData = { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequest = {} }
+local noSellerModData = { PZLinuxOnItemRequestCar = 0, PZLinuxOnItemRequestQueue = "" }
 local noSellerPlayer = { getModData = function() return noSellerModData end }
 local savedZombRand = ZombRand
 ZombRand = function(minimum, maximum)

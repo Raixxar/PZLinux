@@ -30,7 +30,12 @@ assert(interrupted:find("pendingCardTypes", 1, true), "failed Hacking card resto
 
 local requestDelivery = PZLinuxTestFunction(shared, "PZLinuxRequestsApplyDelivery", "PZLinuxRequestsApplySpawnVehicle")
 assert(requestDelivery:find("PZLinuxSyncAddedInventoryItem", 1, true), "Request parcels must be synchronized")
-PZLinuxTestAssertOrdered(requestDelivery, "PZLinuxSyncAddedInventoryItem", "table.remove(modData.PZLinuxOnItemRequest",
+-- The successful-delivery removal (the one that must come after the sync
+-- check) is the one right after the parcel_sync_failed guard -- not the
+-- earlier, separate table.remove in the invalid-pending-item branch, which
+-- has nothing to sync in the first place.
+local afterSyncCheck = assert(requestDelivery:find("parcel_sync_failed", 1, true), "parcel_sync_failed not found")
+assert(requestDelivery:find("table.remove(queue, #queue)", afterSyncCheck, true),
     "Request state must clear only after parcel synchronization")
 
 local requestOrder = PZLinuxTestFunction(shared, "PZLinuxRequestsApplyOrder", "PZLinuxRequestsApplyDelivery")

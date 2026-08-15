@@ -12,8 +12,27 @@ local function PZLinuxContractsText(key, fallback, ...)
     return PZLinuxFormatText(key, fallback, ...)
 end
 
+-- A player reported that an Auto Parts contract's request didn't say
+-- whether a Standard/Sport/Resistant part was needed. Confirmed root
+-- cause: PZ's own vanilla display name for these items is IDENTICAL
+-- across every quality tier of a given part -- e.g. Base.NormalSuspension1
+-- /2/3 (the mod's own "Standard"/"Sport"/"Resistant" tiers) all translate
+-- to the exact same "Suspension - Regular" (same for Base.CarBattery1/2/3
+-- -> "Car Battery", Base.ModernBrake1/2/3 -> "Brake - Performance", etc.
+-- -- see media/lua/shared/Translate/EN/ItemName.json). This function used
+-- to try the vanilla, non-disambiguating name FIRST and only fall back to
+-- the caller-provided name if that failed -- but it essentially never
+-- fails (the vanilla item obviously exists), so the caller's own name
+-- (fallback) -- which for every real caller (PZLinuxContractAutoPartRequests/
+-- MedicalRequests/WeaponRequests, see PZLinuxContractMission.lua) is
+-- always a curated, disambiguating name like "Standard suspension: Sport"
+-- -- was never actually used, even though it exists specifically to solve
+-- this. Now tried first instead, since it's always more precise than the
+-- generic vanilla name whenever a caller bothers to provide one.
 local function PZLinuxContractsLocalizedItemName(fullType, fallback)
     local itemType = tostring(fullType or "")
+    if fallback and fallback ~= "" then return tostring(fallback) end
+
     local itemNameResolver = rawget(_G, "getItemNameFromFullType")
     if itemType ~= "" and itemNameResolver then
         local ok, translatedName = pcall(itemNameResolver, itemType)
@@ -27,7 +46,7 @@ local function PZLinuxContractsLocalizedItemName(fullType, fallback)
         local displayName = scriptItem and scriptItem:getDisplayName() or nil
         if displayName and displayName ~= "" then return displayName end
     end
-    return tostring(fallback or itemType)
+    return itemType
 end
 
 local function PZLinuxContractsCompletionAmountText(receipt)

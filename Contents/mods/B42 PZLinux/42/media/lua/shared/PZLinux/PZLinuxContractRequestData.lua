@@ -107,28 +107,42 @@ function PZLinuxContractsRandomTargetName()
     return firstName.first .. " " .. lastName.last
 end
 
+-- Every "name" here used to be a plain hardcoded English string, both
+-- displayed as-is regardless of the player's language AND (for the Auto
+-- Parts pool specifically) the only thing that could tell apart the three
+-- quality tiers of a given part: PZ's own vanilla item name is IDENTICAL
+-- across all of e.g. Base.NormalSuspension1/2/3 ("Suspension - Regular"
+-- for all three -- see media/lua/shared/Translate/EN/ItemName.json), so a
+-- player told to bring "a Suspension" with no further detail had no way to
+-- know which of the three they actually needed. Now a translation key
+-- (resolved via PZLinuxGetText, English fallback in PZLinux.TextFallbacks)
+-- instead, so this text is both disambiguating AND properly localized.
+-- Weapon/medical vanilla names are already unique per item (no ambiguity
+-- issue there), but are translated here too for consistency/completeness,
+-- since PZLinuxContractsMissionNote always uses this name directly in the
+-- physical note text regardless of contract type.
 PZLinuxContractAutoPartRequests = PZLinuxContractAutoPartRequests or {
-    { baseName = "Base.CarBattery3", name = "Battery: Resistant", delta = 1 },
-    { baseName = "Base.CarBattery2", name = "Battery: Sport", delta = 0.9 },
-    { baseName = "Base.CarBattery1", name = "Battery: Standard", delta = 0.8 },
-    { baseName = "Base.ModernBrake3", name = "Performance brakes: Resistant", delta = 1 },
-    { baseName = "Base.ModernBrake2", name = "Performance brakes: Sport", delta = 0.9 },
-    { baseName = "Base.ModernBrake1", name = "Performance brakes: Standard", delta = 0.8 },
-    { baseName = "Base.ModernCarMuffler3", name = "Performance silencers: Resistant", delta = 1 },
-    { baseName = "Base.ModernCarMuffler2", name = "Performance silencers: Sport", delta = 0.9 },
-    { baseName = "Base.ModernCarMuffler1", name = "Performance silencers: Standard", delta = 0.8 },
-    { baseName = "Base.ModernSuspension3", name = "Performance suspension: Resistant", delta = 1 },
-    { baseName = "Base.ModernSuspension2", name = "Performance suspension: Sport", delta = 0.9 },
-    { baseName = "Base.ModernSuspension1", name = "Performance suspension: Standard", delta = 0.8 },
-    { baseName = "Base.NormalBrake3", name = "Standard brakes: Resistant", delta = 0.7 },
-    { baseName = "Base.NormalBrake2", name = "Standard brakes: Sport", delta = 0.6 },
-    { baseName = "Base.NormalBrake1", name = "Standard brakes: Standard", delta = 0.5 },
-    { baseName = "Base.NormalCarMuffler3", name = "Standard silencers: Resistant", delta = 0.7 },
-    { baseName = "Base.NormalCarMuffler2", name = "Standard silencers: Sport", delta = 0.6 },
-    { baseName = "Base.NormalCarMuffler1", name = "Standard silencers: Standard", delta = 0.5 },
-    { baseName = "Base.NormalSuspension3", name = "Standard suspension: Resistant", delta = 0.7 },
-    { baseName = "Base.NormalSuspension2", name = "Standard suspension: Sport", delta = 0.6 },
-    { baseName = "Base.NormalSuspension1", name = "Standard suspension: Standard", delta = 0.5 },
+    { baseName = "Base.CarBattery3", nameKey = "IGUI_PZLinux_ContractPart_CarBattery3", delta = 1 },
+    { baseName = "Base.CarBattery2", nameKey = "IGUI_PZLinux_ContractPart_CarBattery2", delta = 0.9 },
+    { baseName = "Base.CarBattery1", nameKey = "IGUI_PZLinux_ContractPart_CarBattery1", delta = 0.8 },
+    { baseName = "Base.ModernBrake3", nameKey = "IGUI_PZLinux_ContractPart_ModernBrake3", delta = 1 },
+    { baseName = "Base.ModernBrake2", nameKey = "IGUI_PZLinux_ContractPart_ModernBrake2", delta = 0.9 },
+    { baseName = "Base.ModernBrake1", nameKey = "IGUI_PZLinux_ContractPart_ModernBrake1", delta = 0.8 },
+    { baseName = "Base.ModernCarMuffler3", nameKey = "IGUI_PZLinux_ContractPart_ModernCarMuffler3", delta = 1 },
+    { baseName = "Base.ModernCarMuffler2", nameKey = "IGUI_PZLinux_ContractPart_ModernCarMuffler2", delta = 0.9 },
+    { baseName = "Base.ModernCarMuffler1", nameKey = "IGUI_PZLinux_ContractPart_ModernCarMuffler1", delta = 0.8 },
+    { baseName = "Base.ModernSuspension3", nameKey = "IGUI_PZLinux_ContractPart_ModernSuspension3", delta = 1 },
+    { baseName = "Base.ModernSuspension2", nameKey = "IGUI_PZLinux_ContractPart_ModernSuspension2", delta = 0.9 },
+    { baseName = "Base.ModernSuspension1", nameKey = "IGUI_PZLinux_ContractPart_ModernSuspension1", delta = 0.8 },
+    { baseName = "Base.NormalBrake3", nameKey = "IGUI_PZLinux_ContractPart_NormalBrake3", delta = 0.7 },
+    { baseName = "Base.NormalBrake2", nameKey = "IGUI_PZLinux_ContractPart_NormalBrake2", delta = 0.6 },
+    { baseName = "Base.NormalBrake1", nameKey = "IGUI_PZLinux_ContractPart_NormalBrake1", delta = 0.5 },
+    { baseName = "Base.NormalCarMuffler3", nameKey = "IGUI_PZLinux_ContractPart_NormalCarMuffler3", delta = 0.7 },
+    { baseName = "Base.NormalCarMuffler2", nameKey = "IGUI_PZLinux_ContractPart_NormalCarMuffler2", delta = 0.6 },
+    { baseName = "Base.NormalCarMuffler1", nameKey = "IGUI_PZLinux_ContractPart_NormalCarMuffler1", delta = 0.5 },
+    { baseName = "Base.NormalSuspension3", nameKey = "IGUI_PZLinux_ContractPart_NormalSuspension3", delta = 0.7 },
+    { baseName = "Base.NormalSuspension2", nameKey = "IGUI_PZLinux_ContractPart_NormalSuspension2", delta = 0.6 },
+    { baseName = "Base.NormalSuspension1", nameKey = "IGUI_PZLinux_ContractPart_NormalSuspension1", delta = 0.5 },
 }
 
 function PZLinuxContractsRandomAutoPartRequest()
@@ -136,38 +150,44 @@ function PZLinuxContractsRandomAutoPartRequest()
 end
 
 PZLinuxContractMedicalRequests = PZLinuxContractMedicalRequests or {
-    { baseName = "Base.Bandaid", name = "Bandage: Adhesive", delta = 0.5 },
-    { baseName = "Base.Bandage", name = "Bandage", delta = 0.6 },
-    { baseName = "Base.AlcoholWipes", name = "Alcohol Wipes", delta = 0.8 },
-    { baseName = "Base.Disinfectant", name = "Bottle of Disinfectant", delta = 1.2 },
-    { baseName = "Base.AlcoholedCottonBalls", name = "Cotton Balls Doused in Alcohol", delta = 0.7 },
-    { baseName = "Base.Antibiotics", name = "Antibiotics", delta = 1.5 },
-    { baseName = "Base.PillsAntiDep", name = "Antidepressants", delta = 1.1 },
-    { baseName = "Base.PillsBeta", name = "Beta Blockers", delta = 1 },
-    { baseName = "Base.Pills", name = "Painkillers", delta = 1.3 },
-    { baseName = "Base.PillsSleepingTablets", name = "Sleeping Pills", delta = 0.8 },
-    { baseName = "Base.PillsVitamins", name = "Caffeine Pills", delta = 0.7 },
+    { baseName = "Base.Bandaid", nameKey = "IGUI_PZLinux_ContractPart_Bandaid", delta = 0.5 },
+    { baseName = "Base.Bandage", nameKey = "IGUI_PZLinux_ContractPart_Bandage", delta = 0.6 },
+    { baseName = "Base.AlcoholWipes", nameKey = "IGUI_PZLinux_ContractPart_AlcoholWipes", delta = 0.8 },
+    { baseName = "Base.Disinfectant", nameKey = "IGUI_PZLinux_ContractPart_Disinfectant", delta = 1.2 },
+    { baseName = "Base.AlcoholedCottonBalls", nameKey = "IGUI_PZLinux_ContractPart_AlcoholedCottonBalls", delta = 0.7 },
+    { baseName = "Base.Antibiotics", nameKey = "IGUI_PZLinux_ContractPart_Antibiotics", delta = 1.5 },
+    { baseName = "Base.PillsAntiDep", nameKey = "IGUI_PZLinux_ContractPart_PillsAntiDep", delta = 1.1 },
+    { baseName = "Base.PillsBeta", nameKey = "IGUI_PZLinux_ContractPart_PillsBeta", delta = 1 },
+    { baseName = "Base.Pills", nameKey = "IGUI_PZLinux_ContractPart_Pills", delta = 1.3 },
+    { baseName = "Base.PillsSleepingTablets", nameKey = "IGUI_PZLinux_ContractPart_PillsSleepingTablets", delta = 0.8 },
+    { baseName = "Base.PillsVitamins", nameKey = "IGUI_PZLinux_ContractPart_PillsVitamins", delta = 0.7 },
 }
 
 function PZLinuxContractsRandomMedicalRequest()
     return PZLinuxContractMedicalRequests[ZombRand(1, #PZLinuxContractMedicalRequests + 1)]
 end
 
+-- The Pistol3/Revolver_Short/Revolver name fields used to say "D-E Pistol"
+-- / "M36 Revolver" / "M625 Revolver" -- stale B41-era in-mod nicknames that
+-- no longer match these items' own current B42 vanilla names ("B-F
+-- Pistol" / "SN38 Revolver" / "Patrol Revolver"). Updated to match, so the
+-- note doesn't send a player looking for a name the game itself no longer
+-- uses anywhere.
 PZLinuxContractWeaponRequests = PZLinuxContractWeaponRequests or {
-    { baseName = "Base.Pistol3", name = "D-E Pistol", delta = 0.3 },
-    { baseName = "Base.Pistol2", name = "M1911 Pistol", delta = 0.3 },
-    { baseName = "Base.Revolver_Short", name = "M36 Revolver", delta = 0.5 },
-    { baseName = "Base.Revolver", name = "M625 Revolver", delta = 0.4 },
-    { baseName = "Base.Pistol", name = "M9 Pistol", delta = 0.3 },
-    { baseName = "Base.Revolver_Long", name = "Magnum", delta = 0.5 },
-    { baseName = "Base.DoubleBarrelShotgun", name = "Double Barrel Shotgun", delta = 1.2 },
-    { baseName = "Base.Shotgun", name = "JS-2000 Shotgun", delta = 1.2 },
-    { baseName = "Base.DoubleBarrelShotgunSawnoff", name = "Sawed-off Double Barrel Shotgun", delta = 1.2 },
-    { baseName = "Base.ShotgunSawnoff", name = "Sawed-off JS-2000 Shotgun", delta = 1.2 },
-    { baseName = "Base.AssaultRifle2", name = "M14 Rifle", delta = 1.5 },
-    { baseName = "Base.AssaultRifle", name = "M16 Assault Rifle", delta = 1.5 },
-    { baseName = "Base.VarmintRifle", name = "MSR700 Rifle", delta = 1.5 },
-    { baseName = "Base.HuntingRifle", name = "MSR788 Rifle", delta = 1.5 },
+    { baseName = "Base.Pistol3", nameKey = "IGUI_PZLinux_ContractPart_Pistol3", delta = 0.3 },
+    { baseName = "Base.Pistol2", nameKey = "IGUI_PZLinux_ContractPart_Pistol2", delta = 0.3 },
+    { baseName = "Base.Revolver_Short", nameKey = "IGUI_PZLinux_ContractPart_RevolverShort", delta = 0.5 },
+    { baseName = "Base.Revolver", nameKey = "IGUI_PZLinux_ContractPart_Revolver", delta = 0.4 },
+    { baseName = "Base.Pistol", nameKey = "IGUI_PZLinux_ContractPart_Pistol", delta = 0.3 },
+    { baseName = "Base.Revolver_Long", nameKey = "IGUI_PZLinux_ContractPart_RevolverLong", delta = 0.5 },
+    { baseName = "Base.DoubleBarrelShotgun", nameKey = "IGUI_PZLinux_ContractPart_DoubleBarrelShotgun", delta = 1.2 },
+    { baseName = "Base.Shotgun", nameKey = "IGUI_PZLinux_ContractPart_Shotgun", delta = 1.2 },
+    { baseName = "Base.DoubleBarrelShotgunSawnoff", nameKey = "IGUI_PZLinux_ContractPart_DoubleBarrelShotgunSawnoff", delta = 1.2 },
+    { baseName = "Base.ShotgunSawnoff", nameKey = "IGUI_PZLinux_ContractPart_ShotgunSawnoff", delta = 1.2 },
+    { baseName = "Base.AssaultRifle2", nameKey = "IGUI_PZLinux_ContractPart_AssaultRifle2", delta = 1.5 },
+    { baseName = "Base.AssaultRifle", nameKey = "IGUI_PZLinux_ContractPart_AssaultRifle", delta = 1.5 },
+    { baseName = "Base.VarmintRifle", nameKey = "IGUI_PZLinux_ContractPart_VarmintRifle", delta = 1.5 },
+    { baseName = "Base.HuntingRifle", nameKey = "IGUI_PZLinux_ContractPart_HuntingRifle", delta = 1.5 },
 }
 
 function PZLinuxContractsRandomWeaponRequest()

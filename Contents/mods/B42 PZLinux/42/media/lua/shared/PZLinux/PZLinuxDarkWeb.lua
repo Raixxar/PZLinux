@@ -4,6 +4,47 @@ PZLinux.darkWebSellSessions = PZLinux.darkWebSellSessions or {}
 
 local PZLINUX_DARK_WEB_MARKET_DATA = "PZLinuxDarkWebMarket"
 
+-- A player's real server logs confirmed the actual root cause behind the
+-- "bought something, never delivered" report: two separate BUY log lines,
+-- both showing queueLenAfter=1 -- the second purchase's queue length after
+-- insertion should have been 2 (appending to the first purchase's still-
+-- pending entry), not 1 again. The pending-order queue used to be an ARRAY
+-- OF TABLES stored directly as a modData value (modData.PZLinuxOnItemBuy
+-- OnDarkWeb = { {batch1}, {batch2}, ... }, each batch itself another
+-- table) -- exactly the same nested-modData shape already confirmed once
+-- before in this mod to not reliably round-trip through a save/reload (see
+-- the reputation backup-key fix at the top of ISPZLinuxVariablesTables.lua
+-- -- "exactly what a nested value failing to round-trip through a save/
+-- reload would look like"), just never connected to this queue until now.
+-- The existing v1.0.8 "belt and suspenders" reassignment
+-- (modData.X = modData.X after every table.insert) was a good instinct but
+-- not enough -- it only guards against in-place mutation not being
+-- *noticed*, not against a nested structure failing to actually persist.
+-- Fixed by storing the queue as a single flat STRING instead (the same
+-- simple, flat-value shape already proven reliable everywhere else in this
+-- mod -- "328 usages... without a reported persistence issue" per that
+-- same comment) -- "item|qty" entries joined with ";", e.g.
+-- "Base.CigarettePack|2;Base.CigarettePack|4".
+function PZLinuxDarkWebQueueDecode(queueString)
+    local queue = {}
+    if type(queueString) ~= "string" or queueString == "" then return queue end
+    for entry in queueString:gmatch("[^;]+") do
+        local itemName, quantity = entry:match("^(.-)|(%d+)$")
+        if itemName and itemName ~= "" and quantity then
+            table.insert(queue, { name = itemName, quantity = tonumber(quantity) })
+        end
+    end
+    return queue
+end
+
+function PZLinuxDarkWebQueueEncode(queue)
+    local parts = {}
+    for _, entry in ipairs(queue or {}) do
+        table.insert(parts, tostring(entry.name) .. "|" .. tostring(entry.quantity))
+    end
+    return table.concat(parts, ";")
+end
+
 function PZLinuxDarkWebGetItemIds(itemData)
     if not itemData then return {} end
     if type(itemData.id) == "table" then return itemData.id end
@@ -188,31 +229,17 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
         return debit
     end
 
-    local batch = { items = {} }
-    for _ = 1, quantity do
-        table.insert(batch.items, { name = itemToAdd })
-    end
-
     local modData = playerObj:getModData()
-    modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb or {}
+    local queue = PZLinuxDarkWebQueueDecode(modData.PZLinuxOnItemBuyOnDarkWebQueue)
+    table.insert(queue, { name = itemToAdd, quantity = quantity })
+    modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)
     modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-    table.insert(modData.PZLinuxOnItemBuyOnDarkWeb, { batch })
-    -- Belt and suspenders (v1.0.8): table.insert mutates the array table
-    -- in place. Re-assigning the modData key itself right after -- even
-    -- though it's the exact same table -- makes sure any change-detection
-    -- keyed on assignment (rather than a deep scan) actually notices this
-    -- write, instead of risking it silently not being picked up for
-    -- network sync/save the way a plain in-place mutation might be.
-    modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb
-    -- Temporary diagnostic logging for a reported bug (wrong/stale items
-    -- showing up at the mailbox instead of what was just bought). Prints
-    -- the exact queue state right after every purchase so a server log can
-    -- show whether stale batches are already sitting there before this one
-    -- was even added. Safe to remove once the root cause is confirmed.
+    -- Diagnostic logging kept from the original investigation (now proven
+    -- useful -- this is exactly what surfaced the real root cause) so a
+    -- future regression is just as easy to spot from a server log.
     print(string.format(
         "[PZLinux DarkWeb] BUY player=%s item=%s qty=%d queueLenAfter=%d",
-        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(itemToAdd), quantity,
-        #modData.PZLinuxOnItemBuyOnDarkWeb))
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(itemToAdd), quantity, #queue))
     marketOffer.stock = availableStock - quantity
     offer.stock = marketOffer.stock
     PZLinuxDarkWebTransmitMarket()
@@ -426,38 +453,48 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
     end
 
     local modData = playerObj:getModData()
-    if modData.PZLinuxOnItemBuyOnDarkWebStatus ~= 1 or type(modData.PZLinuxOnItemBuyOnDarkWeb) ~= "table" then
+    local queue = PZLinuxDarkWebQueueDecode(modData.PZLinuxOnItemBuyOnDarkWebQueue)
+
+    -- Diagnostic logging kept from the original investigation -- but now
+    -- unconditional, printed BEFORE either early-return below, not just on
+    -- the "there's something to deliver" path. A player reported not
+    -- receiving an order with no queueLenAfter=2 in their BUY logs either
+    -- (i.e. the SECOND purchase's own entry, the one that should still
+    -- have been the most recent one queued, was also gone by the time they
+    -- checked the mailbox) -- this line is what would show definitively
+    -- whether that's because the mailbox visit found status/queue already
+    -- reset to nothing (rawStatus/rawQueueLen below would show it) or
+    -- something else entirely, instead of leaving that mailbox visit with
+    -- no log trace at all whenever it hits an early return.
+    print(string.format(
+        "[PZLinux DarkWeb] DELIVER player=%s rawStatus=%s rawQueueLen=%d decodedQueueLen=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(modData.PZLinuxOnItemBuyOnDarkWebStatus),
+        #tostring(modData.PZLinuxOnItemBuyOnDarkWebQueue or ""), #queue))
+
+    if modData.PZLinuxOnItemBuyOnDarkWebStatus ~= 1 then
         return { ok = true, requestId = requestId, delivered = 0, lost = false, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    -- Temporary diagnostic logging for a reported bug (wrong/stale items
-    -- showing up at the mailbox instead of what was just bought). Dumps the
-    -- full queue -- every batch and every item name in it -- right before
-    -- delivery consumes it, so a server log can show whether stale batches
-    -- from earlier purchases were still sitting there. Safe to remove once
-    -- the root cause is confirmed.
+    if #queue == 0 then
+        modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
+        modData.PZLinuxOnItemBuyOnDarkWebQueue = ""
+        return { ok = true, requestId = requestId, delivered = 0, lost = false, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
     do
         local summary = {}
-        for batchIndex, wrapper in ipairs(modData.PZLinuxOnItemBuyOnDarkWeb) do
-            local batch = type(wrapper) == "table" and wrapper[1] or nil
-            local names = {}
-            if batch and type(batch.items) == "table" then
-                for _, item in ipairs(batch.items) do
-                    table.insert(names, tostring(item.name))
-                end
-            end
-            table.insert(summary, batchIndex .. ":[" .. table.concat(names, ",") .. "]")
+        for entryIndex, entry in ipairs(queue) do
+            table.insert(summary, entryIndex .. ":" .. tostring(entry.name) .. "x" .. tostring(entry.quantity))
         end
         print(string.format(
-            "[PZLinux DarkWeb] DELIVER player=%s queueLenBefore=%d batches=%s",
-            tostring(PZLinuxGetPlayerKey(playerObj)), #modData.PZLinuxOnItemBuyOnDarkWeb,
-            table.concat(summary, " ")))
+            "[PZLinux DarkWeb] DELIVER player=%s queueLenBefore=%d entries=%s",
+            tostring(PZLinuxGetPlayerKey(playerObj)), #queue, table.concat(summary, " ")))
     end
 
     local chanceLostOrder = ZombRand(1, 101)
     if chanceLostOrder <= 10 then
         modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-        modData.PZLinuxOnItemBuyOnDarkWeb = {}
+        modData.PZLinuxOnItemBuyOnDarkWebQueue = ""
         PZLinuxTransmitPlayerModData(playerObj)
         PZLinuxCreateStolenOrderNote(playerObj)
         return { ok = true, requestId = requestId, delivered = 0, lost = true, balance = PZLinuxLoadBankBalance(playerObj) }
@@ -465,10 +502,11 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
 
     local inventory = playerObj:getInventory()
     local delivered = 0
-    while #modData.PZLinuxOnItemBuyOnDarkWeb > 0 do
-        local lastBatchWrapper = modData.PZLinuxOnItemBuyOnDarkWeb[#modData.PZLinuxOnItemBuyOnDarkWeb]
-        local lastBatch = type(lastBatchWrapper) == "table" and lastBatchWrapper[1] or nil
-        if not lastBatch or type(lastBatch.items) ~= "table" then
+    while #queue > 0 do
+        local entry = queue[#queue]
+        if not entry.name or not entry.quantity or entry.quantity < 1 then
+            table.remove(queue, #queue)
+            modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)
             return { ok = false, error = "invalid_pending_order", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
         end
 
@@ -480,9 +518,9 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
         end
 
         local batchDelivered = 0
-        for _, item in ipairs(lastBatch.items) do
-            if item.name and getScriptManager():FindItem(item.name) then
-                local deliveredItem = parcelInv:AddItem(item.name)
+        if getScriptManager():FindItem(entry.name) then
+            for _ = 1, entry.quantity do
+                local deliveredItem = parcelInv:AddItem(entry.name)
                 if deliveredItem then batchDelivered = batchDelivered + 1 end
             end
         end
@@ -497,19 +535,13 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
             return { ok = false, error = "parcel_sync_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
         end
         delivered = delivered + batchDelivered
-        table.remove(modData.PZLinuxOnItemBuyOnDarkWeb, #modData.PZLinuxOnItemBuyOnDarkWeb)
-        -- Belt and suspenders (v1.0.8): a player reported being able to
-        -- repeatedly re-collect Dark Web orders already delivered, surviving
-        -- log-outs and reconnects -- exactly what would happen if this
-        -- removal's effect on the queue never actually got persisted/synced,
-        -- so a reconnect reloads the pre-delivery state and the same batch
-        -- delivers again. Re-assigning the key (even to the same table)
-        -- makes sure assignment-keyed change-detection notices this write,
-        -- and transmitting after every single removal (not just once after
-        -- the whole loop) means a mid-loop disconnect leaves the already-
-        -- delivered batches marked gone rather than betting on the final
-        -- transmit at the end of the loop to have covered all of them.
-        modData.PZLinuxOnItemBuyOnDarkWeb = modData.PZLinuxOnItemBuyOnDarkWeb
+        table.remove(queue, #queue)
+        -- v1.0.8 (kept): transmitting after every single removal, not just
+        -- once at the end, means a mid-loop disconnect leaves the
+        -- already-delivered entries marked gone rather than betting on one
+        -- final transmit at the end of the loop to have covered all of
+        -- them.
+        modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)
         PZLinuxTransmitPlayerModData(playerObj)
     end
 

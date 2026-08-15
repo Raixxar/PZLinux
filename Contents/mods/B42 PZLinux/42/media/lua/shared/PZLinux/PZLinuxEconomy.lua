@@ -296,10 +296,17 @@ local function PZLinuxApplyDarkWebPriceBalance()
         ["Base.AssaultRifle2"] = 16000,
 
         -- Ammunition
+        -- Base.223Box/Base.223Clip/Base.308Clip/the four "BulletsMold"
+        -- entries used to be here too, keyed to items that no longer exist
+        -- in current Build 42 (see PZLinuxDarkWebData.lua's own cleanup of
+        -- the same stale ids) -- this table only ever matters for item ids
+        -- that still show up as a row in PZLinuxDarkWebItemsTable, so once
+        -- those rows were removed there these keys became permanently dead
+        -- (never matched, harmless but orphaned); removed to keep the two
+        -- files in sync instead of leaving stale keys behind.
         ["Base.Bullets9mmBox"] = 350,
         ["Base.Bullets38Box"] = 500,
         ["Base.Bullets44Box"] = 750,
-        ["Base.223Box"] = 900,
         ["Base.308Box"] = 1000,
         ["Base.ShotgunShellsBox"] = 1200,
         ["Base.Bullets45Box"] = 1250,
@@ -307,14 +314,8 @@ local function PZLinuxApplyDarkWebPriceBalance()
         ["Base.9mmClip"] = 900,
         ["Base.45Clip"] = 1000,
         ["Base.44Clip"] = 1100,
-        ["Base.223Clip"] = 1400,
-        ["Base.308Clip"] = 1600,
         ["Base.556Clip"] = 2200,
         ["Base.M14Clip"] = 2200,
-        ["Base.223BulletsMold"] = 2000,
-        ["Base.308BulletsMold"] = 2000,
-        ["Base.9mmBulletsMold"] = 1800,
-        ["Base.ShotgunShellsMold"] = 1800,
 
         -- Explosives and remotes
         ["Base.SmokeBomb"] = 500,

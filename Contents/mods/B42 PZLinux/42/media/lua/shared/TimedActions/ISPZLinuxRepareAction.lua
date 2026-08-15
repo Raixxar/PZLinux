@@ -44,7 +44,18 @@ function ISPZLinuxRepareAction:perform()
     end
     self.item:getModData().statusCondition = self.item:getModData().statusCondition + ZombRand(5,11) * (self.character:getPerkLevel(Perks.Electricity) + 1)
     if self.item:getModData().statusCondition > 100 then self.item:getModData().statusCondition = 100 end
-    addXp(self.character, Perks.Electricity, 3)
+    -- This action's perform() runs on the client (TimedActions queued via
+    -- ISTimedActionQueue.add are client-driven, like every other action in
+    -- this mod), but addXp is a server-side-only native -- nil on the
+    -- client. This was the one place in the whole mod calling it bare
+    -- instead of through the "if addXp then" guard already used everywhere
+    -- else (46+ call sites in ISPZLinuxVariablesTables.lua/PZLinuxDarkWeb.lua
+    -- alone), so it threw "attempt to call a nil value" right here every
+    -- time -- silently, since the repair itself (item removal, condition
+    -- boost above) had already applied and the error just aborts the rest
+    -- of perform() without crashing the game. Matches a player report: the
+    -- computer visibly gets repaired but Electricity XP never increases.
+    if addXp then addXp(self.character, Perks.Electricity, 3) end
     ISBaseTimedAction.perform(self)
 end
 
