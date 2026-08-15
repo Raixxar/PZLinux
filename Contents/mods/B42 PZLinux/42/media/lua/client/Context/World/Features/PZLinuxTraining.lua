@@ -148,12 +148,17 @@ function trainingUI:initialise()
 
     -- Confirm step: only shown once a card above has actually been
     -- clicked, one explicit "Pay" or "Cancel" away from spending money.
-    self.confirmLabel = ISLabel:new(self.width * 0.20, self.height * 0.75, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
+    -- Centered in the middle of the screen, on its own -- every card
+    -- (including the one just selected) is hidden while this is showing,
+    -- rather than reusing the list's own row positions, so this reads as
+    -- a clean standalone confirmation instead of a leftover gap where the
+    -- other 2 cards used to be.
+    self.confirmLabel = ISLabel:new(self.width * 0.20, self.height * 0.47, self.height * 0.03, "", 0, 1, 0, 1, UIFont.Small, true)
     self.confirmLabel:initialise()
     self.confirmLabel:setVisible(false)
     self.topBar:addChild(self.confirmLabel)
 
-    self.payButton = ISButton:new(self.width * 0.20, self.height * 0.81, self.width * 0.26, self.height * 0.06, PZLinuxGetText("IGUI_PZLinux_Training_Buy"), self, self.onPayCourse)
+    self.payButton = ISButton:new(self.width * 0.20, self.height * 0.55, self.width * 0.26, self.height * 0.06, PZLinuxGetText("IGUI_PZLinux_Training_Buy"), self, self.onPayCourse)
     self.payButton.textColor = {r=0, g=1, b=0, a=1}
     self.payButton.backgroundColor = {r=0, g=0.25, b=0, a=0.7}
     self.payButton.borderColor = {r=0, g=1, b=0, a=1}
@@ -161,7 +166,7 @@ function trainingUI:initialise()
     self.payButton:setVisible(false)
     self.topBar:addChild(self.payButton)
 
-    self.cancelButton = ISButton:new(self.width * 0.51, self.height * 0.81, self.width * 0.26, self.height * 0.06, PZLinuxGetText("IGUI_PZLinux_Training_Cancel"), self, self.onCancelSelection)
+    self.cancelButton = ISButton:new(self.width * 0.51, self.height * 0.55, self.width * 0.26, self.height * 0.06, PZLinuxGetText("IGUI_PZLinux_Training_Cancel"), self, self.onCancelSelection)
     self.cancelButton.textColor = {r=1, g=0.4, b=0.4, a=1}
     self.cancelButton.backgroundColor = {r=0.25, g=0, b=0, a=0.7}
     self.cancelButton.borderColor = {r=0.6, g=0, b=0, a=1}
@@ -316,8 +321,11 @@ function trainingUI:refreshOfferView()
     self.statusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Training_ChooseCourse"))
 
     if selectedOffer then
+        -- Every card is hidden here, including the one just selected --
+        -- the confirm view is a clean standalone screen centered on its
+        -- own (see the constructor), not the list with 2 rows missing.
         for _, row in ipairs(self.offerRows) do
-            row.card:setVisible(row.card.internal == selectedOffer.id)
+            row.card:setVisible(false)
         end
 
         local courseName = PZLinuxGetText(selectedOffer.nameKey)

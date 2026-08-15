@@ -95,16 +95,18 @@ PZLinuxTestAssert(s1.confirmLabel.visible ~= true, "the confirm recap must be hi
 PZLinuxTestAssert(s1.payButton.visible ~= true, "Pay must be hidden until a card is selected")
 PZLinuxTestAssert(s1.cancelButton.visible ~= true, "Cancel must be hidden until a card is selected")
 
--- 2. Selecting a card must not spend money -- it only narrows the view
--- down to that one card and reveals the confirm step.
+-- 2. Selecting a card must not spend money -- it hides every card
+-- (including the one just picked, so the confirm step reads as a clean
+-- centered screen instead of the list with a gap) and reveals the
+-- confirm step instead.
 local s2 = newSelf()
 refreshOfferView(s2)
 local pickedRow = s2.offerRows[2]
 onSelectCourse(s2, { internal = pickedRow.card.internal })
 PZLinuxTestAssert(s2.selectedOfferId == "cooking_200", "selecting a card must record its offer id, nothing else")
-PZLinuxTestAssert(s2.offerRows[1].card.visible == false, "unselected cards must be hidden once one is picked")
-PZLinuxTestAssert(s2.offerRows[2].card.visible == true, "the selected card must stay visible")
-PZLinuxTestAssert(s2.offerRows[3].card.visible == false, "unselected cards must be hidden once one is picked")
+PZLinuxTestAssert(s2.offerRows[1].card.visible == false, "every card must be hidden once one is picked")
+PZLinuxTestAssert(s2.offerRows[2].card.visible == false, "the selected card must also be hidden -- the confirm view replaces it")
+PZLinuxTestAssert(s2.offerRows[3].card.visible == false, "every card must be hidden once one is picked")
 PZLinuxTestAssert(s2.confirmLabel.visible == true, "the confirm recap must appear once a card is selected")
 PZLinuxTestAssert(s2.payButton.visible == true, "Pay must appear once a card is selected")
 PZLinuxTestAssert(s2.cancelButton.visible == true, "Cancel must appear once a card is selected")
