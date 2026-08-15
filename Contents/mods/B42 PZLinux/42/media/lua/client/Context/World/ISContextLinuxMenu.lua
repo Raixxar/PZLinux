@@ -215,6 +215,14 @@ function linuxUI:initialise()
     self.conditionButton:setVisible(false)
     self.conditionButton:initialise()
     self.topBar:addChild(self.conditionButton)
+
+    self.trainingButton = ISButton:new(self.width * 0.20, self.height * 0.59, self.width * 0.05, self.height * 0.025, "TRAINING", self, self.onTraining)
+    self.trainingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+    self.trainingButton.textColor = {r=0, g=1, b=0, a=1}
+    self.trainingButton.borderColor = {r=0, g=0, b=0, a=0}
+    self.trainingButton:setVisible(false)
+    self.trainingButton:initialise()
+    self.topBar:addChild(self.trainingButton)
 end
 
 -- CLOSE
@@ -346,6 +354,7 @@ function linuxUI:onPrompt()
     self.reputationButton:setVisible(true)
     self.conditionButton:setVisible(true)
     self.sellButton:setVisible(true)
+    self.trainingButton:setVisible(true)
 end
 
 function linuxUI:onInternet()
@@ -508,6 +517,20 @@ function linuxUI:onSell()
         local modData = PZLinuxGetModData(self.player)
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 12
+    else
+        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+    end
+end
+
+function linuxUI:onTraining()
+    if self.isConnected == true then
+        self.promptLabel:setVisible(false)
+        self.helpLabel:setVisible(false)
+        self:onClose()
+
+        local modData = PZLinuxGetModData(self.player)
+        if not modData then return end
+        modData.PZLinuxUIOpenMenu = 13
     else
         self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
     end

@@ -2,6 +2,41 @@
 
 ## [1.0.10]
 
+- Added Training, a new PZLinux computer app -- moved up from the v1.1.0
+  roadmap as a goodwill feature after a heavy bugfix cycle. Buy XP with
+  money: 3 courses are rolled weekly (one at a time -- finish the current
+  one before starting another), each a choice of skill x XP tier
+  (100/200/400/800 XP, always priced at a flat $100 per XP, but duration
+  doesn't scale 1:1 with XP -- doubling the XP each tier only costs +1
+  in-game hour, so the bigger tiers are a genuinely better XP/hour deal,
+  not just a bigger bill for the same rate). A daily reroll was tried
+  first and walked back before release: with nothing ever permanently
+  used up, 3 fresh options appearing every single in-game day was simply
+  too generous over a long play session -- weekly keeps the same rules
+  (see below) at a much more deliberate pace. Progress is gated by
+  actually keeping the panel open and watching, the same reason vanilla
+  reading a skill book takes real in-game time and stops the moment you
+  stop reading -- durations (2-5 in-game hours) land in that same range on
+  purpose, and speeding up game time (the normal >> controls) speeds
+  through a course too, exactly like reading does. Progress is measured
+  in in-game hours, computed server-side from the world clock itself
+  (never trusting anything the client reports), and persists correctly
+  across logging out and back in: re-opening the panel always resets the
+  "am I currently watching" baseline to right now, so time spent away
+  never counts, and time already banked is never lost either. XP is
+  granted through the same addXp channel every other XP source in the
+  game uses, so existing multipliers (Fast Learner, XP-boost moodles,
+  etc.) apply automatically. Completing a specific (skill, tier) course
+  removes only that exact offer from this week's remaining offers -- not
+  tracked forever: it has a normal chance of coming back around on a
+  future week's roll, the same way an already-bought Buy Goods category
+  reappears the next day. Explicit by design: a player who only wants to
+  spend $10,000 at a time on the small tier can, without a cheaper tier
+  being a permanent one-shot that forces bigger spending later just to
+  train the same skill again. Deliberately excludes every combat and
+  physical-conditioning skill (Aiming, Axe, Blunt, Fitness, Sprinting,
+  etc.) -- this reads as "a class you could actually take", not a way to
+  buy combat power in a survival game.
 - Added a quantity field to the Dark Web Sell list, matching the one Buy
   already has, instead of a single SELL click always selling every
   matching item the player owned. Defaults to "0" so a stray click can

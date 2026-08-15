@@ -34,6 +34,8 @@ You can also accept contracts in the form of quests or missions that will requir
 
 The BUY GOODS submenu allows players to request items by category, enabling them to spend their hard-earned money to hope for a bit more survival! SELL GOODS is the reverse: offload surplus loot when someone happens to want it that day.
 
+Training lets you spend money to buy XP in a skill of your choice, as long as you keep the panel open and actually watch it progress, the same way reading a skill book works.
+
 Online Betting lets you play Poker, Blackjack or bet on Zombie Races. Mail is where mission offers and flavor spam show up, Reputation summarizes your current standing, and CHECK CONDITION tells you how close the computer itself is to breaking down.
 
 [h3]Why isn't any interface working ?[/h3]
@@ -251,6 +253,40 @@ Yes, there's a haggle option: it succeeds about half the time, raising the offer
 [h3]How do I actually get paid ?[/h3]
 
 You need to already have the full demanded quantity of the item on you — no partial sales. Selling removes it from your inventory immediately and hands you a single priced parcel instead, which still has to be dropped off at a mailbox to actually receive the money, exactly like a Dark Web sale.
+
+[h2]Training:[/h2]
+
+[h3]How it works ?[/h3]
+
+Open the Training submenu from the computer to see three courses on offer, each a skill paired with an XP tier (100/200/400/800 XP). Buying one starts it, deducted straight from your bank balance — but you're only allowed one course running at a time, so finish it before starting another. Prices scale with the tier at a flat $100 per XP: 100 XP costs $10,000, 200 XP costs $20,000, 400 XP costs $40,000, and 800 XP costs $80,000.
+
+[h3]Do I need to sit at the computer while it trains ?[/h3]
+
+Yes. Progress only advances while the Training panel is actually open and on screen, the same reason vanilla reading a skill book only advances while you're actually reading it. Close the panel, and progress simply pauses right where it was — it never reverses, and time spent away is never counted against you. Speeding up game time (the normal >> controls) speeds through a course too, exactly like reading does.
+
+[h3]How long does a course take ?[/h3]
+
+Between 2 and 5 in-game hours depending on the tier: 100 XP takes 2 hours, 200 XP takes 3, 400 XP takes 4, and 800 XP takes 5. Doubling the XP each tier only costs one extra hour, so the bigger, pricier tiers are a genuinely better XP-per-hour deal, not just a bigger bill for the same rate — landing in the same 2-5 hour range a book takes to read.
+
+[h3]Does my XP multiplier (Fast Learner, XP boosts, etc.) apply ?[/h3]
+
+Yes — the XP is granted through the same channel every other XP source in the game uses, so any multiplier you have active applies automatically.
+
+[h3]What happens if I log out mid-course ?[/h3]
+
+Nothing is lost. Progress is tracked server-side in in-game hours actually spent watching, not a timer that keeps running while you're offline — logging back in and reopening the Training panel simply picks up exactly where you left off.
+
+[h3]I finished a course. Can I take it again for more XP ?[/h3]
+
+Not right away — completing a course removes that specific skill-and-tier combination from this week's offers. It isn't gone forever, though: it has a normal chance of coming back around on a future week's roll, the same way an already-bought Buy Goods category can reappear later. This is deliberate, so you can spend small ($10,000 at a time) instead of being forced toward the expensive tiers just to train the same skill again.
+
+[h3]Why do the offers only refresh once a week instead of every day ?[/h3]
+
+A daily refresh was tried and dropped before release: with nothing ever permanently used up, three fresh options appearing every single in-game day was simply too generous over a long play session. A weekly refresh keeps the same rules at a much more deliberate pace.
+
+[h3]Which skills can I train ?[/h3]
+
+Any of 15 non-combat skills (Electrical, Mechanics, Cooking, Farming, and so on). Combat and physical-conditioning skills (Aiming, Axe, Blunt, Fitness, Sprinting, etc.) are deliberately excluded — Training is meant to read as "a class you could actually take," not a way to buy combat power in a survival game.
 
 [h2]Check Condition:[/h2]
 

@@ -243,6 +243,24 @@ local function PZLinuxServerDarkWebSell(player, args)
     end)
 end
 
+local function PZLinuxServerTrainingState(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxTrainingState", args, "PZLinuxTrainingStateResult", function()
+        return PZLinuxTrainingGetState(player, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerTrainingPurchase(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxTrainingPurchase", args, "PZLinuxTrainingPurchaseResult", function()
+        return PZLinuxTrainingApplyPurchase(player, args and args.courseId, args and args.requestId)
+    end)
+end
+
+local function PZLinuxServerTrainingTick(player, args)
+    PZLinuxServerProcessIdempotent(player, "PZLinuxTrainingTick", args, "PZLinuxTrainingTickResult", function()
+        return PZLinuxTrainingApplyProgressTick(player, args and args.requestId)
+    end)
+end
+
 local function PZLinuxServerDarkWebRedeemSales(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxDarkWebRedeemSales", args, "PZLinuxDarkWebRedeemSalesResult", function()
         return PZLinuxDarkWebApplyRedeemSales(player, args and args.mailbox, args and args.requestId)
@@ -580,6 +598,9 @@ local PZLINUX_SERVER_COMMANDS = {
     PZLinuxDarkWebBuy = PZLinuxServerDarkWebBuy,
     PZLinuxDarkWebSellOffers = PZLinuxServerDarkWebSellOffers,
     PZLinuxDarkWebSell = PZLinuxServerDarkWebSell,
+    PZLinuxTrainingState = PZLinuxServerTrainingState,
+    PZLinuxTrainingPurchase = PZLinuxServerTrainingPurchase,
+    PZLinuxTrainingTick = PZLinuxServerTrainingTick,
     PZLinuxDarkWebRedeemSales = PZLinuxServerDarkWebRedeemSales,
     PZLinuxDarkWebDeliverOrders = PZLinuxServerDarkWebDeliverOrders,
     PZLinuxTradingSnapshot = PZLinuxServerTradingSnapshot,

@@ -73,6 +73,11 @@ function ISPZLinuxAction:update()
         modData.PZLinuxUIOpenMenu = 0
     end
 
+    if modData.PZLinuxUIOpenMenu == 13 then
+        self.ui = trainingMenu_ShowUI(self.character)
+        modData.PZLinuxUIOpenMenu = 0
+    end
+
     if modData.PZLinuxUIOpenMenu == 20 then
         self.ui = conditionMenu_ShowUI(self.character)
         modData.PZLinuxUIOpenMenu = 0

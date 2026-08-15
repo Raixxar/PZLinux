@@ -62,6 +62,54 @@ Sandbox option: let the host set the Dark Web/Buy Goods package theft
     both delivery functions instead of the hardcoded 10, add the
     Sandbox.json translation. From player feedback: "Could we have that
     chance for the package to be lost as a sandbox variable please?"
+Bank maintenance fee and progressive wealth tax: two related, host-
+    configurable balance sinks aimed at keeping very large fortunes under
+    control on long-running servers, both applied only to the bank balance
+    (never to physical cash sitting in inventory). From player feedback
+    (Raixxar's own idea, refined in discussion):
+    - Maintenance fee: a small percentage (sandbox-configurable, proposed
+      default 2%) automatically withdrawn from every player's bank balance
+      on a recurring in-game interval (sandbox-configurable, proposed
+      default every 7 in-game days). 0% or a 0-day interval disables it,
+      matching every other sandbox toggle's off-switch convention.
+    - Wealth tax: an extra rate (sandbox-configurable) on top of the
+      maintenance fee, but only above a configurable balance threshold
+      (proposed default $100,000) -- and applied progressively to the
+      portion above the threshold, not the whole balance, so crossing the
+      line by $1 doesn't suddenly cost far more than sitting just under
+      it. Needs a concrete bracket/marginal-rate formula decided before
+      building it (a single extra rate on just the excess over the
+      threshold is the simplest option; multiple stacked brackets is
+      possible too but adds real config surface) rather than a hard cliff
+      that taxes the entire balance the moment it's crossed.
+    Feasibility: low risk, no new architecture needed. The mod already
+    runs a recurring per-online-player maintenance loop
+    (Events.EveryTenMinutes in PZLinuxServerCommands.lua, today used for
+    reputation decay and race scheduling) and already computes elapsed-
+    time-based amounts from a per-entity last-applied timestamp against
+    the server's own world clock (the ATM restockPerHour pattern in
+    ISPZLinuxVariablesTables.lua) -- this reuses both almost as-is: a
+    per-player "last fee applied" world-hour modData timestamp, and a
+    debit through the same PZLinuxLoadBankBalance/PZLinuxSetBankBalance
+    pair every other money feature already uses. Server-authoritative like
+    everything else in this mod, so there's nothing client-side for a
+    player to fake, and it doesn't touch inventory, items or any shared
+    world state, so there's no cross-player synchronization risk either --
+    should be safe for every player on a server, not just performance-
+    cheap for one. The one real design decision to settle before building
+    it: since the maintenance loop only walks players who are currently
+    online (same as reputation decay today), does time spent offline count
+    toward the next fee, or does the clock only run while actually
+    playing? Recommend computing it the same lazy way the ATM restock
+    already does (elapsed world-hours since last applied, checked once at
+    login/next tick) so offline time is handled correctly either way,
+    instead of needing a separate offline-aware system.
+    Also needs the same logging treatment as every other money feature
+    (see the v1.0.10 logging pass) so hosts can watch fees/tax apply live
+    via docker logs -f, and a small read-only readout somewhere (Reputation
+    screen or its own line) so players can actually see the current rate,
+    threshold and time until the next fee instead of it being invisible
+    until money quietly vanishes.
 Recovery interface: a new in-world computer app for reclaiming what a dead
     character left behind, for more casual/"journal-style" servers that let
     players respawn and recover progress instead of a strict permadeath
@@ -114,29 +162,6 @@ Recovery interface: a new in-world computer app for reclaiming what a dead
     "It would be nice if we had the option to keep our money/stocks/etc on
     death, or keep a configurable percentage of them on death... And more
     casual servers like mine could set that to 0."
-Formation (training courses) interface: a new in-world computer app to buy
-    XP directly with money, playing the same role as VHS tapes/TV shows
-    already do in vanilla PZ but as an instant, always-available purchase
-    instead of a real-time-gated one -- worth being explicit about that
-    difference when designing it, rather than silently reinventing VHS.
-    Grounded in the mod's existing XP-grant precedent (addXp(playerObj,
-    Perks.X, amount), Perks.Electricity/PlantScavenging already used this
-    way in PZLinuxEconomy.lua/ISPZLinuxVariablesTables.lua). Example given:
-    an Electricity course grants 200 XP for $20,000 -- a $100-per-XP anchor
-    to seed pricing for the rest of the skill list once this gets built.
-    Only 3 courses offered at a time, refreshed daily (per in-game day), so
-    players can't just repeatedly buy the same skill -- the same shape as
-    the existing daily-refresh mechanics already in the mod (contract board
-    refresh via boardRefreshHours, Buy Goods' daily seller-availability
-    roll), likely reusable as a pattern rather than new infrastructure.
-    Open question not yet resolved: is the daily set of 3 the same for
-    every player on the server (one shared roll, like Dark Web restock), or
-    rolled separately per player? Matters for the next requirement:
-    once a player completes a course, it must disappear from THEIR list
-    permanently (never re-offered to them again, so a skill isn't trained
-    twice) while staying available to every other player -- so completion
-    has to be tracked per-player/per-character, even if the daily pool of
-    which 3 are on offer ends up shared server-wide.
 Trading overhaul: several new order types layered onto the current simple
     "buy X now / sell X now" market-order-only system
     (PZLinuxTradingApplyBuy/PZLinuxTradingApplySell -- immediate execution
