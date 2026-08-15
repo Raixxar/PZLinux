@@ -613,8 +613,36 @@ function darkWebUI:onSell()
         local priceLabel = ISLabel:new(self.width * 0.35, yOffset, 20, priceText, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(priceLabel)
 
+        -- A player asked for exactly this: selling used to always take
+        -- every matching item the player owned, with no way to sell fewer
+        -- -- e.g. wearing one bulletproof vest and owning 2 spares, wanting
+        -- to sell only those 2 meant first manually stashing the worn one
+        -- away so it wouldn't get swept up too. Quantity box defaults to
+        -- "0", same as Buy's, specifically so a stray click on SELL can
+        -- never sell anything by accident -- see onSellItem below, which
+        -- refuses to even send a request at quantity 0.
+        -- buttonX is deliberately left exactly where the SELL button
+        -- already sat before this change (proven to fit inside the
+        -- scrollPanel, which is only 0.568 * self.width wide) -- the
+        -- quantity box is inserted just before it instead of pushing the
+        -- button further right, which would overflow that boundary.
         local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
-        local sellButton = ISButton:new(self.width * 0.48, yOffset, buttonWidth, buttonHeight, "SELL", self, self.onSellItem)
+        local buttonX = self.width * 0.48
+        local quantityWidth = self.width * 0.035
+        local quantityX = buttonX - quantityWidth - 5
+
+        local sellQty = ISTextEntryBox:new("0", quantityX, yOffset, quantityWidth, self.height * 0.024)
+        sellQty.backgroundColor = {r=0, g=0, b=0, a=1}
+        sellQty:setVisible(true)
+        sellQty:initialise()
+        sellQty:setOnlyNumbers(true)
+        self.scrollPanel:addChild(sellQty)
+        self.transactionQtysSell[item.index] = sellQty
+
+        local sellButton = ISButton:new(buttonX, yOffset, buttonWidth, buttonHeight, "SELL", self, function(self, btn)
+            local quantitySelling = tonumber(sellQty:getText()) or 0
+            self:onSellItem(btn, quantitySelling)
+        end)
         sellButton.backgroundColor = {r=0.6, g=0, b=0, a=1}
         sellButton.internal = item.index
         sellButton.price = item.price
@@ -751,13 +779,24 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
     end)
 end
 
-function darkWebUI:onSellItem(button)
+function darkWebUI:onSellItem(button, quantitySelling)
     local globalVolume = getCore():getOptionSoundVolume() / 50
     local playerObj = PZLinuxGetPlayer(self.player)
     if not playerObj then return end
 
+    -- Quantity 0 (the default -- see onSell above) means nothing was
+    -- actually chosen: do nothing rather than treat a stray click as
+    -- "sell everything", the old behavior this box replaces.
+    local quantity = tonumber(quantitySelling) or 0
+    if quantity < 1 then return end
+    if quantity > (tonumber(button.count) or 0) then
+        getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
+        HaloTextHelper.addBadText(playerObj, "You don't have that many")
+        return
+    end
+
     if button.setEnable then button:setEnable(false) end
-    PZLinuxRequestDarkWebSell(self.player, button.internal, function(result)
+    PZLinuxRequestDarkWebSell(self.player, button.internal, quantity, function(result)
         if button.setEnable then button:setEnable(true) end
         if self.isClosing then return end
 
@@ -773,7 +812,11 @@ function darkWebUI:onSellItem(button)
             self:onSell()
         else
             getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            HaloTextHelper.addBadText(playerObj, "The item is not available")
+            if result and result.error == "not_enough_owned" then
+                HaloTextHelper.addBadText(playerObj, "You don't have that many")
+            else
+                HaloTextHelper.addBadText(playerObj, "The item is not available")
+            end
         end
     end)
 end

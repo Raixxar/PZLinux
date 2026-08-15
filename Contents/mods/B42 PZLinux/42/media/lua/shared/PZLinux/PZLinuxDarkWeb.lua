@@ -299,14 +299,38 @@ function PZLinuxDarkWebRemoveInventoryItems(player, itemIds)
     return removed
 end
 
+-- A player noticed sell prices changing every time the list refreshed
+-- (including right after selling something else entirely), which felt
+-- buggy -- and it was: PZLinuxDarkWebCalculateSellPrice rolls a fresh
+-- ZombRand every single call, with nothing caching the result, unlike the
+-- Buy side (PZLinuxDarkWebBuildBuyOffers), which already prices each
+-- offer once per market generation and reuses it (session.prices, keyed
+-- off the rotating offer id). Sell offers aren't a rotating subset of the
+-- catalog the way Buy's market.offers are -- every owned, sellable item
+-- always shows up -- so the cache here is keyed by each item's own fixed
+-- position in PZLinuxDarkWebItemsTable instead, but reset on the exact
+-- same market.generation boundary, so Buy and Sell prices stay in sync
+-- with each other and both refresh together on the same schedule.
 function PZLinuxDarkWebBuildSellOffers(player, requestId)
     PZLinuxDarkWebLoadCustomItems()
+    local market = PZLinuxDarkWebEnsureMarket()
+    local playerKey = PZLinuxGetPlayerKey(player)
+    local session = PZLinux.darkWebSellSessions[playerKey]
+    if not session or tonumber(session.generation) ~= tonumber(market.generation) then
+        session = { generation = market.generation, prices = {} }
+        PZLinux.darkWebSellSessions[playerKey] = session
+    end
+
     local offers = {}
-    for _, itemData in ipairs(PZLinuxDarkWebItemsTable) do
+    for itemIndex, itemData in ipairs(PZLinuxDarkWebItemsTable) do
         local itemIds = PZLinuxDarkWebGetItemIds(itemData)
         local firstItemId = PZLinuxDarkWebGetFirstItemId(itemData)
         local count = PZLinuxDarkWebCountInventoryItems(player, itemIds)
-        local price = PZLinuxDarkWebCalculateSellPrice(player, itemData)
+        local price = session.prices[itemIndex]
+        if not price then
+            price = PZLinuxDarkWebCalculateSellPrice(player, itemData)
+            session.prices[itemIndex] = price
+        end
         if count > 0 and firstItemId and price and getScriptManager():FindItem(firstItemId) then
             table.insert(offers, {
                 index = #offers + 1,
@@ -318,17 +342,19 @@ function PZLinuxDarkWebBuildSellOffers(player, requestId)
         end
     end
 
-    PZLinux.darkWebSellSessions[PZLinuxGetPlayerKey(player)] = { requestId = requestId, offers = offers }
+    session.requestId = requestId
+    session.offers = offers
     return { ok = true, requestId = requestId, offers = offers, balance = PZLinuxLoadBankBalance(player) }
 end
 
-function PZLinuxDarkWebApplySell(player, offerIndex, requestId)
+function PZLinuxDarkWebApplySell(player, offerIndex, quantity, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
     offerIndex = tonumber(offerIndex)
-    if not offerIndex or offerIndex < 1 then
-        return { ok = false, error = "invalid_offer", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    quantity = tonumber(quantity)
+    if not offerIndex or offerIndex < 1 or not quantity or quantity < 1 then
+        return { ok = false, error = "invalid_amount", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     local session = PZLinux.darkWebSellSessions[PZLinuxGetPlayerKey(playerObj)]
@@ -341,17 +367,43 @@ function PZLinuxDarkWebApplySell(player, offerIndex, requestId)
         return { ok = false, error = "invalid_offer", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
+    -- A player reported wearing a bulletproof vest and owning 2 spares,
+    -- wanting to sell only those 2 -- but the sell flow used to grab every
+    -- matching item indiscriminately, risking the one they had equipped,
+    -- forcing them to manually stash it away first. Matching items are now
+    -- collected unequipped-first, so selling fewer than everything owned
+    -- only ever reaches for something actually equipped once there aren't
+    -- enough loose ones left to cover the requested quantity.
     local inventory = playerObj:getInventory()
-    local soldItems = {}
     local inventoryItems = inventory:getItems()
-    for index = inventoryItems:size() - 1, 0, -1 do
+    local unequippedItems, equippedItems = {}, {}
+    for index = 0, inventoryItems:size() - 1 do
         local item = inventoryItems:get(index)
         if PZLinuxDarkWebInventoryItemMatches(item, offer.id) then
-            table.insert(soldItems, item)
+            if item.isEquipped and item:isEquipped() then
+                table.insert(equippedItems, item)
+            else
+                table.insert(unequippedItems, item)
+            end
         end
     end
-    if #soldItems == 0 then
+
+    local available = #unequippedItems + #equippedItems
+    if available == 0 then
         return { ok = false, error = "item_not_available", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+    if quantity > available then
+        return { ok = false, error = "not_enough_owned", requestId = requestId, available = available, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local soldItems = {}
+    for _, item in ipairs(unequippedItems) do
+        if #soldItems >= quantity then break end
+        table.insert(soldItems, item)
+    end
+    for _, item in ipairs(equippedItems) do
+        if #soldItems >= quantity then break end
+        table.insert(soldItems, item)
     end
 
     local amount = PZLinuxNormalizeMoney((offer.price or 0) * #soldItems)
@@ -580,13 +632,13 @@ function PZLinuxRequestDarkWebSellOffers(player, callback)
     return requestId
 end
 
-function PZLinuxRequestDarkWebSell(player, offerIndex, callback)
+function PZLinuxRequestDarkWebSell(player, offerIndex, quantity, callback)
     local requestId = PZLinuxNextRequestId("darkweb-sell")
     PZLinuxRegisterCallback(requestId, callback)
-    if PZLinuxSendClientCommand("PZLinuxDarkWebSell", { requestId = requestId, offerIndex = offerIndex }) then
+    if PZLinuxSendClientCommand("PZLinuxDarkWebSell", { requestId = requestId, offerIndex = offerIndex, quantity = quantity }) then
         return requestId
     end
-    PZLinuxDispatchCallback(PZLinuxDarkWebApplySell(player, offerIndex, requestId))
+    PZLinuxDispatchCallback(PZLinuxDarkWebApplySell(player, offerIndex, quantity, requestId))
     return requestId
 end
 

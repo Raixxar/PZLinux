@@ -2,6 +2,23 @@
 
 ## [1.0.10]
 
+- Added a quantity field to the Dark Web Sell list, matching the one Buy
+  already has, instead of a single SELL click always selling every
+  matching item the player owned. Defaults to "0" so a stray click can
+  never sell anything by accident (a quantity of 0 is a no-op, both
+  client and server-side). When selling fewer than everything owned,
+  currently-EQUIPPED items (a worn bulletproof vest, say) are now only
+  ever reached for once there aren't enough non-equipped matches left to
+  cover the request -- from a player report: owning 3 (1 worn + 2 spare)
+  and wanting to sell 2 used to risk the worn one going too, forcing a
+  manual "unequip and stash it first" workaround every time. Also fixed,
+  found while touching this code: sell prices re-rolled a fresh random
+  value on every single offer-list rebuild, including right after selling
+  a completely different item, which felt buggy since nothing about the
+  market had actually changed -- now cached per item the same way Buy
+  already caches its own prices, reset together on the same
+  market-refresh boundary so Buy and Sell prices stay in sync with each
+  other.
 - Added server-side logging across every player-facing money/progress
   feature, for live monitoring via `docker logs -f` (or any server console)
   instead of only finding out about a bug from a player report after the

@@ -239,7 +239,7 @@ end
 
 local function PZLinuxServerDarkWebSell(player, args)
     PZLinuxServerProcessIdempotent(player, "PZLinuxDarkWebSell", args, "PZLinuxDarkWebSellResult", function()
-        return PZLinuxDarkWebApplySell(player, args and args.offerIndex, args and args.requestId)
+        return PZLinuxDarkWebApplySell(player, args and args.offerIndex, args and args.quantity, args and args.requestId)
     end)
 end
 

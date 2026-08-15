@@ -183,7 +183,7 @@ do
     player:getInventory():AddItem("Base.CigaretteSingle")
     local sellOffers = PZLinuxDarkWebBuildSellOffers(player, "req-sell-offers-c")
     PZLinuxTestAssert(#sellOffers.offers == 1, "the carried cigarette must show up as a sell offer")
-    local sell = PZLinuxDarkWebApplySell(player, 1, "req-sell-c")
+    local sell = PZLinuxDarkWebApplySell(player, 1, 1, "req-sell-c")
     PZLinuxTestAssert(sell.ok, "the sell must succeed and create a redeemable package")
 
     PZLinuxDarkWebGetBuyOffers(player, "req-buy-offers-c")
