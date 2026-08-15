@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Гвинтівка MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Навчання",
     "IGUI_PZLinux_Training_Buy": "Почати",
+    "IGUI_PZLinux_Training_Cancel": "Скасувати",
     "IGUI_PZLinux_Training_Completed": "Навчання завершено: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "У процесі: %s",
     "IGUI_PZLinux_Training_StayHere": "Залишайтеся тут, щоб продовжити навчання. Прогрес призупиняється, якщо ви підете.",

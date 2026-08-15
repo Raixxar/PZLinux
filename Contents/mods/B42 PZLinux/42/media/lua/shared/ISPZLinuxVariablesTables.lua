@@ -287,6 +287,7 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
 
     IGUI_PZLinux_Training_Title = "PZLinux Training",
     IGUI_PZLinux_Training_Buy = "Start",
+    IGUI_PZLinux_Training_Cancel = "Cancel",
     IGUI_PZLinux_Training_Completed = "Training complete: +%s XP",
     IGUI_PZLinux_Training_InProgress = "In progress: %s",
     IGUI_PZLinux_Training_StayHere = "Stay here to keep training. Progress pauses if you leave.",
@@ -2536,9 +2537,16 @@ end
 
 function PZLinuxTrainingEnsureWeeklyOffers(modData)
     local thisWeek = PZLinuxTrainingCurrentGameWeek()
-    if tonumber(modData.PZLinuxTrainingOffersWeek) == thisWeek
-    and type(modData.PZLinuxTrainingOffersList) == "string"
-    and modData.PZLinuxTrainingOffersList ~= "" then
+    -- Deliberately gated on the WEEK NUMBER alone, not on whether the list
+    -- still has anything left in it. A player who buys and finishes all 3
+    -- of this week's offers ends up with PZLinuxTrainingOffersList == ""
+    -- while still squarely inside the same week -- that emptiness is the
+    -- CORRECT, expected state (see PZLinuxTrainingRemoveFromList above),
+    -- not a sign a fresh roll is due. Rerolling on an empty-but-same-week
+    -- list would let a player who clears their weekly offers immediately
+    -- get a brand new set instead of waiting out the week, defeating the
+    -- entire point of the weekly cadence.
+    if tonumber(modData.PZLinuxTrainingOffersWeek) == thisWeek then
         return
     end
 

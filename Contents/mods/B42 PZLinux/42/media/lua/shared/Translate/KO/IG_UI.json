@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788 소총",
     "IGUI_PZLinux_Training_Title": "PZLinux 교육",
     "IGUI_PZLinux_Training_Buy": "시작",
+    "IGUI_PZLinux_Training_Cancel": "취소",
     "IGUI_PZLinux_Training_Completed": "교육 완료: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "진행 중: %s",
     "IGUI_PZLinux_Training_StayHere": "교육을 계속하려면 여기 머무르세요. 자리를 비우면 진행이 멈춥니다.",

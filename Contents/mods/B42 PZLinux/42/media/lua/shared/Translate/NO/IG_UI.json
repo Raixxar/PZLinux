@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788 rifle",
     "IGUI_PZLinux_Training_Title": "PZLinux Trening",
     "IGUI_PZLinux_Training_Buy": "Start",
+    "IGUI_PZLinux_Training_Cancel": "Avbryt",
     "IGUI_PZLinux_Training_Completed": "Trening fullført: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "Pågår: %s",
     "IGUI_PZLinux_Training_StayHere": "Bli her for å fortsette treningen. Fremgangen stopper hvis du drar.",

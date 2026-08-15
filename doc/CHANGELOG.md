@@ -2,6 +2,54 @@
 
 ## [1.0.10]
 
+- Redesigned Training's offer list to match Buy Goods' clickable-row
+  interaction instead of a name/detail label pair sitting next to its own
+  small "Start" button: each of the 3 weekly offers is now a full
+  clickable card with its name and price/duration stacked inside. From
+  player feedback, clicking a card never spends money by itself anymore
+  -- it only selects that one card and reveals a separate recap plus
+  explicit Pay/Cancel buttons below it, so an accidental click can no
+  longer charge the player; paying (or backing out with Cancel) is always
+  a deliberate second step. A stale selection (the offer got bought
+  elsewhere, or the week rolled over between refreshes) safely falls back
+  to the list instead of trying to confirm a purchase that can no longer
+  succeed.
+- Fixed a player-reported bug: finishing every one of this week's 3
+  Training offers made a brand new set appear immediately instead of
+  waiting for the actual 7-day reroll. Root cause: the reroll check
+  required the offer list to be non-empty as well as being the same
+  week, so once all 3 were bought and completed (leaving an empty list --
+  by design, see PZLinuxTrainingRemoveFromList) it looked exactly like a
+  stale list that had never been rolled at all, and rerolled immediately.
+  Now gated purely on the tracked week number, so an empty list within
+  the current week is correctly treated as "nothing left until next
+  week", not "never rolled yet".
+- Changed the sound Training plays on completing a course from the plain
+  string "levelup" (which resolves directly to a leftover legacy
+  media/sound/levelup.ogg/.wav file, no longer used by vanilla gameplay --
+  its own SoundBanks.lua alias is commented out) to "GainExperienceLevel",
+  vanilla's own currently-used, properly-scripted sound for actually
+  leveling up a skill. From player feedback: the old file's fuller fanfare
+  mix included a vocal chant layer that didn't match the plain guitar
+  sting vanilla itself uses for this moment.
+- Fixed a player-reported log-spam bug in Training: the server log filled
+  up with `Translator.reportMissingArgumentsFromPastAbuse ... Missing
+  arguments for "IGUI_PZLinux_Training_InProgress"` warnings while a
+  course was in progress. Root cause: the active-course label was rebuilt
+  -- re-resolving and re-formatting its translation -- on every ~500ms
+  tick response, even though the course name never actually changes
+  between ticks (only the progress bar does). Since that translation
+  string contains a raw "%s", every such lookup also made the game's own
+  native Translator log this warning: it defensively tries to format the
+  raw string itself before PZLinux's own gsub-based substitution ever
+  runs (see PZLinuxGetText/PZLinuxFormatText's own comment on why this mod
+  deliberately never passes real arguments to the native getText() call
+  directly -- doing so once caused a worse, silent blank-value bug). At
+  twice a second for a multi-hour course, that added up to a lot of
+  avoidable noise in exactly the docker logs -f output this mod's own
+  logging pass (see below) is meant to keep clean. Purely cosmetic --
+  the label always displayed correctly regardless -- but now only
+  rebuilt when the active course itself actually changes.
 - Fixed a player-reported visual bug: the Training panel rendered as a
   plain floating dark box instead of appearing on the computer's own
   screen like every other PZLinux feature. Root cause: Training was built

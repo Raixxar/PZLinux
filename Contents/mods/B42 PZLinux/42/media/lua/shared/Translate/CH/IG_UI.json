@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788步槍",
     "IGUI_PZLinux_Training_Title": "PZLinux 訓練",
     "IGUI_PZLinux_Training_Buy": "開始",
+    "IGUI_PZLinux_Training_Cancel": "取消",
     "IGUI_PZLinux_Training_Completed": "訓練完成：+%s 經驗值",
     "IGUI_PZLinux_Training_InProgress": "進行中：%s",
     "IGUI_PZLinux_Training_StayHere": "留在此處以繼續訓練。離開後進度會暫停。",

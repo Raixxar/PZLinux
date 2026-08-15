@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788 Gewehr",
     "IGUI_PZLinux_Training_Title": "PZLinux Schulung",
     "IGUI_PZLinux_Training_Buy": "Starten",
+    "IGUI_PZLinux_Training_Cancel": "Abbrechen",
     "IGUI_PZLinux_Training_Completed": "Schulung abgeschlossen: +%s EP",
     "IGUI_PZLinux_Training_InProgress": "In Bearbeitung: %s",
     "IGUI_PZLinux_Training_StayHere": "Bleib hier, um weiter zu lernen. Der Fortschritt pausiert, wenn du gehst.",

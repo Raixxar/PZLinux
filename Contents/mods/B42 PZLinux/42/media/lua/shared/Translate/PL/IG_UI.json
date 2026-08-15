@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Karabin MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Szkolenie",
     "IGUI_PZLinux_Training_Buy": "Rozpocznij",
+    "IGUI_PZLinux_Training_Cancel": "Anuluj",
     "IGUI_PZLinux_Training_Completed": "Szkolenie ukończone: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "W trakcie: %s",
     "IGUI_PZLinux_Training_StayHere": "Zostań tutaj, aby kontynuować szkolenie. Postęp zatrzyma się, jeśli wyjdziesz.",

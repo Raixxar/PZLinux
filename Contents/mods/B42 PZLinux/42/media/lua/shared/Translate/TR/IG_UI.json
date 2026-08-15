@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788 Tüfek",
     "IGUI_PZLinux_Training_Title": "PZLinux Eğitim",
     "IGUI_PZLinux_Training_Buy": "Başlat",
+    "IGUI_PZLinux_Training_Cancel": "İptal",
     "IGUI_PZLinux_Training_Completed": "Eğitim tamamlandı: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "Devam ediyor: %s",
     "IGUI_PZLinux_Training_StayHere": "Eğitime devam etmek için burada kal. Ayrılırsan ilerleme duraklar.",

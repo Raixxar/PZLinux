@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Rifle MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Formación",
     "IGUI_PZLinux_Training_Buy": "Empezar",
+    "IGUI_PZLinux_Training_Cancel": "Cancelar",
     "IGUI_PZLinux_Training_Completed": "Formación completada: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "En curso: %s",
     "IGUI_PZLinux_Training_StayHere": "Quédate aquí para seguir formándote. El progreso se detiene si te vas.",

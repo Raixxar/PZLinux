@@ -113,31 +113,61 @@ function trainingUI:initialise()
     self.activeLabel:setVisible(false)
     self.topBar:addChild(self.activeLabel)
 
-    -- Offers view: up to 3 rows, only shown when nothing is in progress.
+    -- Offers view: up to 3 clickable "course card" rows, name and price/
+    -- duration stacked inside each one, only shown when nothing is in
+    -- progress. Clicking a card never spends money by itself -- it only
+    -- selects it (onSelectCourse); paying requires the separate Pay/
+    -- Cancel confirmation below, so a stray click on a card can never
+    -- charge the player by accident. From player feedback: wanted this to
+    -- look like Buy Goods' list of clickable rows, with an explicit
+    -- confirm/cancel step before any money moves.
     self.offerRows = {}
     for i = 1, 3 do
-        local yOffset = self.height * (0.34 + (i - 1) * 0.15)
+        local cardY = self.height * (0.30 + (i - 1) * 0.14)
+        local cardWidth = self.width * 0.57
+        local cardHeight = self.height * 0.12
 
-        local nameLabel = ISLabel:new(self.width * 0.20, yOffset, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
+        local card = ISButton:new(self.width * 0.20, cardY, cardWidth, cardHeight, "", self, self.onSelectCourse)
+        card.textColor = {r=0, g=1, b=0, a=1}
+        card.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        card.borderColor = {r=0, g=1, b=0, a=0.5}
+        card:initialise()
+        card:setVisible(false)
+        self.topBar:addChild(card)
+
+        local nameLabel = ISLabel:new(cardWidth * 0.04, cardHeight * 0.20, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
         nameLabel:initialise()
-        nameLabel:setVisible(false)
-        self.topBar:addChild(nameLabel)
+        card:addChild(nameLabel)
 
-        local detailLabel = ISLabel:new(self.width * 0.20, yOffset + self.height * 0.035, self.height * 0.022, "", 0.7, 0.7, 0.7, 1, UIFont.Small, true)
+        local detailLabel = ISLabel:new(cardWidth * 0.04, cardHeight * 0.55, self.height * 0.022, "", 0.7, 0.7, 0.7, 1, UIFont.Small, true)
         detailLabel:initialise()
-        detailLabel:setVisible(false)
-        self.topBar:addChild(detailLabel)
+        card:addChild(detailLabel)
 
-        local buyButton = ISButton:new(self.width * 0.63, yOffset, self.width * 0.14, self.height * 0.05, PZLinuxGetText("IGUI_PZLinux_Training_Buy"), self, self.onBuyCourse)
-        buyButton.textColor = {r=0, g=1, b=0, a=1}
-        buyButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
-        buyButton.borderColor = {r=0, g=1, b=0, a=0.5}
-        buyButton:initialise()
-        buyButton:setVisible(false)
-        self.topBar:addChild(buyButton)
-
-        self.offerRows[i] = { name = nameLabel, detail = detailLabel, button = buyButton }
+        self.offerRows[i] = { card = card, name = nameLabel, detail = detailLabel }
     end
+
+    -- Confirm step: only shown once a card above has actually been
+    -- clicked, one explicit "Pay" or "Cancel" away from spending money.
+    self.confirmLabel = ISLabel:new(self.width * 0.20, self.height * 0.75, self.height * 0.025, "", 0, 1, 0, 1, UIFont.Small, true)
+    self.confirmLabel:initialise()
+    self.confirmLabel:setVisible(false)
+    self.topBar:addChild(self.confirmLabel)
+
+    self.payButton = ISButton:new(self.width * 0.20, self.height * 0.81, self.width * 0.26, self.height * 0.06, PZLinuxGetText("IGUI_PZLinux_Training_Buy"), self, self.onPayCourse)
+    self.payButton.textColor = {r=0, g=1, b=0, a=1}
+    self.payButton.backgroundColor = {r=0, g=0.25, b=0, a=0.7}
+    self.payButton.borderColor = {r=0, g=1, b=0, a=1}
+    self.payButton:initialise()
+    self.payButton:setVisible(false)
+    self.topBar:addChild(self.payButton)
+
+    self.cancelButton = ISButton:new(self.width * 0.51, self.height * 0.81, self.width * 0.26, self.height * 0.06, PZLinuxGetText("IGUI_PZLinux_Training_Cancel"), self, self.onCancelSelection)
+    self.cancelButton.textColor = {r=1, g=0.4, b=0.4, a=1}
+    self.cancelButton.backgroundColor = {r=0.25, g=0, b=0, a=0.7}
+    self.cancelButton.borderColor = {r=0.6, g=0, b=0, a=1}
+    self.cancelButton:initialise()
+    self.cancelButton:setVisible(false)
+    self.topBar:addChild(self.cancelButton)
 
     self:refresh()
 end
@@ -177,10 +207,30 @@ function trainingUI:startTickLoop()
             if result and result.ok then
                 if result.completed then
                     self:stopTickLoop()
-                    getSoundManager():PlayWorldSound("levelup", false, player:getSquare(), 0, 20, 1, true)
+                    -- "GainExperienceLevel" is vanilla's own properly-scripted
+                    -- sound for actually leveling up a skill (Game/LevelUp,
+                    -- captioned "Level Up" in every language's subtitle
+                    -- settings). The plain string "levelup" instead resolves
+                    -- directly to media/sound/levelup.ogg/.wav, a leftover
+                    -- legacy asset (its old SoundBanks.lua alias is commented
+                    -- out) with a fuller fanfare mix including a vocal chant
+                    -- layer that doesn't match the rest of the game's actual
+                    -- level-up moments -- from player feedback, only the
+                    -- guitar sting vanilla itself uses was wanted here.
+                    getSoundManager():PlayWorldSound("GainExperienceLevel", false, player:getSquare(), 0, 20, 1, true)
                     HaloTextHelper.addGoodText(player, string.format(PZLinuxGetText("IGUI_PZLinux_Training_Completed"), tostring(result.xpGranted)))
+                    -- A completion response doesn't carry a fresh offers
+                    -- list (see PZLinuxTrainingApplyProgressTick) -- refresh
+                    -- from the server instead of applying it directly, so
+                    -- the just-finished course correctly disappears from
+                    -- the list right away instead of the panel still
+                    -- showing a stale, already-consumed card the player
+                    -- could click on.
+                    self.selectedOfferId = nil
+                    self:refresh()
+                else
+                    self:applyState(result)
                 end
-                self:applyState(result)
             end
         end)
     end
@@ -201,43 +251,101 @@ function trainingUI:applyState(state)
         self.progressBar:setProgress(self.currentActive.progress or 0)
         local percent = math.floor((self.currentActive.progress or 0) * 100)
         self.progressBar:setText(tostring(percent) .. "%")
-        -- PZLinuxTrainingResolveOffer comes from PZLinuxTrainingData.lua, a
-        -- shared file required by shared/ISPZLinuxVariablesTables.lua, so
-        -- it's already loaded client-side too -- no need to have the server
-        -- also echo the name key back in the active-course state.
-        local activeCourse = PZLinuxTrainingResolveOffer(self.currentActive.courseId)
-        local courseName = activeCourse and PZLinuxGetText(activeCourse.nameKey) or tostring(self.currentActive.courseId)
-        self.activeLabel:setName(string.format(PZLinuxGetText("IGUI_PZLinux_Training_InProgress"), courseName))
-        self.statusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Training_StayHere"))
 
-        for _, row in ipairs(self.offerRows) do
-            row.name:setVisible(false)
-            row.detail:setVisible(false)
-            row.button:setVisible(false)
+        -- The course name/label text never changes between ticks -- only
+        -- the progress bar above does -- so only rebuild it when the
+        -- active course itself changes (just started, or the panel
+        -- reopened mid-course), instead of re-resolving and re-formatting
+        -- the same translation on every ~500ms tick response. Re-looking
+        -- up a key whose translated string contains "%s" also makes the
+        -- game's own native Translator log a harmless but noisy
+        -- "Translator.reportMissingArgumentsFromPastAbuse" warning on
+        -- every single lookup (it defensively tries to format the raw
+        -- string itself before PZLinux's own gsub-based substitution ever
+        -- runs, see PZLinuxFormatText above) -- at twice a second for a
+        -- multi-hour course that's a lot of avoidable log noise, exactly
+        -- what the docker logs -f monitoring this mod added is meant to
+        -- stay clean for.
+        if self.activeLabelCourseId ~= self.currentActive.courseId then
+            self.activeLabelCourseId = self.currentActive.courseId
+            -- PZLinuxTrainingResolveOffer comes from PZLinuxTrainingData.lua,
+            -- a shared file required by shared/ISPZLinuxVariablesTables.lua,
+            -- so it's already loaded client-side too -- no need to have the
+            -- server also echo the name key back in the active-course state.
+            local activeCourse = PZLinuxTrainingResolveOffer(self.currentActive.courseId)
+            local courseName = activeCourse and PZLinuxGetText(activeCourse.nameKey) or tostring(self.currentActive.courseId)
+            self.activeLabel:setName(string.format(PZLinuxGetText("IGUI_PZLinux_Training_InProgress"), courseName))
+            self.statusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Training_StayHere"))
         end
+
+        self.selectedOfferId = nil
+        for _, row in ipairs(self.offerRows) do
+            row.card:setVisible(false)
+        end
+        self.confirmLabel:setVisible(false)
+        self.payButton:setVisible(false)
+        self.cancelButton:setVisible(false)
 
         self:startTickLoop()
     else
         self.progressBar:setVisible(false)
         self.activeLabel:setVisible(false)
+        self.activeLabelCourseId = nil
         self:stopTickLoop()
-        self.statusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Training_ChooseCourse"))
+        self:refreshOfferView()
+    end
+end
+
+-- Two sub-states, neither of which spends money on its own: a LIST of up
+-- to 3 clickable course cards (nothing selected yet), or a CONFIRM view
+-- for exactly the one card the player just clicked (every other card
+-- hidden, a recap line, and the actual Pay/Cancel buttons) -- paying
+-- always requires this explicit second step. Also called after every
+-- refresh() so a stale selection (the offer got bought/consumed
+-- elsewhere, or the week rolled over) safely falls back to the list
+-- instead of confirming a purchase that can no longer succeed.
+function trainingUI:refreshOfferView()
+    local selectedOffer = nil
+    if self.selectedOfferId then
+        for _, offer in ipairs(self.currentOffers) do
+            if offer.id == self.selectedOfferId then selectedOffer = offer end
+        end
+        if not selectedOffer then self.selectedOfferId = nil end
+    end
+
+    self.statusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Training_ChooseCourse"))
+
+    if selectedOffer then
+        for _, row in ipairs(self.offerRows) do
+            row.card:setVisible(row.card.internal == selectedOffer.id)
+        end
+
+        local courseName = PZLinuxGetText(selectedOffer.nameKey)
+        local detail = string.format(
+            PZLinuxGetText("IGUI_PZLinux_Training_Detail"),
+            tostring(selectedOffer.xp), tostring(selectedOffer.price), tostring(selectedOffer.durationHours))
+        self.confirmLabel:setName(courseName .. " - " .. detail)
+        self.confirmLabel:setVisible(true)
+        self.payButton:setVisible(true)
+        self.cancelButton:setVisible(true)
+    else
+        self.confirmLabel:setVisible(false)
+        self.payButton:setVisible(false)
+        self.cancelButton:setVisible(false)
 
         for i, row in ipairs(self.offerRows) do
             local offer = self.currentOffers[i]
             if offer then
+                row.card.internal = offer.id
+                row.card.borderColor = {r=0, g=1, b=0, a=0.5}
+                row.card.backgroundColor = {r=0, g=0, b=0, a=0.5}
                 row.name:setName(PZLinuxGetText(offer.nameKey))
                 row.detail:setName(string.format(
                     PZLinuxGetText("IGUI_PZLinux_Training_Detail"),
                     tostring(offer.xp), tostring(offer.price), tostring(offer.durationHours)))
-                row.button.internal = offer.id
-                row.name:setVisible(true)
-                row.detail:setVisible(true)
-                row.button:setVisible(true)
+                row.card:setVisible(true)
             else
-                row.name:setVisible(false)
-                row.detail:setVisible(false)
-                row.button:setVisible(false)
+                row.card:setVisible(false)
             end
         end
     end
@@ -254,17 +362,36 @@ function trainingUI:refresh()
     end)
 end
 
-function trainingUI:onBuyCourse(button)
+-- Selecting a card never spends money -- it only narrows the list down to
+-- the one card clicked and reveals the Pay/Cancel confirmation below it
+-- (refreshOfferView). Actually paying is a separate, explicit step
+-- (onPayCourse), so a stray click on a card can never charge the player.
+function trainingUI:onSelectCourse(button)
+    self.selectedOfferId = button.internal
+    self:refreshOfferView()
+end
+
+function trainingUI:onCancelSelection(_button)
+    self.selectedOfferId = nil
+    self:refreshOfferView()
+end
+
+function trainingUI:onPayCourse(button)
     local player = PZLinuxGetPlayer(self.player)
     if not player then return end
+    local offerId = self.selectedOfferId
+    if not offerId then return end
 
     if button.setEnable then button:setEnable(false) end
-    PZLinuxRequestTrainingPurchase(player, button.internal, function(result)
+    if self.cancelButton and self.cancelButton.setEnable then self.cancelButton:setEnable(false) end
+    PZLinuxRequestTrainingPurchase(player, offerId, function(result)
         if button.setEnable then button:setEnable(true) end
+        if self.cancelButton and self.cancelButton.setEnable then self.cancelButton:setEnable(true) end
         if self.isClosing then return end
 
         if result and result.ok then
             getSoundManager():PlayWorldSound("keyboard1", false, player:getSquare(), 0, 20, 1, true)
+            self.selectedOfferId = nil
             self:applyState(result)
         else
             getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true)

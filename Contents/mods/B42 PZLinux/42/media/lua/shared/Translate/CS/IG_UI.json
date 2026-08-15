@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Puška MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Výcvik",
     "IGUI_PZLinux_Training_Buy": "Začít",
+    "IGUI_PZLinux_Training_Cancel": "Zrušit",
     "IGUI_PZLinux_Training_Completed": "Výcvik dokončen: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "Probíhá: %s",
     "IGUI_PZLinux_Training_StayHere": "Zůstaňte zde, abyste pokračovali ve výcviku. Postup se pozastaví, pokud odejdete.",

@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Винтовка MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Обучение",
     "IGUI_PZLinux_Training_Buy": "Начать",
+    "IGUI_PZLinux_Training_Cancel": "Отмена",
     "IGUI_PZLinux_Training_Completed": "Обучение завершено: +%s опыта",
     "IGUI_PZLinux_Training_InProgress": "В процессе: %s",
     "IGUI_PZLinux_Training_StayHere": "Оставайтесь здесь, чтобы продолжить обучение. Прогресс приостанавливается, если вы уйдёте.",

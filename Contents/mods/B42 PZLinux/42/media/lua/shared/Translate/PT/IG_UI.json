@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Espingarda MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Formação",
     "IGUI_PZLinux_Training_Buy": "Iniciar",
+    "IGUI_PZLinux_Training_Cancel": "Cancelar",
     "IGUI_PZLinux_Training_Completed": "Formação concluída: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "Em curso: %s",
     "IGUI_PZLinux_Training_StayHere": "Fica aqui para continuar a formação. O progresso pausa se saíres.",

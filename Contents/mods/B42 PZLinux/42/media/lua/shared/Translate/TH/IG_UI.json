@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "ปืนไรเฟิล MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux การฝึกอบรม",
     "IGUI_PZLinux_Training_Buy": "เริ่ม",
+    "IGUI_PZLinux_Training_Cancel": "ยกเลิก",
     "IGUI_PZLinux_Training_Completed": "ฝึกอบรมเสร็จสิ้น: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "กำลังดำเนินการ: %s",
     "IGUI_PZLinux_Training_StayHere": "อยู่ที่นี่เพื่อฝึกอบรมต่อ ความคืบหน้าจะหยุดชั่วคราวหากคุณออกไป",

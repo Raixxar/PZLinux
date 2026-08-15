@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788ライフル",
     "IGUI_PZLinux_Training_Title": "PZLinux トレーニング",
     "IGUI_PZLinux_Training_Buy": "開始",
+    "IGUI_PZLinux_Training_Cancel": "キャンセル",
     "IGUI_PZLinux_Training_Completed": "トレーニング完了：+%s XP",
     "IGUI_PZLinux_Training_InProgress": "進行中：%s",
     "IGUI_PZLinux_Training_StayHere": "トレーニングを続けるにはここに留まってください。離れると進行が停止します。",

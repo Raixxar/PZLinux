@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788 Geweer",
     "IGUI_PZLinux_Training_Title": "PZLinux Training",
     "IGUI_PZLinux_Training_Buy": "Starten",
+    "IGUI_PZLinux_Training_Cancel": "Annuleren",
     "IGUI_PZLinux_Training_Completed": "Training voltooid: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "Bezig: %s",
     "IGUI_PZLinux_Training_StayHere": "Blijf hier om door te gaan met trainen. De voortgang pauzeert als je weggaat.",

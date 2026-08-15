@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "Fusil MSR788",
     "IGUI_PZLinux_Training_Title": "PZLinux Formation",
     "IGUI_PZLinux_Training_Buy": "Démarrer",
+    "IGUI_PZLinux_Training_Cancel": "Annuler",
     "IGUI_PZLinux_Training_Completed": "Formation terminée : +%s XP",
     "IGUI_PZLinux_Training_InProgress": "En cours : %s",
     "IGUI_PZLinux_Training_StayHere": "Reste ici pour continuer la formation. La progression se met en pause si tu pars.",

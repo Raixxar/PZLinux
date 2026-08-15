@@ -537,6 +537,7 @@
     "IGUI_PZLinux_ContractPart_HuntingRifle": "MSR788 puska",
     "IGUI_PZLinux_Training_Title": "PZLinux Képzés",
     "IGUI_PZLinux_Training_Buy": "Indítás",
+    "IGUI_PZLinux_Training_Cancel": "Mégse",
     "IGUI_PZLinux_Training_Completed": "Képzés befejezve: +%s XP",
     "IGUI_PZLinux_Training_InProgress": "Folyamatban: %s",
     "IGUI_PZLinux_Training_StayHere": "Maradj itt a képzés folytatásához. A haladás megáll, ha elmész.",
