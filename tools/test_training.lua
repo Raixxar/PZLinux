@@ -347,6 +347,8 @@ local trainingKeys = {
     "IGUI_PZLinux_Training_Completed",
     "IGUI_PZLinux_Training_InProgress", "IGUI_PZLinux_Training_StayHere", "IGUI_PZLinux_Training_ChooseCourse",
     "IGUI_PZLinux_Training_Detail", "IGUI_PZLinux_Training_AlreadyInProgress",
+    "IGUI_PZLinux_Training_NotEnoughMoney", "IGUI_PZLinux_Training_CourseNoLongerAvailable",
+    "IGUI_PZLinux_Training_PurchaseFailed",
     "IGUI_PZLinux_Training_Electricity", "IGUI_PZLinux_Training_Mechanics", "IGUI_PZLinux_Training_Cooking",
     "IGUI_PZLinux_Training_Farming", "IGUI_PZLinux_Training_Woodwork", "IGUI_PZLinux_Training_Metalworking",
     "IGUI_PZLinux_Training_Tailoring", "IGUI_PZLinux_Training_FirstAid", "IGUI_PZLinux_Training_Fishing",

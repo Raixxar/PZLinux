@@ -33,13 +33,22 @@ local function extractMethod(name, params)
     return assert(loadstring(transformed))()
 end
 
+-- PZLinuxTrainingFormat (the real "{1}"-style substitution helper, used
+-- instead of native getText()+"%s" specifically to avoid triggering the
+-- game's own Translator warning/exception on every lookup -- see its own
+-- comment at the top of PZLinuxTraining.lua) is a plain module-local
+-- function, not one of trainingUI's methods -- extract and register it as
+-- a global too, since refreshOfferView calls it by bare name.
+local formatBlock = source:match("local function PZLinuxTrainingFormat.-\nend\n"):gsub("^local function", "function", 1)
+assert(loadstring(formatBlock))()
+
 local refreshOfferView = extractMethod("refreshOfferView", "")
 local onSelectCourse = extractMethod("onSelectCourse", "button")
 local onCancelSelection = extractMethod("onCancelSelection", "_button")
 
 PZLinuxGetText = function(key)
     if key == "IGUI_PZLinux_Training_Detail" then
-        return "+%s XP - $%s - about %s in-game hours"
+        return "+{1} XP - ${2} - about {3} in-game hours"
     end
     return key
 end

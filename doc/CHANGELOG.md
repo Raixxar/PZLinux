@@ -2,6 +2,34 @@
 
 ## [1.0.10]
 
+- Fixed a player-reported bug in Training: a player with $100,000 in their
+  bank account was told they didn't have enough money to buy an $80,000
+  course. Root cause: onPayCourse showed the same hardcoded "not enough
+  money" message for EVERY purchase failure other than
+  "training_in_progress", regardless of the real reason -- most likely an
+  "invalid_course" rejection (the offer clicked was no longer valid
+  server-side, e.g. the week rolled over or it got consumed between
+  refreshes) had nothing to do with the player's balance at all. Every
+  real server error now maps to its own honest message instead of one
+  wrong catch-all claim: not_enough_money still says exactly that,
+  invalid_course clears the stale selection and resyncs the list from the
+  server automatically (instead of leaving a phantom card the player
+  could keep retrying forever), and any other/unexpected error falls back
+  to a generic "purchase failed, try again" rather than blaming money.
+- Fixed a player-reported performance bug in Training: clicking a course
+  card sometimes appeared to do nothing, needing several clicks to
+  register. Root cause: same underlying native-Translator behavior as the
+  In Progress log-spam fix above, but far more frequent here -- rendering
+  the offer list calls the game's own getText() on a "%s"-containing
+  string once per card (up to 3 times) on every click (selecting a card,
+  cancelling back to the list, a fresh refresh), and 3 real Java
+  exceptions thrown, caught and logged back to back on the same thread
+  was enough to cause a visible client hitch. Training's own
+  placeholder-bearing keys (Detail, InProgress, Completed) now use
+  "{1}"/"{2}"/"{3}" instead of "%s" -- the native lookup never sees a
+  percent sign to trip over in the first place, while PZLinux's own
+  substitution (still entirely in Lua, via a small new
+  PZLinuxTrainingFormat helper) works exactly as before.
 - Redesigned Training's offer list to match Buy Goods' clickable-row
   interaction instead of a name/detail label pair sitting next to its own
   small "Start" button: each of the 3 weekly offers is now a full

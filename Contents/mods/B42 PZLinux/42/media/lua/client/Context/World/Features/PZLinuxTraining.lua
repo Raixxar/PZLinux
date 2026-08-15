@@ -8,6 +8,30 @@
 -- age hours), not real wall-clock time, and why the server -- not the
 -- client -- is the one measuring it.
 
+-- PZLinux's own %s-substitution convention (PZLinuxFormatText,
+-- ISPZLinuxVariablesTables.lua) still has a real client-side cost here:
+-- the game's own native Translator unconditionally tries to format any
+-- translated string that contains a raw "%s" the moment getText(key)
+-- resolves it, even though PZLinux always does its own substitution
+-- afterward in Lua -- throwing (and catching, and logging) a genuine Java
+-- exception on every single lookup either way. That was tolerable for a
+-- label only rebuilt on real state changes, but this panel's offer list
+-- calls it once per card (up to 3 times) on every click -- selecting a
+-- card, cancelling back to the list, a fresh refresh -- and 3 synchronous
+-- Java exceptions back to back was a real, player-visible hitch, reported
+-- as "sometimes nothing happens when I click, I need to click again."
+-- Training's own placeholder-bearing keys (Detail, InProgress, Completed)
+-- use "{1}"/"{2}"/"{3}" instead of "%s" so the native lookup never even
+-- sees a percent sign to trip over -- substitution still happens entirely
+-- in Lua, exactly like PZLinuxFormatText already does for "%s" elsewhere.
+local function PZLinuxTrainingFormat(template, ...)
+    local values = { ... }
+    for index = 1, select("#", ...) do
+        template = template:gsub("{" .. index .. "}", tostring(values[index] or ""), 1)
+    end
+    return template
+end
+
 trainingUI = ISPanel:derive("trainingUI")
 
 -- CONSTRUCTOR
@@ -223,7 +247,7 @@ function trainingUI:startTickLoop()
                     -- level-up moments -- from player feedback, only the
                     -- guitar sting vanilla itself uses was wanted here.
                     getSoundManager():PlayWorldSound("GainExperienceLevel", false, player:getSquare(), 0, 20, 1, true)
-                    HaloTextHelper.addGoodText(player, string.format(PZLinuxGetText("IGUI_PZLinux_Training_Completed"), tostring(result.xpGranted)))
+                    HaloTextHelper.addGoodText(player, PZLinuxTrainingFormat(PZLinuxGetText("IGUI_PZLinux_Training_Completed"), result.xpGranted))
                     -- A completion response doesn't carry a fresh offers
                     -- list (see PZLinuxTrainingApplyProgressTick) -- refresh
                     -- from the server instead of applying it directly, so
@@ -261,16 +285,11 @@ function trainingUI:applyState(state)
         -- the progress bar above does -- so only rebuild it when the
         -- active course itself changes (just started, or the panel
         -- reopened mid-course), instead of re-resolving and re-formatting
-        -- the same translation on every ~500ms tick response. Re-looking
-        -- up a key whose translated string contains "%s" also makes the
-        -- game's own native Translator log a harmless but noisy
-        -- "Translator.reportMissingArgumentsFromPastAbuse" warning on
-        -- every single lookup (it defensively tries to format the raw
-        -- string itself before PZLinux's own gsub-based substitution ever
-        -- runs, see PZLinuxFormatText above) -- at twice a second for a
-        -- multi-hour course that's a lot of avoidable log noise, exactly
-        -- what the docker logs -f monitoring this mod added is meant to
-        -- stay clean for.
+        -- the same translation on every ~500ms tick response. Cheap either
+        -- way now that InProgress uses "{1}" instead of "%s" (see
+        -- PZLinuxTrainingFormat at the top of this file), but there is
+        -- still no reason to redo the same lookup+string-build twice a
+        -- second for text that never actually changes.
         if self.activeLabelCourseId ~= self.currentActive.courseId then
             self.activeLabelCourseId = self.currentActive.courseId
             -- PZLinuxTrainingResolveOffer comes from PZLinuxTrainingData.lua,
@@ -279,7 +298,7 @@ function trainingUI:applyState(state)
             -- server also echo the name key back in the active-course state.
             local activeCourse = PZLinuxTrainingResolveOffer(self.currentActive.courseId)
             local courseName = activeCourse and PZLinuxGetText(activeCourse.nameKey) or tostring(self.currentActive.courseId)
-            self.activeLabel:setName(string.format(PZLinuxGetText("IGUI_PZLinux_Training_InProgress"), courseName))
+            self.activeLabel:setName(PZLinuxTrainingFormat(PZLinuxGetText("IGUI_PZLinux_Training_InProgress"), courseName))
             self.statusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Training_StayHere"))
         end
 
@@ -329,9 +348,9 @@ function trainingUI:refreshOfferView()
         end
 
         local courseName = PZLinuxGetText(selectedOffer.nameKey)
-        local detail = string.format(
+        local detail = PZLinuxTrainingFormat(
             PZLinuxGetText("IGUI_PZLinux_Training_Detail"),
-            tostring(selectedOffer.xp), tostring(selectedOffer.price), tostring(selectedOffer.durationHours))
+            selectedOffer.xp, selectedOffer.price, selectedOffer.durationHours)
         self.confirmLabel:setName(courseName .. " - " .. detail)
         self.confirmLabel:setVisible(true)
         self.payButton:setVisible(true)
@@ -348,9 +367,9 @@ function trainingUI:refreshOfferView()
                 row.card.borderColor = {r=0, g=1, b=0, a=0.5}
                 row.card.backgroundColor = {r=0, g=0, b=0, a=0.5}
                 row.name:setName(PZLinuxGetText(offer.nameKey))
-                row.detail:setName(string.format(
+                row.detail:setName(PZLinuxTrainingFormat(
                     PZLinuxGetText("IGUI_PZLinux_Training_Detail"),
-                    tostring(offer.xp), tostring(offer.price), tostring(offer.durationHours)))
+                    offer.xp, offer.price, offer.durationHours))
                 row.card:setVisible(true)
             else
                 row.card:setVisible(false)
@@ -403,10 +422,26 @@ function trainingUI:onPayCourse(button)
             self:applyState(result)
         else
             getSoundManager():PlayWorldSound("error", false, player:getSquare(), 0, 20, 1, true)
-            if result and result.error == "training_in_progress" then
+            -- Show the REAL reason instead of always blaming money -- a
+            -- hardcoded "not enough money" for every failure was actively
+            -- misleading (a player reported having $100,000 and still
+            -- being refused an $80,000 course: the real reason was an
+            -- offer that was no longer valid, not their balance).
+            local errorCode = result and result.error
+            if errorCode == "training_in_progress" then
                 HaloTextHelper.addBadText(player, PZLinuxGetText("IGUI_PZLinux_Training_AlreadyInProgress"))
+            elseif errorCode == "not_enough_money" then
+                HaloTextHelper.addBadText(player, PZLinuxGetText("IGUI_PZLinux_Training_NotEnoughMoney"))
+            elseif errorCode == "invalid_course" then
+                -- The offer clicked is no longer valid server-side (bought
+                -- out from under the player, or the week rolled over
+                -- between refreshes) -- resync the list instead of leaving
+                -- a phantom card the player could keep retrying forever.
+                self.selectedOfferId = nil
+                HaloTextHelper.addBadText(player, PZLinuxGetText("IGUI_PZLinux_Training_CourseNoLongerAvailable"))
+                self:refresh()
             else
-                HaloTextHelper.addBadText(player, "I need money in my bank account")
+                HaloTextHelper.addBadText(player, PZLinuxGetText("IGUI_PZLinux_Training_PurchaseFailed"))
             end
         end
     end)
