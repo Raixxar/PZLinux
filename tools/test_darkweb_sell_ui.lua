@@ -49,6 +49,12 @@ end
 -- price/stock line, mirroring Buy's own offerTooltip pattern.
 PZLinuxTestAssert(onSellBlock:find("local sellTooltip = item.name .. \"\\n\" .. priceText", 1, true),
     "the Sell tooltip must combine the full item name and the price/stock line")
+PZLinuxTestAssert(onSellBlock:find("nameMaxWidth = math.max(40, quantityX - labelNameX - 8)", 1, true),
+    "the Sell text column must stop before the quantity field")
+PZLinuxTestAssert(onSellBlock:find("yOffset + labelNameY + 15", 1, true),
+    "the Sell price and stock must use a dedicated second line below the item name")
+PZLinuxTestAssert(onSellBlock:find("buttonX = self.scrollPanel.width - buttonWidth - 23", 1, true),
+    "the Sell controls must be anchored to the visible scroll-panel width")
 
 PZLinuxTestAssert(onSellBlock:find("IGUI_PZLinux_DarkWeb_NoSellableItems", 1, true),
     "an empty Sell inventory must display an explicit localized message")

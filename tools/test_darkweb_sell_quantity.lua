@@ -37,7 +37,7 @@ end
 -- ---------------------------------------------------------------------
 
 local clientSource = readFile(luaRoot .. "/client/Context/World/Features/PZLinuxDarkWeb.lua")
-PZLinuxTestAssert(clientSource:find('ISTextEntryBox:new("0", quantityX, yOffset, quantityWidth', 1, true),
+PZLinuxTestAssert(clientSource:find('ISTextEntryBox:new("0", quantityX, controlY, quantityWidth', 1, true),
     "the Sell quantity box must default to \"0\"")
 PZLinuxTestAssert(clientSource:find("if quantity < 1 then return end", 1, true),
     "onSellItem must refuse to act at all when the chosen quantity is 0")

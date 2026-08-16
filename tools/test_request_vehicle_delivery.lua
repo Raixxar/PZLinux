@@ -29,6 +29,9 @@ end
 
 local source = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
 local requestUiSource = PZLinuxTestRead(luaRoot .. "/client/Context/World/Features/PZLinuxRequest.lua")
+local identitySource = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxIdentity.lua")
+PZLinuxTestAssert(not identitySource:find(":getSqlId%(") and not identitySource:find(":getSqlID%("),
+    "vehicle Request commands must not be interrupted by missing reflected SQL identity accessors")
 local applyOrderStart = assert(source:find("function PZLinuxRequestsApplyOrder", 1, true))
 local applyOrderEnd = assert(source:find("function PZLinuxRequestsApplyDelivery", applyOrderStart, true))
 local applyOrderSource = source:sub(applyOrderStart, applyOrderEnd - 1)

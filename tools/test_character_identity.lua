@@ -13,6 +13,12 @@ local function PZLinuxTestAssert(condition, message)
     if not condition then error(message, 2) end
 end
 
+local identitySource = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxIdentity.lua")
+local avoidsReflectedSqlAccessors = not identitySource:find(":getSqlId%(")
+    and not identitySource:find(":getSqlID%(")
+PZLinuxTestAssert(avoidsReflectedSqlAccessors,
+    "identity lookup must not invoke missing reflected SQL accessors through pcall")
+
 local globalModData = {}
 ModData = {
     getOrCreate = function(key)
@@ -51,7 +57,7 @@ PZLinuxNormalizeMoney = function(value) return math.max(0, math.floor(tonumber(v
 PZLinuxGetStartingBalanceMin = function() return 500 end
 PZLinuxGetStartingBalanceMax = function() return 500 end
 
-assert(loadstring(PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxIdentity.lua")))()
+assert(loadstring(identitySource))()
 assert(loadstring(PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")))()
 
 local shared = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")

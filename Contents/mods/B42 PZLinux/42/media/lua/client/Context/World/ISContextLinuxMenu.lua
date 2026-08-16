@@ -2,7 +2,11 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.11"
+local PZLinuxVersion = "v1.0.12"
+
+local function PZLinuxMainShowConnectRequired(ui)
+    ui.promptLabel:setName(PZLinuxGetText("IGUI_PZLinux_Main_ConnectFirst"))
+end
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -78,7 +82,9 @@ function linuxUI:initialise()
     self.topBar:addChild(self.bootOutput)
 
     -- PROMPT CLI
-    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025, "Welcome to PZLinux " .. PZLinuxVersion .. ".", 0, 1, 0, 1, UIFont.Small, true)
+    self.promptLabel = ISLabel:new(self.width * 0.20, self.height * 0.195, self.height * 0.025,
+        PZLinuxFormatText("IGUI_PZLinux_Main_Welcome", "Welcome to PZLinux %s.", PZLinuxVersion),
+        0, 1, 0, 1, UIFont.Small, true)
     self.promptLabel:setVisible(false)
     self.promptLabel:initialise()
     self.topBar:addChild(self.promptLabel)
@@ -88,21 +94,24 @@ function linuxUI:initialise()
     self.helpLabel:initialise()
     self.topBar:addChild(self.helpLabel)
 
-    self.notConnectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05, self.height * 0.025, "NOT CONNECTED", self, self.onNetworkStatus)
+    self.notConnectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_NotConnected"), self, self.onNetworkStatus)
     self.notConnectButton.backgroundColor = {r=0.5, g=0, b=0, a=0.5}
     self.notConnectButton.borderColor = {r=0, g=0, b=0, a=1}
     self.notConnectButton:setVisible(true)
     self.notConnectButton:initialise()
     self.topBar:addChild(self.notConnectButton)
 
-    self.connectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05, self.height * 0.025, "CONNECTED", self, self.onNetworkStatus)
+    self.connectButton = ISButton:new(self.width * 0.20, self.height * 0.17, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Connected"), self, self.onNetworkStatus)
     self.connectButton.backgroundColor = {r=0, g=0.5, b=0, a=0.5}
     self.connectButton.borderColor = {r=0, g=0, b=0, a=1}
     self.connectButton:setVisible(false)
     self.connectButton:initialise()
     self.topBar:addChild(self.connectButton)
 
-    self.internetButton = ISButton:new(self.width * 0.20, self.height * 0.23, self.width * 0.05, self.height * 0.025, "CONNECT", self, self.onInternet)
+    self.internetButton = ISButton:new(self.width * 0.20, self.height * 0.23, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Connect"), self, self.onInternet)
     self.internetButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.internetButton.textColor = {r=0, g=1, b=0, a=1}
     self.internetButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -125,7 +134,8 @@ function linuxUI:initialise()
         end
     end
 
-    self.darkWebButton = ISButton:new(self.width * 0.20, self.height * 0.26, self.width * 0.05, self.height * 0.025, "DARK WEB", self, self.onDarkWeb)
+    self.darkWebButton = ISButton:new(self.width * 0.20, self.height * 0.26, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_DarkWeb"), self, self.onDarkWeb)
     self.darkWebButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.darkWebButton.textColor = {r=0, g=1, b=0, a=1}
     self.darkWebButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -133,7 +143,8 @@ function linuxUI:initialise()
     self.darkWebButton:initialise()
     self.topBar:addChild(self.darkWebButton)
 
-    self.tradingButton = ISButton:new(self.width * 0.20, self.height * 0.29, self.width * 0.05, self.height * 0.025, "TRADING", self, self.onTrading)
+    self.tradingButton = ISButton:new(self.width * 0.20, self.height * 0.29, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Trading"), self, self.onTrading)
     self.tradingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.tradingButton.textColor = {r=0, g=1, b=0, a=1}
     self.tradingButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -141,7 +152,8 @@ function linuxUI:initialise()
     self.tradingButton:initialise()
     self.topBar:addChild(self.tradingButton)
 
-    self.walletButton = ISButton:new(self.width * 0.20, self.height * 0.32, self.width * 0.05, self.height * 0.025, "WALLET", self, self.onWallet)
+    self.walletButton = ISButton:new(self.width * 0.20, self.height * 0.32, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Wallet"), self, self.onWallet)
     self.walletButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.walletButton.textColor = {r=0, g=1, b=0, a=1}
     self.walletButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -149,7 +161,8 @@ function linuxUI:initialise()
     self.walletButton:initialise()
     self.topBar:addChild(self.walletButton)
 
-    self.hackingIdButton = ISButton:new(self.width * 0.20, self.height * 0.35, self.width * 0.05, self.height * 0.025, "HACK A CREDIT CARD", self, self.onHackingId)
+    self.hackingIdButton = ISButton:new(self.width * 0.20, self.height * 0.35, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_HackCard"), self, self.onHackingId)
     self.hackingIdButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.hackingIdButton.textColor = {r=0, g=1, b=0, a=1}
     self.hackingIdButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -157,7 +170,8 @@ function linuxUI:initialise()
     self.hackingIdButton:initialise()
     self.topBar:addChild(self.hackingIdButton)
 
-    self.contractsButton = ISButton:new(self.width * 0.20, self.height * 0.38, self.width * 0.05, self.height * 0.025, "CONTRACTS", self, self.onContracts)
+    self.contractsButton = ISButton:new(self.width * 0.20, self.height * 0.38, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Contracts"), self, self.onContracts)
     self.contractsButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.contractsButton.textColor = {r=0, g=1, b=0, a=1}
     self.contractsButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -165,7 +179,8 @@ function linuxUI:initialise()
     self.contractsButton:initialise()
     self.topBar:addChild(self.contractsButton)
 
-    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05, self.height * 0.025, "BUY GOODS", self, self.onRequest)
+    self.requestButton = ISButton:new(self.width * 0.20, self.height * 0.41, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_BuyGoods"), self, self.onRequest)
     self.requestButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.requestButton.textColor = {r=0, g=1, b=0, a=1}
     self.requestButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -184,7 +199,8 @@ function linuxUI:initialise()
     self.sellButton:initialise()
     self.topBar:addChild(self.sellButton)
 
-    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05, self.height * 0.025, "ONLINE BETTING", self, self.onBetting)
+    self.bettingButton = ISButton:new(self.width * 0.20, self.height * 0.47, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_OnlineBetting"), self, self.onBetting)
     self.bettingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.bettingButton.textColor = {r=0, g=1, b=0, a=1}
     self.bettingButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -192,7 +208,8 @@ function linuxUI:initialise()
     self.bettingButton:initialise()
     self.topBar:addChild(self.bettingButton)
 
-    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05, self.height * 0.025, "MAIL", self, self.onMail)
+    self.mailButton = ISButton:new(self.width * 0.20, self.height * 0.50, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Mail"), self, self.onMail)
     self.mailButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.mailButton.textColor = {r=0, g=1, b=0, a=1}
     self.mailButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -208,7 +225,8 @@ function linuxUI:initialise()
     self.reputationButton:initialise()
     self.topBar:addChild(self.reputationButton)
 
-    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.56, self.width * 0.05, self.height * 0.025, "CHECK CONDITION", self, self.onCondition)
+    self.conditionButton = ISButton:new(self.width * 0.20, self.height * 0.56, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_CheckCondition"), self, self.onCondition)
     self.conditionButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.conditionButton.textColor = {r=0, g=1, b=0, a=1}
     self.conditionButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -216,7 +234,8 @@ function linuxUI:initialise()
     self.conditionButton:initialise()
     self.topBar:addChild(self.conditionButton)
 
-    self.trainingButton = ISButton:new(self.width * 0.20, self.height * 0.59, self.width * 0.05, self.height * 0.025, "TRAINING", self, self.onTraining)
+    self.trainingButton = ISButton:new(self.width * 0.20, self.height * 0.59, self.width * 0.05,
+        self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Main_Training"), self, self.onTraining)
     self.trainingButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.trainingButton.textColor = {r=0, g=1, b=0, a=1}
     self.trainingButton.borderColor = {r=0, g=0, b=0, a=0}
@@ -382,7 +401,7 @@ function linuxUI:onDarkWeb()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 3
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -396,7 +415,7 @@ function linuxUI:onTrading()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 4
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -410,7 +429,7 @@ function linuxUI:onWallet()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 5
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -424,7 +443,7 @@ function linuxUI:onHackingId()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 6
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -438,7 +457,7 @@ function linuxUI:onContracts()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 7
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -452,7 +471,7 @@ function linuxUI:onRequest()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 8
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -466,7 +485,7 @@ function linuxUI:onBetting()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 9
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -480,7 +499,7 @@ function linuxUI:onMail()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 10
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -494,7 +513,7 @@ function linuxUI:onReputation()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 11
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -518,7 +537,7 @@ function linuxUI:onSell()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 12
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 
@@ -532,7 +551,7 @@ function linuxUI:onTraining()
         if not modData then return end
         modData.PZLinuxUIOpenMenu = 13
     else
-        self.promptLabel:setName("You need to connect first. Click on 'CONNECT'")
+        PZLinuxMainShowConnectRequired(self)
     end
 end
 

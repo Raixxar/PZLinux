@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.0.12]
+
+- Fixed a Build 42.20 server compatibility regression in persistent character
+  identity lookup. The mod no longer probes the nonexistent reflected Java
+  methods `IsoPlayer.getSqlId()` and `IsoPlayer.getSqlID()`; it reads the native
+  `sqlId` field and keeps the descriptor ID as its portable fallback.
+- Restored the complete server-authoritative command path for all 13 contracts.
+  The identity exception could interrupt board access, preview, acceptance,
+  synchronization, cancellation, deposits, world objectives and completion;
+  Manhunt and Cargo made the failure especially visible because their nearby
+  objectives could never reach the normal spawn path.
+- Restored Request vehicle ordering, nearby server spawn and client visibility
+  confirmation when the authoritative bank ledger is enabled. Vehicle delivery
+  IDs, server-side duplicate detection, synchronized keys and retry behavior are
+  unchanged and remain active in solo and multiplayer.
+- Added release regressions that require the complete 13-contract catalog and
+  prevent contract or vehicle paths from reintroducing invalid SQL accessor
+  probes.
+- Localized the interactive main computer menu across all 20 supported
+  languages, including Simplified and Traditional Chinese. Network status,
+  feature buttons, the welcome line and the connection warning no longer use
+  hardcoded English; the period-appropriate boot sequence intentionally
+  remains in English.
+- Added a regression test that rejects hardcoded English feature labels in the
+  main computer menu. The translation audit now validates 599 keys per locale.
+- Aligned Dark Web Sell rows with Buy rows: item names now use the first line,
+  price and available stock use a dedicated second line, and quantity plus the
+  localized Sell button are anchored from the scroll panel's right edge. Stock
+  therefore remains visible instead of being covered by the quantity field.
+
 ## [1.0.11]
 
 - Added a server-bound persistent character identity, backed by Project

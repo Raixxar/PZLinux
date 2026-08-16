@@ -1,8 +1,28 @@
-[h1]PZLinux 1.0.11[/h1]
+[h1]PZLinux 1.0.12[/h1]
 
-PZLinux 1.0.11 focuses on reliable deliveries and mailbox transactions in
-single-player, hosted multiplayer and dedicated servers running Project
+PZLinux 1.0.12 fixes contract and requested-vehicle server commands while
+retaining the reliable deliveries and mailbox transactions introduced in
+the previous release. It supports single-player, hosted multiplayer and
+dedicated servers running Project
 Zomboid Build 42.20 or newer.
+
+[h2]Contracts And Requested Vehicles[/h2]
+
+[list]
+[*] Removed calls to nonexistent Build 42.20 SQL identity accessors that could
+interrupt server commands while loading a player's authoritative bank balance.
+[*] Restored board, acceptance, synchronization, cancellation, deposits, world
+objectives and completion for all 13 contracts. This notably restores the
+normal nearby spawn path used by Manhunt and Cargo.
+[*] Restored Buy Goods vehicle ordering, nearby server spawn and client
+visibility confirmation. Persistent delivery IDs still prevent duplicate
+vehicles and keys across retries or reconnects.
+[*] Translated the interactive main computer menu in all 20 supported
+languages, including Simplified and Traditional Chinese. The boot sequence
+remains intentionally in English.
+[*] Matched Dark Web Sell rows to the Buy layout so price and available stock
+remain readable beside the quantity and Sell controls in every language.
+[/list]
 
 [h2]Persistent Deliveries[/h2]
 
@@ -77,7 +97,7 @@ supported language catalogs, including Simplified Chinese.
 
 [h2]Compatibility[/h2]
 
-PZLinux 1.0.11 retains the B42_PZLinux mod ID and existing player/world ModData.
+PZLinux 1.0.12 retains the B42_PZLinux mod ID and existing player/world ModData.
 It remains compatible with single-player, hosted multiplayer and dedicated
 servers on Project Zomboid Build 42.20 and newer Build 42 versions. No additional
 mod dependency is required.

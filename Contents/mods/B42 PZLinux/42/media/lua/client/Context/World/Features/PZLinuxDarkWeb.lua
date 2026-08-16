@@ -614,7 +614,7 @@ function darkWebUI:onSell()
     self.transactionBtns = {}
     self.transactionQtysSell = {}
 
-    local rowHeight = self.height * 0.045
+    local rowHeight = math.max(38, self.height * 0.05)
     local totalHeight = 100 * rowHeight + 10
     self.scrollPanel:setScrollHeight(totalHeight)
     self.scrollPanel.onMouseWheel = function(self, del)
@@ -625,29 +625,34 @@ function darkWebUI:onSell()
         return false
     end
 
-    -- Same idea as Buy's offerTextWidths (onBuy above): the name column
-    -- has a fixed gap to work with before the price column starts, so a
-    -- long item name needs to be truncated instead of running into (or
-    -- past) the price/stock text next to it.
-    local nameMaxWidth = math.max(40, (self.width * 0.35) - (self.width * 0.059) - 10)
+    local labelNameX = self.width * 0.059
+    local buttonTextWidth = PZLinuxDarkWebTextWidth(PZLinuxGetText("IGUI_PZLinux_DarkWeb_Sell"))
+    local buttonWidth = math.min(self.scrollPanel.width * 0.25, math.max(58, buttonTextWidth + 16))
+    local buttonHeight = self.height * 0.025
+    local quantityWidth = math.max(32, self.width * 0.035)
+    local buttonX = self.scrollPanel.width - buttonWidth - 23
+    local quantityX = buttonX - quantityWidth - 5
+    local nameMaxWidth = math.max(40, quantityX - labelNameX - 8)
 
     local yOffset = 0
     for _, item in ipairs(itemsToSell) do
+        local labelNameY = math.max(0, (rowHeight - 30) / 2)
         local itemIcon
         if item.icon then
-            itemIcon = ISImage:new(self.width * 0.01, yOffset, 20, 20, item.icon)
+            itemIcon = ISImage:new(self.width * 0.01, yOffset + (rowHeight - 28) / 2, 28, 28, item.icon)
             self.scrollPanel:addChild(itemIcon)
         end
 
-        local itemSellLabel = ISLabel:new(self.width * 0.059, yOffset, 20,
+        local itemSellLabel = ISLabel:new(labelNameX, yOffset + labelNameY, 20,
             PZLinuxDarkWebFitText(item.name, nameMaxWidth), 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(itemSellLabel)
 
-        local priceText = " $" .. tostring(item.price) .. " | " .. string.format(
+        local priceText = "$" .. tostring(item.price) .. " | " .. string.format(
             PZLinuxGetText("IGUI_PZLinux_DarkWeb_Stock"),
             tonumber(item.count) or 0
         )
-        local priceLabel = ISLabel:new(self.width * 0.35, yOffset, 20, priceText, 0, 1, 0, 1, UIFont.Small, true)
+        local priceLabel = ISLabel:new(labelNameX, yOffset + labelNameY + 15, 20,
+            priceText, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(priceLabel)
 
         -- Same tooltip treatment as Buy's own rows (onBuy above): the full,
@@ -666,17 +671,8 @@ function darkWebUI:onSell()
         -- "0", same as Buy's, specifically so a stray click on SELL can
         -- never sell anything by accident -- see onSellItem below, which
         -- refuses to even send a request at quantity 0.
-        -- buttonX is deliberately left exactly where the SELL button
-        -- already sat before this change (proven to fit inside the
-        -- scrollPanel, which is only 0.568 * self.width wide) -- the
-        -- quantity box is inserted just before it instead of pushing the
-        -- button further right, which would overflow that boundary.
-        local buttonWidth, buttonHeight = self.width * 0.08, self.height * 0.025
-        local buttonX = self.width * 0.48
-        local quantityWidth = self.width * 0.035
-        local quantityX = buttonX - quantityWidth - 5
-
-        local sellQty = ISTextEntryBox:new("0", quantityX, yOffset, quantityWidth, self.height * 0.024)
+        local controlY = yOffset + (rowHeight - buttonHeight) / 2
+        local sellQty = ISTextEntryBox:new("0", quantityX, controlY, quantityWidth, self.height * 0.024)
         sellQty.backgroundColor = {r=0, g=0, b=0, a=1}
         sellQty:setVisible(true)
         sellQty:initialise()
@@ -685,7 +681,8 @@ function darkWebUI:onSell()
         self.scrollPanel:addChild(sellQty)
         self.transactionQtysSell[item.index] = sellQty
 
-        local sellButton = ISButton:new(buttonX, yOffset, buttonWidth, buttonHeight, PZLinuxGetText("IGUI_PZLinux_DarkWeb_Sell"), self, function(self, btn)
+        local sellButton = ISButton:new(buttonX, controlY, buttonWidth, buttonHeight,
+            PZLinuxGetText("IGUI_PZLinux_DarkWeb_Sell"), self, function(self, btn)
             local quantitySelling = tonumber(sellQty:getText()) or 0
             self:onSellItem(btn, quantitySelling)
         end)
@@ -696,7 +693,7 @@ function darkWebUI:onSell()
         if sellButton.setTooltip then sellButton:setTooltip(sellTooltip) end
         self.scrollPanel:addChild(sellButton)
 
-        yOffset = yOffset + 30
+        yOffset = yOffset + rowHeight
     end
 end
 

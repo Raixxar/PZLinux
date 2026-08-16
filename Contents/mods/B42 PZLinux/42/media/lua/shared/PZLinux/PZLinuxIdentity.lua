@@ -54,22 +54,16 @@ local function PZLinuxIdentityGetNativeKeys(player)
     local keys = {}
     local account = PZLinuxGetCharacterAccount(playerObj)
 
-    -- B42.20 exposes the public field as sqlId. Keep the older spellings and
-    -- possible accessors as guarded fallbacks for other supported builds.
+    -- B42.20 exposes the public field as sqlId. Do not probe hypothetical
+    -- Java accessors here: Kahlua logs/raises missing reflected methods even
+    -- inside pcall, which can abort unrelated server commands such as contract
+    -- synchronization. The descriptor below remains the portable fallback.
     local sqlId = nil
     local fieldOk, fieldValue = pcall(function() return playerObj.sqlId end)
     if fieldOk then sqlId = tonumber(fieldValue) end
     if not sqlId then
         fieldOk, fieldValue = pcall(function() return playerObj.sqlID end)
         if fieldOk then sqlId = tonumber(fieldValue) end
-    end
-    if not sqlId then
-        local methodOk, methodValue = pcall(function() return playerObj:getSqlId() end)
-        if methodOk then sqlId = tonumber(methodValue) end
-    end
-    if not sqlId then
-        local methodOk, methodValue = pcall(function() return playerObj:getSqlID() end)
-        if methodOk then sqlId = tonumber(methodValue) end
     end
     if sqlId and sqlId > 0 then
         table.insert(keys, account .. ":sql:" .. tostring(math.floor(sqlId)))

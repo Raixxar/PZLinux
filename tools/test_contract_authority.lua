@@ -39,6 +39,18 @@ dofile(luaRoot .. "/shared/PZLinux/PZLinuxMissionLocations.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractRequestData.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxContractMission.lua")
 
+local expectedContractIds = {}
+for contractId = 1, 13 do expectedContractIds[contractId] = true end
+PZLinuxTestAssert(#PZLinuxContractDefinitions == 13,
+    "the release contract catalog must contain all 13 contracts")
+for _, definition in ipairs(PZLinuxContractDefinitions) do
+    PZLinuxTestAssert(expectedContractIds[definition.id] == true,
+        "unexpected or duplicate contract id " .. tostring(definition.id))
+    expectedContractIds[definition.id] = nil
+end
+PZLinuxTestAssert(next(expectedContractIds) == nil,
+    "one or more release contracts are missing from the authoritative catalog")
+
 local cityByContract = { [2] = 3, [3] = 9, [7] = 3, [8] = 2, [13] = 2 }
 local manhuntCityIds = PZLinuxGetMissionLocationCityIds("manhunt")
 PZLinuxTestAssert(#manhuntCityIds == 1 and manhuntCityIds[1] == 9,
@@ -145,6 +157,9 @@ PZLinuxTestAssert(atmMissionLouisville.locationX == 12585 and atmMissionLouisvil
 
 local variablesPath = luaRoot .. "/shared/ISPZLinuxVariablesTables.lua"
 local variables = PZLinuxTestRead(variablesPath)
+local identity = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxIdentity.lua")
+PZLinuxTestAssert(not identity:find(":getSqlId%(") and not identity:find(":getSqlID%("),
+    "contract commands must not be interrupted by missing reflected SQL identity accessors")
 local acceptBlock = variables:match("function PZLinuxContractsApplyAccept.-\nend\n\nfunction PZLinuxContractsApplyCancel")
 PZLinuxTestAssert(acceptBlock ~= nil, "could not inspect PZLinuxContractsApplyAccept")
 local cancelBlock = variables:match("function PZLinuxContractsApplyCancel.-\nend\n\nfunction PZLinuxContractsBagContainsCorpse")

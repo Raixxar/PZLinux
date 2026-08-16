@@ -1,9 +1,9 @@
 name=PZLinux
 id=B42_PZLinux
-modversion=1.0.11
+modversion=1.0.12
 versionMin=42.20
 poster=poster.png
-description=PZLinux 1.0.11 adds reliable persistent deliveries to its computer-based economy, contracts, trading, hacking and online betting. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
+description=PZLinux 1.0.12 fixes contract and requested-vehicle server commands while retaining reliable persistent deliveries across its computer-based economy. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
 tooltip=PZLinux
 author=Raixxar
 category=features
