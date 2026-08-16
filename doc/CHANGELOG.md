@@ -1,5 +1,73 @@
 # Changelog
 
+## [1.0.11]
+
+- Added a server-bound persistent character identity, backed by Project
+  Zomboid's native SQL character ID when available. Delivery queues and the new
+  authoritative bank ledger are now indexed by character rather than username,
+  so a replacement character on the same account cannot inherit pending orders
+  or the deceased character's balance. Existing characters keep their balance
+  and pre-v2 delivery queues through a one-time migration; pending deliveries
+  are closed when their owner dies.
+- Corrected the native B42.20 identity lookup to read `IsoPlayer.sqlId` with its
+  actual casing. A living replacement now rotates any native binding already
+  marked deceased, while server-side bank debits, credits and direct balance
+  writes are rejected for the deceased character.
+- Replaced the Dark Web and Buy Goods player-ModData delivery strings with
+  a persistent server-side delivery ledger. Every purchase now receives a
+  stable order ID, consecutive purchases append instead of replacing one
+  another, and replaying the same request cannot debit or enqueue it twice.
+  Existing pending string queues are migrated automatically for old saves;
+  the player ModData fields remain compatibility counters only.
+- Made mailbox parcels transactional at order level: a parcel is populated
+  completely and checked against the post-delivery weight limit before it is
+  synchronized. A failed item creation, synchronization failure or excessive
+  weight removes the temporary parcel and leaves the entire order pending;
+  retries never deliver a partial remainder. Materialized parcels carry their
+  order ID so an interrupted delivery can be recovered without duplication.
+- Migrated mail-mission gifts to the same persistent delivery ledger. Their
+  exact randomized contents are fixed when the mission completes, multiple
+  owed gifts remain separate, legacy reward counters migrate once, and every
+  gift is delivered at most once in both solo and multiplayer.
+- Added persistent receipt IDs to Dark Web and Sell Surplus payment packages.
+  Replayed sale commands now reuse the original receipt, and a redeemed
+  memento cannot credit the bank twice. Sell Surplus item removal now also
+  uses the synchronized multiplayer inventory path.
+- Tightened mailbox contract deposits: the server restores a valid active
+  contract from tagged inventory objects when needed, rejects deposits with
+  no canonical active contract, and removes exactly the requested quantity
+  instead of every matching item in the player's inventory.
+- Added a safety cap to mailbox delivery (Dark Web buy orders and Buy
+  Goods orders alike): a mailbox visit now stops handing out more
+  parcels once the player is getting too loaded down, leaving whatever's
+  left safely queued for a later visit instead of dumping an entire
+  backlog on them in one go. From player feedback: a backlog of pending
+  orders piling up (e.g. after being unable to reach a mailbox for a
+  while) could previously load a player down with an unbounded amount of
+  weight in one go -- exactly the kind of "one bad decision away from
+  getting one-shot by a horde" situation this mod should never create on
+  its own. Stops at 85% of the player's own real overweight threshold
+  (deliberately a safety margin, not the exact edge), respects unlimited
+  carry, and fails open (delivers normally) if weight can't be read at
+  all. The remaining orders are picked back up automatically next time
+  the player visits any mailbox with room to spare.
+- Brought Dark Web's Sell list up to par with its own Buy list, matching
+  it visually and functionally: item names are now truncated so a long
+  one can no longer run into the price/stock text next to it (previously
+  unbounded, unlike Buy's rows), and every row (icon, name, price/stock,
+  quantity box, SELL button) now shows a hover tooltip with the full
+  item name and price/stock, exactly like Buy's rows already did. The
+  quantity field and the player's own owned-count on the second line
+  (added earlier this version) were already in place.
+- Fixed the Dark Web Sell screen appearing completely blank when the main
+  inventory contained no supported item, or when the server could not load
+  offers. Both states now display a clear localized message, and Sell buttons
+  plus the bank balance line use translated text.
+- Added the 21 missing Sell Goods, Buy Goods availability and Dark Web Sell
+  strings to all 20 language catalogs. The translation audit now also scans
+  literal keys used by Lua, preventing a screen from silently falling back to
+  English merely because its keys were absent from every catalog.
+
 ## [1.0.10]
 
 - Fixed a player-reported bug in Training: a player with $100,000 in their

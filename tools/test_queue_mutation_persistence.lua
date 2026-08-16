@@ -42,6 +42,7 @@ end
 
 local darkWebSource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua")
 local variablesSource = readFile(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
+local deliverySource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")
 
 -- ---------------------------------------------------------------------
 -- 1. Source checks: neither queue may still be a nested array-of-tables
@@ -55,24 +56,24 @@ for _, forbidden in ipairs({ "table.insert(modData.PZLinuxOnItemBuyOnDarkWeb,", 
     PZLinuxTestAssert(not darkWebSource:find(forbidden, 1, true),
         "PZLinuxDarkWeb.lua must no longer mutate a nested table directly in modData: " .. forbidden)
 end
-PZLinuxTestAssert(darkWebSource:find("modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)", 1, true),
-    "the Dark Web queue must be written back through PZLinuxDarkWebQueueEncode")
+PZLinuxTestAssert(darkWebSource:find('PZLinuxDeliveryEnqueue', 1, true)
+    and darkWebSource:find('modData.PZLinuxOnItemBuyOnDarkWebQueue = ""', 1, true),
+    "the Dark Web queue must live in the server ledger; player modData is only a cleared compatibility mirror")
 
 for _, forbidden in ipairs({ "table.insert(modData.PZLinuxOnItemRequest,", "table.remove(modData.PZLinuxOnItemRequest," }) do
     PZLinuxTestAssert(not variablesSource:find(forbidden, 1, true),
         "ISPZLinuxVariablesTables.lua must no longer mutate a nested table directly in modData: " .. forbidden)
 end
-PZLinuxTestAssert(variablesSource:find("modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)", 1, true),
-    "the Buy Goods queue must be written back through PZLinuxRequestsQueueEncode")
+PZLinuxTestAssert(variablesSource:find('PZLinuxDeliveryEnqueue', 1, true)
+    and variablesSource:find('modData.PZLinuxOnItemRequestQueue = ""', 1, true),
+    "the Buy Goods queue must live in the server ledger; player modData is only a cleared compatibility mirror")
 
--- The Dark Web delivery loop must still transmit after every single
--- removal, not just once at the end of the loop.
-local deliverBlock = darkWebSource:match("function PZLinuxDarkWebApplyDeliverOrders.-\nend")
-PZLinuxTestAssert(deliverBlock, "PZLinuxDarkWebApplyDeliverOrders must exist")
-local deliverLoopBlock = deliverBlock:match("while #queue > 0 do.-\n    end")
-PZLinuxTestAssert(deliverLoopBlock, "the Dark Web delivery loop must exist")
-PZLinuxTestAssert(deliverLoopBlock:find("PZLinuxTransmitPlayerModData(playerObj)", 1, true),
-    "the Dark Web delivery loop must transmit modData after every single batch removal")
+PZLinuxTestAssert(deliverySource:find('status = "pending"', 1, true)
+    and deliverySource:find('status = "materializing"', 1, true)
+    and deliverySource:find('order.status = "delivered"', 1, true),
+    "the server ledger must persist an explicit delivery state machine")
+PZLinuxTestAssert(deliverySource:find("PZLinuxDeliveryOrderId", 1, true),
+    "every materialized parcel must carry its persistent order ID")
 
 -- ---------------------------------------------------------------------
 -- 2. Functional test: the flat encoding must actually round-trip, and a

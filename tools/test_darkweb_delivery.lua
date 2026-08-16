@@ -18,22 +18,39 @@ local networkItems = {}
 local inventoryItems = {}
 local inventory = {}
 
+local function PZLinuxTestList(values)
+    local list = { values = values or {} }
+    function list:size() return #self.values end
+    function list:get(index) return self.values[index + 1] end
+    return list
+end
+
 function inventory:AddItem(itemType)
     if self.failCreation then return nil end
     local parcelInventory = {
         AddItem = function(_, nestedType)
-            local item = { fullType = nestedType }
+            local item = {
+                fullType = nestedType,
+                getFullType = function(value) return value.fullType end,
+            }
             table.insert(nestedItems, item)
             return item
         end,
+        getItems = function() return PZLinuxTestList(nestedItems) end,
     }
     local parcel = {
         fullType = itemType,
+        modData = {},
+        getFullType = function(value) return value.fullType end,
+        getModData = function(value) return value.modData end,
         getInventory = function() return parcelInventory end,
+        setName = function() end,
     }
     table.insert(inventoryItems, parcel)
     return parcel
 end
+
+function inventory:getItems() return PZLinuxTestList(inventoryItems) end
 
 function inventory:Remove(item)
     for index = #inventoryItems, 1, -1 do
@@ -56,6 +73,8 @@ PZLinuxGetPlayerKey = function() return "test-player" end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxLoadBankBalance = function() return 1000 end
 PZLinuxTransmitPlayerModData = function() end
+PZLinuxDeliveryHasRoomForMoreParcels = function() return true end
+PZLinuxDeliveryIsWithinWeightLimit = function() return true end
 PZLinuxSyncAddedInventoryItem = function(_, item)
     table.insert(networkItems, item)
     return true
@@ -64,12 +83,23 @@ ZombRand = function() return 100 end
 getScriptManager = function()
     return { FindItem = function(_, itemType) return itemType == "Base.Axe" end }
 end
+getGameTime = function()
+    return { getWorldAgeHours = function() return 0 end }
+end
+local globalModData = {}
+ModData = {
+    getOrCreate = function(key)
+        globalModData[key] = globalModData[key] or {}
+        return globalModData[key]
+    end,
+}
 
 local stolenNoteCalls = {}
 PZLinuxCreateStolenOrderNote = function(playerArg)
     table.insert(stolenNoteCalls, playerArg)
 end
 
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua")
 
 local result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-1")
@@ -81,11 +111,10 @@ PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 0 and modData.PZLin
     "the pending order must be cleared only after delivery")
 
 inventory.failCreation = true
-modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-modData.PZLinuxOnItemBuyOnDarkWebQueue = "Base.Axe|1"
+PZLinuxDeliveryEnqueue(player, "darkweb", { { name = "Base.Axe", quantity = 1 } }, "failed-order")
 result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-2")
 PZLinuxTestAssert(not result.ok and result.error == "parcel_creation_failed", "parcel creation failure must be reported")
-PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLinuxOnItemBuyOnDarkWebQueue == "Base.Axe|1",
+PZLinuxTestAssert(PZLinuxDeliveryPendingCount(player, "darkweb") == 1,
     "a failed delivery must preserve the pending order")
 
 -- A player reported being confused when a Dark Web order simply never
@@ -93,8 +122,9 @@ PZLinuxTestAssert(modData.PZLinuxOnItemBuyOnDarkWebStatus == 1 and modData.PZLin
 -- HaloText bubble as feedback. A stolen order must now also leave a
 -- findable note in the player's inventory (PZLinuxCreateStolenOrderNote,
 -- shared with Buy Goods -- see test_request_delivery.lua for its half).
-modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
-modData.PZLinuxOnItemBuyOnDarkWebQueue = "Base.Axe|1"
+inventory.failCreation = false
+PZLinuxDeliveryMarkPendingLost(player, "darkweb")
+PZLinuxDeliveryEnqueue(player, "darkweb", { { name = "Base.Axe", quantity = 1 } }, "stolen-order")
 ZombRand = function() return 1 end
 result = PZLinuxDarkWebApplyDeliverOrders(player, {}, "delivery-stolen")
 PZLinuxTestAssert(result.ok and result.lost == true and result.delivered == 0, "a stolen order must report lost = true")
@@ -121,13 +151,6 @@ end
 -- name-parsing fallback passed both of string.gsub's return values straight
 -- into tonumber(string, base), treating the substitution count as an
 -- invalid numeric base.
-local function PZLinuxTestList(values)
-    local list = { values = values or {} }
-    function list:size() return #self.values end
-    function list:get(index) return self.values[index + 1] end
-    return list
-end
-
 local function PZLinuxTestMakePackage(fullType, name, packageModData)
     local item = { fullType = fullType, name = name, modData = packageModData or {} }
     function item:getFullType() return self.fullType end

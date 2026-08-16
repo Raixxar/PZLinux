@@ -103,7 +103,11 @@ function darkWebUI:initialise()
     self.stopButton:setAnchorRight(true)
     self.topBar:addChild(self.stopButton)
 
-    self.titleLabel = ISLabel:new(self.width * 0.20, self.height * 0.17, self.height * 0.025, "Bank balance: $"  .. tostring(loadAtmBalance(self.player)), 0, 1, 0, 1, UIFont.Small, true)
+    self.titleLabel = ISLabel:new(
+        self.width * 0.20, self.height * 0.17, self.height * 0.025,
+        PZLinuxFormatText("IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", loadAtmBalance(self.player)),
+        0, 1, 0, 1, UIFont.Small, true
+    )
     self.topBar.backgroundColor = {r=0, g=0, b=0, a=0}
     self.titleLabel:setVisible(false)
     self.titleLabel:initialise()
@@ -146,7 +150,7 @@ function darkWebUI:initialise()
     self.searchBtn:initialise()
     self:addChild(self.searchBtn)
 
-    self.shoppingBuyButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, "BUY", self, self.onBuy)
+    self.shoppingBuyButton = ISButton:new(self.width * 0.35, self.width * 0.32, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_DarkWeb_Buy"), self, self.onBuy)
     self.shoppingBuyButton.textColor = {r=0, g=1, b=0, a=1}
     self.shoppingBuyButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.shoppingBuyButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -154,7 +158,7 @@ function darkWebUI:initialise()
     self.shoppingBuyButton:initialise()
     self.topBar:addChild(self.shoppingBuyButton)
 
-    self.shoppingSellButton = ISButton:new(self.width * 0.35, self.width * 0.43, self.width * 0.25, self.height * 0.08, "SELL", self, self.onSell)
+    self.shoppingSellButton = ISButton:new(self.width * 0.35, self.width * 0.43, self.width * 0.25, self.height * 0.08, PZLinuxGetText("IGUI_PZLinux_DarkWeb_Sell"), self, self.onSell)
     self.shoppingSellButton.textColor = {r=0, g=1, b=0, a=1}
     self.shoppingSellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.shoppingSellButton.borderColor = {r=0, g=1, b=0, a=0.5}
@@ -276,6 +280,14 @@ function darkWebUI:initialise()
             self.backgroundColor = {r=0, g=0, b=0, a=0}
         end
     end
+
+    self.sellStatusLabel = ISLabel:new(
+        self.width * 0.20, self.height * 0.27, self.height * 0.025, "",
+        0, 1, 0, 1, UIFont.Small, true
+    )
+    self.sellStatusLabel:setVisible(false)
+    self.sellStatusLabel:initialise()
+    self:addChild(self.sellStatusLabel)
 end
 
 -- STOP
@@ -348,9 +360,11 @@ function darkWebUI:startUI()
     self.searchBtn:setVisible(false)
     self.scrollPanel:setVisible(false)
     self.scrollPanel:addScrollBars(false)
+    self.sellStatusLabel:setVisible(false)
 end
 
 function darkWebUI:onBuy()
+    self.sellStatusLabel:setVisible(false)
     self.shoppingBuyButton:setVisible(false)
     self.shoppingSellButton:setVisible(false)
     self.shoppingHelpButton:setVisible(false)
@@ -374,7 +388,9 @@ function darkWebUI:onBuy()
                 self.darkWebBuyOffersLoaded = true
                 if result.balance then
                     saveAtmBalance(result.balance, self.player)
-                    self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+                    self.titleLabel:setName(PZLinuxFormatText(
+                        "IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", result.balance
+                    ))
                 end
                 if not self.isClosing then
                     self:onBuy()
@@ -512,10 +528,13 @@ function darkWebUI:onSell()
     self.shoppingHelpButton:setVisible(false)
     self.minimizeButton:setVisible(false)
     self.minimizeBackButton:setVisible(true)
+    self.sellStatusLabel:setVisible(false)
 
     if not self.darkWebSellOffersLoaded then
         if self.darkWebSellOffersPending then return end
         self.darkWebSellOffersPending = true
+        self.sellStatusLabel:setName(PZLinuxGetText("IGUI_PZLinux_Sell_Loading"))
+        self.sellStatusLabel:setVisible(true)
         PZLinuxRequestDarkWebSellOffers(self.player, function(result)
             self.darkWebSellOffersPending = false
             if result and result.ok then
@@ -523,11 +542,16 @@ function darkWebUI:onSell()
                 self.darkWebSellOffersLoaded = true
                 if result.balance then
                     saveAtmBalance(result.balance, self.player)
-                    self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+                    self.titleLabel:setName(PZLinuxFormatText(
+                        "IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", result.balance
+                    ))
                 end
                 if not self.isClosing then
                     self:onSell()
                 end
+            elseif not self.isClosing then
+                self.sellStatusLabel:setName(PZLinuxGetText("IGUI_PZLinux_DarkWeb_SellUnavailable"))
+                self.sellStatusLabel:setVisible(true)
             end
         end)
         return
@@ -546,6 +570,11 @@ function darkWebUI:onSell()
             price = offer.price,
             icon = iconTex,
         })
+    end
+
+    if #itemsToSell == 0 then
+        self.sellStatusLabel:setName(PZLinuxGetText("IGUI_PZLinux_DarkWeb_NoSellableItems"))
+        self.sellStatusLabel:setVisible(true)
     end
 
     -- The Sell list is rebuilt from scratch every time this runs (including
@@ -596,14 +625,22 @@ function darkWebUI:onSell()
         return false
     end
 
+    -- Same idea as Buy's offerTextWidths (onBuy above): the name column
+    -- has a fixed gap to work with before the price column starts, so a
+    -- long item name needs to be truncated instead of running into (or
+    -- past) the price/stock text next to it.
+    local nameMaxWidth = math.max(40, (self.width * 0.35) - (self.width * 0.059) - 10)
+
     local yOffset = 0
     for _, item in ipairs(itemsToSell) do
+        local itemIcon
         if item.icon then
-            local itemIcon = ISImage:new(self.width * 0.01, yOffset, 20, 20, item.icon)
+            itemIcon = ISImage:new(self.width * 0.01, yOffset, 20, 20, item.icon)
             self.scrollPanel:addChild(itemIcon)
         end
 
-        local itemSellLabel = ISLabel:new(self.width * 0.059, yOffset, 20, item.name, 0, 1, 0, 1, UIFont.Small, true)
+        local itemSellLabel = ISLabel:new(self.width * 0.059, yOffset, 20,
+            PZLinuxDarkWebFitText(item.name, nameMaxWidth), 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(itemSellLabel)
 
         local priceText = " $" .. tostring(item.price) .. " | " .. string.format(
@@ -612,6 +649,14 @@ function darkWebUI:onSell()
         )
         local priceLabel = ISLabel:new(self.width * 0.35, yOffset, 20, priceText, 0, 1, 0, 1, UIFont.Small, true)
         self.scrollPanel:addChild(priceLabel)
+
+        -- Same tooltip treatment as Buy's own rows (onBuy above): the full,
+        -- untruncated name plus price/stock, so a name cut short by
+        -- nameMaxWidth is still fully readable on hover.
+        local sellTooltip = item.name .. "\n" .. priceText
+        if itemIcon and itemIcon.setTooltip then itemIcon:setTooltip(sellTooltip) end
+        if itemSellLabel.setTooltip then itemSellLabel:setTooltip(sellTooltip) end
+        if priceLabel.setTooltip then priceLabel:setTooltip(sellTooltip) end
 
         -- A player asked for exactly this: selling used to always take
         -- every matching item the player owned, with no way to sell fewer
@@ -636,10 +681,11 @@ function darkWebUI:onSell()
         sellQty:setVisible(true)
         sellQty:initialise()
         sellQty:setOnlyNumbers(true)
+        if sellQty.setTooltip then sellQty:setTooltip(sellTooltip) end
         self.scrollPanel:addChild(sellQty)
         self.transactionQtysSell[item.index] = sellQty
 
-        local sellButton = ISButton:new(buttonX, yOffset, buttonWidth, buttonHeight, "SELL", self, function(self, btn)
+        local sellButton = ISButton:new(buttonX, yOffset, buttonWidth, buttonHeight, PZLinuxGetText("IGUI_PZLinux_DarkWeb_Sell"), self, function(self, btn)
             local quantitySelling = tonumber(sellQty:getText()) or 0
             self:onSellItem(btn, quantitySelling)
         end)
@@ -647,6 +693,7 @@ function darkWebUI:onSell()
         sellButton.internal = item.index
         sellButton.price = item.price
         sellButton.count = item.count
+        if sellButton.setTooltip then sellButton:setTooltip(sellTooltip) end
         self.scrollPanel:addChild(sellButton)
 
         yOffset = yOffset + 30
@@ -753,7 +800,9 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
 
         if result and result.balance then
             saveAtmBalance(result.balance, playerObj)
-            self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+            self.titleLabel:setName(PZLinuxFormatText(
+                "IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", result.balance
+            ))
         end
 
         if result and result.offerIndex and result.stock ~= nil and currentOffers[result.offerIndex] then
@@ -773,7 +822,7 @@ function darkWebUI:OnBuyItem(button, quantityTrading)
                     self:onBuy()
                 end
             else
-                HaloTextHelper.addGoodText(playerObj, "I need money in my bank account")
+                HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Betting_NotEnoughMoney"))
             end
         end
     end)
@@ -791,7 +840,7 @@ function darkWebUI:onSellItem(button, quantitySelling)
     if quantity < 1 then return end
     if quantity > (tonumber(button.count) or 0) then
         getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-        HaloTextHelper.addBadText(playerObj, "You don't have that many")
+        HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Sell_MissingItems"))
         return
     end
 
@@ -802,26 +851,29 @@ function darkWebUI:onSellItem(button, quantitySelling)
 
         if result and result.balance then
             saveAtmBalance(result.balance, playerObj)
-            self.titleLabel:setName("Bank balance: $" .. tostring(result.balance))
+            self.titleLabel:setName(PZLinuxFormatText(
+                "IGUI_PZLinux_Request_Balance", "Bank Balance: $%s", result.balance
+            ))
         end
 
         if result and result.ok then
             getSoundManager():PlayWorldSound("sold", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
-            HaloTextHelper.addGoodText(playerObj, "Drop the package in a mailbox")
+            HaloTextHelper.addGoodText(playerObj, PZLinuxGetText("IGUI_PZLinux_Sell_DropAtMailbox"))
             self.darkWebSellOffersLoaded = false
             self:onSell()
         else
             getSoundManager():PlayWorldSound("error", false, playerObj:getSquare(), 0, 20, 1, true):setVolume(globalVolume)
             if result and result.error == "not_enough_owned" then
-                HaloTextHelper.addBadText(playerObj, "You don't have that many")
+                HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Sell_MissingItems"))
             else
-                HaloTextHelper.addBadText(playerObj, "The item is not available")
+                HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Sell_Rejected"))
             end
         end
     end)
 end
 
 function darkWebUI:onHelp()
+    self.sellStatusLabel:setVisible(false)
     PZLinuxDarkWebLoadCustomItems()
     self.shoppingBuyButton:setVisible(false)
     self.shoppingSellButton:setVisible(false)

@@ -85,6 +85,45 @@ function PZLinuxValidateMailboxInteraction(player, mailboxRef)
     return mailboxObject, nil
 end
 
+-- Shared by both mailbox delivery paths (Dark Web's
+-- PZLinuxDarkWebApplyDeliverOrders, Buy Goods'
+-- PZLinuxRequestsApplyDelivery): deliveries stop early -- leaving
+-- whatever's left safely queued for a later mailbox visit -- once the
+-- player is getting too loaded down, instead of unconditionally dumping
+-- an entire backlog of parcels on them in one go. From player request:
+-- carrying, say, 500kg of parcels because a big backlog piled up is
+-- exactly the kind of "one bad decision away from getting one-shot by a
+-- horde" situation this mod should never create on its own. A safety
+-- MARGIN below the character's own real overweight threshold (not right
+-- up against it) is deliberate -- the point is to stop BEFORE they're
+-- dangerously loaded, not exactly when they already are.
+local PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN = 0.85
+
+function PZLinuxDeliveryHasRoomForMoreParcels(playerObj)
+    if not playerObj then return true end
+    if playerObj.isUnlimitedCarry and playerObj:isUnlimitedCarry() then return true end
+
+    local inventory = playerObj.getInventory and playerObj:getInventory()
+    if not inventory or not inventory.getCapacityWeight or not inventory.getMaxWeight then return true end
+
+    local maxWeight = inventory:getMaxWeight()
+    if not maxWeight or maxWeight <= 0 then return true end
+
+    return inventory:getCapacityWeight() < maxWeight * PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN
+end
+
+function PZLinuxDeliveryIsWithinWeightLimit(playerObj)
+    if not playerObj then return true end
+    if playerObj.isUnlimitedCarry and playerObj:isUnlimitedCarry() then return true end
+
+    local inventory = playerObj.getInventory and playerObj:getInventory()
+    if not inventory or not inventory.getCapacityWeight or not inventory.getMaxWeight then return true end
+
+    local maxWeight = inventory:getMaxWeight()
+    if not maxWeight or maxWeight <= 0 then return true end
+    return inventory:getCapacityWeight() <= maxWeight * PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN
+end
+
 local function PZLinuxGetEntitySquare(entity)
     return entity and entity.getSquare and entity:getSquare() or nil
 end

@@ -127,6 +127,9 @@ function StreetMailBoxUI:onSendPackage()
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Dark web order delivered")
         end
+        if result and result.tooHeavy then
+            HaloTextHelper.addBadText(playerObj, "Too heavy to carry any more parcels right now")
+        end
         PZLinuxStreetMailBoxActionFinished()
     end)
 
@@ -145,6 +148,9 @@ function StreetMailBoxUI:onSendPackage()
         elseif result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "Request package delivered")
         end
+        if result and result.tooHeavy then
+            HaloTextHelper.addBadText(playerObj, "Too heavy to carry any more parcels right now")
+        end
         PZLinuxStreetMailBoxActionFinished()
     end)
 
@@ -161,6 +167,9 @@ function StreetMailBoxUI:onSendPackage()
     PZLinuxRequestMailRewardDelivery(playerObj, self.mailbox, function(result)
         if result and result.ok and result.delivered and result.delivered > 0 then
             HaloTextHelper.addGoodText(playerObj, "A gift for your help arrived")
+        end
+        if result and result.tooHeavy then
+            HaloTextHelper.addBadText(playerObj, "Too heavy to carry any more parcels right now")
         end
         PZLinuxStreetMailBoxActionFinished()
     end)

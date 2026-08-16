@@ -662,6 +662,22 @@ end
 
 Events.OnZombieDead.Add(PZLinuxServerOnZombieDead)
 
+local function PZLinuxServerOnPlayerDeath(playerObj)
+    if not playerObj then return end
+    local lostDeliveries = PZLinuxDeliveryCloseCharacter(playerObj, "character_death")
+    PZLinuxBankMarkCharacterDead(playerObj)
+    PZLinuxMarkCharacterDead(playerObj)
+    print(string.format(
+        "[PZLinux Identity] CLOSED deceased character player=%s characterId=%s pendingDeliveriesLost=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)),
+        tostring(PZLinuxGetCharacterId(playerObj, false)),
+        tonumber(lostDeliveries) or 0))
+end
+
+if Events.OnPlayerDeath then
+    Events.OnPlayerDeath.Add(PZLinuxServerOnPlayerDeath)
+end
+
 local function PZLinuxServerForEachOnlinePlayer(callback)
     if not getOnlinePlayers then return end
     local players = getOnlinePlayers()

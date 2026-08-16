@@ -45,6 +45,38 @@ function PZLinuxDarkWebQueueEncode(queue)
     return table.concat(parts, ";")
 end
 
+local function PZLinuxDarkWebSyncPendingState(playerObj)
+    local modData = playerObj:getModData()
+    local pending = PZLinuxDeliveryPendingCount(playerObj, "darkweb")
+    modData.PZLinuxOnItemBuyOnDarkWebStatus = pending > 0 and 1 or 0
+    modData.PZLinuxOnItemBuyOnDarkWebQueue = ""
+    modData.PZLinuxDarkWebPendingCount = pending
+    PZLinuxTransmitPlayerModData(playerObj)
+    return pending
+end
+
+function PZLinuxDarkWebMigrateLegacyQueue(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+    local record = PZLinuxDeliveryGetPlayerRecord(playerObj)
+    if tonumber(record.migrations.darkWeb) == 1 then
+        return PZLinuxDarkWebSyncPendingState(playerObj)
+    end
+
+    local modData = playerObj:getModData()
+    local legacyQueue = PZLinuxDarkWebQueueDecode(modData.PZLinuxOnItemBuyOnDarkWebQueue)
+    for index, entry in ipairs(legacyQueue) do
+        PZLinuxDeliveryEnqueue(
+            playerObj,
+            "darkweb",
+            { { name = entry.name, quantity = entry.quantity } },
+            "legacy-darkweb-" .. tostring(index) .. "-" .. tostring(entry.name)
+        )
+    end
+    record.migrations.darkWeb = 1
+    return PZLinuxDarkWebSyncPendingState(playerObj)
+end
+
 function PZLinuxDarkWebGetItemIds(itemData)
     if not itemData then return {} end
     if type(itemData.id) == "table" then return itemData.id end
@@ -181,6 +213,22 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
+    local existingOrder = PZLinuxDeliveryFindOrderByRequest(playerObj, "darkweb", requestId)
+    if existingOrder then
+        local metadata = existingOrder.metadata or {}
+        return {
+            ok = true,
+            replayed = true,
+            requestId = requestId,
+            item = metadata.item,
+            quantity = metadata.quantity,
+            orderId = existingOrder.id,
+            queued = false,
+            amount = metadata.amount,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+
     offerIndex = tonumber(offerIndex)
     quantity = PZLinuxNormalizeMoney(quantity)
     if not offerIndex or offerIndex < 1 or quantity < 1 then
@@ -229,22 +277,33 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
         return debit
     end
 
-    local modData = playerObj:getModData()
-    local queue = PZLinuxDarkWebQueueDecode(modData.PZLinuxOnItemBuyOnDarkWebQueue)
-    table.insert(queue, { name = itemToAdd, quantity = quantity })
-    modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)
-    modData.PZLinuxOnItemBuyOnDarkWebStatus = 1
+    PZLinuxDarkWebMigrateLegacyQueue(playerObj)
+    local order, created, queueError = PZLinuxDeliveryEnqueue(
+        playerObj,
+        "darkweb",
+        { { name = itemToAdd, quantity = quantity } },
+        requestId,
+        { amount = totalPrice, item = itemToAdd, quantity = quantity, offerIndex = offerIndex }
+    )
+    if not order then
+        PZLinuxApplyBankCredit(playerObj, totalPrice, "darkweb-buy-refund", requestId)
+        return {
+            ok = false,
+            error = queueError or "delivery_queue_failed",
+            requestId = requestId,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+    local pendingCount = PZLinuxDarkWebSyncPendingState(playerObj)
     -- Diagnostic logging kept from the original investigation (now proven
     -- useful -- this is exactly what surfaced the real root cause) so a
     -- future regression is just as easy to spot from a server log.
     print(string.format(
         "[PZLinux DarkWeb] BUY player=%s item=%s qty=%d queueLenAfter=%d",
-        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(itemToAdd), quantity, #queue))
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(itemToAdd), quantity, pendingCount))
     marketOffer.stock = availableStock - quantity
     offer.stock = marketOffer.stock
     PZLinuxDarkWebTransmitMarket()
-    PZLinuxTransmitPlayerModData(playerObj)
-
     if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
 
     return {
@@ -253,6 +312,8 @@ function PZLinuxDarkWebApplyBuy(player, offerIndex, quantity, requestId)
         offerIndex = offerIndex,
         item = itemToAdd,
         quantity = quantity,
+        orderId = order.id,
+        queued = created,
         amount = totalPrice,
         balance = PZLinuxLoadBankBalance(playerObj),
         previousBalance = debit.previousBalance,
@@ -351,6 +412,21 @@ function PZLinuxDarkWebApplySell(player, offerIndex, quantity, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
+    local existingReceipt = PZLinuxDeliveryFindReceiptByRequest(playerObj, "darkweb", requestId)
+    if existingReceipt then
+        local metadata = existingReceipt.metadata or {}
+        return {
+            ok = true,
+            replayed = true,
+            requestId = requestId,
+            offerIndex = metadata.offerIndex,
+            soldCount = metadata.quantity,
+            amount = metadata.amount,
+            receiptId = existingReceipt.id,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+
     offerIndex = tonumber(offerIndex)
     quantity = tonumber(quantity)
     if not offerIndex or offerIndex < 1 or not quantity or quantity < 1 then
@@ -412,10 +488,18 @@ function PZLinuxDarkWebApplySell(player, offerIndex, quantity, requestId)
         return { ok = false, error = "sale_parcel_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
     parcel:setName("$" .. tostring(amount))
-    parcel:getModData().PZLinuxDarkWebSale = true
-    parcel:getModData().PZLinuxDarkWebSaleAmount = amount
+    local parcelData = parcel:getModData()
+    parcelData.PZLinuxDarkWebSale = true
+    parcelData.PZLinuxDarkWebSaleAmount = amount
+    local receiptId = PZLinuxDeliveryCreateReceiptId(playerObj, "darkweb", requestId, {
+        amount = amount,
+        quantity = quantity,
+        offerIndex = offerIndex,
+    })
+    parcelData.PZLinuxSaleReceiptId = receiptId
     if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
         inventory:Remove(parcel)
+        PZLinuxDeliveryCancelReceipt(receiptId)
         return { ok = false, error = "sale_parcel_sync_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
@@ -424,6 +508,17 @@ function PZLinuxDarkWebApplySell(player, offerIndex, quantity, requestId)
         if PZLinuxRemoveInventoryItem(playerObj, soldItem) then
             removed = removed + 1
         end
+    end
+    if removed ~= quantity then
+        PZLinuxRemoveInventoryItem(playerObj, parcel)
+        PZLinuxDeliveryCancelReceipt(receiptId)
+        return {
+            ok = false,
+            error = "sale_item_removal_failed",
+            requestId = requestId,
+            removed = removed,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
     end
 
     if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
@@ -436,6 +531,7 @@ function PZLinuxDarkWebApplySell(player, offerIndex, quantity, requestId)
         offerIndex = offerIndex,
         soldCount = removed,
         amount = amount,
+        receiptId = receiptId,
         balance = PZLinuxLoadBankBalance(playerObj),
     }
 end
@@ -452,6 +548,7 @@ function PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId)
     local items = inventory:getItems()
     local amount = 0
     local redeemed = 0
+    local packages = {}
 
     for index = items:size() - 1, 0, -1 do
         local item = items:get(index)
@@ -473,9 +570,12 @@ function PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId)
                 end
 
                 if packageAmount and packageAmount > 0 then
-                    amount = amount + PZLinuxNormalizeMoney(packageAmount)
-                    redeemed = redeemed + 1
-                    PZLinuxRemoveInventoryItem(playerObj, item)
+                    local receiptId = tostring(itemModData.PZLinuxSaleReceiptId or "")
+                    table.insert(packages, { item = item, amount = packageAmount, receiptId = receiptId })
+                    if receiptId == "" or not PZLinuxDeliveryIsReceiptRedeemed(receiptId) then
+                        amount = amount + PZLinuxNormalizeMoney(packageAmount)
+                        redeemed = redeemed + 1
+                    end
                 end
             end
         end
@@ -486,6 +586,12 @@ function PZLinuxDarkWebApplyRedeemSales(player, mailboxRef, requestId)
         credit = PZLinuxApplyBankCredit(playerObj, amount, "darkweb-sale", requestId)
     end
 
+    for _, package in ipairs(packages) do
+        if package.receiptId ~= "" then
+            PZLinuxDeliveryMarkReceiptRedeemed(package.receiptId, playerObj)
+        end
+        PZLinuxRemoveInventoryItem(playerObj, package.item)
+    end
     PZLinuxTransmitPlayerModData(playerObj)
     return {
         ok = true,
@@ -504,102 +610,29 @@ function PZLinuxDarkWebApplyDeliverOrders(player, mailboxRef, requestId)
         return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local modData = playerObj:getModData()
-    local queue = PZLinuxDarkWebQueueDecode(modData.PZLinuxOnItemBuyOnDarkWebQueue)
-
-    -- Diagnostic logging kept from the original investigation -- but now
-    -- unconditional, printed BEFORE either early-return below, not just on
-    -- the "there's something to deliver" path. A player reported not
-    -- receiving an order with no queueLenAfter=2 in their BUY logs either
-    -- (i.e. the SECOND purchase's own entry, the one that should still
-    -- have been the most recent one queued, was also gone by the time they
-    -- checked the mailbox) -- this line is what would show definitively
-    -- whether that's because the mailbox visit found status/queue already
-    -- reset to nothing (rawStatus/rawQueueLen below would show it) or
-    -- something else entirely, instead of leaving that mailbox visit with
-    -- no log trace at all whenever it hits an early return.
+    local pendingBefore = PZLinuxDarkWebMigrateLegacyQueue(playerObj)
     print(string.format(
-        "[PZLinux DarkWeb] DELIVER player=%s rawStatus=%s rawQueueLen=%d decodedQueueLen=%d",
-        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(modData.PZLinuxOnItemBuyOnDarkWebStatus),
-        #tostring(modData.PZLinuxOnItemBuyOnDarkWebQueue or ""), #queue))
+        "[PZLinux DarkWeb] DELIVER player=%s pending=%d",
+        tostring(PZLinuxGetPlayerKey(playerObj)), pendingBefore))
 
-    if modData.PZLinuxOnItemBuyOnDarkWebStatus ~= 1 then
-        return { ok = true, requestId = requestId, delivered = 0, lost = false, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
-
-    if #queue == 0 then
-        modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-        modData.PZLinuxOnItemBuyOnDarkWebQueue = ""
-        return { ok = true, requestId = requestId, delivered = 0, lost = false, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
-
-    do
-        local summary = {}
-        for entryIndex, entry in ipairs(queue) do
-            table.insert(summary, entryIndex .. ":" .. tostring(entry.name) .. "x" .. tostring(entry.quantity))
-        end
-        print(string.format(
-            "[PZLinux DarkWeb] DELIVER player=%s queueLenBefore=%d entries=%s",
-            tostring(PZLinuxGetPlayerKey(playerObj)), #queue, table.concat(summary, " ")))
+    if pendingBefore <= 0 then
+        return { ok = true, requestId = requestId, delivered = 0, parcels = 0, lost = false, remaining = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     local chanceLostOrder = ZombRand(1, 101)
     if chanceLostOrder <= 10 then
-        modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-        modData.PZLinuxOnItemBuyOnDarkWebQueue = ""
-        PZLinuxTransmitPlayerModData(playerObj)
+        local lostCount = PZLinuxDeliveryMarkPendingLost(playerObj, "darkweb")
+        PZLinuxDarkWebSyncPendingState(playerObj)
         PZLinuxCreateStolenOrderNote(playerObj)
-        return { ok = true, requestId = requestId, delivered = 0, lost = true, balance = PZLinuxLoadBankBalance(playerObj) }
+        return { ok = true, requestId = requestId, delivered = 0, parcels = 0, lost = true, lostCount = lostCount, remaining = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local inventory = playerObj:getInventory()
-    local delivered = 0
-    while #queue > 0 do
-        local entry = queue[#queue]
-        if not entry.name or not entry.quantity or entry.quantity < 1 then
-            table.remove(queue, #queue)
-            modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)
-            return { ok = false, error = "invalid_pending_order", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-
-        local parcel = inventory:AddItem("Base.Parcel_Large")
-        local parcelInv = parcel and parcel:getInventory()
-        if not parcelInv then
-            if parcel then inventory:Remove(parcel) end
-            return { ok = false, error = "parcel_creation_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-
-        local batchDelivered = 0
-        if getScriptManager():FindItem(entry.name) then
-            for _ = 1, entry.quantity do
-                local deliveredItem = parcelInv:AddItem(entry.name)
-                if deliveredItem then batchDelivered = batchDelivered + 1 end
-            end
-        end
-
-        if batchDelivered <= 0 then
-            inventory:Remove(parcel)
-            return { ok = false, error = "invalid_pending_item", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-
-        if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
-            inventory:Remove(parcel)
-            return { ok = false, error = "parcel_sync_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-        delivered = delivered + batchDelivered
-        table.remove(queue, #queue)
-        -- v1.0.8 (kept): transmitting after every single removal, not just
-        -- once at the end, means a mid-loop disconnect leaves the
-        -- already-delivered entries marked gone rather than betting on one
-        -- final transmit at the end of the loop to have covered all of
-        -- them.
-        modData.PZLinuxOnItemBuyOnDarkWebQueue = PZLinuxDarkWebQueueEncode(queue)
-        PZLinuxTransmitPlayerModData(playerObj)
-    end
-
-    modData.PZLinuxOnItemBuyOnDarkWebStatus = 0
-    PZLinuxTransmitPlayerModData(playerObj)
-    return { ok = true, requestId = requestId, delivered = delivered, lost = false, balance = PZLinuxLoadBankBalance(playerObj) }
+    local result = PZLinuxDeliveryDeliverPending(playerObj, "darkweb")
+    result.requestId = requestId
+    result.lost = false
+    result.balance = PZLinuxLoadBankBalance(playerObj)
+    PZLinuxDarkWebSyncPendingState(playerObj)
+    return result
 end
 
 function PZLinuxRequestDarkWebOffers(player, callback)

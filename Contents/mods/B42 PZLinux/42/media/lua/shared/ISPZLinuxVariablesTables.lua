@@ -3,6 +3,8 @@ PZLinux = PZLinux or {}
 require "PZLinux/PZLinuxConfig"
 require "PZLinux/PZLinuxTyping"
 require "PZLinux/PZLinuxWorldInteractions"
+require "PZLinux/PZLinuxIdentity"
+require "PZLinux/PZLinuxDeliveryQueue"
 require "PZLinux/PZLinuxMissionLocations"
 require "PZLinux/PZLinuxGamblingData"
 require "PZLinux/PZLinuxRaceEngine"
@@ -104,6 +106,27 @@ function PZLinuxGetMailData(player, id)
 end
 
 PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
+    IGUI_PZLinux_Request_NoSellerToday = "No one is buying or selling anything today. Come back tomorrow.",
+    IGUI_PZLinux_Request_CategoryUnavailable = "No one wants to trade in this category anymore today.",
+    IGUI_PZLinux_Sell_Title = "SELL GOODS",
+    IGUI_PZLinux_Sell_Loading = "Checking who wants to buy...",
+    IGUI_PZLinux_Sell_Unavailable = "Sell service unavailable.",
+    IGUI_PZLinux_Sell_NoBuyerToday = "Nobody wants to buy anything today. Come back tomorrow.",
+    IGUI_PZLinux_Sell_BuyersToday = "Buyers looking for %s item(s) today.",
+    IGUI_PZLinux_Sell_Owned = "You have: %s/%s",
+    IGUI_PZLinux_Sell_GreatDealTag = "(great deal!)",
+    IGUI_PZLinux_Sell_Negotiate = "NEGOTIATE",
+    IGUI_PZLinux_Sell_SellButton = "SELL",
+    IGUI_PZLinux_Sell_GreatDeal = "Great deal! Sold for $%s",
+    IGUI_PZLinux_Sell_Sold = "Sold for $%s",
+    IGUI_PZLinux_Sell_DropAtMailbox = "Bring the package to any mailbox to get paid.",
+    IGUI_PZLinux_Sell_MissingItems = "You do not have enough of this item.",
+    IGUI_PZLinux_Sell_Rejected = "This sale was rejected.",
+    IGUI_PZLinux_Sell_NegotiateWithdrawn = "The buyer got annoyed and walked away.",
+    IGUI_PZLinux_Sell_NegotiateSuccess = "The buyer agreed! New offer: $%s",
+    IGUI_PZLinux_DarkWeb_Sell = "SELL",
+    IGUI_PZLinux_DarkWeb_NoSellableItems = "No supported item was found in your main inventory.",
+    IGUI_PZLinux_DarkWeb_SellUnavailable = "Unable to load sell offers. Try again.",
     IGUI_PZLinux_Betting_Balance = "Bank Balance: $",
     IGUI_PZLinux_Betting_ZombieRace = "ZOMBIE RACE",
     IGUI_PZLinux_Betting_Blackjack = "BLACKJACK",
@@ -469,47 +492,113 @@ function PZLinuxCreateStolenOrderNote(player)
     return note
 end
 
--- Belt and suspenders (v1.0.8): a player reported their bank balance
--- looking "really different" after restarting the game. If modData.PZLinuxBank
--- ever comes back nil for a reason other than "this character never had a
--- balance" -- a save/reload round-trip glitch, most plausibly -- the code
--- below couldn't tell that apart from a genuinely new character, and just
--- rolled a fresh random $500-$4000 starting balance over the real one,
--- with no record anywhere of what happened. PZLinuxBankBackup mirrors the
--- balance onto a second, independent top-level key on every write; if the
--- primary key is ever missing, this recovers the last known real balance
--- from the backup instead of silently replacing it with a random one. A
--- genuinely new character has both keys nil, so the random roll still
--- happens exactly as before in that case.
+local PZLINUX_BANK_DATA = "PZLinuxCharacterBankLedger"
+local PZLINUX_BANK_VERSION = 1
+
+function PZLinuxBankGetLedger()
+    if not ModData or not ModData.getOrCreate then return nil end
+    local ledger = ModData.getOrCreate(PZLINUX_BANK_DATA)
+    ledger.version = PZLINUX_BANK_VERSION
+    ledger.accounts = ledger.accounts or {}
+    return ledger
+end
+
+local function PZLinuxBankWorldHour()
+    return getGameTime and getGameTime():getWorldAgeHours() or 0
+end
+
+local function PZLinuxBankIsAuthoritative()
+    if PZLinuxIdentityIsAuthoritative then return PZLinuxIdentityIsAuthoritative() end
+    if isClient and isClient() then return isServer and isServer() or false end
+    return true
+end
+
+local function PZLinuxBankGetCharacterIdentity(playerObj, createIfMissing)
+    local characterId = PZLinuxGetCharacterId and PZLinuxGetCharacterId(playerObj, createIfMissing) or nil
+    local characterKey = PZLinuxGetCharacterKey and PZLinuxGetCharacterKey(playerObj, createIfMissing) or nil
+    return characterId, characterKey
+end
+
+local function PZLinuxBankGetCharacterRecord(playerObj, createIfMissing)
+    local characterId, characterKey = PZLinuxBankGetCharacterIdentity(playerObj, createIfMissing)
+    local ledger = PZLinuxBankIsAuthoritative() and PZLinuxBankGetLedger() or nil
+    local record = ledger and characterKey and ledger.accounts[characterKey] or nil
+    return record, ledger, characterId, characterKey
+end
+
+local function PZLinuxBankCharacterCannotMutate(playerObj)
+    if not PZLinuxBankIsAuthoritative() then return false end
+    if PZLinuxIdentityIsPlayerDead and PZLinuxIdentityIsPlayerDead(playerObj) then return true end
+    local record = PZLinuxBankGetCharacterRecord(playerObj, false)
+    return record and record.status == "deceased" or false
+end
+
+local function PZLinuxBankRollStartingBalance()
+    local minStart = PZLinuxGetStartingBalanceMin()
+    local maxStart = math.max(minStart, PZLinuxGetStartingBalanceMax())
+    return maxStart > minStart and ZombRand(minStart, maxStart) or minStart
+end
+
+-- The player ModData remains the client-visible mirror, while the authoritative
+-- server ledger is indexed by a persistent character ID. Existing characters
+-- without an identity stamp adopt their current balance once. A fresh character
+-- on the same account receives a new identity, a separate ledger entry and its
+-- own configured starting balance.
 function PZLinuxLoadBankBalance(player)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end
 
     local modData = playerObj:getModData()
+    local previousPrimary = tonumber(modData.PZLinuxBank)
+    local previousBackup = tonumber(modData.PZLinuxBankBackup)
+    local previousOwnerId = tostring(modData.PZLinuxBankCharacterId or "")
+    local characterId, characterKey = PZLinuxBankGetCharacterIdentity(playerObj, true)
+    local bankOwnerId = tostring(modData.PZLinuxBankCharacterId or "")
+    local ownerMatches = bankOwnerId == "" or not characterId or bankOwnerId == characterId
     local balance = tonumber(modData.PZLinuxBank)
-    if balance == nil then
+    if not ownerMatches then balance = nil end
+
+    if balance == nil and ownerMatches then
         local backupBalance = tonumber(modData.PZLinuxBankBackup)
         if backupBalance ~= nil then
             print(string.format(
                 "[PZLinux Bank] RECOVERED balance from backup key player=%s balance=%d (primary key was nil)",
                 tostring(PZLinuxGetPlayerKey(playerObj)), backupBalance))
             balance = backupBalance
-        else
-            -- Configurable via sandbox options (PZLinux.StartingBalanceMin/
-            -- Max) so a server can set both to 0 and remove the "die, make
-            -- a new character, get free money" loop entirely -- see
-            -- PZLinuxGetStartingBalanceMin/Max.
-            local minStart = PZLinuxGetStartingBalanceMin()
-            local maxStart = math.max(minStart, PZLinuxGetStartingBalanceMax())
-            balance = maxStart > minStart and ZombRand(minStart, maxStart) or minStart
         end
-        modData.PZLinuxBank = balance
-        PZLinuxTransmitPlayerModData(playerObj)
+    end
+
+    local ledger = PZLinuxBankIsAuthoritative() and PZLinuxBankGetLedger() or nil
+    local record = ledger and characterKey and ledger.accounts[characterKey] or nil
+    if record then
+        balance = tonumber(record.balance) or 0
+    elseif ledger and characterKey then
+        balance = balance == nil and PZLinuxBankRollStartingBalance() or balance
+        record = {
+            account = PZLinuxGetCharacterAccount and PZLinuxGetCharacterAccount(playerObj)
+                or PZLinuxGetPlayerKey(playerObj),
+            characterId = characterId,
+            nativeKey = PZLinuxGetCharacterNativeKey and PZLinuxGetCharacterNativeKey(playerObj) or nil,
+            balance = balance,
+            createdHour = PZLinuxBankWorldHour(),
+            updatedHour = PZLinuxBankWorldHour(),
+            status = "active",
+        }
+        ledger.accounts[characterKey] = record
+    elseif balance == nil then
+        balance = PZLinuxBankIsAuthoritative() and PZLinuxBankRollStartingBalance() or 0
     end
 
     balance = math.max(0, math.floor(balance))
     modData.PZLinuxBank = balance
     modData.PZLinuxBankBackup = balance
+    if characterId then modData.PZLinuxBankCharacterId = characterId end
+    if record then record.balance = balance end
+    if previousPrimary ~= balance
+    or previousBackup ~= balance
+    or (characterId and previousOwnerId ~= characterId) then
+        PZLinuxTransmitPlayerModData(playerObj)
+    end
     return balance
 end
 
@@ -517,17 +606,57 @@ function PZLinuxSetBankBalance(player, balance)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return 0 end
 
+    if PZLinuxBankCharacterCannotMutate(playerObj) then
+        return PZLinuxLoadBankBalance(playerObj)
+    end
+
     balance = PZLinuxNormalizeMoney(balance)
     local modData = playerObj:getModData()
+    local characterId, characterKey = PZLinuxBankGetCharacterIdentity(playerObj, true)
+    local ledger = PZLinuxBankIsAuthoritative() and PZLinuxBankGetLedger() or nil
+    if ledger and characterKey then
+        local record = ledger.accounts[characterKey] or {
+            account = PZLinuxGetCharacterAccount and PZLinuxGetCharacterAccount(playerObj)
+                or PZLinuxGetPlayerKey(playerObj),
+            characterId = characterId,
+            nativeKey = PZLinuxGetCharacterNativeKey and PZLinuxGetCharacterNativeKey(playerObj) or nil,
+            createdHour = PZLinuxBankWorldHour(),
+            status = "active",
+        }
+        record.balance = balance
+        record.updatedHour = PZLinuxBankWorldHour()
+        ledger.accounts[characterKey] = record
+    end
     modData.PZLinuxBank = balance
     modData.PZLinuxBankBackup = balance
+    if characterId then modData.PZLinuxBankCharacterId = characterId end
     PZLinuxTransmitPlayerModData(playerObj)
     return balance
 end
 
+function PZLinuxBankMarkCharacterDead(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj or not PZLinuxBankIsAuthoritative() then return false end
+    local _, characterKey = PZLinuxBankGetCharacterIdentity(playerObj, false)
+    local ledger = characterKey and PZLinuxBankGetLedger() or nil
+    local record = ledger and ledger.accounts[characterKey] or nil
+    if not record then return false end
+    record.status = "deceased"
+    record.deathHour = PZLinuxBankWorldHour()
+    return true
+end
+
 function PZLinuxApplyBankDebit(player, amount, reason, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then
+        return { ok = false, error = "no_player", requestId = requestId, reason = reason }
+    end
     amount = PZLinuxNormalizeMoney(amount)
-    local previousBalance = PZLinuxLoadBankBalance(player)
+    local previousBalance = PZLinuxLoadBankBalance(playerObj)
+
+    if PZLinuxBankCharacterCannotMutate(playerObj) then
+        return { ok = false, error = "character_deceased", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+    end
 
     if amount <= 0 then
         return { ok = false, error = "invalid_amount", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
@@ -537,19 +666,27 @@ function PZLinuxApplyBankDebit(player, amount, reason, requestId)
         return { ok = false, error = "not_enough_money", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
     end
 
-    local balance = PZLinuxSetBankBalance(player, previousBalance - amount)
+    local balance = PZLinuxSetBankBalance(playerObj, previousBalance - amount)
     return { ok = true, amount = amount, balance = balance, previousBalance = previousBalance, reason = reason, requestId = requestId }
 end
 
 function PZLinuxApplyBankCredit(player, amount, reason, requestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then
+        return { ok = false, error = "no_player", requestId = requestId, reason = reason }
+    end
     amount = PZLinuxNormalizeMoney(amount)
-    local previousBalance = PZLinuxLoadBankBalance(player)
+    local previousBalance = PZLinuxLoadBankBalance(playerObj)
+
+    if PZLinuxBankCharacterCannotMutate(playerObj) then
+        return { ok = false, error = "character_deceased", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
+    end
 
     if amount <= 0 then
         return { ok = false, error = "invalid_amount", amount = amount, balance = previousBalance, previousBalance = previousBalance, reason = reason, requestId = requestId }
     end
 
-    local balance = PZLinuxSetBankBalance(player, previousBalance + amount)
+    local balance = PZLinuxSetBankBalance(playerObj, previousBalance + amount)
     return { ok = true, amount = amount, balance = balance, previousBalance = previousBalance, reason = reason, requestId = requestId }
 end
 
@@ -1986,9 +2123,75 @@ function PZLinuxRequestsQueueEncode(queue)
     return table.concat(batchParts, ";")
 end
 
+local function PZLinuxRequestsSyncPendingState(playerObj)
+    local modData = playerObj:getModData()
+    local pending = PZLinuxDeliveryPendingCount(playerObj, "request")
+    local vehiclePending = tonumber(modData.PZLinuxOnItemRequestCar) == 1
+    modData.PZLinuxActiveRequest = (pending > 0 or vehiclePending) and 1 or 0
+    modData.PZLinuxOnItemRequestQueue = ""
+    modData.PZLinuxRequestPendingCount = pending
+    PZLinuxTransmitPlayerModData(playerObj)
+    return pending
+end
+
+function PZLinuxRequestsMigrateLegacyQueue(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+    local record = PZLinuxDeliveryGetPlayerRecord(playerObj)
+    if tonumber(record.migrations.requests) == 1 then
+        return PZLinuxRequestsSyncPendingState(playerObj)
+    end
+
+    local modData = playerObj:getModData()
+    local legacyQueue = PZLinuxRequestsQueueDecode(modData.PZLinuxOnItemRequestQueue)
+    for index, batch in ipairs(legacyQueue) do
+        local items = {}
+        for _, item in ipairs(batch.items or {}) do
+            table.insert(items, { name = item.name, quantity = 1 })
+        end
+        PZLinuxDeliveryEnqueue(
+            playerObj,
+            "request",
+            items,
+            "legacy-request-" .. tostring(index)
+        )
+    end
+    record.migrations.requests = 1
+    return PZLinuxRequestsSyncPendingState(playerObj)
+end
+
 function PZLinuxRequestsApplyOrder(player, state, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+
+    local replayModData = playerObj:getModData()
+    if requestId
+    and tostring(replayModData.PZLinuxRequestLastRequestId or "") == tostring(requestId) then
+        return {
+            ok = true,
+            replayed = true,
+            requestId = requestId,
+            contractId = tonumber(replayModData.PZLinuxRequestLastContractId),
+            amount = tonumber(replayModData.PZLinuxRequestLastAmount),
+            deliveryOrderId = replayModData.PZLinuxRequestLastDeliveryOrderId,
+            deliveryId = replayModData.PZLinuxRequestLastVehicleDeliveryId,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+
+    local existingDelivery = PZLinuxDeliveryFindOrderByRequest(playerObj, "request", requestId)
+    if existingDelivery then
+        local metadata = existingDelivery.metadata or {}
+        return {
+            ok = true,
+            replayed = true,
+            requestId = requestId,
+            contractId = metadata.contractId,
+            amount = metadata.amount,
+            deliveryOrderId = existingDelivery.id,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
 
     local order = PZLinuxRequestsBuildOrder(playerObj, state, requestId)
     if not order.ok then return order end
@@ -2010,7 +2213,7 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
     end
 
     local hasPendingVehicle = tonumber(modData.PZLinuxOnItemRequestCar) == 1
-    local hasPendingItems = type(modData.PZLinuxOnItemRequestQueue) == "string" and modData.PZLinuxOnItemRequestQueue ~= ""
+    local hasPendingItems = PZLinuxRequestsMigrateLegacyQueue(playerObj) > 0
 
     -- A vehicle delivery only clears PZLinuxOnItemRequestCar once the client
     -- visually confirms it while standing next to it. The vehicle (and its
@@ -2082,16 +2285,42 @@ function PZLinuxRequestsApplyOrder(player, state, requestId)
         order.deliveryId = modData.PZLinuxRequestVehicleDeliveryId
     else
         modData.PZLinuxOnItemRequestCar = 0
-        local queue = PZLinuxRequestsQueueDecode(modData.PZLinuxOnItemRequestQueue)
-        table.insert(queue, { items = order.items })
-        modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)
+        local deliveryItems = {}
+        for _, item in ipairs(order.items or {}) do
+            table.insert(deliveryItems, { name = item.name, quantity = 1 })
+        end
+        local deliveryOrder, _, queueError = PZLinuxDeliveryEnqueue(
+            playerObj,
+            "request",
+            deliveryItems,
+            requestId,
+            { contractId = order.contractId, amount = order.amount, itemCount = #deliveryItems }
+        )
+        if not deliveryOrder then
+            PZLinuxApplyBankCredit(playerObj, order.amount, "request-order-refund", requestId)
+            return {
+                ok = false,
+                error = queueError or "delivery_queue_failed",
+                requestId = requestId,
+                balance = PZLinuxLoadBankBalance(playerObj),
+            }
+        end
+        order.deliveryOrderId = deliveryOrder.id
+        local pendingCount = PZLinuxRequestsSyncPendingState(playerObj)
         -- Same diagnostic pattern as the Dark Web buy path
         -- (PZLinuxDarkWeb.lua) -- kept alongside it since it's what
         -- actually surfaced the real root cause there.
         print(string.format(
             "[PZLinux Requests] ORDER player=%s contractId=%s queueLenAfter=%d",
-            tostring(PZLinuxGetPlayerKey(playerObj)), tostring(order.contractId), #queue))
+            tostring(PZLinuxGetPlayerKey(playerObj)), tostring(order.contractId), pendingCount))
         if addXp then addXp(playerObj, Perks.PlantScavenging, 3) end
+    end
+    if requestId then
+        modData.PZLinuxRequestLastRequestId = tostring(requestId)
+        modData.PZLinuxRequestLastContractId = order.contractId
+        modData.PZLinuxRequestLastAmount = order.amount
+        modData.PZLinuxRequestLastDeliveryOrderId = order.deliveryOrderId
+        modData.PZLinuxRequestLastVehicleDeliveryId = order.deliveryId
     end
     PZLinuxTransmitPlayerModData(playerObj)
 
@@ -2110,83 +2339,32 @@ function PZLinuxRequestsApplyDelivery(player, mailboxRef, requestId)
     if mailboxError then
         return { ok = false, error = mailboxError, requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
-    local modData = playerObj:getModData()
-    local queue = PZLinuxRequestsQueueDecode(modData.PZLinuxOnItemRequestQueue)
+    local pendingBefore = PZLinuxRequestsMigrateLegacyQueue(playerObj)
     -- Same unconditional-before-any-early-return diagnostic as the Dark Web
     -- delivery path (PZLinuxDarkWeb.lua) -- printed no matter what state is
     -- found, so a mailbox visit that turns up nothing still leaves a log
     -- trace showing exactly why.
     print(string.format(
         "[PZLinux Requests] DELIVER player=%s activeRequest=%s rawQueueLen=%d decodedQueueLen=%d",
-        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(modData.PZLinuxActiveRequest),
-        #tostring(modData.PZLinuxOnItemRequestQueue or ""), #queue))
+        tostring(PZLinuxGetPlayerKey(playerObj)), tostring(playerObj:getModData().PZLinuxActiveRequest),
+        0, pendingBefore))
 
-    if modData.PZLinuxActiveRequest ~= 1 then
-        return { ok = true, requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
-
-    if #queue == 0 then
-        modData.PZLinuxActiveRequest = 0
-        modData.PZLinuxOnItemRequestQueue = ""
+    if pendingBefore <= 0 then
         return { ok = true, requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     if ZombRand(1, 101) <= 10 then
-        modData.PZLinuxActiveRequest = 0
-        modData.PZLinuxOnItemRequestQueue = ""
-        PZLinuxTransmitPlayerModData(playerObj)
+        local lostCount = PZLinuxDeliveryMarkPendingLost(playerObj, "request")
+        PZLinuxRequestsSyncPendingState(playerObj)
         PZLinuxCreateStolenOrderNote(playerObj)
-        return { ok = true, requestId = requestId, lost = true, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
+        return { ok = true, requestId = requestId, lost = true, lostCount = lostCount, delivered = 0, remaining = 0, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local delivered = 0
-    local inventory = playerObj:getInventory()
-    if not inventory then
-        return { ok = false, error = "missing_inventory", requestId = requestId, delivered = 0, balance = PZLinuxLoadBankBalance(playerObj) }
-    end
-
-    while #queue > 0 do
-        local batch = queue[#queue]
-        if not batch.items or #batch.items == 0 then
-            table.remove(queue, #queue)
-            modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)
-            return { ok = false, error = "invalid_pending_request", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-
-        local parcel = inventory:AddItem("Base.Parcel_Large")
-        if not parcel then
-            return { ok = false, error = "parcel_creation_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-
-        local parcelInv = parcel:getInventory()
-        local batchDelivered = 0
-        for _, item in ipairs(batch.items) do
-            local created = item and item.name and parcelInv:AddItem(item.name)
-            if not created then
-                inventory:Remove(parcel)
-                return { ok = false, error = "item_creation_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-            end
-            batchDelivered = batchDelivered + 1
-        end
-
-        if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
-            inventory:Remove(parcel)
-            return { ok = false, error = "parcel_sync_failed", requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
-        end
-
-        table.remove(queue, #queue)
-        -- v1.0.8 (kept): transmitting after every single removal, not just
-        -- once at the end, means a mid-loop disconnect leaves the
-        -- already-delivered entries marked gone rather than betting on one
-        -- final transmit at the end of the loop to have covered all of
-        -- them.
-        modData.PZLinuxOnItemRequestQueue = PZLinuxRequestsQueueEncode(queue)
-        delivered = delivered + batchDelivered
-        PZLinuxTransmitPlayerModData(playerObj)
-    end
-    modData.PZLinuxActiveRequest = 0
-    PZLinuxTransmitPlayerModData(playerObj)
-    return { ok = true, requestId = requestId, delivered = delivered, balance = PZLinuxLoadBankBalance(playerObj) }
+    local result = PZLinuxDeliveryDeliverPending(playerObj, "request")
+    result.requestId = requestId
+    result.balance = PZLinuxLoadBankBalance(playerObj)
+    PZLinuxRequestsSyncPendingState(playerObj)
+    return result
 end
 
 -- ===========================================================================
@@ -2356,6 +2534,21 @@ end
 function PZLinuxSellApplySell(player, itemName, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    local existingReceipt = PZLinuxDeliveryFindReceiptByRequest(playerObj, "sell-surplus", requestId)
+    if existingReceipt then
+        local metadata = existingReceipt.metadata or {}
+        return {
+            ok = true,
+            replayed = true,
+            requestId = requestId,
+            itemName = metadata.itemName,
+            sold = metadata.quantity,
+            total = metadata.amount,
+            greatDeal = metadata.greatDeal,
+            receiptId = existingReceipt.id,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
     local modData = PZLinuxSellEnsureDemandRoll(playerObj)
 
     local demand = PZLinuxSellIsItemActive(modData, itemName)
@@ -2372,14 +2565,13 @@ function PZLinuxSellApplySell(player, itemName, requestId)
         return { ok = false, error = "missing_items", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    local removedCount = 0
     local items = inventory:getItems()
+    local soldItems = {}
     for index = items:size() - 1, 0, -1 do
-        if removedCount >= demand.quantity then break end
+        if #soldItems >= demand.quantity then break end
         local item = items:get(index)
         if item and item.getFullType and item:getFullType() == itemName then
-            inventory:Remove(item)
-            removedCount = removedCount + 1
+            table.insert(soldItems, item)
         end
     end
 
@@ -2391,10 +2583,37 @@ function PZLinuxSellApplySell(player, itemName, requestId)
         return { ok = false, error = "sale_parcel_creation_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
     parcel:setName("$" .. tostring(total))
-    parcel:getModData().PZLinuxSellSaleAmount = total
+    local parcelData = parcel:getModData()
+    parcelData.PZLinuxSellSaleAmount = total
+    local receiptId = PZLinuxDeliveryCreateReceiptId(playerObj, "sell-surplus", requestId, {
+        amount = total,
+        quantity = demand.quantity,
+        itemName = itemName,
+        greatDeal = greatDeal,
+    })
+    parcelData.PZLinuxSaleReceiptId = receiptId
     if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
         inventory:Remove(parcel)
+        PZLinuxDeliveryCancelReceipt(receiptId)
         return { ok = false, error = "sale_parcel_sync_failed", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
+    end
+
+    local removedCount = 0
+    for _, soldItem in ipairs(soldItems) do
+        if PZLinuxRemoveInventoryItem(playerObj, soldItem) then
+            removedCount = removedCount + 1
+        end
+    end
+    if removedCount ~= demand.quantity then
+        PZLinuxRemoveInventoryItem(playerObj, parcel)
+        PZLinuxDeliveryCancelReceipt(receiptId)
+        return {
+            ok = false,
+            error = "sale_item_removal_failed",
+            requestId = requestId,
+            removed = removedCount,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
     end
 
     modData.PZLinuxSellSoldToday = modData.PZLinuxSellSoldToday or {}
@@ -2411,6 +2630,7 @@ function PZLinuxSellApplySell(player, itemName, requestId)
         sold = removedCount,
         total = total,
         greatDeal = greatDeal,
+        receiptId = receiptId,
         balance = PZLinuxLoadBankBalance(playerObj),
     }
 end
@@ -2427,6 +2647,7 @@ function PZLinuxSellApplyRedeemPackage(player, mailboxRef, requestId)
     local items = inventory:getItems()
     local amount = 0
     local redeemed = 0
+    local packages = {}
 
     for index = items:size() - 1, 0, -1 do
         local item = items:get(index)
@@ -2434,9 +2655,12 @@ function PZLinuxSellApplyRedeemPackage(player, mailboxRef, requestId)
             local itemModData = item:getModData()
             local packageAmount = tonumber(itemModData.PZLinuxSellSaleAmount)
             if packageAmount and packageAmount > 0 then
-                amount = amount + PZLinuxNormalizeMoney(packageAmount)
-                redeemed = redeemed + 1
-                PZLinuxRemoveInventoryItem(playerObj, item)
+                local receiptId = tostring(itemModData.PZLinuxSaleReceiptId or "")
+                table.insert(packages, { item = item, receiptId = receiptId })
+                if receiptId == "" or not PZLinuxDeliveryIsReceiptRedeemed(receiptId) then
+                    amount = amount + PZLinuxNormalizeMoney(packageAmount)
+                    redeemed = redeemed + 1
+                end
             end
         end
     end
@@ -2444,6 +2668,13 @@ function PZLinuxSellApplyRedeemPackage(player, mailboxRef, requestId)
     local credit = nil
     if amount > 0 then
         credit = PZLinuxApplyBankCredit(playerObj, amount, "sell-surplus", requestId)
+    end
+
+    for _, package in ipairs(packages) do
+        if package.receiptId ~= "" then
+            PZLinuxDeliveryMarkReceiptRedeemed(package.receiptId, playerObj)
+        end
+        PZLinuxRemoveInventoryItem(playerObj, package.item)
     end
 
     PZLinuxTransmitPlayerModData(playerObj)
@@ -4569,7 +4800,21 @@ function PZLinuxContractsHasDepositItems(player)
     local playerObj = PZLinuxGetPlayer(player)
     local inventory = playerObj and playerObj:getInventory()
     local modData = playerObj and playerObj:getModData()
-    if not inventory or not modData or (tonumber(modData.PZLinuxActiveContract) or 0) ~= 1 then return false end
+    if not inventory or not modData then return false end
+
+    if (tonumber(modData.PZLinuxActiveContract) or 0) ~= 1 then
+        local inventoryItems = inventory:getItems()
+        for index = 0, inventoryItems:size() - 1 do
+            local itemContractId = PZLinuxContractsGetEntityContractId(inventoryItems:get(index))
+            local taggedRecord = PZLinuxContractsGetWorldContract(itemContractId)
+            if taggedRecord and taggedRecord.status ~= "completed" and taggedRecord.status ~= "cancelled" then
+                PZLinuxContractsSyncWorldRecordToPlayer(playerObj, taggedRecord)
+                modData = playerObj:getModData()
+                break
+            end
+        end
+    end
+    if (tonumber(modData.PZLinuxActiveContract) or 0) ~= 1 then return false end
 
     local items = inventory:getItems()
     local requiredType = modData.PZLinuxContractInfo
@@ -4599,18 +4844,19 @@ function PZLinuxMailboxGetActionState(player, mailboxRef, requestId)
     local _, mailboxError = PZLinuxValidateMailboxInteraction(playerObj, mailboxRef)
     if mailboxError then return { ok = false, error = mailboxError, requestId = requestId } end
 
-    local modData = playerObj:getModData()
-    local hasDarkWebPickup = modData.PZLinuxOnItemBuyOnDarkWebStatus == 1
-        and type(modData.PZLinuxOnItemBuyOnDarkWebQueue) == "string"
-        and modData.PZLinuxOnItemBuyOnDarkWebQueue ~= ""
-    local hasRequestPickup = modData.PZLinuxActiveRequest == 1
-        and type(modData.PZLinuxOnItemRequestQueue) == "string"
-        and modData.PZLinuxOnItemRequestQueue ~= ""
+    PZLinuxDarkWebMigrateLegacyQueue(playerObj)
+    PZLinuxRequestsMigrateLegacyQueue(playerObj)
+    PZLinuxMailMigrateLegacyRewards(playerObj)
+
+    local darkWebPending = PZLinuxDeliveryPendingCount(playerObj, "darkweb")
+    local requestPending = PZLinuxDeliveryPendingCount(playerObj, "request")
+    local mailRewardPending = PZLinuxDeliveryPendingCount(playerObj, "mail_reward")
 
     return {
         ok = true,
         requestId = requestId,
-        hasPickup = hasDarkWebPickup or hasRequestPickup,
+        hasPickup = darkWebPending > 0 or requestPending > 0 or mailRewardPending > 0,
+        pickupCount = darkWebPending + requestPending + mailRewardPending,
         hasContractDeposit = PZLinuxContractsHasDepositItems(playerObj),
     }
 end
@@ -4637,6 +4883,16 @@ function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
         end
     end
 
+    if (tonumber(modData.PZLinuxActiveContract) or 0) ~= 1 then
+        return {
+            ok = false,
+            error = "no_active_contract",
+            requestId = requestId,
+            removed = 0,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
+    end
+
     local itemCount = 0
     local requiredType = modData.PZLinuxContractInfo
     for index = 0, items:size() - 1 do
@@ -4646,12 +4902,26 @@ function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
         end
     end
 
-    local totalCountForContract = false
-    if modData.PZLinuxContractInfoCount and itemCount >= modData.PZLinuxContractInfoCount then
-        totalCountForContract = tonumber(modData.PZLinuxContractInfoCount) > 0
+    local requiredCount = math.max(0, tonumber(modData.PZLinuxContractInfoCount) or 0)
+    local isQuantityContract = requiredCount > 0
+        and (modData.PZLinuxContractMedical == 1
+            or modData.PZLinuxContractCar == 1
+            or modData.PZLinuxContractWeapon == 1)
+    local totalCountForContract = isQuantityContract and itemCount >= requiredCount
+    if isQuantityContract and not totalCountForContract then
+        return {
+            ok = false,
+            error = "missing_items",
+            requestId = requestId,
+            removed = 0,
+            required = requiredCount,
+            available = itemCount,
+            balance = PZLinuxLoadBankBalance(playerObj),
+        }
     end
 
     local removed = 0
+    local removeLimit = isQuantityContract and requiredCount or 1
     for index = items:size() - 1, 0, -1 do
         local item = items:get(index)
         local itemContractId = PZLinuxContractsGetEntityContractId(item)
@@ -4662,6 +4932,7 @@ function PZLinuxContractsApplyDeposit(player, mailboxRef, requestId)
                 if tonumber(modData.PZLinuxContractInfoCount) and tonumber(modData.PZLinuxContractInfoCount) > 0 then
                     modData.PZLinuxContractInfoCount = math.max(0, tonumber(modData.PZLinuxContractInfoCount) - 1)
                 end
+                if removed >= removeLimit then break end
             end
         end
     end
@@ -6346,20 +6617,21 @@ function PZLinuxMailRemoveInventoryItems(player, fullType, quantity)
     return removed
 end
 
-function PZLinuxMailGiveReward(player)
-    local playerObj = PZLinuxGetPlayer(player)
-    if not playerObj then return 0 end
-    local inventory = playerObj:getInventory()
-    local parcel = inventory and inventory:AddItem("Base.Present_ExtraLarge")
-    if not parcel then return 0 end
-
-    parcel:setName("A gift to thank you")
-    local parcelInv = parcel:getInventory()
+function PZLinuxMailBuildRewardItems()
+    local items = {}
+    local itemIndexes = {}
     local bonusRand = ZombRand(1, 6)
     local added = 0
     local function PZLinuxMailAddRewardItem(fullType)
-        local item = parcelInv:AddItem(fullType)
-        if not item then return false end
+        fullType = tostring(fullType or "")
+        if fullType == "" then return false end
+        local itemIndex = itemIndexes[fullType]
+        if itemIndex then
+            items[itemIndex].quantity = items[itemIndex].quantity + 1
+        else
+            table.insert(items, { name = fullType, quantity = 1 })
+            itemIndexes[fullType] = #items
+        end
         added = added + 1
         return true
     end
@@ -6369,35 +6641,59 @@ function PZLinuxMailGiveReward(player)
         if entry and entry.id and #entry.id > 0 then
             local one = entry.id[ZombRand(#entry.id) + 1]
             if not PZLinuxMailAddRewardItem(one) then
-                inventory:Remove(parcel)
-                return 0, nil
+                return nil, 0
             end
         end
     end
 
     if bonusRand == 1 then
         if not PZLinuxMailAddRewardItem("Base.Revolver") then
-            inventory:Remove(parcel)
-            return 0, nil
+            return nil, 0
         end
         for _ = 1, ZombRand(100, 301) do
             if not PZLinuxMailAddRewardItem("Base.Money") then
-                inventory:Remove(parcel)
-                return 0, nil
+                return nil, 0
             end
         end
     elseif bonusRand == 2 then
         if not PZLinuxMailAddRewardItem("Base.Revolver") then
-            inventory:Remove(parcel)
-            return 0, nil
+            return nil, 0
         end
     end
 
-    if not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
-        inventory:Remove(parcel)
-        return 0, nil
+    return items, added
+end
+
+function PZLinuxMailGiveReward(player, rewardRequestId)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0, nil end
+    local items, added = PZLinuxMailBuildRewardItems()
+    if not items or added <= 0 then return 0, nil end
+    local order = PZLinuxDeliveryEnqueue(
+        playerObj,
+        "mail_reward",
+        items,
+        rewardRequestId,
+        { parcelType = "Base.Present_ExtraLarge", parcelName = "A gift to thank you" }
+    )
+    return order and added or 0, order
+end
+
+function PZLinuxMailMigrateLegacyRewards(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return 0 end
+    local modData = playerObj:getModData()
+    local record = PZLinuxDeliveryGetPlayerRecord(playerObj)
+    if tonumber(record.migrations.mailRewards) ~= 1 then
+        local legacyPending = math.max(0, math.floor(tonumber(modData.PZLinuxOnMailReward) or 0))
+        for index = 1, legacyPending do
+            PZLinuxMailGiveReward(playerObj, "legacy-mail-reward-" .. tostring(index))
+        end
+        record.migrations.mailRewards = 1
     end
-    return added, parcel
+    modData.PZLinuxOnMailReward = PZLinuxDeliveryPendingCount(playerObj, "mail_reward")
+    PZLinuxTransmitPlayerModData(playerObj)
+    return modData.PZLinuxOnMailReward
 end
 
 -- Delivers any mail-mission gifts still owed to the player, one separate
@@ -6413,32 +6709,28 @@ function PZLinuxMailApplyRewardDelivery(player, mailboxRef, requestId)
     end
 
     local modData = playerObj:getModData()
-    local pending = math.max(0, tonumber(modData.PZLinuxOnMailReward) or 0)
+    local pending = PZLinuxMailMigrateLegacyRewards(playerObj)
     if pending <= 0 then
-        return { ok = true, requestId = requestId, delivered = 0 }
+        return { ok = true, requestId = requestId, delivered = 0, parcels = 0, remaining = 0 }
     end
 
-    local delivered = 0
-    while pending > 0 do
-        local _, parcel = PZLinuxMailGiveReward(playerObj)
-        if not parcel then break end
-        delivered = delivered + 1
-        pending = pending - 1
-    end
-
-    modData.PZLinuxOnMailReward = pending
+    local result = PZLinuxDeliveryDeliverPending(playerObj, "mail_reward")
+    modData.PZLinuxOnMailReward = result.remaining or PZLinuxDeliveryPendingCount(playerObj, "mail_reward")
     PZLinuxTransmitPlayerModData(playerObj)
-    if delivered > 0 then
+    if (result.parcels or 0) > 0 or (result.recovered or 0) > 0 then
         print(string.format(
-            "[PZLinux Mail] REWARD DELIVERED player=%s delivered=%d remaining=%d",
-            tostring(PZLinuxGetPlayerKey(playerObj)), delivered, pending))
+            "[PZLinux Mail] REWARD DELIVERED player=%s parcels=%d recovered=%d remaining=%d",
+            tostring(PZLinuxGetPlayerKey(playerObj)), result.parcels or 0,
+            result.recovered or 0, result.remaining or 0))
     end
-    return { ok = true, requestId = requestId, delivered = delivered, remaining = pending }
+    result.requestId = requestId
+    return result
 end
 
 function PZLinuxMailApplyComplete(player, mailId, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
+    PZLinuxMailMigrateLegacyRewards(playerObj)
     local mail, md, pzlinux = PZLinuxMailNormalizeRecord(playerObj, mailId)
     if not mail then return { ok = false, error = "missing_mail", requestId = requestId, mailId = mailId } end
     if mail.status ~= 2 then return { ok = false, error = "mail_not_accepted", requestId = requestId, mailId = mailId, status = mail.status } end
@@ -6468,17 +6760,33 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
         return { ok = false, error = "missing_items", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, available = available }
     end
 
+    local rewardItems, rewardItemCount = PZLinuxMailBuildRewardItems()
+    if not rewardItems or rewardItemCount <= 0 then
+        return { ok = false, error = "reward_generation_failed", requestId = requestId, mailId = mailId }
+    end
+
     local removed = PZLinuxMailRemoveInventoryItems(playerObj, mail.object, quantity)
     if removed < quantity then
         return { ok = false, error = "remove_failed", requestId = requestId, mailId = mailId, object = mail.object, quantity = quantity, removed = removed }
     end
 
-    -- The gift is no longer handed over immediately here -- it's deferred to
-    -- the next mailbox visit (PZLinuxMailApplyRewardDelivery), the same way
-    -- Dark Web and Request orders already work in this mod. A counter (not
-    -- a flag) supports several completed missions stacking up their own
-    -- separate gift before the player next checks a mailbox.
-    md.PZLinuxOnMailReward = (tonumber(md.PZLinuxOnMailReward) or 0) + 1
+    local rewardOrder = PZLinuxDeliveryEnqueue(
+        playerObj,
+        "mail_reward",
+        rewardItems,
+        "mail-reward-" .. tostring(mailId),
+        { parcelType = "Base.Present_ExtraLarge", parcelName = "A gift to thank you", mailId = tonumber(mailId) }
+    )
+    if not rewardOrder then
+        return {
+            ok = false,
+            error = "reward_queue_failed",
+            requestId = requestId,
+            mailId = mailId,
+            removed = removed,
+        }
+    end
+    md.PZLinuxOnMailReward = PZLinuxDeliveryPendingCount(playerObj, "mail_reward")
 
     local reputation = PZLinuxApplyReputationDelta(playerObj, PZLinux.Economy.contractCompleteReward())
     mail.status = 10
@@ -6487,7 +6795,7 @@ function PZLinuxMailApplyComplete(player, mailId, requestId)
         "[PZLinux Mail] COMPLETE player=%s mailId=%s object=%s quantity=%d reputation=%s pendingRewards=%d",
         tostring(PZLinuxGetPlayerKey(playerObj)), tostring(mailId), tostring(mail.object), quantity,
         tostring(reputation), tonumber(md.PZLinuxOnMailReward) or 0))
-    return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardPending = true, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }
+    return { ok = true, requestId = requestId, mailId = tonumber(mailId), status = 10, removed = removed, object = mail.object, quantity = quantity, rewardPending = true, rewardOrderId = rewardOrder.id, rewardItemCount = rewardItemCount, reputation = reputation, x = mail.x, y = mail.y, inboxCount = pzlinux and pzlinux.mails and #(pzlinux.mails.inbox or {}) or 0 }
 end
 
 function PZLinuxRequestMailAccept(player, mailId, callback)
