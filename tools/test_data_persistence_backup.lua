@@ -6,9 +6,9 @@
 -- rarer pattern. Both readers used to silently fall back to a default
 -- value (a random $500-$4000 balance; reputation 1) whenever their primary
 -- key read nil, with no way to distinguish "genuinely new character" from
--- "value was lost". Both now mirror their value onto an independent flat
--- backup key on every write, and recover from it before ever assuming a
--- nil read means "new character".
+-- "value was lost". The bank now also has a server-side character ledger;
+-- both values retain their flat ModData mirrors for client synchronization
+-- and compatibility recovery.
 
 local scriptPath = debug.getinfo(1, "S").source:sub(2)
 local repoRoot = scriptPath:match("^(.*)/tools/test_data_persistence_backup.lua$") or "."
@@ -45,6 +45,15 @@ PZLinuxNormalizeMoney = function(amount) return math.max(0, math.floor(tonumber(
 PZLinuxGetStartingBalanceMin = function() return 500 end
 PZLinuxGetStartingBalanceMax = function() return 4000 end
 PZLinuxTransmitPlayerModData = function() end
+PZLinuxBankGetCharacterIdentity = function() return nil, nil end
+PZLinuxBankIsAuthoritative = function() return true end
+PZLinuxBankGetLedger = function() return nil end
+PZLinuxBankCharacterCannotMutate = function() return false end
+PZLinuxBankRollStartingBalance = function()
+    local minimum = PZLinuxGetStartingBalanceMin()
+    local maximum = PZLinuxGetStartingBalanceMax()
+    return maximum > minimum and ZombRand(minimum, maximum) or minimum
+end
 
 local rerollCalls = 0
 ZombRand = function(low, high)

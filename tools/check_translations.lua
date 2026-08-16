@@ -107,6 +107,31 @@ for _, locale in ipairs(locales) do
     end
 end
 
+-- Catalog parity alone cannot detect a key used by Lua but absent from every
+-- locale. That exact blind spot let the whole Sell Goods screen silently fall
+-- back to English in every language. Audit literal PZLinux translation keys in
+-- client/shared code against EN, which is the canonical key set.
+local luaRoot = arg[2] or translateRoot:gsub("/shared/Translate/?$", "")
+local usageCommand = "rg --no-filename --no-line-number -o '\"IGUI_PZLinux_[A-Za-z0-9_]+\"' "
+    .. string.format("%q", luaRoot .. "/client") .. " "
+    .. string.format("%q", luaRoot .. "/shared")
+local usagePipe = io.popen(usageCommand, "r")
+if usagePipe then
+    local checkedKeys = {}
+    for literal in usagePipe:lines() do
+        local key = literal:match('^"(IGUI_PZLinux_[A-Za-z0-9_]+)"$')
+        if key and key:sub(-1) ~= "_" and not checkedKeys[key] then
+            checkedKeys[key] = true
+            if english[key] == nil then
+                table.insert(allErrors, "EN: code references missing key " .. key)
+            end
+        end
+    end
+    usagePipe:close()
+else
+    table.insert(allErrors, "unable to scan Lua translation-key usage with rg")
+end
+
 if #allErrors > 0 then
     for _, err in ipairs(allErrors) do io.stderr:write(err .. "\n") end
     io.stderr:write("Translation audit failed with " .. #allErrors .. " error(s).\n")

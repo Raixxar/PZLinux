@@ -119,6 +119,8 @@ function PZLinuxTransmitPlayerModData(_player) end
 function PZLinuxSyncAddedInventoryItem(_player, _card) return true end
 function PZLinuxCreateStolenOrderNote(_player) end
 function PZLinuxValidateMailboxInteraction(_player, _ref) return "fakeMailboxObj", nil end
+function PZLinuxDeliveryHasRoomForMoreParcels(_player) return true end
+function PZLinuxDeliveryIsWithinWeightLimit(_player) return true end
 function PZLinuxDarkWebCalculateSellPrice(_p, itemData) return itemData.Price end
 function PZLinuxDarkWebCalculateBuyPrice(_p, itemData) return itemData.Price end
 PZLinuxDarkWebMarketConfig = {
@@ -129,13 +131,22 @@ function PZLinuxDarkWebLoadCustomItems() end
 PZLinuxDarkWebItemsTable = { { id = { "Base.CigaretteSingle" }, Price = 50 } }
 function PZLinuxDarkWebGetHourMultiplier() return 1 end
 function PZLinuxDarkWebGetPurchaseMultiplier() return 1 end
-ModData = { getOrCreate = function(_key) PZLinux._fakeMarket = PZLinux._fakeMarket or {}; return PZLinux._fakeMarket end }
+local globalModData = {}
+ModData = {
+    getOrCreate = function(key)
+        globalModData[key] = globalModData[key] or {}
+        return globalModData[key]
+    end,
+}
 
+local deliverySource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")
+assert(loadstring(deliverySource))()
 local darkWebSource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua")
 assert(loadstring(darkWebSource))()
 
 local function resetPlayer()
     playerModData = { pzlinux = { player = { bankBalance = 1000 } } }
+    globalModData = {}
     PZLinux.darkWebBuySessions = {}
     PZLinux.darkWebSellSessions = {}
     return setmetatable({ inventoryObj = buildInventory() }, FakePlayer)
@@ -149,6 +160,12 @@ do
     PZLinuxDarkWebGetBuyOffers(player, "req-offers-a")
     local buy = PZLinuxDarkWebApplyBuy(player, 1, 1, "req-buy-a")
     PZLinuxTestAssert(buy.ok, "single buy must succeed")
+    local balanceAfterBuy = PZLinuxLoadBankBalance(player)
+    local replayedBuy = PZLinuxDarkWebApplyBuy(player, 1, 1, "req-buy-a")
+    PZLinuxTestAssert(replayedBuy.ok and replayedBuy.replayed
+        and PZLinuxLoadBankBalance(player) == balanceAfterBuy
+        and PZLinuxDeliveryPendingCount(player, "darkweb") == 1,
+        "replaying a purchase request after a restart must not debit or enqueue it twice")
     local deliver = PZLinuxDarkWebApplyDeliverOrders(player, {}, "req-deliver-a")
     PZLinuxTestAssert(deliver.ok and deliver.delivered == 1 and not deliver.lost,
         "a single pending order must deliver on the next mailbox visit")
@@ -164,7 +181,7 @@ do
     PZLinuxDarkWebGetBuyOffers(player, "req-offers-b")
     PZLinuxDarkWebApplyBuy(player, 1, 1, "req-buy-b1")
     PZLinuxDarkWebApplyBuy(player, 1, 1, "req-buy-b2")
-    PZLinuxTestAssert(#PZLinuxDarkWebQueueDecode(playerModData.PZLinuxOnItemBuyOnDarkWebQueue) == 2,
+    PZLinuxTestAssert(PZLinuxDeliveryPendingCount(player, "darkweb") == 2,
         "both purchases must be queued")
     local deliver = PZLinuxDarkWebApplyDeliverOrders(player, {}, "req-deliver-b")
     PZLinuxTestAssert(deliver.ok and deliver.delivered == 2 and not deliver.lost,

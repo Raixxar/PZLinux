@@ -21,16 +21,36 @@ local function PZLinuxTestNewInventory(options)
         local nested = { items = {} }
         function nested.AddItem(nestedContainer, itemType)
             if inventory.options.failItem then return nil end
-            local item = { fullType = itemType }
+            local item = {
+                fullType = itemType,
+                getFullType = function(value) return value.fullType end,
+            }
             table.insert(nestedContainer.items, item)
             return item
         end
+        function nested:getItems()
+            return {
+                size = function() return #self.items end,
+                get = function(_, index) return self.items[index + 1] end,
+            }
+        end
         local parcel = {
             fullType = fullType,
+            modData = {},
+            getFullType = function(value) return value.fullType end,
+            getModData = function(value) return value.modData end,
+            setName = function() end,
             getInventory = function() return nested end,
         }
         table.insert(self.items, parcel)
         return parcel
+    end
+
+    function inventory:getItems()
+        return {
+            size = function() return #self.items end,
+            get = function(_, index) return self.items[index + 1] end,
+        }
     end
 
     function inventory:Remove(item)
@@ -42,7 +62,10 @@ local function PZLinuxTestNewInventory(options)
     return inventory
 end
 
+local globalModData = {}
+
 local function PZLinuxTestNewPlayer(options)
+    globalModData = {}
     local inventory = PZLinuxTestNewInventory(options)
     local modData = {
         PZLinuxActiveRequest = 1,
@@ -68,6 +91,16 @@ PZLinuxGetPlayerKey = function() return "test-player" end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxLoadBankBalance = function() return 1000 end
 PZLinuxTransmitPlayerModData = function() end
+PZLinuxDeliveryHasRoomForMoreParcels = function() return true end
+PZLinuxDeliveryIsWithinWeightLimit = function() return true end
+getGameTime = function() return { getWorldAgeHours = function() return 0 end } end
+globalModData = {}
+ModData = {
+    getOrCreate = function(key)
+        globalModData[key] = globalModData[key] or {}
+        return globalModData[key]
+    end,
+}
 local stolenNoteCalls = {}
 PZLinuxCreateStolenOrderNote = function(playerArg)
     table.insert(stolenNoteCalls, playerArg)
@@ -75,6 +108,31 @@ end
 rawset(_G, "ZombRand", function() return 100 end)
 assert(loadstring(queueDecodeBlock))()
 assert(loadstring(queueEncodeBlock))()
+assert(loadstring(PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")))()
+function PZLinuxRequestsMigrateLegacyQueue(player)
+    local record = PZLinuxDeliveryGetPlayerRecord(player)
+    if tonumber(record.migrations.requests) ~= 1 then
+        for index, batch in ipairs(PZLinuxRequestsQueueDecode(player:getModData().PZLinuxOnItemRequestQueue)) do
+            local deliveryItems = {}
+            for _, item in ipairs(batch.items) do
+                table.insert(deliveryItems, { name = item.name, quantity = 1 })
+            end
+            PZLinuxDeliveryEnqueue(player, "request", deliveryItems, "legacy-request-" .. tostring(index))
+        end
+        record.migrations.requests = 1
+    end
+    local pending = PZLinuxDeliveryPendingCount(player, "request")
+    player:getModData().PZLinuxActiveRequest = pending > 0 and 1 or 0
+    player:getModData().PZLinuxOnItemRequestQueue = ""
+    return pending
+end
+local function PZLinuxTestSyncRequestState(player)
+    local pending = PZLinuxDeliveryPendingCount(player, "request")
+    player:getModData().PZLinuxActiveRequest = pending > 0 and 1 or 0
+    player:getModData().PZLinuxOnItemRequestQueue = ""
+    return pending
+end
+PZLinuxRequestsSyncPendingState = PZLinuxTestSyncRequestState
 assert(loadstring(deliveryBlock))()
 
 local synchronized = {}
@@ -100,7 +158,8 @@ for _, failure in ipairs({
     player = PZLinuxTestNewPlayer(failure.options)
     result = PZLinuxRequestsApplyDelivery(player, {}, "request-delivery-failure")
     PZLinuxTestAssert(not result.ok and result.error == failure.error, failure.error .. " must be reported")
-    PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and player.modData.PZLinuxOnItemRequestQueue == "Base.Axe,Base.Hammer",
+    PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1
+        and PZLinuxDeliveryPendingCount(player, "request") == 1,
         failure.error .. " must preserve the paid pending order")
     PZLinuxTestAssert(#player.inventory.items == 0, failure.error .. " must not leave an empty parcel")
 end
@@ -109,7 +168,8 @@ PZLinuxSyncAddedInventoryItem = function() return false end
 player = PZLinuxTestNewPlayer()
 result = PZLinuxRequestsApplyDelivery(player, {}, "request-delivery-sync-failure")
 PZLinuxTestAssert(not result.ok and result.error == "parcel_sync_failed", "network synchronization failure must be reported")
-PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1 and player.modData.PZLinuxOnItemRequestQueue == "Base.Axe,Base.Hammer",
+PZLinuxTestAssert(player.modData.PZLinuxActiveRequest == 1
+    and PZLinuxDeliveryPendingCount(player, "request") == 1,
     "network synchronization failure must preserve the paid pending order")
 PZLinuxTestAssert(#player.inventory.items == 0, "network synchronization failure must roll back the server parcel")
 

@@ -66,6 +66,8 @@ function PZLinuxApplyBankDebit(player, amount)
     return { ok = true, previousBalance = previous, balance = player.modData.PZLinuxBank }
 end
 function PZLinuxTransmitPlayerModData() end
+function PZLinuxDeliveryHasRoomForMoreParcels() return true end
+function PZLinuxDeliveryIsWithinWeightLimit() return true end
 function PZLinuxDarkWebCalculateBuyPrice(_, itemData) return itemData.Price end
 function PZLinuxDarkWebGetHourMultiplier() return 1 end
 function PZLinuxDarkWebGetPurchaseMultiplier() return 1 end
@@ -76,6 +78,7 @@ function getScriptManager()
     return { FindItem = function(_, itemId) return itemId and true or nil end }
 end
 
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua")
 
 local playerOne = PZLinuxTestPlayer("market-one")

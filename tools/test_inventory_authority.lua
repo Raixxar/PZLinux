@@ -23,20 +23,18 @@ end
 
 local shared = PZLinuxTestRead(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
 local darkWeb = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxDarkWeb.lua")
+local deliveryQueue = PZLinuxTestRead(luaRoot .. "/shared/PZLinux/PZLinuxDeliveryQueue.lua")
 
 local interrupted = PZLinuxTestFunction(shared, "PZLinuxApplyInterruptedSessionRollbacks", "PZLinuxAtmTransmitModData")
 assert(interrupted:find("PZLinuxSyncAddedInventoryItem", 1, true), "Hacking rollback cards must be synchronized")
 assert(interrupted:find("pendingCardTypes", 1, true), "failed Hacking card restoration must remain pending")
 
 local requestDelivery = PZLinuxTestFunction(shared, "PZLinuxRequestsApplyDelivery", "PZLinuxRequestsApplySpawnVehicle")
-assert(requestDelivery:find("PZLinuxSyncAddedInventoryItem", 1, true), "Request parcels must be synchronized")
--- The successful-delivery removal (the one that must come after the sync
--- check) is the one right after the parcel_sync_failed guard -- not the
--- earlier, separate table.remove in the invalid-pending-item branch, which
--- has nothing to sync in the first place.
-local afterSyncCheck = assert(requestDelivery:find("parcel_sync_failed", 1, true), "parcel_sync_failed not found")
-assert(requestDelivery:find("table.remove(queue, #queue)", afterSyncCheck, true),
-    "Request state must clear only after parcel synchronization")
+assert(requestDelivery:find('PZLinuxDeliveryDeliverPending(playerObj, "request")', 1, true),
+    "Request parcels must use the authoritative persistent delivery queue")
+assert(deliveryQueue:find("PZLinuxSyncAddedInventoryItem", 1, true)
+    and deliveryQueue:find('error = "parcel_sync_failed"', 1, true),
+    "the delivery queue must synchronize parcels and preserve failed orders")
 
 local requestOrder = PZLinuxTestFunction(shared, "PZLinuxRequestsApplyOrder", "PZLinuxRequestsApplyDelivery")
 assert(requestOrder:find('error = "request_delivery_pending"', 1, true),
@@ -72,12 +70,13 @@ assert(vehicleConfirm:find("PZLinuxRequestsFindDeliveredVehicle", 1, true)
 assert(vehicleConfirm:find("modData.PZLinuxOnItemRequestCar = 0", 1, true),
     "vehicle request state must clear only after validated client visibility")
 
-local mailRemove = PZLinuxTestFunction(shared, "PZLinuxMailRemoveInventoryItems", "PZLinuxMailGiveReward")
+local mailRemove = PZLinuxTestFunction(shared, "PZLinuxMailRemoveInventoryItems", "PZLinuxMailBuildRewardItems")
 assert(mailRemove:find("PZLinuxRemoveInventoryItem", 1, true), "Mail mission items must use synchronized removal")
 assert(not mailRemove:find("inventory:Remove(item)", 1, true), "Mail mission items must not use raw server removal")
 
-local mailReward = PZLinuxTestFunction(shared, "PZLinuxMailGiveReward", "PZLinuxMailApplyRewardDelivery")
-assert(mailReward:find("PZLinuxSyncAddedInventoryItem", 1, true), "Mail reward parcels must be synchronized")
+local mailReward = PZLinuxTestFunction(shared, "PZLinuxMailGiveReward", "PZLinuxMailMigrateLegacyRewards")
+assert(mailReward:find('PZLinuxDeliveryEnqueue', 1, true),
+    "Mail rewards must enter the persistent server delivery queue")
 assert(mailReward:find("return 0, nil", 1, true), "Mail reward creation failures must be reported")
 
 -- Regression test for a real gameplay bug (design change): the reward gift
@@ -89,16 +88,16 @@ assert(mailReward:find("return 0, nil", 1, true), "Mail reward creation failures
 local mailRewardDelivery = PZLinuxTestFunction(shared, "PZLinuxMailApplyRewardDelivery", "PZLinuxMailApplyComplete")
 assert(mailRewardDelivery:find("PZLinuxValidateMailboxInteraction", 1, true),
     "picking up a mail mission gift must validate the real mailbox and player proximity")
-assert(mailRewardDelivery:find("PZLinuxMailGiveReward(playerObj)", 1, true),
-    "picking up a mail mission gift must reuse the same reward generator as before")
-assert(mailRewardDelivery:find("modData.PZLinuxOnMailReward = pending", 1, true),
+assert(mailRewardDelivery:find('PZLinuxDeliveryDeliverPending(playerObj, "mail_reward")', 1, true),
+    "picking up a mail mission gift must use the persistent delivery queue")
+assert(mailRewardDelivery:find("modData.PZLinuxOnMailReward = result.remaining", 1, true),
     "picking up a mail mission gift must persist how many gifts are still owed")
 
 local mailComplete = PZLinuxTestFunction(shared, "PZLinuxMailApplyComplete", "PZLinuxRequestMailAccept")
-assert(not mailComplete:find("PZLinuxMailGiveReward", 1, true),
+assert(not mailComplete:find('inventory:AddItem("Base.Present_ExtraLarge")', 1, true),
     "completing a mail mission must not create the reward parcel immediately -- " ..
     "it must be picked up at a mailbox instead, like Dark Web/Request orders")
-PZLinuxTestAssertOrdered(mailComplete, "PZLinuxMailRemoveInventoryItems", "PZLinuxOnMailReward",
+PZLinuxTestAssertOrdered(mailComplete, "PZLinuxMailRemoveInventoryItems", "PZLinuxDeliveryEnqueue",
     "mission items must be consumed before the gift is credited as pending")
 assert(mailComplete:find('error = "remove_failed"', 1, true), "Mail completion must reject missing mission items")
 
@@ -119,13 +118,21 @@ local darkWebRedeem = PZLinuxTestFunction(darkWeb, "PZLinuxDarkWebApplyRedeemSal
 assert(darkWebRedeem:find("PZLinuxRemoveInventoryItem", 1, true), "redeemed Dark Web parcels must use synchronized removal")
 
 local darkWebDelivery = PZLinuxTestFunction(darkWeb, "PZLinuxDarkWebApplyDeliverOrders", "PZLinuxRequestDarkWebOffers")
-assert(darkWebDelivery:find('error = "parcel_sync_failed"', 1, true), "Dark Web delivery must preserve orders on synchronization failure")
+assert(darkWebDelivery:find('PZLinuxDeliveryDeliverPending(playerObj, "darkweb")', 1, true),
+    "Dark Web delivery must use the persistent server queue")
 
 local mailboxState = PZLinuxTestFunction(shared, "PZLinuxMailboxGetActionState", "PZLinuxContractsApplyDeposit")
 assert(mailboxState:find("PZLinuxValidateMailboxInteraction", 1, true),
     "mailbox action state must be validated by the server at the real mailbox")
 assert(mailboxState:find("hasPickup", 1, true) and mailboxState:find("hasContractDeposit", 1, true),
     "mailbox action state must distinguish item pickup from contract deposit")
+
+local contractDeposit = PZLinuxTestFunction(shared, "PZLinuxContractsApplyDeposit", "PZLinuxContractsApplyAtmRefillDeposit")
+assert(contractDeposit:find("local removeLimit = isQuantityContract and requiredCount or 1", 1, true)
+    and contractDeposit:find("if removed >= removeLimit then break end", 1, true),
+    "contract deposits must remove exactly the canonical requested quantity, never every matching item")
+assert(contractDeposit:find("PZLinuxRemoveInventoryItem", 1, true),
+    "contract deposits must synchronize every removed item in multiplayer")
 
 local serverCommands = PZLinuxTestRead(luaRoot .. "/server/PZLinuxServerCommands.lua")
 assert(serverCommands:find("PZLinuxMailboxState = PZLinuxServerMailboxState", 1, true),

@@ -225,7 +225,7 @@ local function PZLinuxRaceScheduleCreditOnce(player, raceId, payout)
         end
     end
     if payout > 0 then
-        modData.PZLinuxBank = PZLinuxLoadBankBalance(playerObj) + payout
+        PZLinuxSetBankBalance(playerObj, PZLinuxLoadBankBalance(playerObj) + payout)
     end
     pzlinux.racePaid[raceId] = paidAtWorldHour
     PZLinuxTransmitPlayerModData(playerObj)

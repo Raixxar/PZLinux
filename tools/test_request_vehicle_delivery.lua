@@ -146,6 +146,16 @@ PZLinuxRequestsFindVehicleLocation = function(x, y, z)
     end
     return nil
 end
+PZLinuxRequestsMigrateLegacyQueue = function(requestPlayer)
+    local requestModData = requestPlayer:getModData()
+    return type(requestModData.PZLinuxOnItemRequestQueue) == "string"
+        and requestModData.PZLinuxOnItemRequestQueue ~= "" and 1 or 0
+end
+PZLinuxDeliveryEnqueue = function()
+    return { id = "test-request-delivery" }, true
+end
+PZLinuxDeliveryPendingCount = function() return 0 end
+PZLinuxDeliveryFindOrderByRequest = function() return nil end
 
 -- Note: applyOrderSource is used only for the static text-position
 -- assertions above; PZLinuxRequestsApplyOrder itself was already loaded by

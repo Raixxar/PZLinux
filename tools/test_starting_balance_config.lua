@@ -4,17 +4,11 @@
 -- sandbox-configurable (PZLinux.StartingBalanceMin/Max) so an admin can set
 -- both to 0 and remove the free-money loop entirely, or tune the range.
 --
--- Separately: a hypothesis was raised that reusing the same character name
--- after death might let a player recover their old (dead) character's
--- balance. That's not how this works -- the balance lives exclusively on
--- modData (playerObj:getModData()), the same per-character, per-save-slot
--- storage PZ itself uses for anything tied to a specific character; it is
--- never looked up by username or character name anywhere in this codebase
--- (grep the whole mod for "PZLinuxBank" and every hit is a modData read or
--- write). A new character, even with an identical name, gets a genuinely
--- empty modData table and rolls a fresh starting balance like any other
--- new character -- it cannot inherit a dead character's money through this
--- mod's own code.
+-- The authoritative balance now lives in a server ledger keyed by the
+-- persistent PZLinux character identity. Player ModData remains its client-
+-- visible mirror. Reusing an account or character name therefore cannot
+-- recover a deceased character's balance; a new identity receives a fresh
+-- configured starting balance.
 
 local scriptPath = debug.getinfo(1, "S").source:sub(2)
 local repoRoot = scriptPath:match("^(.*)/tools/test_starting_balance_config.lua$") or "."
@@ -69,22 +63,26 @@ PZLinuxTestAssert(PZLinuxGetStartingBalanceMax() == 0, "a server must be able to
 -- config must not risk an ill-defined/erroring ZombRand(0, 0) call).
 local variablesSource = readFile(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
 local loadBlock = variablesSource:match("function PZLinuxLoadBankBalance.-\nend")
+local rollBlock = variablesSource:match("local function PZLinuxBankRollStartingBalance.-\nend")
 PZLinuxTestAssert(loadBlock, "PZLinuxLoadBankBalance must exist")
-PZLinuxTestAssert(loadBlock:find("PZLinuxGetStartingBalanceMin()", 1, true),
-    "PZLinuxLoadBankBalance must read the configurable minimum instead of a hardcoded 500")
-PZLinuxTestAssert(loadBlock:find("PZLinuxGetStartingBalanceMax()", 1, true),
-    "PZLinuxLoadBankBalance must read the configurable maximum instead of a hardcoded 4000")
-PZLinuxTestAssert(loadBlock:find("maxStart > minStart and ZombRand(minStart, maxStart) or minStart", 1, true),
+PZLinuxTestAssert(rollBlock, "PZLinuxBankRollStartingBalance must exist")
+PZLinuxTestAssert(loadBlock:find("PZLinuxBankRollStartingBalance()", 1, true),
+    "PZLinuxLoadBankBalance must delegate fresh-character initialization to the configured roll")
+PZLinuxTestAssert(rollBlock:find("PZLinuxGetStartingBalanceMin()", 1, true),
+    "the starting-balance roll must read the configurable minimum instead of a hardcoded 500")
+PZLinuxTestAssert(rollBlock:find("PZLinuxGetStartingBalanceMax()", 1, true),
+    "the starting-balance roll must read the configurable maximum instead of a hardcoded 4000")
+PZLinuxTestAssert(rollBlock:find("maxStart > minStart and ZombRand(minStart, maxStart) or minStart", 1, true),
     "PZLinuxLoadBankBalance must skip ZombRand entirely when the configured range is empty (min >= max), " ..
     "not risk calling ZombRand(0, 0)")
 
--- 4. The "same character name recovers the old balance" hypothesis: every
--- reference to the bank balance key must go through modData, never through
--- anything keyed by username/character name.
+-- 4. The bank mirror must never be indexed directly by username. Persistent
+-- storage is keyed through PZLinuxGetCharacterKey instead.
 PZLinuxTestAssert(variablesSource:find("modData%.PZLinuxBank"),
-    "sanity check: the bank balance must still be readable somewhere via modData")
+    "the client-visible bank balance must remain mirrored in player ModData")
 PZLinuxTestAssert(not variablesSource:find("PZLinuxGetPlayerKey%(.-%)%s*%]%s*%.?%s*PZLinuxBank"),
-    "the bank balance must never be looked up by username/player-key -- only by the character's own modData, " ..
-    "or a new character sharing an old character's name could inherit their balance")
+    "the bank balance must never be indexed directly by username/player-key")
+PZLinuxTestAssert(variablesSource:find("PZLinuxGetCharacterKey", 1, true),
+    "the authoritative bank ledger must use the persistent character identity")
 
 print("PZLinux starting balance config tests OK")

@@ -51,6 +51,16 @@ PZLinux = { Config = { Sell = {
     negotiateIncrement = 100,
     negotiateSuccessChancePercent = 50,
 } } }
+function PZLinuxDeliveryCreateReceiptId() return "test-surplus-receipt" end
+function PZLinuxDeliveryFindReceiptByRequest() return nil end
+function PZLinuxDeliveryCancelReceipt() return true end
+local redeemedReceipts = {}
+function PZLinuxDeliveryIsReceiptRedeemed(receiptId) return redeemedReceipts[receiptId] == true end
+function PZLinuxDeliveryMarkReceiptRedeemed(receiptId)
+    if redeemedReceipts[receiptId] then return false end
+    redeemedReceipts[receiptId] = true
+    return true
+end
 
 local currentDay = 0
 PZLinuxRequestsCurrentGameDay = function() return currentDay end
@@ -73,7 +83,10 @@ end
 PZLinuxValidateMailboxInteraction = function() return {}, nil end
 PZLinuxNormalizeMoney = function(amount) return math.floor(tonumber(amount) or 0) end
 PZLinuxSyncAddedInventoryItem = function() return true end
-PZLinuxRemoveInventoryItem = function(player, item) player:getInventory():Remove(item) end
+PZLinuxRemoveInventoryItem = function(player, item)
+    player:getInventory():Remove(item)
+    return true
+end
 
 local function PZLinuxTestList(values)
     local list = { values = values or {} }

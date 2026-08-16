@@ -48,6 +48,9 @@ PZLinuxTestAssert(clientSource:find("if quantity < 1 then return end", 1, true),
 -- ---------------------------------------------------------------------
 
 PZLinux = { Config = { ATM = { minCash = 0, maxCash = 100 } } }
+function PZLinuxDeliveryCreateReceiptId() return "test-darkweb-receipt" end
+function PZLinuxDeliveryFindReceiptByRequest() return nil end
+function PZLinuxDeliveryCancelReceipt() return true end
 Perks = { PlantScavenging = "PlantScavenging" }
 addXp = function() end
 getGameTime = function() return { getWorldAgeHours = function() return 0 end } end

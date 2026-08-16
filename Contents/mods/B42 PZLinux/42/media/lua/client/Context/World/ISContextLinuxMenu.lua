@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.10"
+local PZLinuxVersion = "v1.0.11"
 
 -- CONSTRUCTOR
 function linuxUI:new(x, y, width, height, player)
@@ -176,7 +176,7 @@ function linuxUI:initialise()
     -- Grouped directly below BUY GOODS since both are the same feature pair
     -- (buying and selling everyday goods), rather than at the bottom of the
     -- list.
-    self.sellButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, "SELL GOODS", self, self.onSell)
+    self.sellButton = ISButton:new(self.width * 0.20, self.height * 0.44, self.width * 0.05, self.height * 0.025, PZLinuxGetText("IGUI_PZLinux_Sell_Title"), self, self.onSell)
     self.sellButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
     self.sellButton.textColor = {r=0, g=1, b=0, a=1}
     self.sellButton.borderColor = {r=0, g=0, b=0, a=0}
