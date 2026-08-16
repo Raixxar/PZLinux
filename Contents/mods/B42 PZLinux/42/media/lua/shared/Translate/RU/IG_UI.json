@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "ЗАБРАТЬ ПРЕДМЕТЫ",
     "IGUI_PZLinux_Mailbox_SendContract": "ОТПРАВИТЬ И ЗАВЕРШИТЬ КОНТРАКТ",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "ЗАБРАТЬ + ОТПРАВИТЬ КОНТРАКТ",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Вы слишком перегружены. Остальные посылки останутся в почтовом ящике.",
     "IGUI_PZLinux_Context_DepositMailItems": "Положить в ящик предметы из письма",
     "IGUI_PZLinux_Context_Mailbox": "Почтовый ящик",
     "IGUI_PZLinux_Context_TakeContractPackage": "Забрать посылку по контракту",

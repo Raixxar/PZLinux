@@ -15,6 +15,13 @@ local function PZLinuxIdentityWorldHour()
     return getGameTime and getGameTime():getWorldAgeHours() or 0
 end
 
+local function PZLinuxIdentityTableHasEntries(value)
+    if type(value) ~= "table" then return false end
+    local hasEntries = false
+    for _ in pairs(value) do hasEntries = true end
+    return hasEntries
+end
+
 function PZLinuxIdentityIsPlayerDead(player)
     local playerObj = PZLinuxIdentityResolvePlayer(player)
     if not playerObj then return false end
@@ -139,7 +146,7 @@ function PZLinuxGetCharacterId(player, createIfMissing)
         local existingRecord = registry.characters[characterId]
         local wrongAccount = existingRecord and existingRecord.account ~= account
         local hasNativeBinding = existingRecord and (existingRecord.nativeKey
-            or (existingRecord.nativeKeys and next(existingRecord.nativeKeys)))
+            or PZLinuxIdentityTableHasEntries(existingRecord.nativeKeys))
         local matchingNativeCharacter = false
         for _, key in ipairs(nativeKeys) do
             if existingRecord

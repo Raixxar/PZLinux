@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "물품 수령",
     "IGUI_PZLinux_Mailbox_SendContract": "계약품 발송 및 완료",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "물품 수령 + 계약품 발송",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "짐이 너무 무겁습니다. 남은 소포는 우편함에 보관됩니다.",
     "IGUI_PZLinux_Context_DepositMailItems": "이메일로 요청받은 물품 넣기",
     "IGUI_PZLinux_Context_Mailbox": "우편함",
     "IGUI_PZLinux_Context_TakeContractPackage": "계약 물품 회수하기",

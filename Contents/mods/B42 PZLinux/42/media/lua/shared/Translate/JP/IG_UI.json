@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "アイテムを受け取る",
     "IGUI_PZLinux_Mailbox_SendContract": "契約品を送り完了する",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "受取 + 契約品を送る",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "重量超過です。残りの荷物は郵便受けに保管されています。",
     "IGUI_PZLinux_Context_DepositMailItems": "メールで依頼されたアイテムを投函する",
     "IGUI_PZLinux_Context_Mailbox": "郵便受け",
     "IGUI_PZLinux_Context_TakeContractPackage": "契約の荷物を回収する",

@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "VYZVEDNOUT PŘEDMĚTY",
     "IGUI_PZLinux_Mailbox_SendContract": "ODESLAT A DOKONČIT SMLOUVU",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "VYZVEDNOUT + ODESLAT SMLOUVU",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Jste příliš přetíženi. Zbývající balíky zůstávají ve schránce.",
     "IGUI_PZLinux_Context_DepositMailItems": "Vložit požadované předměty z e-mailu",
     "IGUI_PZLinux_Context_Mailbox": "Poštovní schránka",
     "IGUI_PZLinux_Context_TakeContractPackage": "Vyzvednout balíček ze smlouvy",

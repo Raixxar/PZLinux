@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "ODBIERZ PRZEDMIOTY",
     "IGUI_PZLinux_Mailbox_SendContract": "WYŚLIJ I UKOŃCZ KONTRAKT",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "ODBIERZ + WYŚLIJ KONTRAKT",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Masz zbyt duże obciążenie. Pozostałe paczki zostają w skrzynce.",
     "IGUI_PZLinux_Context_DepositMailItems": "Umieść przedmioty zamówione w wiadomości",
     "IGUI_PZLinux_Context_Mailbox": "Skrzynka pocztowa",
     "IGUI_PZLinux_Context_TakeContractPackage": "Odbierz paczkę kontraktową",

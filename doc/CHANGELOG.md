@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.13]
+
+- Fixed a single-player startup crash reported on Build 42.20.2 when restoring
+  an existing persistent character identity. The identity registry no longer
+  calls Lua's unavailable `next()` primitive and now checks native bindings
+  through a Kahlua-compatible iterator.
+- Raised the mailbox delivery ceiling from 85% to 200% of the character's
+  normal carrying capacity. Dark Web, Buy Goods and mail-reward parcels can now
+  be collected while reasonably overloaded; a complete parcel that would cross
+  the configurable ceiling remains queued without losing any contents.
+- Added a translated mailbox warning in all 20 languages when parcels remain
+  queued because the 200% ceiling was reached, plus a server result log showing
+  delivered parcels, remaining orders and the active weight multiplier. The
+  translation audit now validates 600 keys per locale.
+
 ## [1.0.12]
 
 - Fixed a Build 42.20 server compatibility regression in persistent character
@@ -24,7 +39,8 @@
   hardcoded English; the period-appropriate boot sequence intentionally
   remains in English.
 - Added a regression test that rejects hardcoded English feature labels in the
-  main computer menu. The translation audit now validates 599 keys per locale.
+  main computer menu. The translation audit validates 599 keys per locale for
+  this release.
 - Aligned Dark Web Sell rows with Buy rows: item names now use the first line,
   price and available stock use a dedicated second line, and quantity plus the
   localized Sell button are anchored from the scroll panel's right edge. Stock
@@ -76,9 +92,10 @@
   while) could previously load a player down with an unbounded amount of
   weight in one go -- exactly the kind of "one bad decision away from
   getting one-shot by a horde" situation this mod should never create on
-  its own. Stops at 85% of the player's own real overweight threshold
-  (deliberately a safety margin, not the exact edge), respects unlimited
-  carry, and fails open (delivers normally) if weight can't be read at
+  its own. Originally stopped at 85% of the player's own real overweight
+  threshold; this was raised to 200% in 1.0.13 after live MP testing showed
+  that ordinary purchases were deferred too easily. It respects unlimited
+  carry and fails open (delivers normally) if weight can't be read at
   all. The remaining orders are picked back up automatically next time
   the player visits any mailbox with room to spare.
 - Brought Dark Web's Sell list up to par with its own Buy list, matching

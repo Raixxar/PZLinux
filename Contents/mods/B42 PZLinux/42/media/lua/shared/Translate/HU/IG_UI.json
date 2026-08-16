@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "TÁRGYAK ÁTVÉTELE",
     "IGUI_PZLinux_Mailbox_SendContract": "SZERZŐDÉS KÜLDÉSE ÉS LEZÁRÁSA",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "ÁTVÉTEL + SZERZŐDÉS KÜLDÉSE",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Túlterhelt vagy. A fennmaradó csomagok a postaládában maradnak.",
     "IGUI_PZLinux_Context_DepositMailItems": "Az e-mailben kért tárgyak feladása",
     "IGUI_PZLinux_Context_Mailbox": "Postaláda",
     "IGUI_PZLinux_Context_TakeContractPackage": "A szerződéses csomag átvétele",

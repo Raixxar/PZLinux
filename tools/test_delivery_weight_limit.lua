@@ -23,18 +23,14 @@ local function readFile(path)
 end
 
 -- ---------------------------------------------------------------------
--- 1. PZLinuxDeliveryHasRoomForMoreParcels in isolation.
+-- 1. Mailbox delivery weight helpers in isolation.
 -- ---------------------------------------------------------------------
 
 local worldInteractionsSource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxWorldInteractions.lua")
-local helperBlock = worldInteractionsSource:match("function PZLinuxDeliveryHasRoomForMoreParcels.-\nend")
-PZLinuxTestAssert(helperBlock, "PZLinuxDeliveryHasRoomForMoreParcels must exist")
--- The helper reads a module-local safety-margin constant declared just
--- above it -- pull both together so the real 0.85 value is what's tested,
--- not a guess at what it might be.
-local marginBlock = worldInteractionsSource:match("local PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN = [%d%.]+")
-PZLinuxTestAssert(marginBlock, "the delivery weight safety margin constant must exist")
-assert(loadstring(marginBlock .. "\n" .. helperBlock))()
+local helperStart = assert(worldInteractionsSource:find("function PZLinuxGetDeliveryMaxCarryMultiplier", 1, true))
+local helperEnd = assert(worldInteractionsSource:find("local function PZLinuxGetEntitySquare", helperStart, true))
+PZLinux = { Config = { Deliveries = { maxCarryMultiplier = 2 } } }
+assert(loadstring(worldInteractionsSource:sub(helperStart, helperEnd - 1)))()
 
 local function makeInventory(current, max)
     return {
@@ -54,17 +50,20 @@ PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({
     getInventory = function() return makeInventory(999, 10) end,
 }) == true, "unlimited carry (sandbox/debug) must always allow more, regardless of weight")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(5, 10) end }) == true,
-    "well below the safety margin must allow more parcels")
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(10, 10) end }) == true,
+    "normal maximum carry weight must still allow mailbox delivery")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(8.4, 10) end }) == true,
-    "just under the 85% safety margin must still allow more parcels")
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(19.9, 10) end }) == true,
+    "just under twice the carrying capacity must still allow another delivery attempt")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(8.5, 10) end }) == false,
-    "AT the 85% safety margin must stop -- the point is to stop BEFORE the player is dangerously loaded")
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(20, 10) end }) == false,
+    "at twice the carrying capacity, another parcel must remain queued")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(10, 10) end }) == false,
-    "already at max weight must obviously stop")
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(20, 10) end }) == true,
+    "a complete parcel ending exactly at twice the carrying capacity must be accepted")
+
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(20.1, 10) end }) == false,
+    "a complete parcel exceeding twice the carrying capacity must be rolled back")
 
 print("PZLinux delivery weight-limit helper tests OK")
 

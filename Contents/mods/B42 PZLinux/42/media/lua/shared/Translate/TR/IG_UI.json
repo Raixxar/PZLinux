@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "EŞYALARI AL",
     "IGUI_PZLinux_Mailbox_SendContract": "SÖZLEŞMEYİ GÖNDER VE TAMAMLA",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "EŞYALARI AL + SÖZLEŞMEYİ GÖNDER",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Çok fazla yük taşıyorsun. Kalan paketler posta kutusunda bekleyecek.",
     "IGUI_PZLinux_Context_DepositMailItems": "E-postada istenen eşyaları bırak",
     "IGUI_PZLinux_Context_Mailbox": "Posta kutusu",
     "IGUI_PZLinux_Context_TakeContractPackage": "Sözleşme paketini al",

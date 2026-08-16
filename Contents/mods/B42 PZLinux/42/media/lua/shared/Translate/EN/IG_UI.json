@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "COLLECT ITEMS",
     "IGUI_PZLinux_Mailbox_SendContract": "SEND AND COMPLETE CONTRACT",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "COLLECT ITEMS + SEND CONTRACT",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "You are too overloaded. Pending parcels remain at the mailbox.",
     "IGUI_PZLinux_Context_DepositMailItems": "Deposit the requested email items",
     "IGUI_PZLinux_Context_Mailbox": "Mailbox",
     "IGUI_PZLinux_Context_TakeContractPackage": "Take the contract package",

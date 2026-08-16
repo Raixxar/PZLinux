@@ -28,6 +28,16 @@ PZLinux.Config.ATM.maxCash = tonumber(PZLinux.Config.ATM.maxCash) or 50000
 PZLinux.Config.ATM.restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 500
 PZLinux.Config.ATM.restockCap = tonumber(PZLinux.Config.ATM.restockCap) or 15000
 
+-- Mailbox deliveries may temporarily overload a character, but remain capped
+-- so a large backlog cannot place an arbitrary amount of weight in one click.
+-- A value of 2 allows delivery up to twice the character's normal carrying
+-- capacity; complete orders that would exceed it stay queued for later.
+PZLinux.Config.Deliveries = PZLinux.Config.Deliveries or {
+    maxCarryMultiplier = 2,
+}
+PZLinux.Config.Deliveries.maxCarryMultiplier =
+    math.max(1, tonumber(PZLinux.Config.Deliveries.maxCarryMultiplier) or 2)
+
 PZLinux.Config.Contracts = PZLinux.Config.Contracts or {
     packageInteractionRadius = 5,
     objectiveActivationRadius = 80,

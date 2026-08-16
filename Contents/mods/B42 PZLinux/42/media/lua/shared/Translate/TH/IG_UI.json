@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "รับสิ่งของ",
     "IGUI_PZLinux_Mailbox_SendContract": "ส่งและจบสัญญา",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "รับของ + ส่งสัญญา",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "คุณแบกของหนักเกินไป พัสดุที่เหลือจะยังอยู่ในตู้ไปรษณีย์",
     "IGUI_PZLinux_Context_DepositMailItems": "ฝากสิ่งของที่ร้องขอในอีเมล",
     "IGUI_PZLinux_Context_Mailbox": "ตู้ไปรษณีย์",
     "IGUI_PZLinux_Context_TakeContractPackage": "รับพัสดุของสัญญา",
