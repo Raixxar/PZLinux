@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "RECOLHER ITENS",
     "IGUI_PZLinux_Mailbox_SendContract": "ENVIAR E CONCLUIR CONTRATO",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "RECOLHER + ENVIAR CONTRATO",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Você está carregando peso demais. Os pacotes restantes ficam na caixa de correio.",
     "IGUI_PZLinux_Context_DepositMailItems": "Depositar os itens solicitados por e-mail",
     "IGUI_PZLinux_Context_Mailbox": "Caixa de correio",
     "IGUI_PZLinux_Context_TakeContractPackage": "Pegar o pacote do contrato",

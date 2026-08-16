@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "RITIRA OGGETTI",
     "IGUI_PZLinux_Mailbox_SendContract": "INVIA E COMPLETA CONTRATTO",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "RITIRA + INVIA CONTRATTO",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Sei troppo carico. I pacchi rimanenti restano nella cassetta postale.",
     "IGUI_PZLinux_Context_DepositMailItems": "Deposita gli oggetti richiesti nell'e-mail",
     "IGUI_PZLinux_Context_Mailbox": "Cassetta postale",
     "IGUI_PZLinux_Context_TakeContractPackage": "Ritira il pacco del contratto",

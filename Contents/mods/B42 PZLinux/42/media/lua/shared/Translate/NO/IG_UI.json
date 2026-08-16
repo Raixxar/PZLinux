@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "HENT GJENSTANDER",
     "IGUI_PZLinux_Mailbox_SendContract": "SEND OG FULLFØR KONTRAKT",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "HENT + SEND KONTRAKT",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "Du bærer for tungt. De resterende pakkene blir liggende i postkassen.",
     "IGUI_PZLinux_Context_DepositMailItems": "Lever gjenstandene som ble etterspurt på e-post",
     "IGUI_PZLinux_Context_Mailbox": "Postkasse",
     "IGUI_PZLinux_Context_TakeContractPackage": "Hent kontraktspakken",

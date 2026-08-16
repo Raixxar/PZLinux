@@ -171,4 +171,20 @@ PZLinuxTestAssert(PZLinuxDeliveryPendingCount(legacyQueueCharacter, "darkweb") =
 PZLinuxTestAssert(legacyQueueLedger.players.LegacyQueueAccount == nil,
     "the migrated username-only delivery bucket must be removed")
 
+-- B42.20.2's single-player Kahlua environment does not expose Lua's next()
+-- consistently. Reopening a character with an empty native-key table must not
+-- depend on it while restoring the persistent identity and bank account.
+local savedNext = next
+next = nil
+isServer = function() return false end
+local soloData = {}
+local soloCharacter = PZLinuxTestPlayer("SoloAccount", soloData)
+local soloCharacterId = PZLinuxGetCharacterId(soloCharacter, true)
+local soloReconnect = PZLinuxTestPlayer("SoloAccount", soloData)
+PZLinuxTestAssert(PZLinuxGetCharacterId(soloReconnect, true) == soloCharacterId,
+    "single-player identity reload must work when Kahlua does not expose next()")
+PZLinuxTestAssert(PZLinuxLoadBankBalance(soloReconnect) == 500,
+    "single-player bank initialization must survive the identity reload path")
+next = savedNext
+
 print("PZLinux character identity, bank and delivery isolation tests OK")

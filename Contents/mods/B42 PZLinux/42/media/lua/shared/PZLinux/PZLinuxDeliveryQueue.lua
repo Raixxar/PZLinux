@@ -349,14 +349,23 @@ function PZLinuxDeliveryDeliverPending(player, source)
     end
 
     PZLinuxDeliveryTrimHistory(record)
-    return {
+    local deliveryConfig = PZLinux.Config and PZLinux.Config.Deliveries or {}
+    local maxCarryMultiplier = math.max(1, tonumber(deliveryConfig.maxCarryMultiplier) or 2)
+    local result = {
         ok = true,
         delivered = deliveredItems,
         parcels = deliveredParcels,
         recovered = recoveredParcels,
         remaining = PZLinuxDeliveryPendingCount(playerObj, source),
         tooHeavy = tooHeavy,
+        maxCarryMultiplier = maxCarryMultiplier,
     }
+    print(string.format(
+        "[PZLinux Delivery] RESULT player=%s source=%s delivered=%d parcels=%d recovered=%d remaining=%d tooHeavy=%s maxCarryMultiplier=%s",
+        tostring(PZLinuxGetPlayerKey and PZLinuxGetPlayerKey(playerObj) or playerObj),
+        tostring(source), result.delivered, result.parcels, result.recovered,
+        result.remaining, tostring(result.tooHeavy), tostring(result.maxCarryMultiplier)))
+    return result
 end
 
 function PZLinuxDeliveryMarkPendingLost(player, source)

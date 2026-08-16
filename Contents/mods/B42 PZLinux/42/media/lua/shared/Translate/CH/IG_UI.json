@@ -42,6 +42,7 @@
     "IGUI_PZLinux_Mailbox_TakeItems": "領取物品",
     "IGUI_PZLinux_Mailbox_SendContract": "寄出並完成合約",
     "IGUI_PZLinux_Mailbox_TakeAndSend": "領取物品 + 寄出合約",
+    "IGUI_PZLinux_Mailbox_TooHeavy": "負重過高。其餘包裹仍保留在郵箱中。",
     "IGUI_PZLinux_Context_DepositMailItems": "投遞郵件中要求的物品",
     "IGUI_PZLinux_Context_Mailbox": "郵箱",
     "IGUI_PZLinux_Context_TakeContractPackage": "領取合約包裹",

@@ -134,7 +134,7 @@ function MailBoxUI:onSendTakePackage()
             HaloTextHelper.addGoodText(playerObj, "Dark web order delivered")
         end
         if result and result.tooHeavy then
-            HaloTextHelper.addBadText(playerObj, "Too heavy to carry any more parcels right now")
+            HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Mailbox_TooHeavy"))
         end
         PZLinuxMailBoxActionFinished()
     end)
@@ -155,7 +155,7 @@ function MailBoxUI:onSendTakePackage()
             HaloTextHelper.addGoodText(playerObj, "Request package delivered")
         end
         if result and result.tooHeavy then
-            HaloTextHelper.addBadText(playerObj, "Too heavy to carry any more parcels right now")
+            HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Mailbox_TooHeavy"))
         end
         PZLinuxMailBoxActionFinished()
     end)
@@ -175,7 +175,7 @@ function MailBoxUI:onSendTakePackage()
             HaloTextHelper.addGoodText(playerObj, "A gift for your help arrived")
         end
         if result and result.tooHeavy then
-            HaloTextHelper.addBadText(playerObj, "Too heavy to carry any more parcels right now")
+            HaloTextHelper.addBadText(playerObj, PZLinuxGetText("IGUI_PZLinux_Mailbox_TooHeavy"))
         end
         PZLinuxMailBoxActionFinished()
     end)

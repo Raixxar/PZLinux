@@ -11,7 +11,7 @@ multiplayer safety may change the order.
 | --- | --- | --- |
 | [v1.1.0](#v110) | Missions, economy controls and progression | Candidate scope |
 | [v1.2.0](#v120) | Animals, accessibility and betting | Early planning |
-| [v1.3.0](#v130) | Social and server features | Tentative |
+| [v1.3.0](#v130) | Public multiplayer hardening and server features | Planned |
 | [v1.4.0](#v140) | Extensibility and modular apps | Architectural research |
 | [v2.0.0](#v200) | Native NPC integration | Depends on Project Zomboid |
 
@@ -301,7 +301,78 @@ reused if the idea is retained.
 
 ## v1.3.0
 
-> Tentative ideas. Nothing in this section is committed.
+> The public-server security work is planned. The gameplay ideas remain
+> tentative and may move depending on player feedback.
+
+### Public Multiplayer Hardening
+
+The 1.0.x line targets solo games and private cooperative servers whose players
+trust one another. Normal clients cannot trigger most of the cases below through
+the regular UI. A modified client on a public or competitive server could,
+however, forge PZLinux commands or alter mirrored player `ModData`. Version
+1.3.0 will therefore move the remaining sensitive state to canonical server
+registries before PZLinux is advertised as resistant to hostile clients.
+
+- [ ] **Create a canonical per-character server state**
+
+  Add `PZLinuxCharacterStateV1`, keyed by the persistent character identity.
+  Store reputation, Trading holdings, mail progression, Training, Requests,
+  Sell Surplus and interrupted sessions in this registry. Player `ModData`
+  becomes a UI mirror and a controlled legacy-import source only.
+
+- [ ] **Secure legacy migrations**
+
+  Accept old balances, delivery queues and rewards only through explicit
+  allowlists, quantity limits and one-time migration markers. Prevent a new
+  character from inheriting unverified state from an older character using the
+  same username.
+
+- [ ] **Make contracts fully authoritative**
+
+  Use `PZLinuxContractsWorld` as the only source for ownership, objective
+  transitions, deposits, cancellation penalties and rewards. Clients send only
+  an action and an opaque contract ID.
+
+- [ ] **Make sales and receipts fully authoritative**
+
+  Validate receipt owner, source, amount, status and transaction ID against a
+  server ledger before crediting Dark Web or Sell Surplus proceeds. Ensure each
+  receipt can be redeemed exactly once, including after a crash or reconnect.
+
+- [ ] **Move remaining economy and progression state server-side**
+
+  Migrate Trading portfolios, daily Sell Surplus demand, reputation, mail
+  rewards, Training snapshots, Request vehicle orders and interrupted-game
+  refunds out of player-controlled state.
+
+- [ ] **Harden ATM transactions**
+
+  Validate player-to-ATM proximity on the server and make deposits, withdrawals
+  and refills atomic. Failed inventory, balance or ATM updates must roll back the
+  whole transaction.
+
+- [ ] **Finish character lifecycle isolation**
+
+  Key contracts, race tickets, betting sessions, request idempotency and other
+  persistent domains by character identity rather than username. Close every
+  domain when the character dies without affecting a replacement character.
+
+- [ ] **Require idempotency and rate limiting**
+
+  Require a valid `requestId` for every mutation, reject replays and malformed
+  IDs, and rate-limit sensitive commands per character and domain.
+
+- [ ] **Add hostile-client and fault-injection tests**
+
+  Test forged player `ModData`, false receipts, invalid contract transitions,
+  remote ATM calls, duplicate requests and simulated failures between debit,
+  stock update, queue insertion, item removal and payment.
+
+- [ ] **Run a dedicated-server security recipe**
+
+  Validate the migration with two Windows clients across reconnects, full server
+  restarts, character death, simultaneous stock purchases and interrupted
+  transactions before describing public multiplayer as cheat-resistant.
 
 - [ ] **Boss encounters or tougher zombies**
 

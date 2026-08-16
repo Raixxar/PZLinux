@@ -85,19 +85,13 @@ function PZLinuxValidateMailboxInteraction(player, mailboxRef)
     return mailboxObject, nil
 end
 
--- Shared by both mailbox delivery paths (Dark Web's
--- PZLinuxDarkWebApplyDeliverOrders, Buy Goods'
--- PZLinuxRequestsApplyDelivery): deliveries stop early -- leaving
--- whatever's left safely queued for a later mailbox visit -- once the
--- player is getting too loaded down, instead of unconditionally dumping
--- an entire backlog of parcels on them in one go. From player request:
--- carrying, say, 500kg of parcels because a big backlog piled up is
--- exactly the kind of "one bad decision away from getting one-shot by a
--- horde" situation this mod should never create on its own. A safety
--- MARGIN below the character's own real overweight threshold (not right
--- up against it) is deliberate -- the point is to stop BEFORE they're
--- dangerously loaded, not exactly when they already are.
-local PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN = 0.85
+-- Shared by Dark Web, Buy Goods and mail-reward deliveries. A mailbox may
+-- temporarily overload the player up to the configured multiplier, while a
+-- larger backlog remains queued instead of being lost or delivered partially.
+local function PZLinuxGetDeliveryMaxCarryMultiplier()
+    local config = PZLinux.Config and PZLinux.Config.Deliveries or {}
+    return math.max(1, tonumber(config.maxCarryMultiplier) or 2)
+end
 
 function PZLinuxDeliveryHasRoomForMoreParcels(playerObj)
     if not playerObj then return true end
@@ -109,7 +103,7 @@ function PZLinuxDeliveryHasRoomForMoreParcels(playerObj)
     local maxWeight = inventory:getMaxWeight()
     if not maxWeight or maxWeight <= 0 then return true end
 
-    return inventory:getCapacityWeight() < maxWeight * PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN
+    return inventory:getCapacityWeight() < maxWeight * PZLinuxGetDeliveryMaxCarryMultiplier()
 end
 
 function PZLinuxDeliveryIsWithinWeightLimit(playerObj)
@@ -121,7 +115,7 @@ function PZLinuxDeliveryIsWithinWeightLimit(playerObj)
 
     local maxWeight = inventory:getMaxWeight()
     if not maxWeight or maxWeight <= 0 then return true end
-    return inventory:getCapacityWeight() <= maxWeight * PZLINUX_DELIVERY_WEIGHT_SAFETY_MARGIN
+    return inventory:getCapacityWeight() <= maxWeight * PZLinuxGetDeliveryMaxCarryMultiplier()
 end
 
 local function PZLinuxGetEntitySquare(entity)
