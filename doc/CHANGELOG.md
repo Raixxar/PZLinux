@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.0.14]
+
+- Replaced the relative mailbox delivery ceiling with an absolute carried-weight
+  limit of 60 for every character, regardless of Strength. Heavy purchases such
+  as an Old Generator can now be collected while a parcel that would push the
+  current carried weight above the configurable ceiling remains safely queued.
+- Added persistent weight-based parcel planning. A single order whose contents
+  cannot fit in one parcel is split under the same `orderId` into deterministic
+  parts whose estimated weight includes the parcel itself. Each part has its own
+  persistent ID and delivery status; two 40-weight generators therefore become
+  two separate parcels instead of creating an impossible permanent delivery.
+- Mailbox retries now resume only undelivered parcel parts. Parts already handed
+  to the character are never recreated, while parts blocked by carried weight
+  remain available on a later visit, including after a save reload, reconnect or
+  server restart.
+- The same shared delivery engine and persistent ModData ledger are used in
+  single-player and multiplayer. Dark Web purchases, Buy Goods requests and
+  mail rewards all inherit the new parcel splitting and retry behavior.
+- Existing v2 pending orders receive their parcel plan lazily on their next
+  delivery attempt. Debit idempotence, source ordering and atomic creation are
+  preserved at parcel-part level. Server result logs now report the active
+  `maxCarryWeight` value instead of a relative multiplier.
+
 ## [1.0.13]
 
 - Fixed a single-player startup crash reported on Build 42.20.2 when restoring
@@ -94,7 +117,9 @@
   getting one-shot by a horde" situation this mod should never create on
   its own. Originally stopped at 85% of the player's own real overweight
   threshold; this was raised to 200% in 1.0.13 after live MP testing showed
-  that ordinary purchases were deferred too easily. It respects unlimited
+  that ordinary purchases were deferred too easily, then replaced by an
+  absolute carried-weight limit of 60 in 1.0.14 after heavy purchases proved
+  impossible to collect for low-Strength characters. It respects unlimited
   carry and fails open (delivers normally) if weight can't be read at
   all. The remaining orders are picked back up automatically next time
   the player visits any mailbox with room to spare.

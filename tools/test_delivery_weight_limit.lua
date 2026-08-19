@@ -27,9 +27,9 @@ end
 -- ---------------------------------------------------------------------
 
 local worldInteractionsSource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxWorldInteractions.lua")
-local helperStart = assert(worldInteractionsSource:find("function PZLinuxGetDeliveryMaxCarryMultiplier", 1, true))
+local helperStart = assert(worldInteractionsSource:find("function PZLinuxGetDeliveryMaxCarryWeight", 1, true))
 local helperEnd = assert(worldInteractionsSource:find("local function PZLinuxGetEntitySquare", helperStart, true))
-PZLinux = { Config = { Deliveries = { maxCarryMultiplier = 2 } } }
+PZLinux = { Config = { Deliveries = { maxCarryWeight = 60 } } }
 assert(loadstring(worldInteractionsSource:sub(helperStart, helperEnd - 1)))()
 
 local function makeInventory(current, max)
@@ -50,20 +50,20 @@ PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({
     getInventory = function() return makeInventory(999, 10) end,
 }) == true, "unlimited carry (sandbox/debug) must always allow more, regardless of weight")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(10, 10) end }) == true,
-    "normal maximum carry weight must still allow mailbox delivery")
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(30, 6) end }) == true,
+    "a low-Strength character must use the same absolute delivery limit")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(19.9, 10) end }) == true,
-    "just under twice the carrying capacity must still allow another delivery attempt")
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(59.9, 20) end }) == true,
+    "just under the absolute carrying limit must still allow another delivery attempt")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(20, 10) end }) == false,
-    "at twice the carrying capacity, another parcel must remain queued")
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(60, 20) end }) == false,
+    "at the absolute carrying limit, another parcel must remain queued")
 
-PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(20, 10) end }) == true,
-    "a complete parcel ending exactly at twice the carrying capacity must be accepted")
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(60, 6) end }) == true,
+    "a complete parcel ending exactly at the absolute carrying limit must be accepted")
 
-PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(20.1, 10) end }) == false,
-    "a complete parcel exceeding twice the carrying capacity must be rolled back")
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(60.1, 20) end }) == false,
+    "a complete parcel exceeding the absolute carrying limit must be rolled back")
 
 print("PZLinux delivery weight-limit helper tests OK")
 
@@ -78,7 +78,7 @@ addXp = function() end
 getGameTime = function() return { getWorldAgeHours = function() return 0 end } end
 isServer = function() return true end
 getScriptManager = function()
-    return { FindItem = function(_, _t) return {} end }
+    return { FindItem = function(_, _t) return { getActualWeight = function() return 0 end } end }
 end
 ZombRand = function(a, b) if a == 1 and b == 101 then return 50 end if b then return a end return 0 end
 

@@ -3,7 +3,7 @@
 PZLinux gives cash a purpose in Project Zomboid by adding a persistent apocalypse
 economy accessed through computers, ATMs and mailboxes.
 
-**Release:** 1.0.13
+**Release:** 1.0.14
 
 **Game:** Project Zomboid Build 42.20 or newer
 
@@ -68,7 +68,7 @@ reference catalog. Community proofreading of translated text remains welcome.
 ## Known Limitations
 
 - Keyboard and mouse are currently required; full controller navigation is not implemented.
-- Split-screen is not officially supported or certified for the 1.0.13 release.
+- Split-screen is not officially supported or certified for the 1.0.14 release.
 - This package targets Build 42.20 and newer Build 42 versions only.
 
 ## Installation

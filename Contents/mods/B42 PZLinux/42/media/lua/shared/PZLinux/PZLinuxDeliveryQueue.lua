@@ -1,8 +1,9 @@
 PZLinux = PZLinux or {}
 
 local PZLINUX_DELIVERY_DATA = "PZLinuxDeliveryLedger"
-local PZLINUX_DELIVERY_VERSION = 2
+local PZLINUX_DELIVERY_VERSION = 3
 local PZLINUX_DELIVERY_MAX_HISTORY = 512
+local PZLINUX_DELIVERY_PARCEL_PLAN_VERSION = 1
 
 local function PZLinuxDeliveryPlayerKey(player)
     if PZLinuxGetCharacterKey then
@@ -130,6 +131,92 @@ local function PZLinuxDeliveryNormalizeItems(items)
     return normalized
 end
 
+local function PZLinuxDeliveryMaxParcelWeight()
+    local config = PZLinux.Config and PZLinux.Config.Deliveries or {}
+    local maxCarryWeight = math.max(1, tonumber(config.maxCarryWeight) or 60)
+    return math.min(maxCarryWeight, math.max(1, tonumber(config.maxParcelWeight) or 60))
+end
+
+local function PZLinuxDeliveryScriptItemWeight(fullType)
+    if not getScriptManager then return 0 end
+    local scriptItem = getScriptManager():FindItem(fullType)
+    if not scriptItem then return 0 end
+    if type(scriptItem) ~= "table" and type(scriptItem) ~= "userdata" then return 0 end
+    if type(scriptItem) == "table" and type(scriptItem.getActualWeight) ~= "function" then return 0 end
+    return math.max(0, tonumber(scriptItem:getActualWeight()) or 0)
+end
+
+local function PZLinuxDeliveryAppendPartItem(part, name)
+    local last = part.items[#part.items]
+    if last and last.name == name then
+        last.quantity = last.quantity + 1
+    else
+        table.insert(part.items, { name = name, quantity = 1 })
+    end
+    part.itemCount = part.itemCount + 1
+end
+
+local function PZLinuxDeliveryBuildParcelPlan(orderId, items, metadata)
+    local maxParcelWeight = PZLinuxDeliveryMaxParcelWeight()
+    local parcelType = tostring((metadata or {}).parcelType or "Base.Parcel_Large")
+    local parcelWeight = PZLinuxDeliveryScriptItemWeight(parcelType)
+    if parcelWeight > maxParcelWeight then
+        return nil, "parcel_exceeds_delivery_limit"
+    end
+
+    local parts = {}
+    local function PZLinuxDeliveryNewPart()
+        local index = #parts + 1
+        return {
+            id = tostring(orderId) .. "-part-" .. tostring(index),
+            index = index,
+            status = "pending",
+            items = {},
+            itemCount = 0,
+            estimatedWeight = parcelWeight,
+        }
+    end
+
+    local part = PZLinuxDeliveryNewPart()
+    for _, item in ipairs(items or {}) do
+        local itemWeight = PZLinuxDeliveryScriptItemWeight(item.name)
+        if parcelWeight + itemWeight > maxParcelWeight then
+            return nil, "item_exceeds_delivery_limit"
+        end
+
+        for _ = 1, math.max(0, math.floor(tonumber(item.quantity) or 0)) do
+            if part.itemCount > 0 and part.estimatedWeight + itemWeight > maxParcelWeight then
+                table.insert(parts, part)
+                part = PZLinuxDeliveryNewPart()
+            end
+            PZLinuxDeliveryAppendPartItem(part, item.name)
+            part.estimatedWeight = part.estimatedWeight + itemWeight
+        end
+    end
+
+    if part.itemCount > 0 then table.insert(parts, part) end
+    if #parts == 0 then return nil, "empty_delivery" end
+    return parts, nil
+end
+
+local function PZLinuxDeliveryEnsureParcelPlan(order)
+    if type(order.parcels) == "table" and #order.parcels > 0 then
+        for index, part in ipairs(order.parcels) do
+            part.index = tonumber(part.index) or index
+            part.id = tostring(part.id or (tostring(order.id) .. "-part-" .. tostring(index)))
+            part.status = tostring(part.status or "pending")
+            part.items = PZLinuxDeliveryNormalizeItems(part.items)
+        end
+        return order.parcels, nil
+    end
+
+    local parts, planError = PZLinuxDeliveryBuildParcelPlan(order.id, order.items, order.metadata)
+    if not parts then return nil, planError end
+    order.parcels = parts
+    order.parcelPlanVersion = PZLINUX_DELIVERY_PARCEL_PLAN_VERSION
+    return order.parcels, nil
+end
+
 function PZLinuxDeliveryFindOrderByRequest(player, source, requestId)
     if not requestId then return nil end
     local record = PZLinuxDeliveryGetPlayerRecord(player)
@@ -149,14 +236,19 @@ function PZLinuxDeliveryEnqueue(player, source, items, requestId, metadata)
     if #normalized == 0 then return nil, false, "empty_delivery" end
 
     local record = PZLinuxDeliveryGetPlayerRecord(player)
+    local orderId = PZLinuxDeliveryNextId(player, source)
+    local parcels, parcelError = PZLinuxDeliveryBuildParcelPlan(orderId, normalized, metadata)
+    if not parcels then return nil, false, parcelError end
     local order = {
-        id = PZLinuxDeliveryNextId(player, source),
+        id = orderId,
         source = tostring(source or "delivery"),
         status = "pending",
         requestId = requestId and tostring(requestId) or nil,
         createdHour = PZLinuxDeliveryWorldHour(),
         items = normalized,
         metadata = metadata or {},
+        parcels = parcels,
+        parcelPlanVersion = PZLINUX_DELIVERY_PARCEL_PLAN_VERSION,
     }
     table.insert(record.orders, order)
     return order, true
@@ -186,13 +278,13 @@ local function PZLinuxDeliveryExpectedItemCount(order)
     return count
 end
 
-local function PZLinuxDeliveryParcelMatchesOrder(parcel, order)
+local function PZLinuxDeliveryParcelMatchesPart(parcel, part)
     local parcelInventory = parcel and parcel.getInventory and parcel:getInventory()
     local parcelItems = parcelInventory and parcelInventory:getItems()
-    if not parcelItems or parcelItems:size() ~= PZLinuxDeliveryExpectedItemCount(order) then return false end
+    if not parcelItems or parcelItems:size() ~= PZLinuxDeliveryExpectedItemCount(part) then return false end
 
     local expected = {}
-    for _, item in ipairs(order.items or {}) do
+    for _, item in ipairs(part.items or {}) do
         expected[item.name] = (expected[item.name] or 0) + math.max(0, math.floor(tonumber(item.quantity) or 0))
     end
     for index = 0, parcelItems:size() - 1 do
@@ -207,16 +299,20 @@ local function PZLinuxDeliveryParcelMatchesOrder(parcel, order)
     return true
 end
 
-local function PZLinuxDeliveryFindParcel(playerObj, order)
+local function PZLinuxDeliveryFindParcel(playerObj, order, part, partCount)
     local inventory = playerObj and playerObj.getInventory and playerObj:getInventory()
     local items = inventory and inventory:getItems()
     if not items then return nil end
     for index = 0, items:size() - 1 do
         local item = items:get(index)
         local data = item and item.getModData and item:getModData() or nil
+        local partId = data and tostring(data.PZLinuxDeliveryPartId or "") or ""
+        local partMatches = partId == tostring(part and part.id or "")
+            or (partId == "" and tonumber(part and part.index) == 1 and tonumber(partCount) == 1)
         if data
         and tostring(data.PZLinuxDeliveryOrderId or "") == tostring(order and order.id or "")
-        and PZLinuxDeliveryParcelMatchesOrder(item, order) then
+        and partMatches
+        and PZLinuxDeliveryParcelMatchesPart(item, part) then
             return item
         end
     end
@@ -227,7 +323,7 @@ local function PZLinuxDeliveryRemoveTemporaryParcel(inventory, parcel)
     if inventory and parcel then inventory:Remove(parcel) end
 end
 
-local function PZLinuxDeliveryCreateParcel(playerObj, order)
+local function PZLinuxDeliveryCreateParcel(playerObj, order, part)
     local inventory = playerObj and playerObj:getInventory()
     if not inventory then return nil, 0, "missing_inventory" end
 
@@ -242,13 +338,15 @@ local function PZLinuxDeliveryCreateParcel(playerObj, order)
 
     local parcelData = parcel:getModData()
     parcelData.PZLinuxDeliveryOrderId = order.id
+    parcelData.PZLinuxDeliveryPartId = part.id
+    parcelData.PZLinuxDeliveryPartIndex = part.index
     parcelData.PZLinuxDeliverySource = order.source
     if metadata.parcelName and parcel.setName then
         parcel:setName(tostring(metadata.parcelName))
     end
 
     local added = 0
-    for _, item in ipairs(order.items or {}) do
+    for _, item in ipairs(part.items or {}) do
         for _ = 1, math.max(0, math.floor(tonumber(item.quantity) or 0)) do
             if not parcelInventory:AddItem(item.name) then
                 PZLinuxDeliveryRemoveTemporaryParcel(inventory, parcel)
@@ -258,7 +356,7 @@ local function PZLinuxDeliveryCreateParcel(playerObj, order)
         end
     end
 
-    if added ~= PZLinuxDeliveryExpectedItemCount(order) then
+    if added ~= PZLinuxDeliveryExpectedItemCount(part) then
         PZLinuxDeliveryRemoveTemporaryParcel(inventory, parcel)
         return nil, added, "partial_parcel"
     end
@@ -268,6 +366,13 @@ local function PZLinuxDeliveryCreateParcel(playerObj, order)
         return nil, 0, "too_heavy"
     end
     return parcel, added, nil
+end
+
+local function PZLinuxDeliveryAllPartsDelivered(parts)
+    for _, part in ipairs(parts or {}) do
+        if part.status ~= "delivered" then return false end
+    end
+    return #parts > 0
 end
 
 local function PZLinuxDeliveryTrimHistory(record)
@@ -298,59 +403,88 @@ function PZLinuxDeliveryDeliverPending(player, source)
     for _, order in ipairs(record.orders) do
         if order.source == source
         and (order.status == "pending" or order.status == "materializing") then
-            local existingParcel = PZLinuxDeliveryFindParcel(playerObj, order)
-            if existingParcel then
-                order.status = "delivered"
-                order.deliveredHour = PZLinuxDeliveryWorldHour()
-                recoveredParcels = recoveredParcels + 1
-            else
-                if PZLinuxDeliveryHasRoomForMoreParcels
-                and not PZLinuxDeliveryHasRoomForMoreParcels(playerObj) then
-                    tooHeavy = true
-                    break
-                end
-
-                order.status = "materializing"
-                local parcel, added, parcelError = PZLinuxDeliveryCreateParcel(playerObj, order)
-                if parcelError == "too_heavy" then
-                    order.status = "pending"
-                    tooHeavy = true
-                    break
-                end
-                if not parcel then
-                    order.status = "pending"
-                    return {
-                        ok = false,
-                        error = parcelError or "parcel_creation_failed",
-                        delivered = deliveredItems,
-                        parcels = deliveredParcels,
-                        remaining = PZLinuxDeliveryPendingCount(playerObj, source),
-                    }
-                end
-                if PZLinuxSyncAddedInventoryItem
-                and not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
-                    PZLinuxDeliveryRemoveTemporaryParcel(playerObj:getInventory(), parcel)
-                    order.status = "pending"
-                    return {
-                        ok = false,
-                        error = "parcel_sync_failed",
-                        delivered = deliveredItems,
-                        parcels = deliveredParcels,
-                        remaining = PZLinuxDeliveryPendingCount(playerObj, source),
-                    }
-                end
-
-                order.status = "delivered"
-                order.deliveredHour = PZLinuxDeliveryWorldHour()
-                deliveredItems = deliveredItems + added
-                deliveredParcels = deliveredParcels + 1
+            local parts, planError = PZLinuxDeliveryEnsureParcelPlan(order)
+            if not parts then
+                order.status = "pending"
+                return {
+                    ok = false,
+                    error = planError or "parcel_plan_failed",
+                    delivered = deliveredItems,
+                    parcels = deliveredParcels,
+                    remaining = PZLinuxDeliveryPendingCount(playerObj, source),
+                }
             end
+
+            for _, part in ipairs(parts) do
+                if part.status == "pending" or part.status == "materializing" then
+                    local existingParcel = PZLinuxDeliveryFindParcel(playerObj, order, part, #parts)
+                    if existingParcel then
+                        part.status = "delivered"
+                        part.deliveredHour = PZLinuxDeliveryWorldHour()
+                        recoveredParcels = recoveredParcels + 1
+                    else
+                        if PZLinuxDeliveryHasRoomForMoreParcels
+                        and not PZLinuxDeliveryHasRoomForMoreParcels(playerObj) then
+                            tooHeavy = true
+                            break
+                        end
+
+                        order.status = "materializing"
+                        part.status = "materializing"
+                        local parcel, added, parcelError = PZLinuxDeliveryCreateParcel(playerObj, order, part)
+                        if parcelError == "too_heavy" then
+                            order.status = "pending"
+                            part.status = "pending"
+                            tooHeavy = true
+                            break
+                        end
+                        if not parcel then
+                            order.status = "pending"
+                            part.status = "pending"
+                            return {
+                                ok = false,
+                                error = parcelError or "parcel_creation_failed",
+                                delivered = deliveredItems,
+                                parcels = deliveredParcels,
+                                remaining = PZLinuxDeliveryPendingCount(playerObj, source),
+                            }
+                        end
+                        if PZLinuxSyncAddedInventoryItem
+                        and not PZLinuxSyncAddedInventoryItem(playerObj, parcel) then
+                            PZLinuxDeliveryRemoveTemporaryParcel(playerObj:getInventory(), parcel)
+                            order.status = "pending"
+                            part.status = "pending"
+                            return {
+                                ok = false,
+                                error = "parcel_sync_failed",
+                                delivered = deliveredItems,
+                                parcels = deliveredParcels,
+                                remaining = PZLinuxDeliveryPendingCount(playerObj, source),
+                            }
+                        end
+
+                        part.status = "delivered"
+                        part.deliveredHour = PZLinuxDeliveryWorldHour()
+                        deliveredItems = deliveredItems + added
+                        deliveredParcels = deliveredParcels + 1
+                    end
+                end
+            end
+
+            if PZLinuxDeliveryAllPartsDelivered(parts) then
+                order.status = "delivered"
+                order.deliveredHour = PZLinuxDeliveryWorldHour()
+            elseif order.status ~= "materializing" or tooHeavy then
+                order.status = "pending"
+            end
+
+            if tooHeavy then break end
         end
     end
 
     PZLinuxDeliveryTrimHistory(record)
     local deliveryConfig = PZLinux.Config and PZLinux.Config.Deliveries or {}
-    local maxCarryMultiplier = math.max(1, tonumber(deliveryConfig.maxCarryMultiplier) or 2)
+    local maxCarryWeight = math.max(1, tonumber(deliveryConfig.maxCarryWeight) or 60)
     local result = {
         ok = true,
         delivered = deliveredItems,
@@ -358,13 +492,13 @@ function PZLinuxDeliveryDeliverPending(player, source)
         recovered = recoveredParcels,
         remaining = PZLinuxDeliveryPendingCount(playerObj, source),
         tooHeavy = tooHeavy,
-        maxCarryMultiplier = maxCarryMultiplier,
+        maxCarryWeight = maxCarryWeight,
     }
     print(string.format(
-        "[PZLinux Delivery] RESULT player=%s source=%s delivered=%d parcels=%d recovered=%d remaining=%d tooHeavy=%s maxCarryMultiplier=%s",
+        "[PZLinux Delivery] RESULT player=%s source=%s delivered=%d parcels=%d recovered=%d remaining=%d tooHeavy=%s maxCarryWeight=%s",
         tostring(PZLinuxGetPlayerKey and PZLinuxGetPlayerKey(playerObj) or playerObj),
         tostring(source), result.delivered, result.parcels, result.recovered,
-        result.remaining, tostring(result.tooHeavy), tostring(result.maxCarryMultiplier)))
+        result.remaining, tostring(result.tooHeavy), tostring(result.maxCarryWeight)))
     return result
 end
 
