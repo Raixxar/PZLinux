@@ -350,7 +350,7 @@ function PZLinuxDeliveryDeliverPending(player, source)
 
     PZLinuxDeliveryTrimHistory(record)
     local deliveryConfig = PZLinux.Config and PZLinux.Config.Deliveries or {}
-    local maxCarryMultiplier = math.max(1, tonumber(deliveryConfig.maxCarryMultiplier) or 2)
+    local maxCarryWeight = math.max(1, tonumber(deliveryConfig.maxCarryWeight) or 60)
     local result = {
         ok = true,
         delivered = deliveredItems,
@@ -358,13 +358,13 @@ function PZLinuxDeliveryDeliverPending(player, source)
         recovered = recoveredParcels,
         remaining = PZLinuxDeliveryPendingCount(playerObj, source),
         tooHeavy = tooHeavy,
-        maxCarryMultiplier = maxCarryMultiplier,
+        maxCarryWeight = maxCarryWeight,
     }
     print(string.format(
-        "[PZLinux Delivery] RESULT player=%s source=%s delivered=%d parcels=%d recovered=%d remaining=%d tooHeavy=%s maxCarryMultiplier=%s",
+        "[PZLinux Delivery] RESULT player=%s source=%s delivered=%d parcels=%d recovered=%d remaining=%d tooHeavy=%s maxCarryWeight=%s",
         tostring(PZLinuxGetPlayerKey and PZLinuxGetPlayerKey(playerObj) or playerObj),
         tostring(source), result.delivered, result.parcels, result.recovered,
-        result.remaining, tostring(result.tooHeavy), tostring(result.maxCarryMultiplier)))
+        result.remaining, tostring(result.tooHeavy), tostring(result.maxCarryWeight)))
     return result
 end
 

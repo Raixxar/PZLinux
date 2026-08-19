@@ -86,11 +86,11 @@ function PZLinuxValidateMailboxInteraction(player, mailboxRef)
 end
 
 -- Shared by Dark Web, Buy Goods and mail-reward deliveries. A mailbox may
--- temporarily overload the player up to the configured multiplier, while a
+-- temporarily overload the player up to the configured absolute limit, while a
 -- larger backlog remains queued instead of being lost or delivered partially.
-local function PZLinuxGetDeliveryMaxCarryMultiplier()
+local function PZLinuxGetDeliveryMaxCarryWeight()
     local config = PZLinux.Config and PZLinux.Config.Deliveries or {}
-    return math.max(1, tonumber(config.maxCarryMultiplier) or 2)
+    return math.max(1, tonumber(config.maxCarryWeight) or 60)
 end
 
 function PZLinuxDeliveryHasRoomForMoreParcels(playerObj)
@@ -98,12 +98,11 @@ function PZLinuxDeliveryHasRoomForMoreParcels(playerObj)
     if playerObj.isUnlimitedCarry and playerObj:isUnlimitedCarry() then return true end
 
     local inventory = playerObj.getInventory and playerObj:getInventory()
-    if not inventory or not inventory.getCapacityWeight or not inventory.getMaxWeight then return true end
+    if not inventory or not inventory.getCapacityWeight then return true end
 
-    local maxWeight = inventory:getMaxWeight()
-    if not maxWeight or maxWeight <= 0 then return true end
-
-    return inventory:getCapacityWeight() < maxWeight * PZLinuxGetDeliveryMaxCarryMultiplier()
+    local currentWeight = tonumber(inventory:getCapacityWeight())
+    if not currentWeight then return true end
+    return currentWeight < PZLinuxGetDeliveryMaxCarryWeight()
 end
 
 function PZLinuxDeliveryIsWithinWeightLimit(playerObj)
@@ -111,11 +110,11 @@ function PZLinuxDeliveryIsWithinWeightLimit(playerObj)
     if playerObj.isUnlimitedCarry and playerObj:isUnlimitedCarry() then return true end
 
     local inventory = playerObj.getInventory and playerObj:getInventory()
-    if not inventory or not inventory.getCapacityWeight or not inventory.getMaxWeight then return true end
+    if not inventory or not inventory.getCapacityWeight then return true end
 
-    local maxWeight = inventory:getMaxWeight()
-    if not maxWeight or maxWeight <= 0 then return true end
-    return inventory:getCapacityWeight() <= maxWeight * PZLinuxGetDeliveryMaxCarryMultiplier()
+    local currentWeight = tonumber(inventory:getCapacityWeight())
+    if not currentWeight then return true end
+    return currentWeight <= PZLinuxGetDeliveryMaxCarryWeight()
 end
 
 local function PZLinuxGetEntitySquare(entity)

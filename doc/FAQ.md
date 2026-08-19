@@ -1,5 +1,7 @@
 [h1]FAQ[/h1]
 
+Update : 26/08/17 
+
 [h2]Overview:[/h2]
 
 The Dark Web mod introduces a new layer of gameplay for players by allowing them to utilize in-game currency. With this mod, scavenging takes on a new significance. Collecting money from cash registers or valuable items from zombies becomes worthwhile as you can sell these items for something more valuable. It is important not to keep cash on hand; to make purchases online, you must deposit your blood-stained bills into an ATM to credit your bank account, which will then be accessible on the Dark Web.
@@ -65,6 +67,10 @@ Once you have deposited funds into your bank account, you can access the Dark We
 [h3]How do buy offers work ?[/h3]
 
 Each listed offer has a limited stock — you can only buy up to the quantity still available on that specific offer, shown next to it. Once it runs out, that offer is sold out until the catalog refreshes. Buying doesn't hand you the item on the spot either: it's queued for delivery, and you have to pick it up at any mailbox afterward, the same way a Buy Goods order or a Sell Goods payout works. As with Buy Goods, there's about a 10% chance the whole order gets stolen before it reaches the mailbox — same harsh apocalypse logistics.
+
+[h3]Why did the mailbox leave one of my parcels queued ?[/h3]
+
+Mailbox delivery can overload your character up to an absolute carried weight of 60, regardless of Strength or normal carrying capacity. Before delivering a parcel, PZLinux checks the weight of the complete parcel. If it would cross that ceiling, the parcel stays safely queued and a warning is displayed. Its contents are never split or silently lost: unload some weight, interact with a mailbox again, and the complete parcel can be delivered.
 
 [h3]How do I sell items ?[/h3]
 
@@ -302,13 +308,15 @@ Right-click the computer in the world: a "Repair" option appears any time its co
 
 [h3]Does this mod work in multiplayer ?[/h3]
 
-Yes, on hosted multiplayer and dedicated servers running Build 42.20+. Banking, ATMs, Dark Web, Trading, Contracts, Buy Goods, Sell Goods, Mail, Hacking and Online Betting are all validated server-side, so balances and outcomes can't be forged client-side.
+Yes, on hosted multiplayer and dedicated servers running Build 42.20+. Banking, ATMs, Dark Web, Trading, Contracts, Buy Goods, Sell Goods, Mail, Hacking and Online Betting all have server-side synchronization and validation for normal gameplay.
+
+The current 1.0.x security target is solo and private cooperative servers whose players trust one another. It is not yet advertised as cheat-resistant against a deliberately modified client on a public competitive server. Moving every remaining player-state mirror into canonical server registries is planned for v1.3.0.
 
 [h3]Is anything shared between players ?[/h3]
 
 The Dark Web/Trading market, the weekly contract board and world objectives (contract targets, cargo, packages, etc.) are shared and synchronized between everyone on the server. Your bank balance, inventory, reputation, orders and betting sessions stay personal to your own character.
 
-[h2]Installation and Save Compatibility:[/h2]
+[h2]Installation, Updates and Mod Compatibility:[/h2]
 
 [h3]Can I add this mod to an existing save ?[/h3]
 
@@ -320,7 +328,43 @@ No, PZLinux has no additional mod dependency.
 
 [h3]Is it compatible with other mods, including other computer mods ?[/h3]
 
-PZLinux is designed to coexist with other mods: every function, network command and saved value is namespaced under a PZLinux-specific prefix, and it never overrides Project Zomboid's own global functions. It doesn't touch other mods' computer models directly, so it should sit alongside most other content mods without conflict — but as with any two large mods, always test together before committing to a save you care about.
+PZLinux is designed to coexist with other mods. Its network commands and persistent systems use PZLinux-specific namespaces, and it does not intentionally replace Project Zomboid's combat, firearm or computer APIs. It doesn't touch other mods' computer models directly, so it should sit alongside most content mods without conflict. Formal compatibility still requires testing the exact combination and load order before committing an important save.
+
+[h3]Is PZLinux compatible with mods that add weapons or other items ?[/h3]
+
+Generally, yes. PZLinux does not replace Project Zomboid's firearm, attachment, reloading, clothing or inventory mechanics. It stores an item's full type when adding it to a market, parcel or mission inventory, so items added by another mod keep their original behavior and remain managed by that mod.
+
+This is general content compatibility, not a dedicated integration with every Workshop mod. PZLinux does not automatically add another mod's weapons, magazines, attachments or other items to its own catalogs, and it cannot correct conflicts inside those mods. Follow their dependency and load-order instructions, enable the same required mods on the server and clients, and test the complete combination before using an important save.
+
+[h3]How do I add weapons or items from another mod to the Dark Web ?[/h3]
+
+Use Sandbox Options > PZLinux > Custom Dark Web Items. Enter comma-separated pairs in this format:
+
+[code]Module.ItemName:BasePrice,Module.AnotherItem:BasePrice[/code]
+
+For vanilla Project Zomboid items, the module is `Base`. Use the exact full item type followed by the price you want to use as its PZLinux base price:
+
+[code]Base.Machete:1000,Base.Axe:1500[/code]
+
+For an item added by another mod, replace `Base` with that item's actual script module. Example with placeholder IDs:
+
+[code]MyWeaponModule.MyRifle:12000,MyWeaponModule.MyMagazine:600[/code]
+
+Use the item's exact full type from the other mod's scripts or Project Zomboid's debug item list. Do not use its display name, Workshop ID or Mod ID: the script module before the dot may be something other than `Base` and may not match the Mod ID. Invalid or unloaded item types are ignored and written to the log.
+
+The configured amount is the base price. World scarcity, reputation and market randomization can change the final displayed offer. An ID already present in PZLinux overrides that item's base price instead of creating a duplicate. New entries join the PZLinux Dark Web buy and sell catalogs, but they do not automatically add related magazines or attachments; list each item separately. Restart the game or server after changing the Sandbox value and allow the daily market to refresh. In multiplayer, the required content mods must be enabled on the server and clients.
+
+[h3]Can another mod's custom money be used at PZLinux ATMs ?[/h3]
+
+Yes, when that mod provides a separate item instead of modifying `Base.Money`. Add its exact full item type to Sandbox Options > PZLinux > Custom Money Items. Separate multiple IDs with commas. Each configured item is treated as one dollar, so only register items whose denomination really matches that behavior.
+
+[h3]Do I need to restart after a PZLinux update ?[/h3]
+
+Yes. Fully close and restart Project Zomboid after updating the mod. On a server, restart the server and make sure every client has downloaded the same Workshop version before reconnecting. Reload Lua is useful while developing UI code, but it does not reliably rebuild persistent server state, shared tables or every event registration after a release update.
+
+[h3]What should I include in a bug report ?[/h3]
+
+Please include the PZLinux version, exact Project Zomboid build, Single Player/Hosted/Dedicated mode, the action that triggered the problem, whether it survives a full restart, and the relevant stack trace or PZLinux lines from `console.txt`. For compatibility reports, also include the other mod's Workshop link, Mod ID, load order and the exact item full type when an item is involved. A short reproduction sequence is usually more useful than a large unfiltered log.
 
 [h2]Roleplay Servers:[/h2]
 

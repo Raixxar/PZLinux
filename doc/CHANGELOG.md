@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.14]
+
+- Replaced the relative mailbox delivery ceiling with an absolute carried-weight
+  limit of 60. Heavy purchases such as an Old Generator can now be collected
+  regardless of the character's Strength; a complete parcel that would cross
+  the configurable ceiling remains queued without losing any contents.
+- Kept the existing persistent delivery queue, atomic parcel creation and
+  ordering behavior unchanged. Server result logs now report the active
+  `maxCarryWeight` value instead of a relative multiplier.
+
 ## [1.0.13]
 
 - Fixed a single-player startup crash reported on Build 42.20.2 when restoring
@@ -94,7 +104,9 @@
   getting one-shot by a horde" situation this mod should never create on
   its own. Originally stopped at 85% of the player's own real overweight
   threshold; this was raised to 200% in 1.0.13 after live MP testing showed
-  that ordinary purchases were deferred too easily. It respects unlimited
+  that ordinary purchases were deferred too easily, then replaced by an
+  absolute carried-weight limit of 60 in 1.0.14 after heavy purchases proved
+  impossible to collect for low-Strength characters. It respects unlimited
   carry and fails open (delivers normally) if weight can't be read at
   all. The remaining orders are picked back up automatically next time
   the player visits any mailbox with room to spare.

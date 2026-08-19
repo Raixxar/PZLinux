@@ -262,6 +262,17 @@ reused if the idea is retained.
 
 ### Accessibility
 
+- [ ] **Contextual hover help and translated tooltips**
+
+  Add concise mouseover explanations to ambiguous controls and values throughout
+  the CRT applications. Prioritize Trading (`H1`, `D1`, charts, wallet value,
+  quantity, fees and buy/sell actions), then Dark Web stock and prices,
+  reputation effects, betting terminology and compact icon buttons. Tooltips
+  must wrap, remain inside the CRT bounds and exist in every translation catalog.
+  Keyboard/controller focus should expose the same help once controller
+  navigation is implemented; hover text must not become the only way to obtain
+  essential information.
+
 - [ ] **Controller compatibility**
 - [ ] **Proper split-screen support**
 
