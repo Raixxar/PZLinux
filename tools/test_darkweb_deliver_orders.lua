@@ -42,7 +42,7 @@ addXp = function() end
 getGameTime = function() return { getWorldAgeHours = function() return 0 end } end
 isServer = function() return true end
 getScriptManager = function()
-    return { FindItem = function(_, _t) return {} end }
+    return { FindItem = function(_, _t) return { getActualWeight = function() return 0 end } end }
 end
 -- Avoid the 10% theft roll so this test observes the normal delivery path;
 -- theft itself is exercised elsewhere.

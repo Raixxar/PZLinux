@@ -3,11 +3,24 @@
 ## [1.0.14]
 
 - Replaced the relative mailbox delivery ceiling with an absolute carried-weight
-  limit of 60. Heavy purchases such as an Old Generator can now be collected
-  regardless of the character's Strength; a complete parcel that would cross
-  the configurable ceiling remains queued without losing any contents.
-- Kept the existing persistent delivery queue, atomic parcel creation and
-  ordering behavior unchanged. Server result logs now report the active
+  limit of 60 for every character, regardless of Strength. Heavy purchases such
+  as an Old Generator can now be collected while a parcel that would push the
+  current carried weight above the configurable ceiling remains safely queued.
+- Added persistent weight-based parcel planning. A single order whose contents
+  cannot fit in one parcel is split under the same `orderId` into deterministic
+  parts whose estimated weight includes the parcel itself. Each part has its own
+  persistent ID and delivery status; two 40-weight generators therefore become
+  two separate parcels instead of creating an impossible permanent delivery.
+- Mailbox retries now resume only undelivered parcel parts. Parts already handed
+  to the character are never recreated, while parts blocked by carried weight
+  remain available on a later visit, including after a save reload, reconnect or
+  server restart.
+- The same shared delivery engine and persistent ModData ledger are used in
+  single-player and multiplayer. Dark Web purchases, Buy Goods requests and
+  mail rewards all inherit the new parcel splitting and retry behavior.
+- Existing v2 pending orders receive their parcel plan lazily on their next
+  delivery attempt. Debit idempotence, source ordering and atomic creation are
+  preserved at parcel-part level. Server result logs now report the active
   `maxCarryWeight` value instead of a relative multiplier.
 
 ## [1.0.13]

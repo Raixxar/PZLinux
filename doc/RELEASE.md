@@ -11,10 +11,16 @@ transactional delivery queue introduced in previous releases.
 weight of 60, regardless of the character's Strength. The limit is configurable.
 [*] Heavy purchases such as an Old Generator can therefore be collected by
 low-Strength characters instead of remaining permanently queued.
+[*] Orders heavier than 60 are automatically split into persistent parcel
+parts under the same order ID. Each part has its own delivery status, so
+collecting one part and returning later resumes with only what remains.
 [*] Weight is checked after each complete parcel is built. A parcel that would
 cross the limit is rolled back as a whole and remains queued for a later visit.
-[*] Dark Web purchases, Buy Goods orders and mail rewards continue to use stable
-server-side order IDs, preventing partial delivery and duplicate collection.
+[*] Dark Web purchases, Buy Goods orders and mail rewards use stable server-side
+order and parcel-part IDs, preventing partial parcel creation and duplicate
+collection.
+[*] Pending orders created by earlier versions are planned automatically on
+their next mailbox interaction; no save reset or manual migration is required.
 [*] Server logs now report delivered parcels, remaining orders and the active
 maximum weight to simplify multiplayer diagnostics.
 [/list]

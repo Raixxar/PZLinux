@@ -78,7 +78,7 @@ addXp = function() end
 getGameTime = function() return { getWorldAgeHours = function() return 0 end } end
 isServer = function() return true end
 getScriptManager = function()
-    return { FindItem = function(_, _t) return {} end }
+    return { FindItem = function(_, _t) return { getActualWeight = function() return 0 end } end }
 end
 ZombRand = function(a, b) if a == 1 and b == 101 then return 50 end if b then return a end return 0 end
 

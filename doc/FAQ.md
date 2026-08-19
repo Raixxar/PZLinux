@@ -70,7 +70,7 @@ Each listed offer has a limited stock — you can only buy up to the quantity st
 
 [h3]Why did the mailbox leave one of my parcels queued ?[/h3]
 
-Mailbox delivery can overload your character up to an absolute carried weight of 60, regardless of Strength or normal carrying capacity. Before delivering a parcel, PZLinux checks the weight of the complete parcel. If it would cross that ceiling, the parcel stays safely queued and a warning is displayed. Its contents are never split or silently lost: unload some weight, interact with a mailbox again, and the complete parcel can be delivered.
+Mailbox delivery can overload your character up to an absolute carried weight of 60, regardless of Strength or normal carrying capacity. An order heavier than 60 is automatically divided into persistent parcel parts under the same order ID, and each parcel is checked as a complete unit before delivery. If the next parcel would cross the ceiling, that parcel stays safely queued and a warning is displayed. Already delivered parts are never recreated, while undelivered parts are never silently lost: unload some weight, interact with a mailbox again, and collection resumes with the next parcel.
 
 [h3]How do I sell items ?[/h3]
 
