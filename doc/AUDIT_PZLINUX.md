@@ -95,7 +95,7 @@ Les elements suivants sont correctement engages ou deja robustes :
 | Objectif de contrat | Registre monde + miroir joueur | Partiel : plusieurs validations finales lisent encore le miroir |
 | Mails | `ModData` joueur | Non autoritaire |
 | Reputation | `ModData` joueur | Non autoritaire |
-| Training | `ModData` joueur | Non autoritaire |
+| Training | `PZLinuxTrainingLedger` par personnage + miroir joueur | Bon pour offres, prix, progression et XP ; fermeture a la mort a ajouter |
 | Request quotidien et vehicule en attente | `ModData` joueur | Non autoritaire |
 | Sell Surplus quotidien | `ModData` joueur | Non autoritaire |
 | Sessions Blackjack/Poker/Hacking | Memoire serveur + rollback dans `ModData` joueur | Partiel |
@@ -189,23 +189,28 @@ Impact potentiel : demande et montant arbitraires, puis paiement via le colis de
 
 Correction attendue : stocker les offres du jour dans le registre serveur du personnage, avec un identifiant d'offre opaque. Le client ne renvoie que cet identifiant et l'action `negotiate` ou `sell`.
 
-### P0-06 - Mails, reputation et Training restent canoniques dans le personnage
+### P0-06 - Mails et reputation restent canoniques dans le personnage
 
 Problemes relies :
 
 - les mails, leur type, objet, quantite, location et statut sont lus depuis `pzlinux.mails` du joueur ;
 - la reputation servant aux prix et aux mails est lue et modifiee dans ce meme arbre ;
-- Training accorde l'XP depuis `PZLinuxTrainingActivePerk`, `ActiveXp`, `ActiveDurationHours` et `ActiveProgressHours` ;
 - une completion Mail retire les objets avant de garantir l'enregistrement du cadeau.
+
+Training a ete retire de ce constat en v1.0.15. Ses offres, prix, echeance,
+formation active et progression sont desormais conserves dans
+`PZLinuxTrainingLedger`, indexe par l'identite persistante du personnage. Le
+`ModData` joueur n'est plus qu'un miroir et le serveur reconstruit les champs
+sensibles d'une ancienne formation lors de la migration.
 
 References :
 
-- `ISPZLinuxVariablesTables.lua:2815-2994`
+- `ISPZLinuxVariablesTables.lua:2744-3128` pour le correctif Training
 - `ISPZLinuxVariablesTables.lua:5101-5156`
 - `ISPZLinuxVariablesTables.lua:6433-6511`
 - `ISPZLinuxVariablesTables.lua:6550-6798`
 
-Impact potentiel : XP arbitraire, faux mail facile contre cadeau rare, reputation positive falsifiee et remises indues.
+Impact potentiel restant : faux mail facile contre cadeau rare, reputation positive falsifiee et remises indues.
 
 Correction attendue : deplacer ces domaines dans un `PZLinuxCharacterState` global serveur. Le personnage ne conserve qu'une copie d'affichage et, pour le solo, le meme module serveur local est utilise.
 
@@ -381,7 +386,7 @@ Ajouter une retention configurable et un outil admin de diagnostic/nettoyage.
 
 ### P2-04 - `ISPZLinuxVariablesTables.lua` reste un point de couplage majeur
 
-Le fichier contient encore 7 231 lignes. Il melange banque, ATM, reseau, sessions, Request, Sell, Training, Trading, contrats, mails, reputation, Hacking et callbacks.
+Le fichier contient encore 7 370 lignes. Il melange banque, ATM, reseau, sessions, Request, Sell, Training, Trading, contrats, mails, reputation, Hacking et callbacks.
 
 Ce n'est pas un bug immediat, mais toute correction transverse augmente le risque de regression et rend les tests difficiles a isoler.
 
@@ -489,7 +494,7 @@ Pour les donnees persistantes, stocker une cle et ses parametres quand l'API le 
 | Request vehicule | Bon selon tests | Spawn serveur | Pending joueur P0 | Restaurations complexes a retester |
 | Mails | Bon nominal | Tick serveur | Non autoritaire P0 | Migration reward dangereuse |
 | Reputation | Bon nominal | Snapshot serveur du miroir | Non autoritaire P0 | Mort non traitee |
-| Training | Bon nominal | XP serveur | Snapshot falsifiable P0 | Mort non traitee |
+| Training | Bon | Registre serveur par personnage | Bon hors migration legacy initiale | Fermeture a la mort non traitee |
 | Hacking | Bon | Mot de passe serveur | Bon hors rollback | Session/rollback a migrer |
 | Blackjack/Poker | Bon nominal | Sessions serveur | Bon hors rollback/identite | Politique restart partielle |
 | Zombie Race planifiee | Bon | Serveur planifie | Paiement serveur | Tickets indexes pseudo |
@@ -534,7 +539,7 @@ et les serveurs prives cooperatifs entre joueurs de confiance.
 - [ ] P0-07 : retirer `PZLinuxMailGenerate` de l'allowlist publique.
 - [ ] P0-03/P0-05 : rendre les recus et Sell Surplus entierement canoniques.
 - [ ] P0-02 : faire de `PZLinuxContractsWorld` l'unique source pour depot, annulation et paiement.
-- [ ] Creer `PZLinuxCharacterStateV1` et migrer Trading, Reputation, Mails, Training, Request/Sell.
+- [ ] Creer `PZLinuxCharacterStateV1` et migrer Trading, Reputation, Mails et Request/Sell ; integrer ou conserver explicitement le registre Training existant.
 - [ ] P0-08 : deplacer les rollbacks dans le registre serveur.
 - [ ] P0-09 : deplacer la commande de vehicule payee dans le registre serveur.
 - [ ] P1-03/P1-04 : remplacer les index pseudo et fermer tous les domaines a la mort.

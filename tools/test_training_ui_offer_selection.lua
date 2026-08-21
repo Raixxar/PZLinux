@@ -73,9 +73,9 @@ end
 local function newSelf()
     return {
         currentOffers = {
-            { id = "electricity_100", nameKey = "Electricity", xp = 100, price = 10000, durationHours = 2 },
-            { id = "cooking_200", nameKey = "Cooking", xp = 200, price = 20000, durationHours = 3 },
-            { id = "fishing_400", nameKey = "Fishing", xp = 400, price = 40000, durationHours = 4 },
+            { id = "electricity_100", nameKey = "Electricity", xp = 100, price = 8700, durationHours = 4 },
+            { id = "cooking_200", nameKey = "Cooking", xp = 200, price = 18400, durationHours = 6 },
+            { id = "fishing_400", nameKey = "Fishing", xp = 400, price = 32700, durationHours = 8 },
         },
         offerRows = {
             { card = newFakeCard(), name = newFakeLabel(), detail = newFakeLabel() },

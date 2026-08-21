@@ -2700,9 +2700,8 @@ end
 -- cash regen): the panel has to stay open the whole time, like a training
 -- video playing. Measured in IN-GAME hours (getGameTime():getWorldAgeHours(),
 -- the same time source every other schedule in this mod already uses),
--- not real wall-clock time, to land in the same ballpark as vanilla
--- reading a skill book (commonly 2-5 in-game hours) rather than an
--- arbitrary real-time wait -- and it means a player who speeds up game
+-- not real wall-clock time. New courses last 4-10 in-game hours, and a
+-- player who speeds up game
 -- time (the normal >> controls, same as while reading in vanilla) speeds
 -- through a course too, exactly like reading does. Progress is stored as
 -- accumulated in-game hours (PZLinuxTrainingActiveProgressHours) rather
@@ -2731,12 +2730,9 @@ function PZLinuxTrainingListContains(text, id)
     return false
 end
 
--- Removing an entry doesn't touch a permanent record anywhere -- there
--- isn't one (see the comment on PZLinuxTrainingEnsureWeeklyOffers below).
--- This only ever shrinks TODAY's offer list once one of the 3 is
--- completed, exactly like PZLinuxRequestsMarkCategoryConsumed already
--- does for Buy Goods: gone for the rest of today, back in the pool with
--- the same odds as anything else on tomorrow's fresh roll.
+-- Removing an entry doesn't touch a permanent completion record. It only
+-- shrinks the current seven-day offer list, so the same course can return in a
+-- later cycle without being repeated during the current one.
 function PZLinuxTrainingRemoveFromList(text, id)
     local remaining = {}
     for _, existing in ipairs(PZLinuxTrainingDecodeList(text)) do
@@ -2745,46 +2741,161 @@ function PZLinuxTrainingRemoveFromList(text, id)
     return PZLinuxTrainingEncodeList(remaining)
 end
 
--- A daily reroll (matching Buy Goods' own daily category refresh,
--- PZLinuxRequestsCurrentGameDay) turned out to be too generous once
--- there's no permanent cap on how many courses a character can ever buy
--- -- with 3 fresh options appearing every single in-game day, a player
--- who plays through several in-game days in one sitting could plausibly
--- see (and afford) far more XP than intended. Rerolling only once a
--- week slows that pace down to something deliberate, while every other
--- rule stays the same: 3 offers, drawn from every (skill, tier)
--- combination -- e.g. "electricity_100" and "electricity_800" are two
--- separate offers -- and completing one is NOT tracked forever, it's only
--- ever removed from THIS WEEK's 3 offers (so a player can't re-pay and
--- redo the exact same one again before the next reroll), while the
--- following week's fresh roll draws from the full pool again with normal
--- odds -- explicitly by design, so a player who only wants to spend
--- $10,000 at a time can, and the same 100 XP course has a real chance of
--- coming back around, rather than every course being a permanent
--- one-shot per character. Also excludes whichever one the player is
--- currently mid-training on (no point re-offering something already
--- bought and in progress).
+local PZLINUX_TRAINING_LEDGER_DATA = "PZLinuxTrainingLedger"
+local PZLINUX_TRAINING_LEDGER_VERSION = 1
+local PZLINUX_TRAINING_MIRROR_FIELDS = {
+    "PZLinuxTrainingOffersWeek",
+    "PZLinuxTrainingOffersList",
+    "PZLinuxTrainingOffersGeneratedHour",
+    "PZLinuxTrainingOffersRefreshHour",
+    "PZLinuxTrainingOfferPrices",
+    "PZLinuxTrainingActiveCourse",
+    "PZLinuxTrainingActivePerk",
+    "PZLinuxTrainingActiveXp",
+    "PZLinuxTrainingActivePrice",
+    "PZLinuxTrainingActiveDurationHours",
+    "PZLinuxTrainingActiveProgressHours",
+    "PZLinuxTrainingLastTickHour",
+}
+
+local function PZLinuxTrainingCopyValue(value)
+    if type(value) ~= "table" then return value end
+    local copy = {}
+    for key, entry in pairs(value) do copy[key] = entry end
+    return copy
+end
+
+function PZLinuxTrainingGetLedger()
+    if not ModData or not ModData.getOrCreate then return nil end
+    local ledger = ModData.getOrCreate(PZLINUX_TRAINING_LEDGER_DATA)
+    ledger.version = PZLINUX_TRAINING_LEDGER_VERSION
+    ledger.characters = ledger.characters or {}
+    return ledger
+end
+
+local function PZLinuxTrainingMigrateLegacyState(record, modData)
+    local validOffers = {}
+    for _, offerId in ipairs(PZLinuxTrainingDecodeList(modData.PZLinuxTrainingOffersList)) do
+        if #validOffers >= PZLinuxTrainingConfig.offerCount then break end
+        if PZLinuxTrainingResolveOffer(offerId)
+        and not PZLinuxTrainingListContains(PZLinuxTrainingEncodeList(validOffers), offerId) then
+            table.insert(validOffers, offerId)
+        end
+    end
+
+    if modData.PZLinuxTrainingOffersWeek ~= nil then
+        record.PZLinuxTrainingOffersWeek = tonumber(modData.PZLinuxTrainingOffersWeek)
+        record.PZLinuxTrainingOffersList = PZLinuxTrainingEncodeList(validOffers)
+    end
+
+    local activeCourseId = tostring(modData.PZLinuxTrainingActiveCourse or "")
+    local course, tier = PZLinuxTrainingResolveOffer(activeCourseId)
+    if course and tier then
+        local legacyDurations = { [100] = 2, [200] = 3, [400] = 4, [800] = 5 }
+        local durationHours = legacyDurations[tier.xp] or tier.durationHours
+        record.PZLinuxTrainingActiveCourse = activeCourseId
+        record.PZLinuxTrainingActivePerk = course.perk
+        record.PZLinuxTrainingActiveXp = tier.xp
+        record.PZLinuxTrainingActiveDurationHours = durationHours
+        record.PZLinuxTrainingActiveProgressHours = math.max(0, math.min(
+            durationHours,
+            tonumber(modData.PZLinuxTrainingActiveProgressHours) or 0
+        ))
+    end
+end
+
+function PZLinuxTrainingGetCanonicalState(playerObj)
+    local modData = playerObj and playerObj.getModData and playerObj:getModData() or nil
+    if not modData then return nil, nil, false end
+
+    local authoritative = not PZLinuxIdentityIsAuthoritative or PZLinuxIdentityIsAuthoritative()
+    local characterKey = authoritative and PZLinuxGetCharacterKey
+        and PZLinuxGetCharacterKey(playerObj, true) or nil
+    local ledger = characterKey and PZLinuxTrainingGetLedger() or nil
+    if not ledger then return modData, modData, false end
+
+    local record = ledger.characters[characterKey]
+    local created = false
+    if not record then
+        record = {
+            characterKey = characterKey,
+            createdHour = getGameTime and getGameTime():getWorldAgeHours() or 0,
+        }
+        PZLinuxTrainingMigrateLegacyState(record, modData)
+        ledger.characters[characterKey] = record
+        created = true
+    end
+    return record, modData, created
+end
+
+function PZLinuxTrainingSyncPlayerMirror(playerObj, state)
+    local modData = playerObj and playerObj.getModData and playerObj:getModData() or nil
+    if not modData or not state then return end
+    for _, field in ipairs(PZLINUX_TRAINING_MIRROR_FIELDS) do
+        modData[field] = PZLinuxTrainingCopyValue(state[field])
+    end
+    PZLinuxTransmitPlayerModData(playerObj)
+end
+
 function PZLinuxTrainingCurrentGameWeek()
     if not getGameTime then return 0 end
     return math.floor(getGameTime():getWorldAgeHours() / (24 * 7))
 end
 
-function PZLinuxTrainingEnsureWeeklyOffers(modData)
-    local thisWeek = PZLinuxTrainingCurrentGameWeek()
-    -- Deliberately gated on the WEEK NUMBER alone, not on whether the list
-    -- still has anything left in it. A player who buys and finishes all 3
-    -- of this week's offers ends up with PZLinuxTrainingOffersList == ""
-    -- while still squarely inside the same week -- that emptiness is the
-    -- CORRECT, expected state (see PZLinuxTrainingRemoveFromList above),
-    -- not a sign a fresh roll is due. Rerolling on an empty-but-same-week
-    -- list would let a player who clears their weekly offers immediately
-    -- get a brand new set instead of waiting out the week, defeating the
-    -- entire point of the weekly cadence.
-    if tonumber(modData.PZLinuxTrainingOffersWeek) == thisWeek then
-        return
+function PZLinuxTrainingRollPrice(tier)
+    local minimum = math.max(1, math.floor(tonumber(tier and tier.minPrice) or 1))
+    local maximum = math.max(minimum, math.floor(tonumber(tier and tier.maxPrice) or minimum))
+    local basePrice = maximum > minimum and ZombRand(minimum, maximum + 1) or minimum
+    local scarcityMultiplier = 1
+    if PZLinux.Economy and PZLinux.Economy.scarcityMultiplier then
+        scarcityMultiplier = math.max(1, tonumber(PZLinux.Economy.scarcityMultiplier()) or 1)
     end
 
-    local activeCourse = modData.PZLinuxTrainingActiveCourse or ""
+    local roundingStep = math.max(1, math.floor(tonumber(PZLinuxTrainingConfig.priceRoundingStep) or 100))
+    local inflatedPrice = basePrice * scarcityMultiplier
+    local roundedPrice = math.floor((inflatedPrice + roundingStep / 2) / roundingStep) * roundingStep
+    return math.max(roundingStep, math.floor(roundedPrice))
+end
+
+function PZLinuxTrainingGetOfferPrice(state, offerId, tier)
+    state.PZLinuxTrainingOfferPrices = type(state.PZLinuxTrainingOfferPrices) == "table"
+        and state.PZLinuxTrainingOfferPrices or {}
+    local price = tonumber(state.PZLinuxTrainingOfferPrices[offerId])
+    if not price then
+        price = PZLinuxTrainingRollPrice(tier)
+        state.PZLinuxTrainingOfferPrices[offerId] = price
+    end
+    return math.max(1, math.floor(price))
+end
+
+-- Each character receives three offers for a full 168 in-game hours from the
+-- moment they are generated. The refresh deadline and every quoted price live
+-- in the authoritative Training ledger, not in client-owned player ModData.
+function PZLinuxTrainingEnsureWeeklyOffers(state)
+    local now = getGameTime and getGameTime():getWorldAgeHours() or 0
+    local durationHours = math.max(1, tonumber(PZLinuxTrainingConfig.offerDurationHours) or (24 * 7))
+    local refreshHour = tonumber(state.PZLinuxTrainingOffersRefreshHour)
+    local changed = false
+
+    -- A pre-ledger list has no trustworthy generation timestamp. Adopt it as
+    -- the current cycle at migration time and give it a complete seven days;
+    -- an empty list remains intentional when all three courses were used.
+    if not refreshHour and state.PZLinuxTrainingOffersWeek ~= nil then
+        state.PZLinuxTrainingOffersGeneratedHour = now
+        state.PZLinuxTrainingOffersRefreshHour = now + durationHours
+        refreshHour = state.PZLinuxTrainingOffersRefreshHour
+        changed = true
+    end
+
+    if refreshHour and now < refreshHour then
+        for _, offerId in ipairs(PZLinuxTrainingDecodeList(state.PZLinuxTrainingOffersList)) do
+            local _, tier = PZLinuxTrainingResolveOffer(offerId)
+            if tier then PZLinuxTrainingGetOfferPrice(state, offerId, tier) end
+        end
+        return changed
+    end
+
+    local activeCourse = state.PZLinuxTrainingActiveCourse or ""
     local eligible = {}
     for _, offerId in ipairs(PZLinuxTrainingAllOfferIds()) do
         if offerId ~= activeCourse then
@@ -2803,8 +2914,16 @@ function PZLinuxTrainingEnsureWeeklyOffers(modData)
         table.insert(offers, eligible[i])
     end
 
-    modData.PZLinuxTrainingOffersWeek = thisWeek
-    modData.PZLinuxTrainingOffersList = PZLinuxTrainingEncodeList(offers)
+    state.PZLinuxTrainingOffersWeek = PZLinuxTrainingCurrentGameWeek()
+    state.PZLinuxTrainingOffersGeneratedHour = now
+    state.PZLinuxTrainingOffersRefreshHour = now + durationHours
+    state.PZLinuxTrainingOffersList = PZLinuxTrainingEncodeList(offers)
+    state.PZLinuxTrainingOfferPrices = {}
+    for _, offerId in ipairs(offers) do
+        local _, tier = PZLinuxTrainingResolveOffer(offerId)
+        if tier then PZLinuxTrainingGetOfferPrice(state, offerId, tier) end
+    end
+    return true
 end
 
 local function PZLinuxTrainingWorldAgeHours()
@@ -2812,19 +2931,20 @@ local function PZLinuxTrainingWorldAgeHours()
     return getGameTime():getWorldAgeHours()
 end
 
-local function PZLinuxTrainingBuildActiveState(modData)
-    local courseId = modData.PZLinuxTrainingActiveCourse
+local function PZLinuxTrainingBuildActiveState(state)
+    local courseId = state.PZLinuxTrainingActiveCourse
     if not courseId or courseId == "" then return nil end
 
     -- durationHours/xp are snapshotted at purchase time (below) rather than
     -- re-resolved from the tier table on every read, so an in-progress
     -- training is never affected if the tier list itself changes later.
-    local durationHours = tonumber(modData.PZLinuxTrainingActiveDurationHours) or 3
-    local progressHours = tonumber(modData.PZLinuxTrainingActiveProgressHours) or 0
+    local durationHours = tonumber(state.PZLinuxTrainingActiveDurationHours) or 6
+    local progressHours = tonumber(state.PZLinuxTrainingActiveProgressHours) or 0
     return {
         courseId = courseId,
-        perk = modData.PZLinuxTrainingActivePerk,
-        xp = tonumber(modData.PZLinuxTrainingActiveXp) or 0,
+        perk = state.PZLinuxTrainingActivePerk,
+        xp = tonumber(state.PZLinuxTrainingActiveXp) or 0,
+        price = tonumber(state.PZLinuxTrainingActivePrice) or 0,
         durationHours = durationHours,
         progressHours = progressHours,
         progress = durationHours > 0 and math.min(1, progressHours / durationHours) or 0,
@@ -2835,19 +2955,22 @@ function PZLinuxTrainingGetState(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
-    local modData = playerObj:getModData()
-    PZLinuxTrainingEnsureWeeklyOffers(modData)
+    local state, _, created = PZLinuxTrainingGetCanonicalState(playerObj)
+    if not state then return { ok = false, error = "missing_training_state", requestId = requestId } end
+    local offersChanged = PZLinuxTrainingEnsureWeeklyOffers(state)
 
     -- Establishes a fresh baseline for THIS viewing session -- opening the
     -- panel (or reloading its state) must never count the gap since the
     -- player was last here as progress, only in-game time that passes
     -- from this point on, ticked explicitly by
     -- PZLinuxTrainingApplyProgressTick while the panel stays open.
-    if modData.PZLinuxTrainingActiveCourse and modData.PZLinuxTrainingActiveCourse ~= "" then
-        modData.PZLinuxTrainingLastTickHour = PZLinuxTrainingWorldAgeHours()
+    if state.PZLinuxTrainingActiveCourse and state.PZLinuxTrainingActiveCourse ~= "" then
+        state.PZLinuxTrainingLastTickHour = PZLinuxTrainingWorldAgeHours()
     end
 
-    local offerIds = PZLinuxTrainingDecodeList(modData.PZLinuxTrainingOffersList)
+    if created or offersChanged then PZLinuxTrainingSyncPlayerMirror(playerObj, state) end
+
+    local offerIds = PZLinuxTrainingDecodeList(state.PZLinuxTrainingOffersList)
     local offers = {}
     for _, offerId in ipairs(offerIds) do
         local course, tier = PZLinuxTrainingResolveOffer(offerId)
@@ -2856,7 +2979,7 @@ function PZLinuxTrainingGetState(player, requestId)
                 id = offerId,
                 nameKey = course.nameKey,
                 xp = tier.xp,
-                price = tier.price,
+                price = PZLinuxTrainingGetOfferPrice(state, offerId, tier),
                 durationHours = tier.durationHours,
             })
         end
@@ -2866,8 +2989,9 @@ function PZLinuxTrainingGetState(player, requestId)
         ok = true,
         requestId = requestId,
         offers = offers,
-        active = PZLinuxTrainingBuildActiveState(modData),
+        active = PZLinuxTrainingBuildActiveState(state),
         balance = PZLinuxLoadBankBalance(playerObj),
+        refreshHour = tonumber(state.PZLinuxTrainingOffersRefreshHour),
     }
 end
 
@@ -2875,14 +2999,20 @@ function PZLinuxTrainingApplyPurchase(player, courseId, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
-    local modData = playerObj:getModData()
-    PZLinuxTrainingEnsureWeeklyOffers(modData)
+    local state, _, created = PZLinuxTrainingGetCanonicalState(playerObj)
+    if not state then return { ok = false, error = "missing_training_state", requestId = requestId } end
+    local offersChanged = PZLinuxTrainingEnsureWeeklyOffers(state)
+    if created or offersChanged then PZLinuxTrainingSyncPlayerMirror(playerObj, state) end
 
-    if modData.PZLinuxTrainingActiveCourse and modData.PZLinuxTrainingActiveCourse ~= "" then
+    if state.PZLinuxTrainingActiveCourse and state.PZLinuxTrainingActiveCourse ~= "" then
         return { ok = false, error = "training_in_progress", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
-    if not courseId or not PZLinuxTrainingListContains(modData.PZLinuxTrainingOffersList, courseId) then
+    if not courseId or not PZLinuxTrainingListContains(state.PZLinuxTrainingOffersList, courseId) then
+        print(string.format(
+            "[PZLinux Training] REJECT player=%s course=%s error=invalid_course offers=%s",
+            tostring(PZLinuxGetPlayerKey(playerObj)), tostring(courseId),
+            tostring(state.PZLinuxTrainingOffersList or "")))
         return { ok = false, error = "invalid_course", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
     local course, tier = PZLinuxTrainingResolveOffer(courseId)
@@ -2895,26 +3025,34 @@ function PZLinuxTrainingApplyPurchase(player, courseId, requestId)
     -- the membership check above already refuses it -- there's no
     -- permanent completed-forever record to also check here.
 
-    local debit = PZLinuxApplyBankDebit(playerObj, tier.price, "training-purchase", requestId)
-    if not debit.ok then return debit end
+    local price = PZLinuxTrainingGetOfferPrice(state, courseId, tier)
+    local debit = PZLinuxApplyBankDebit(playerObj, price, "training-purchase", requestId)
+    if not debit.ok then
+        print(string.format(
+            "[PZLinux Training] REJECT player=%s course=%s error=%s price=%d balance=%d",
+            tostring(PZLinuxGetPlayerKey(playerObj)), tostring(courseId), tostring(debit.error),
+            price, tonumber(debit.balance) or 0))
+        return debit
+    end
 
-    modData.PZLinuxTrainingActiveCourse = courseId
-    modData.PZLinuxTrainingActivePerk = course.perk
-    modData.PZLinuxTrainingActiveXp = tier.xp
-    modData.PZLinuxTrainingActiveDurationHours = tier.durationHours
-    modData.PZLinuxTrainingActiveProgressHours = 0
-    modData.PZLinuxTrainingLastTickHour = PZLinuxTrainingWorldAgeHours()
-    PZLinuxTransmitPlayerModData(playerObj)
+    state.PZLinuxTrainingActiveCourse = courseId
+    state.PZLinuxTrainingActivePerk = course.perk
+    state.PZLinuxTrainingActiveXp = tier.xp
+    state.PZLinuxTrainingActivePrice = price
+    state.PZLinuxTrainingActiveDurationHours = tier.durationHours
+    state.PZLinuxTrainingActiveProgressHours = 0
+    state.PZLinuxTrainingLastTickHour = PZLinuxTrainingWorldAgeHours()
+    PZLinuxTrainingSyncPlayerMirror(playerObj, state)
 
     print(string.format(
         "[PZLinux Training] START player=%s course=%s perk=%s xp=%d price=%d durationHours=%d balance=%d",
         tostring(PZLinuxGetPlayerKey(playerObj)), courseId, tostring(course.perk),
-        tier.xp, tier.price, tier.durationHours, debit.balance))
+        tier.xp, price, tier.durationHours, debit.balance))
 
     return {
         ok = true,
         requestId = requestId,
-        active = PZLinuxTrainingBuildActiveState(modData),
+        active = PZLinuxTrainingBuildActiveState(state),
         balance = debit.balance,
     }
 end
@@ -2923,14 +3061,15 @@ function PZLinuxTrainingApplyProgressTick(player, requestId)
     local playerObj = PZLinuxGetPlayer(player)
     if not playerObj then return { ok = false, error = "no_player", requestId = requestId } end
 
-    local modData = playerObj:getModData()
-    local courseId = modData.PZLinuxTrainingActiveCourse
+    local state = PZLinuxTrainingGetCanonicalState(playerObj)
+    if not state then return { ok = false, error = "missing_training_state", requestId = requestId } end
+    local courseId = state.PZLinuxTrainingActiveCourse
     if not courseId or courseId == "" then
         return { ok = false, error = "no_active_training", requestId = requestId, balance = PZLinuxLoadBankBalance(playerObj) }
     end
 
     local now = PZLinuxTrainingWorldAgeHours()
-    local lastTick = tonumber(modData.PZLinuxTrainingLastTickHour) or now
+    local lastTick = tonumber(state.PZLinuxTrainingLastTickHour) or now
     -- Generously bounded (not tightly clamped like a client-reported value
     -- would need to be): the world clock is server-authoritative, so a
     -- normal tick's delta is only ever as large as legitimate game-speed
@@ -2938,19 +3077,19 @@ function PZLinuxTrainingApplyProgressTick(player, requestId)
     -- somehow surviving without a reset (a missed PZLinuxTrainingGetState
     -- call) counting a huge, unearned jump.
     local deltaHours = math.max(0, math.min(now - lastTick, PZLinuxTrainingConfig.maxTickDeltaHours))
-    modData.PZLinuxTrainingLastTickHour = now
+    state.PZLinuxTrainingLastTickHour = now
 
-    local durationHours = tonumber(modData.PZLinuxTrainingActiveDurationHours) or 3
-    local progressHours = (tonumber(modData.PZLinuxTrainingActiveProgressHours) or 0) + deltaHours
-    modData.PZLinuxTrainingActiveProgressHours = progressHours
+    local durationHours = tonumber(state.PZLinuxTrainingActiveDurationHours) or 6
+    local progressHours = (tonumber(state.PZLinuxTrainingActiveProgressHours) or 0) + deltaHours
+    state.PZLinuxTrainingActiveProgressHours = progressHours
 
     if progressHours < durationHours then
-        PZLinuxTransmitPlayerModData(playerObj)
+        PZLinuxTrainingSyncPlayerMirror(playerObj, state)
         return {
             ok = true,
             requestId = requestId,
             completed = false,
-            active = PZLinuxTrainingBuildActiveState(modData),
+            active = PZLinuxTrainingBuildActiveState(state),
             balance = PZLinuxLoadBankBalance(playerObj),
         }
     end
@@ -2960,24 +3099,24 @@ function PZLinuxTrainingApplyProgressTick(player, requestId)
     -- (Fast Learner, boosted-XP moodles, etc.) exactly like every other
     -- source of XP in the game -- nothing bespoke needed here to honor
     -- that.
-    local xpAmount = tonumber(modData.PZLinuxTrainingActiveXp) or 0
-    local perkName = modData.PZLinuxTrainingActivePerk
+    local xpAmount = tonumber(state.PZLinuxTrainingActiveXp) or 0
+    local perkName = state.PZLinuxTrainingActivePerk
     local perk = perkName and Perks and Perks.FromString and Perks.FromString(perkName) or nil
     if addXp and perk then addXp(playerObj, perk, xpAmount) end
 
-    -- Not tracked forever -- just removed from TODAY's offer list, same
-    -- as PZLinuxRequestsMarkCategoryConsumed does for a bought Buy Goods
-    -- category, so it can't be re-paid and redone again today, but has a
-    -- normal chance of coming back around on a future day's roll.
-    modData.PZLinuxTrainingOffersList = PZLinuxTrainingRemoveFromList(modData.PZLinuxTrainingOffersList, courseId)
+    state.PZLinuxTrainingOffersList = PZLinuxTrainingRemoveFromList(state.PZLinuxTrainingOffersList, courseId)
+    if type(state.PZLinuxTrainingOfferPrices) == "table" then
+        state.PZLinuxTrainingOfferPrices[courseId] = nil
+    end
 
-    modData.PZLinuxTrainingActiveCourse = ""
-    modData.PZLinuxTrainingActivePerk = nil
-    modData.PZLinuxTrainingActiveXp = nil
-    modData.PZLinuxTrainingActiveDurationHours = nil
-    modData.PZLinuxTrainingActiveProgressHours = nil
-    modData.PZLinuxTrainingLastTickHour = nil
-    PZLinuxTransmitPlayerModData(playerObj)
+    state.PZLinuxTrainingActiveCourse = ""
+    state.PZLinuxTrainingActivePerk = nil
+    state.PZLinuxTrainingActiveXp = nil
+    state.PZLinuxTrainingActivePrice = nil
+    state.PZLinuxTrainingActiveDurationHours = nil
+    state.PZLinuxTrainingActiveProgressHours = nil
+    state.PZLinuxTrainingLastTickHour = nil
+    PZLinuxTrainingSyncPlayerMirror(playerObj, state)
 
     print(string.format(
         "[PZLinux Training] COMPLETE player=%s course=%s perk=%s xpGranted=%d",

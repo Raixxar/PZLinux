@@ -1,8 +1,26 @@
-[h1]PZLinux 1.0.14[/h1]
+[h1]PZLinux 1.0.15[/h1]
 
-PZLinux 1.0.14 is a focused maintenance update for Project Zomboid Build 42.20.2.
-It fixes mailbox collection of heavy purchases while preserving the persistent,
-transactional delivery queue introduced in previous releases.
+PZLinux 1.0.15 is a maintenance and balance update for Project Zomboid Build
+42.20.2. It fixes multiplayer Training persistence and mailbox collection of
+heavy purchases while preserving existing saves.
+
+[h2]Training[/h2]
+
+[list]
+[*] Weekly Training offers are now stored in a persistent server-authoritative
+ledger per character. Reopening the application or reconnecting cannot reroll
+the list or make a displayed course fail during payment.
+[*] Each set of three courses remains fixed for a full 168 in-game hours after
+generation. Completed courses disappear one by one and do not refill before the
+stored deadline.
+[*] Course prices are randomized and frozen with their offer: $5,000-$15,000
+for 100 XP, $10,000-$25,000 for 200 XP, $20,000-$40,000 for 400 XP and
+$30,000-$80,000 for 800 XP before world-age scarcity. The server applies the
+same scarcity multiplier used by online item markets, then rounds the final
+weekly quote to the nearest $100.
+[*] New course durations are doubled to 4, 6, 8 and 10 in-game hours. Existing
+active courses retain their saved duration and progress.
+[/list]
 
 [h2]Mailbox Deliveries[/h2]
 
@@ -27,7 +45,7 @@ maximum weight to simplify multiplayer diagnostics.
 
 [h2]Compatibility[/h2]
 
-PZLinux 1.0.14 retains the B42_PZLinux mod ID and all existing player/world
+PZLinux 1.0.15 retains the B42_PZLinux mod ID and all existing player/world
 ModData. It supports single-player, hosted multiplayer and dedicated servers on
 Project Zomboid Build 42.20 and newer Build 42 versions. No additional mod
 dependency is required.

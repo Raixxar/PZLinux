@@ -1,19 +1,15 @@
 PZLinux = PZLinux or {}
 
--- Each skill can be trained at 4 XP tiers, always priced at the same
--- $100-per-XP anchor -- but duration doesn't scale 1:1 with XP, it's
--- deliberately front-loaded cheap in TIME: doubling the XP each tier only
--- costs +1 in-game hour, so XP-per-hour actually improves at the bigger
--- tiers (50/hour, 66.7/hour, 100/hour, 160/hour) -- a genuine reason to
--- commit to the bigger, pricier course beyond just "it's what's offered
--- today", on top of the flat price staying perfectly predictable.
--- Durations land in the same range as vanilla reading a skill book
--- (commonly 2-5 in-game hours) rather than an arbitrary real-time wait.
+-- Each skill can be trained at 4 XP tiers. A base price is rolled, multiplied
+-- by world-age scarcity, rounded, then persisted server-side with the weekly
+-- offer so reopening the panel can never change the quote. Larger courses
+-- remain more efficient, but their wider ranges and longer viewing time keep
+-- Training from becoming an instant XP purchase for wealthy characters.
 PZLinuxTrainingTiers = PZLinuxTrainingTiers or {
-    { xp = 100, price = 10000, durationHours = 2 },
-    { xp = 200, price = 20000, durationHours = 3 },
-    { xp = 400, price = 40000, durationHours = 4 },
-    { xp = 800, price = 80000, durationHours = 5 },
+    { xp = 100, minPrice = 5000, maxPrice = 15000, durationHours = 4 },
+    { xp = 200, minPrice = 10000, maxPrice = 25000, durationHours = 6 },
+    { xp = 400, minPrice = 20000, maxPrice = 40000, durationHours = 8 },
+    { xp = 800, minPrice = 30000, maxPrice = 80000, durationHours = 10 },
 }
 
 -- Perks are referenced by their string name (Perks.FromString(perk), the
@@ -46,6 +42,8 @@ PZLinuxTrainingCourses = PZLinuxTrainingCourses or {
 
 PZLinuxTrainingConfig = PZLinuxTrainingConfig or {
     offerCount = 3,
+    offerDurationHours = 24 * 7,
+    priceRoundingStep = 100,
     -- In-game-hour gap a single progress tick may ever count -- a
     -- generous sanity bound (not a tight anti-cheat clamp: the world
     -- clock is server-authoritative, a client can't fake or accelerate it
@@ -62,8 +60,8 @@ function PZLinuxTrainingGetCourse(courseId)
 end
 
 -- A "course offer" is a (skill, tier) pair -- e.g. "electricity_400" is
--- Electricity at the 400 XP / $40,000 / 4h tier -- so completing one
--- tier of a skill doesn't use up the others; a player can come back later
+-- Electricity at the 400 XP / $20,000-$40,000 / 8h tier -- so completing
+-- one tier of a skill doesn't use up the others; a player can come back later
 -- for a bigger (or, if they just want a taste first, a smaller) dose of
 -- the same skill.
 function PZLinuxTrainingBuildOfferId(skillId, tierXp)
@@ -88,7 +86,7 @@ function PZLinuxTrainingResolveOffer(offerId)
 end
 
 -- Every (skill, tier) combination that exists in the catalog -- the full
--- pool PZLinuxTrainingEnsureDailyOffers draws its daily 3 from.
+-- pool PZLinuxTrainingEnsureWeeklyOffers draws its weekly 3 from.
 function PZLinuxTrainingAllOfferIds()
     local ids = {}
     for _, course in ipairs(PZLinuxTrainingCourses) do

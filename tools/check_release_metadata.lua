@@ -31,19 +31,19 @@ for path, content in pairs({
     PZLinuxReleaseAssert(not content:find("version=0%.1%."), path .. " still contains a 0.1.x version")
 end
 
-PZLinuxReleaseAssert(readme:find("%*%*Release:%*%* 1%.0%.14"), "README release is not 1.0.14")
+PZLinuxReleaseAssert(readme:find("%*%*Release:%*%* 1%.0%.15"), "README release is not 1.0.15")
 PZLinuxReleaseAssert(readme:find("%(%s*doc/RELEASE%.md%s*%)"), "README release-notes link is invalid")
 PZLinuxReleaseAssert(readme:find("%(%s*doc/CHANGELOG%.md%s*%)"), "README changelog link is invalid")
-PZLinuxReleaseAssert(versionFile:match("^1%.0%.14%s*$"), "version file is not 1.0.14")
-PZLinuxReleaseAssert(overview:find("^version=1%.0%.14"), "overview release is not 1.0.14")
-PZLinuxReleaseAssert(releaseNotes:find("^%[h1%]PZLinux 1%.0%.14%[/h1%]"), "release notes are not 1.0.14")
+PZLinuxReleaseAssert(versionFile:match("^1%.0%.15%s*$"), "version file is not 1.0.15")
+PZLinuxReleaseAssert(overview:find("^version=1%.0%.15"), "overview release is not 1.0.15")
+PZLinuxReleaseAssert(releaseNotes:find("^%[h1%]PZLinux 1%.0%.15%[/h1%]"), "release notes are not 1.0.15")
 PZLinuxReleaseAssert(workshop:find("^version=1\n"), "workshop format version must remain 1")
-PZLinuxReleaseAssert(workshop:find("PZLinux 1%.0%.14"), "Workshop description is not 1.0.14")
+PZLinuxReleaseAssert(workshop:find("PZLinux 1%.0%.15"), "Workshop description is not 1.0.15")
 PZLinuxReleaseAssert(workshop:find("\nvisibility=0\n?$"), "Workshop visibility must use public value 0")
-PZLinuxReleaseAssert(modInfo:find("\nmodversion=1%.0%.14\n"), "mod.info has no 1.0.14 modversion")
+PZLinuxReleaseAssert(modInfo:find("\nmodversion=1%.0%.15\n"), "mod.info has no 1.0.15 modversion")
 PZLinuxReleaseAssert(modInfo:find("\nversionMin=42%.20\n"), "mod.info has no Build 42.20 minimum")
 PZLinuxReleaseAssert(modInfo:find("\nid=B42_PZLinux\n"), "stable mod ID changed")
-PZLinuxReleaseAssert(linuxMenu:find('local PZLinuxVersion = "v1%.0%.14"'), "terminal UI version is not 1.0.14")
+PZLinuxReleaseAssert(linuxMenu:find('local PZLinuxVersion = "v1%.0%.15"'), "terminal UI version is not 1.0.15")
 
 for _, term in ipairs({ "Poker", "Blackjack", "server", "controller", "split-screen" }) do
     PZLinuxReleaseAssert(workshop:lower():find(term:lower(), 1, true), "Workshop description is missing " .. term)
@@ -53,4 +53,4 @@ local commonInfo = io.open(root .. "/Contents/mods/B42 PZLinux/common/mod.info",
 PZLinuxReleaseAssert(commonInfo == nil, "common/mod.info must not duplicate the versioned descriptor")
 if commonInfo then commonInfo:close() end
 
-print("PZLinux release metadata OK: v1.0.14, Build 42.20+, Workshop format 1")
+print("PZLinux release metadata OK: v1.0.15, Build 42.20+, Workshop format 1")

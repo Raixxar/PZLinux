@@ -264,7 +264,7 @@ You need to already have the full demanded quantity of the item on you — no pa
 
 [h3]How it works ?[/h3]
 
-Open the Training submenu from the computer to see three courses on offer, each a skill paired with an XP tier (100/200/400/800 XP). Buying one starts it, deducted straight from your bank balance — but you're only allowed one course running at a time, so finish it before starting another. Prices scale with the tier at a flat $100 per XP: 100 XP costs $10,000, 200 XP costs $20,000, 400 XP costs $40,000, and 800 XP costs $80,000.
+Open the Training submenu from the computer to see three courses on offer, each a skill paired with an XP tier (100/200/400/800 XP). Buying one starts it and deducts the displayed price from your bank balance. Only one course can run at a time, so finish it before starting another. Each weekly quote is randomized once from these base ranges: 100 XP costs $5,000-$15,000, 200 XP costs $10,000-$25,000, 400 XP costs $20,000-$40,000, and 800 XP costs $30,000-$80,000. The server then applies the same world-age scarcity multiplier as online item purchases and rounds the result to the nearest $100. That final quote remains fixed for the complete weekly cycle.
 
 [h3]Do I need to sit at the computer while it trains ?[/h3]
 
@@ -272,7 +272,7 @@ Yes. Progress only advances while the Training panel is actually open and on scr
 
 [h3]How long does a course take ?[/h3]
 
-Between 2 and 5 in-game hours depending on the tier: 100 XP takes 2 hours, 200 XP takes 3, 400 XP takes 4, and 800 XP takes 5. Doubling the XP each tier only costs one extra hour, so the bigger, pricier tiers are a genuinely better XP-per-hour deal, not just a bigger bill for the same rate — landing in the same 2-5 hour range a book takes to read.
+Between 4 and 10 in-game hours depending on the tier: 100 XP takes 4 hours, 200 XP takes 6, 400 XP takes 8, and 800 XP takes 10. Larger tiers remain more efficient per hour, but the time commitment prevents Training from becoming instant XP for a wealthy character.
 
 [h3]Does my XP multiplier (Fast Learner, XP boosts, etc.) apply ?[/h3]
 
@@ -284,11 +284,11 @@ Nothing is lost. Progress is tracked server-side in in-game hours actually spent
 
 [h3]I finished a course. Can I take it again for more XP ?[/h3]
 
-Not right away — completing a course removes that specific skill-and-tier combination from this week's offers. It isn't gone forever, though: it has a normal chance of coming back around on a future week's roll, the same way an already-bought Buy Goods category can reappear later. This is deliberate, so you can spend small ($10,000 at a time) instead of being forced toward the expensive tiers just to train the same skill again.
+Not right away — completing a course removes that specific skill-and-tier combination from the current offers. The list drops from three courses to two, then one, then none; it never refills early just because every course was completed. The course is not gone forever and may return in a later cycle.
 
 [h3]Why do the offers only refresh once a week instead of every day ?[/h3]
 
-A daily refresh was tried and dropped before release: with nothing ever permanently used up, three fresh options appearing every single in-game day was simply too generous over a long play session. A weekly refresh keeps the same rules at a much more deliberate pace.
+A daily refresh was tried and dropped before release: with nothing ever permanently used up, three fresh options appearing every single in-game day was simply too generous over a long play session. Each list is now locked for a full 168 in-game hours from the moment it is generated. Reopening the computer, reconnecting or restarting the server does not reroll courses, prices or the refresh deadline.
 
 [h3]Which skills can I train ?[/h3]
 

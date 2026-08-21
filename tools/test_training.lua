@@ -49,23 +49,36 @@ for _, course in ipairs(PZLinuxTrainingCourses) do
     PZLinuxTestAssert(not forbiddenPerks[course.perk], course.perk .. " must not be a Training-purchasable skill")
 end
 
--- Tier pricing/duration must actually reward the bigger commitment with
--- better XP-per-hour, not just cost proportionally more for the same rate.
+-- Tier price ranges and doubled durations are part of the balance contract.
+local expectedTiers = {
+    [100] = { minPrice = 5000, maxPrice = 15000, durationHours = 4 },
+    [200] = { minPrice = 10000, maxPrice = 25000, durationHours = 6 },
+    [400] = { minPrice = 20000, maxPrice = 40000, durationHours = 8 },
+    [800] = { minPrice = 30000, maxPrice = 80000, durationHours = 10 },
+}
 local previousRate = 0
 for _, tier in ipairs(PZLinuxTrainingTiers) do
-    PZLinuxTestAssert(tier.price == tier.xp * 100, "every tier must stay on the $100/xp anchor: " .. tier.xp .. "xp priced at " .. tier.price)
+    local expected = expectedTiers[tier.xp]
+    PZLinuxTestAssert(expected ~= nil, "unexpected Training XP tier: " .. tostring(tier.xp))
+    PZLinuxTestAssert(tier.minPrice == expected.minPrice and tier.maxPrice == expected.maxPrice,
+        tostring(tier.xp) .. " XP must use its configured random price range")
+    PZLinuxTestAssert(tier.durationHours == expected.durationHours,
+        tostring(tier.xp) .. " XP must use its doubled duration")
     local rate = tier.xp / tier.durationHours
     PZLinuxTestAssert(rate > previousRate, "each bigger tier must have strictly better XP/hour than the last")
     previousRate = rate
 end
 
 PZLinuxTestAssert(#PZLinuxTrainingAllOfferIds() == 60, "15 skills x 4 tiers must produce 60 distinct offers")
+PZLinuxTestAssert(PZLinuxTrainingConfig.priceRoundingStep == 100,
+    "Training prices must be rounded to the nearest $100")
 
 local course, tier = PZLinuxTrainingResolveOffer("electricity_400")
 PZLinuxTestAssert(course and course.id == "electricity" and course.perk == "Electricity",
     "electricity_400 must resolve to the Electricity course")
-PZLinuxTestAssert(tier and tier.xp == 400 and tier.price == 40000 and tier.durationHours == 4,
-    "electricity_400 must resolve to the 400xp/$40000/4h tier")
+PZLinuxTestAssert(tier and tier.xp == 400 and tier.minPrice == 20000
+    and tier.maxPrice == 40000 and tier.durationHours == 8,
+    "electricity_400 must resolve to the 400xp/$20000-$40000/8h tier")
 
 local noCourse, noTier = PZLinuxTrainingResolveOffer("electricity_999")
 PZLinuxTestAssert(not noCourse and not noTier, "a nonexistent tier must not resolve")
@@ -94,6 +107,15 @@ end
 local variablesSource = readFile(luaRoot .. "/shared/ISPZLinuxVariablesTables.lua")
 
 local playerModData
+local characterSequence = 0
+local currentCharacterKey
+local persistentModData = {}
+ModData = {
+    getOrCreate = function(name)
+        persistentModData[name] = persistentModData[name] or {}
+        return persistentModData[name]
+    end,
+}
 local FakePlayer = {}
 FakePlayer.__index = FakePlayer
 function FakePlayer:getModData() return playerModData end
@@ -102,6 +124,8 @@ local fakePlayer = setmetatable({}, FakePlayer)
 
 function PZLinuxGetPlayer(p) return p end
 function PZLinuxGetPlayerKey(player) return player and player:getUsername() or "?" end
+function PZLinuxGetCharacterKey(_player, _createIfMissing) return currentCharacterKey end
+function PZLinuxIdentityIsAuthoritative() return true end
 function PZLinuxLoadBankBalance(player) return playerModData.pzlinux.player.bankBalance or 0 end
 function PZLinuxSetBankBalance(player, amount) playerModData.pzlinux.player.bankBalance = amount return amount end
 function PZLinuxApplyBankDebit(player, amount, reason, requestId)
@@ -114,19 +138,64 @@ function PZLinuxTransmitPlayerModData(_player) end
 
 local pieces = {
     "PZLinuxTrainingEncodeList", "PZLinuxTrainingDecodeList", "PZLinuxTrainingListContains",
-    "PZLinuxTrainingRemoveFromList", "PZLinuxTrainingCurrentGameWeek", "PZLinuxTrainingEnsureWeeklyOffers",
+    "PZLinuxTrainingRemoveFromList", "PZLinuxTrainingGetLedger", "PZLinuxTrainingGetCanonicalState",
+    "PZLinuxTrainingSyncPlayerMirror", "PZLinuxTrainingCurrentGameWeek", "PZLinuxTrainingRollPrice",
+    "PZLinuxTrainingGetOfferPrice", "PZLinuxTrainingEnsureWeeklyOffers",
     "PZLinuxTrainingGetState", "PZLinuxTrainingApplyPurchase", "PZLinuxTrainingApplyProgressTick",
 }
 for _, name in ipairs(pieces) do
     local block = extract(variablesSource, "function " .. name .. ".-\nend\n")
     assert(loadstring(block))()
 end
-for _, name in ipairs({ "PZLinuxTrainingWorldAgeHours", "PZLinuxTrainingBuildActiveState" }) do
+for _, name in ipairs({
+    "PZLinuxTrainingCopyValue", "PZLinuxTrainingMigrateLegacyState",
+    "PZLinuxTrainingWorldAgeHours", "PZLinuxTrainingBuildActiveState",
+}) do
     local block = extract(variablesSource, "local function " .. name .. ".-\nend\n"):gsub("^local function", "function", 1)
     assert(loadstring(block))()
 end
 
+PZLINUX_TRAINING_LEDGER_DATA = "PZLinuxTrainingLedger"
+PZLINUX_TRAINING_LEDGER_VERSION = 1
+PZLINUX_TRAINING_MIRROR_FIELDS = {
+    "PZLinuxTrainingOffersWeek", "PZLinuxTrainingOffersList",
+    "PZLinuxTrainingOffersGeneratedHour", "PZLinuxTrainingOffersRefreshHour",
+    "PZLinuxTrainingOfferPrices", "PZLinuxTrainingActiveCourse",
+    "PZLinuxTrainingActivePerk", "PZLinuxTrainingActiveXp",
+    "PZLinuxTrainingActivePrice", "PZLinuxTrainingActiveDurationHours",
+    "PZLinuxTrainingActiveProgressHours", "PZLinuxTrainingLastTickHour",
+}
+
+do
+    local minimumRoll = ZombRand
+    local previousEconomy = PZLinux.Economy
+    for _, trainingTier in ipairs(PZLinuxTrainingTiers) do
+        PZLinuxTestAssert(PZLinuxTrainingRollPrice(trainingTier) == trainingTier.minPrice,
+            tostring(trainingTier.xp) .. " XP must be able to roll its minimum price")
+    end
+
+    ZombRand = function(_minimum, maximum) return maximum - 1 end
+    for _, trainingTier in ipairs(PZLinuxTrainingTiers) do
+        PZLinuxTestAssert(PZLinuxTrainingRollPrice(trainingTier) == trainingTier.maxPrice,
+            tostring(trainingTier.xp) .. " XP must be able to roll its maximum price")
+    end
+
+    ZombRand = function(_minimum, _maximum) return 10456 end
+    PZLinux.Economy = { scarcityMultiplier = function() return 1 end }
+    PZLinuxTestAssert(PZLinuxTrainingRollPrice(PZLinuxTrainingTiers[1]) == 10500,
+        "$10456 must round to the nearest hundred after a x1 scarcity multiplier")
+
+    PZLinux.Economy = { scarcityMultiplier = function() return 2 end }
+    PZLinuxTestAssert(PZLinuxTrainingRollPrice(PZLinuxTrainingTiers[1]) == 20900,
+        "Training must apply world scarcity before rounding the final quote")
+
+    PZLinux.Economy = previousEconomy
+    ZombRand = minimumRoll
+end
+
 local function resetPlayer()
+    characterSequence = characterSequence + 1
+    currentCharacterKey = "TestPlayer:PZLinuxCharacter-" .. tostring(characterSequence)
     playerModData = { pzlinux = { player = { bankBalance = 1000000 } } }
     return fakePlayer
 end
@@ -139,30 +208,66 @@ do
     for _, offer in ipairs(state.offers) do
         local c, t = PZLinuxTrainingResolveOffer(offer.id)
         PZLinuxTestAssert(c and t, "every offered id must resolve to a real course/tier")
-        PZLinuxTestAssert(offer.xp == t.xp and offer.price == t.price and offer.durationHours == t.durationHours,
-            "the offer's reported xp/price/duration must match its tier")
+        PZLinuxTestAssert(offer.xp == t.xp and offer.durationHours == t.durationHours,
+            "the offer's reported xp/duration must match its tier")
+        PZLinuxTestAssert(offer.price >= t.minPrice and offer.price <= t.maxPrice,
+            "the authoritative offer price must stay inside its tier range")
     end
     PZLinuxTestAssert(state.active == nil, "a fresh player must have no active training")
 end
 
--- --- The reroll cadence is weekly, not daily: less than 7 in-game days
--- passing must NOT reroll, but crossing a 7-day boundary must. ---
+-- --- Every generated list remains fixed for a full 168 in-game hours from
+-- generation, instead of refreshing at a calendar-week boundary. ---
 do
     local player = resetPlayer()
     local before = PZLinuxTrainingGetState(player, "req-week-a")
+    local refreshHour = before.refreshHour
 
-    worldAgeHours = worldAgeHours + 24 * 6 -- 6 days: still the same week
+    worldAgeHours = worldAgeHours + (24 * 7) - 1
     local stillSameWeek = PZLinuxTrainingGetState(player, "req-week-b")
     PZLinuxTestAssert(stillSameWeek.offers[1].id == before.offers[1].id
         and stillSameWeek.offers[2].id == before.offers[2].id
         and stillSameWeek.offers[3].id == before.offers[3].id,
-        "fewer than 7 in-game days passing must not reroll the offers")
+        "the offers must remain fixed for the complete seven-day window")
+    PZLinuxTestAssert(stillSameWeek.offers[1].price == before.offers[1].price
+        and stillSameWeek.offers[2].price == before.offers[2].price
+        and stillSameWeek.offers[3].price == before.offers[3].price,
+        "reopening during the cycle must preserve every quoted price")
+    PZLinuxTestAssert(refreshHour == stillSameWeek.refreshHour,
+        "reopening must not extend or shorten the existing refresh deadline")
 
-    worldAgeHours = worldAgeHours + 24 * 2 -- past the 7-day mark now
+    worldAgeHours = worldAgeHours + 2
     local nextWeek = PZLinuxTrainingGetState(player, "req-week-c")
     PZLinuxTestAssert(tonumber(playerModData.PZLinuxTrainingOffersWeek) == PZLinuxTrainingCurrentGameWeek(),
         "crossing a 7-day boundary must roll a fresh week's offers")
     PZLinuxTestAssert(#nextWeek.offers == 3, "the new week must still offer exactly 3 courses")
+end
+
+-- --- MP regression: stale player ModData must never replace the canonical
+-- server list or its prices between opening the UI and confirming payment. ---
+do
+    local player = resetPlayer()
+    local before = PZLinuxTrainingGetState(player, "req-mp-open")
+    local expected = {}
+    for index, offer in ipairs(before.offers) do
+        expected[index] = { id = offer.id, price = offer.price }
+    end
+
+    playerModData.PZLinuxTrainingOffersWeek = nil
+    playerModData.PZLinuxTrainingOffersList = "electricity_800"
+    playerModData.PZLinuxTrainingOfferPrices = { electricity_800 = 1 }
+
+    local reopened = PZLinuxTrainingGetState(player, "req-mp-reopen")
+    for index, offer in ipairs(reopened.offers) do
+        PZLinuxTestAssert(offer.id == expected[index].id and offer.price == expected[index].price,
+            "a stale MP player mirror must not reroll or reprice canonical offer " .. tostring(index))
+    end
+
+    local previousBalance = PZLinuxLoadBankBalance(player)
+    local purchase = PZLinuxTrainingApplyPurchase(player, expected[1].id, "req-mp-buy")
+    PZLinuxTestAssert(purchase.ok, "an offer returned by the server must still be purchasable after reopening")
+    PZLinuxTestAssert(purchase.balance == previousBalance - expected[1].price,
+        "Training must debit the exact canonical quoted price")
 end
 
 -- --- Purchase debits money, sets active state, and blocks a 2nd purchase
@@ -171,11 +276,12 @@ do
     local player = resetPlayer()
     local state = PZLinuxTrainingGetState(player, "req-b")
     local firstOfferId = state.offers[1].id
-    local _, tier = PZLinuxTrainingResolveOffer(firstOfferId)
+    local firstOfferPrice = state.offers[1].price
 
     local purchase = PZLinuxTrainingApplyPurchase(player, firstOfferId, "req-buy-1")
     PZLinuxTestAssert(purchase.ok, "a valid offer purchase must succeed")
-    PZLinuxTestAssert(purchase.balance == 1000000 - tier.price, "the exact tier price must be debited")
+    PZLinuxTestAssert(purchase.balance == 1000000 - firstOfferPrice,
+        "the exact persisted offer price must be debited")
     PZLinuxTestAssert(purchase.active and purchase.active.courseId == firstOfferId, "the purchased course must become active")
     PZLinuxTestAssert(purchase.active.progress == 0, "a freshly purchased course must start at 0 progress")
 
