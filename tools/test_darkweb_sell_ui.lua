@@ -49,8 +49,12 @@ end
 -- price/stock line, mirroring Buy's own offerTooltip pattern.
 PZLinuxTestAssert(onSellBlock:find("local sellTooltip = item.name .. \"\\n\" .. priceText", 1, true),
     "the Sell tooltip must combine the full item name and the price/stock line")
-PZLinuxTestAssert(onSellBlock:find("nameMaxWidth = math.max(40, quantityX - labelNameX - 8)", 1, true),
-    "the Sell text column must stop before the quantity field")
+-- The row's controls grew from [qty] [SELL] to [-] [qty] [+] [++] [SELL]
+-- (see test_darkweb_sell_steppers.lua), so the cut-off moved from the
+-- quantity box to the leftmost stepper. The requirement is unchanged: the
+-- name column must stop before the controls, never run underneath them.
+PZLinuxTestAssert(onSellBlock:find("nameMaxWidth = math.max(40, minusX - labelNameX - 8)", 1, true),
+    "the Sell text column must stop before the row's leftmost control")
 PZLinuxTestAssert(onSellBlock:find("yOffset + labelNameY + 15", 1, true),
     "the Sell price and stock must use a dedicated second line below the item name")
 PZLinuxTestAssert(onSellBlock:find("buttonX = self.scrollPanel.width - buttonWidth - 23", 1, true),
