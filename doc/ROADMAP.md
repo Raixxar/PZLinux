@@ -68,6 +68,70 @@ multiplayer safety may change the order.
 
 ### Sandbox Configuration
 
+- [ ] **Server-managed market category exclusions**
+
+  Let hosts remove entire item families from every PZLinux purchase catalog
+  without editing Lua files. The initial presets should include firearms,
+  ammunition and magazines, skill books and recipes, generators, vehicles,
+  vehicle parts, medical supplies, food, seeds, tools, construction materials,
+  electronics, clothing and luxury items. An empty setting preserves the
+  current catalog.
+
+  Use stable internal category IDs rather than translated display names or the
+  existing broad Buy Goods categories. For example, disabling `SkillBooks`
+  must not remove ordinary novels and magazines. Apply the shared filter to
+  Dark Web Buy offers, custom Dark Web items and Buy Goods offer pools. Selling,
+  contract requirements, pending deliveries and already purchased items remain
+  unaffected unless separate options are deliberately added later.
+
+- [ ] **Exact market item exclusions and mod compatibility**
+
+  Keep a complementary sandbox blacklist using comma-separated full item types,
+  for example `Base.Pistol,Base.BookCarpentry1,SomeMod.CustomRifle`. Categories
+  handle normal server policy with little administration, while exact IDs cover
+  exceptions and modded items that cannot be classified reliably. Invalid IDs
+  should be logged and ignored instead of breaking market generation.
+
+  Build one shared server-owned catalog filter and reuse it in every purchase
+  path. Hidden items must also be rejected during authoritative purchase
+  validation so a stale interface or forged client command cannot buy them.
+  Add an extension hook allowing other mods to register their item IDs under a
+  PZLinux market category without modifying PZLinux files. Changes should take
+  effect on the next offer refresh and must never delete an existing delivery.
+
+- [ ] **Per-feature enable and disable switches**
+
+  Add server and solo sandbox checkboxes allowing hosts to choose which major
+  PZLinux applications are available. The initial settings should all default
+  to enabled to preserve existing saves and server configurations.
+
+  | Sandbox option | Controlled feature |
+  | --- | --- |
+  | `EnableTrading` | Share trading and its price updates |
+  | `EnableTraining` | Paid skill training |
+  | `EnableGambling` | Zombie Race, Blackjack and Poker |
+  | `EnableContracts` | Contract board, acceptance and generation |
+
+  Keep disabled applications visible in the main computer menu, but render
+  their buttons grey and non-interactive. A translated tooltip or short status
+  line should explain that the server administrator disabled the feature. This
+  keeps the interface layout predictable and lets players distinguish a server
+  rule from a missing or broken application.
+
+  Implement the switches through one shared `PZLinux` feature registry so more
+  applications can be added without duplicating checks across every UI. The
+  client presentation is not a security boundary: server command handlers must
+  reject actions belonging to disabled features, and related scheduled jobs
+  must stop generating offers, contracts, races or price updates. The same
+  rules must apply in single-player.
+
+  Define safe transition behavior before release. Disabling Trading preserves
+  existing holdings, disabling Contracts stops new offers without corrupting an
+  accepted mission, and disabling Gambling refunds unfinished server sessions
+  through the existing restart rollback policy. Configuration changes should
+  take effect after a save or server restart rather than halfway through an
+  active transaction.
+
 - [ ] **Dark Web daily sell limit**
 
   Add a host-configurable per-day sell limit, separate from the existing Buy
@@ -327,9 +391,11 @@ registries before PZLinux is advertised as resistant to hostile clients.
 - [ ] **Create a canonical per-character server state**
 
   Add `PZLinuxCharacterStateV1`, keyed by the persistent character identity.
-  Store reputation, Trading holdings, mail progression, Training, Requests,
-  Sell Surplus and interrupted sessions in this registry. Player `ModData`
-  becomes a UI mirror and a controlled legacy-import source only.
+  Store reputation, Trading holdings, mail progression, Requests, Sell Surplus
+  and interrupted sessions in this registry. Integrate the existing
+  `PZLinuxTrainingLedger` into the same lifecycle, or document it as a separate
+  domain registry. Player `ModData` becomes a UI mirror and a controlled
+  legacy-import source only.
 
 - [ ] **Secure legacy migrations**
 
@@ -353,8 +419,9 @@ registries before PZLinux is advertised as resistant to hostile clients.
 - [ ] **Move remaining economy and progression state server-side**
 
   Migrate Trading portfolios, daily Sell Surplus demand, reputation, mail
-  rewards, Training snapshots, Request vehicle orders and interrupted-game
-  refunds out of player-controlled state.
+  rewards, Request vehicle orders and interrupted-game refunds out of
+  player-controlled state. Training snapshots were moved to
+  `PZLinuxTrainingLedger` in v1.0.15.
 
 - [ ] **Harden ATM transactions**
 

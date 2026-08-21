@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.0.15]
+
+- Fixed Training offers rerolling whenever the application was reopened in
+  multiplayer. Courses, quoted prices, refresh deadline and active progress now
+  live in a persistent server-owned ledger keyed by character identity; player
+  ModData is only a synchronized compatibility mirror. A stale client can no
+  longer replace the authoritative offer list and make a course returned by the
+  server fail with `invalid_course` during payment.
+- Training now generates exactly three offers for a full 168 in-game hours from
+  the moment the list is created. Completing a course removes only that offer,
+  leaving two, one and finally zero courses until the stored deadline. Reopening
+  the panel, reconnecting or restarting the server neither rerolls the list nor
+  extends the deadline.
+- Replaced fixed Training prices with server-generated quotes persisted for the
+  complete offer cycle: 100 XP costs $5,000-$15,000, 200 XP costs
+  $10,000-$25,000, 400 XP costs $20,000-$40,000 and 800 XP costs
+  $30,000-$80,000. Purchases debit the exact canonical quote displayed by the
+  UI, with no client-provided price.
+- Doubled new Training durations from 2/3/4/5 to 4/6/8/10 in-game hours. Courses
+  already in progress during migration retain their previously purchased
+  duration and accumulated progress.
+- Training quotes now use the same world-age scarcity multiplier as Dark Web
+  and Buy Goods prices. The multiplier is applied when the weekly offers are
+  generated and remains frozen with each quote for the complete 168-hour cycle.
+- Rounded final Training quotes to the nearest $100 after scarcity is applied,
+  so prices remain readable and believable instead of exposing arbitrary exact
+  amounts such as $10,456.
+
 ## [1.0.14]
 
 - Replaced the relative mailbox delivery ceiling with an absolute carried-weight

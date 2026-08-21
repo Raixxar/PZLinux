@@ -270,7 +270,7 @@ function trainingUI:applyState(state)
     self.currentOffers = state.offers or self.currentOffers or {}
     self.currentActive = state.active
 
-    if state.balance then
+    if state.balance ~= nil then
         saveAtmBalance(state.balance, self.player)
     end
 
