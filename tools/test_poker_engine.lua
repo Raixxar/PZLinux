@@ -121,4 +121,71 @@ assert(topMaxBuyIn < bestContractReward,
         "or gambling can out-earn actually playing",
         topMaxBuyIn, bestContractReward))
 
+-- Regression (v1.0.16): the player shoves all-in, every opponent folds
+-- except one who is also all-in for less. Both survivors have stack 0, so
+-- PZLinuxPokerNextOccupiedSeat -- which only ever returns a seat holding
+-- chips -- could never return the seat the turn started on, and the old
+-- "repeat ... until session.turn == start" walk in PZLinuxPokerMoveTurn
+-- span forever. In game that is a hard freeze the instant a shove puts a
+-- short-stacked opponent all-in for their last chips. The hand below is
+-- dealt by hand so the shape is exact rather than fished for with a seed.
+PZLinux.Poker.Sessions = {}
+local shovePlayer = {}
+local shoveSnapshot = PZLinuxPokerCreateSession(shovePlayer, "micro", 150, "shove-start")
+assert(shoveSnapshot.ok, "the all-in regression table must open")
+local shoveSession = PZLinuxPokerGetSession(shovePlayer)
+
+shoveSession.phase = "preflop"
+shoveSession.community = {}
+shoveSession.pots = {}
+shoveSession.showdown = false
+shoveSession.dealer = 1
+shoveSession.turn = 1
+shoveSession.currentBet = 60
+shoveSession.minRaise = shoveSession.bigBlind
+shoveSession.awaitingPlayer = true
+shoveSession.playerEquityCache = nil
+shoveSession.deck = PZLinuxPokerCreateDeck()
+for index, seat in ipairs(shoveSession.seats) do
+    seat.folded = index ~= 1 and index ~= #shoveSession.seats
+    seat.inHand = true
+    seat.eliminated = false
+    seat.allIn = false
+    seat.acted = true
+    seat.handValue = nil
+    seat.lastAction = ""
+    seat.cards = { PZLinuxPokerDraw(shoveSession.deck), PZLinuxPokerDraw(shoveSession.deck) }
+    if index == 1 then
+        seat.stack = 200
+        seat.bet = 0
+        seat.committed = 0
+        seat.state = "active"
+    elseif seat.folded then
+        seat.stack = 100
+        seat.bet = 0
+        seat.committed = 2
+        seat.state = "folded"
+    else
+        -- The short stack: already all-in for less than the player's shove.
+        seat.stack = 0
+        seat.bet = 60
+        seat.committed = 60
+        seat.allIn = true
+        seat.state = "allin"
+    end
+end
+
+local shoveResult = PZLinuxPokerAction(shovePlayer, "allin", 0, shoveSession.sessionId, "shove-action")
+assert(shoveResult.ok, "the all-in must be accepted, got " .. tostring(shoveResult.error))
+assert(shoveResult.phase == "hand_complete" or shoveResult.phase == "finished",
+    "an all-in against an all-in short stack must run out to showdown, got " .. tostring(shoveResult.phase))
+assert(#shoveResult.community == 5, "the board must be completed for the all-in runout, got " .. tostring(#shoveResult.community))
+
+local shovedChips = 0
+for _, seat in ipairs(shoveSession.seats) do shovedChips = shovedChips + seat.stack end
+-- 200 behind for the player, 60 already committed by the short stack, and
+-- 100 behind plus the 2 posted by each of the folded seats.
+assert(shovedChips == 200 + 60 + 102 * (#shoveSession.seats - 2),
+    "chips must be conserved across the all-in showdown, got " .. tostring(shovedChips))
+
 print("PZLinux poker engine tests OK")
