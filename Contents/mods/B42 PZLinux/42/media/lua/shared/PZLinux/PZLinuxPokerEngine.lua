@@ -447,15 +447,27 @@ local function PZLinuxPokerNeedMoreActions(session)
     return false
 end
 
+-- Bounded scan over every seat exactly once (v1.0.16). The previous version
+-- walked with PZLinuxPokerNextOccupiedSeat and stopped only when it came back
+-- around to the seat it started on. That helper skips any seat with stack 0,
+-- so once the seat we started from was all-in it could never be returned, the
+-- "until session.turn == start" condition never became true, and the loop
+-- spun forever -- freezing the game the moment a player shoved all-in and the
+-- only other live hand was also all-in (every other seat folded). Scanning a
+-- fixed number of offsets terminates unconditionally, and leaving session.turn
+-- untouched when nobody can act lets the callers fall through to the
+-- betting-round/showdown logic that already handles an all-in runout.
 local function PZLinuxPokerMoveTurn(session)
-    local start = session.turn
-    repeat
-        session.turn = PZLinuxPokerNextOccupiedSeat(session, session.turn)
-        local seat = session.seats[session.turn]
+    local count = #(session.seats or {})
+    if count == 0 then return end
+    for offset = 1, count do
+        local index = ((session.turn - 1 + offset) % count) + 1
+        local seat = session.seats[index]
         if seat and seat.inHand and not seat.folded and not seat.allIn and not seat.eliminated then
+            session.turn = index
             return
         end
-    until session.turn == start
+    end
 end
 
 local function PZLinuxPokerLegalActions(session)
