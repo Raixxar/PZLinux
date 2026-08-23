@@ -476,12 +476,14 @@ local function PZLinuxPokerLegalActions(session)
         return {}
     end
     local toCall = math.max(0, session.currentBet - seat.bet)
+    local minBet = session.currentBet == 0 and session.bigBlind or (toCall + session.minRaise)
+    local maxBet = seat.stack
     local actions = { fold = toCall > 0, check = toCall == 0, call = toCall > 0 and seat.stack > 0, allin = seat.stack > 0 }
-    actions.bet = toCall == 0 and seat.stack >= session.bigBlind
-    actions.raise = toCall > 0 and seat.stack > toCall
+    actions.bet = toCall == 0 and minBet <= maxBet
+    actions.raise = toCall > 0 and minBet <= maxBet
     actions.toCall = toCall
-    actions.minBet = session.currentBet == 0 and session.bigBlind or (toCall + session.minRaise)
-    actions.maxBet = seat.stack
+    actions.minBet = minBet
+    actions.maxBet = maxBet
     return actions
 end
 

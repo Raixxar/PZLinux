@@ -188,4 +188,33 @@ for _, seat in ipairs(shoveSession.seats) do shovedChips = shovedChips + seat.st
 assert(shovedChips == 200 + 60 + 102 * (#shoveSession.seats - 2),
     "chips must be conserved across the all-in showdown, got " .. tostring(shovedChips))
 
+-- A short stack facing a bet can still call or shove, but must not be
+-- offered a normal raise when they cannot cover the minimum raise amount.
+-- The UI builds its buttons from legalActions, so exposing raise=true with
+-- minBet > maxBet produced a button that always came back invalid_amount.
+PZLinux.Poker.Sessions = {}
+local shortRaisePlayer = {}
+local shortRaiseSnapshot = PZLinuxPokerCreateSession(shortRaisePlayer, "micro", 150, "short-raise-start")
+assert(shortRaiseSnapshot.ok, "the short-stack raise regression table must open")
+local shortRaiseSession = PZLinuxPokerGetSession(shortRaisePlayer)
+shortRaiseSession.phase = "preflop"
+shortRaiseSession.turn = 1
+shortRaiseSession.awaitingPlayer = true
+shortRaiseSession.currentBet = 60
+shortRaiseSession.minRaise = shortRaiseSession.bigBlind
+shortRaiseSession.seats[1].stack = shortRaiseSession.bigBlind + 1
+shortRaiseSession.seats[1].bet = 60 - shortRaiseSession.bigBlind
+shortRaiseSession.seats[1].committed = shortRaiseSession.seats[1].bet
+shortRaiseSession.seats[1].folded = false
+shortRaiseSession.seats[1].allIn = false
+shortRaiseSession.seats[1].inHand = true
+shortRaiseSession.seats[1].eliminated = false
+local shortRaiseLegal = PZLinuxPokerBuildSnapshot(shortRaiseSession).legalActions
+assert(shortRaiseLegal.call, "a short stack facing a call amount must still be able to call")
+assert(shortRaiseLegal.allin, "a short stack with chips must still be able to go all-in")
+assert(not shortRaiseLegal.raise,
+    "raise must be hidden when the minimum raise is larger than the player's stack")
+assert(shortRaiseLegal.minBet > shortRaiseLegal.maxBet,
+    "the regression fixture must prove min raise is unaffordable")
+
 print("PZLinux poker engine tests OK")
