@@ -140,8 +140,8 @@ PZLinuxTestAssert(darkWebUi:find("PZLinuxDarkWebFitText")
     and darkWebUi:find("offerTextWidths"),
     "Dark Web item names and details must be constrained to their responsive text column")
 PZLinuxTestAssert(darkWebUi:find("labelNameY %+ 15")
-    and darkWebUi:find("quantityX %- labelNameX"),
-    "Dark Web price and stock must use a separate line before the quantity column")
+    and darkWebUi:find("minusX %- labelNameX"),
+    "Dark Web price and stock must use a separate line before the row controls")
 PZLinuxTestAssert(darkWebUi:find("setTooltip%(offerTooltip%)"),
     "truncated Dark Web offers must expose their complete name, price and stock in a tooltip")
 PZLinuxTestAssert(darkWebUi:find('tonumber%(item%.count%) or 0'),

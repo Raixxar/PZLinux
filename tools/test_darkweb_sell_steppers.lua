@@ -1,8 +1,7 @@
--- Player request: the Dark Web Sell rows only offered a bare quantity box,
--- so selling a stack meant reading the stock line, then typing the number
--- by hand. Each row now carries [-] [qty] [+] [++] [SELL]: step down by
--- one (never below 0), step up by one (never above the stock the row was
--- built with), or jump straight to the full stock with [++].
+-- Player request: Dark Web quantity rows should be quick and consistent.
+-- Buy and Sell rows now carry [-] [qty] [+] [++] [ACTION]: step down by
+-- one (never below 0), step up by one (never above the row stock), or jump
+-- straight to the full stock with [++].
 --
 -- The steppers are also the only place that repairs an out-of-range typed
 -- value: setOnlyNumbers(true) blocks letters but not "9999", so every
@@ -81,7 +80,7 @@ box = fakeEntryBox("abc")
 PZLinuxTestAssert(stepQuantity(box, 1, 6) == 1, "a non-numeric box must be read as zero, not nil")
 
 -- ---------------------------------------------------------------------
--- 2. Client source checks: the three buttons exist, are wired to the
+-- 2. Client source checks: the three Sell buttons exist, are wired to the
 -- right deltas, and are laid out [-] [qty] [+] [++] [SELL].
 -- ---------------------------------------------------------------------
 
@@ -127,4 +126,53 @@ for _, widget in ipairs({ "minusButton", "plusButton", "maxButton" }) do
         "the Sell row's " .. widget .. " must be added to the scroll panel")
 end
 
-print("PZLinux Dark Web Sell stepper tests OK")
+-- ---------------------------------------------------------------------
+-- 3. Buy uses the same steppers, but its rows are pre-allocated once and
+-- rebound to fresh offers on every render. The row's current stock is
+-- stored on the quantity box so a reused row clamps against the offer it
+-- is showing now, not an old one.
+-- ---------------------------------------------------------------------
+
+local initialiseBlock = clientSource:match("function darkWebUI:initialise%(%).-\nend")
+PZLinuxTestAssert(initialiseBlock, "darkWebUI:initialise must exist")
+local onBuyBlock = clientSource:match("function darkWebUI:onBuy%(%).-\nend")
+PZLinuxTestAssert(onBuyBlock, "darkWebUI:onBuy must exist")
+
+for _, listName in ipairs({ "transactionMinusBtns", "transactionPlusBtns", "transactionMaxBtns" }) do
+    PZLinuxTestAssert(initialiseBlock:find("self." .. listName .. " = {}", 1, true),
+        "Buy rows must pre-allocate " .. listName)
+end
+
+PZLinuxTestAssert(initialiseBlock:find('ISButton:new(minusX, (rowHeight - buttonHeight) / 2, stepWidth, buttonHeight, "-"', 1, true),
+    "each Buy row must carry a [-] button")
+PZLinuxTestAssert(initialiseBlock:find('ISButton:new(plusX, (rowHeight - buttonHeight) / 2, stepWidth, buttonHeight, "+"', 1, true),
+    "each Buy row must carry a [+] button")
+PZLinuxTestAssert(initialiseBlock:find('ISButton:new(maxStepX, (rowHeight - buttonHeight) / 2, maxStepWidth, buttonHeight, "++"', 1, true),
+    "each Buy row must carry a [++] button")
+
+PZLinuxTestAssert(initialiseBlock:find("PZLinuxDarkWebStepQuantity(transactionQty, -1, transactionQty.pzlinuxStock)", 1, true),
+    "Buy [-] must clamp against the row's current stock")
+PZLinuxTestAssert(initialiseBlock:find("PZLinuxDarkWebStepQuantity(transactionQty, 1, transactionQty.pzlinuxStock)", 1, true),
+    "Buy [+] must clamp against the row's current stock")
+PZLinuxTestAssert(initialiseBlock:find("PZLinuxDarkWebSetQuantity(transactionQty, transactionQty.pzlinuxStock, transactionQty.pzlinuxStock)", 1, true),
+    "Buy [++] must set the row's current stock")
+
+PZLinuxTestAssert(initialiseBlock:find("local maxStepX = buttonX - stepGap - maxStepWidth", 1, true),
+    "Buy [++] must sit immediately left of the BUY button")
+PZLinuxTestAssert(initialiseBlock:find("local plusX = maxStepX - stepGap - stepWidth", 1, true),
+    "Buy [+] must sit immediately left of [++]")
+PZLinuxTestAssert(initialiseBlock:find("local quantityX = plusX - stepGap - quantityWidth", 1, true),
+    "the Buy quantity box must sit immediately left of [+]")
+PZLinuxTestAssert(initialiseBlock:find("local minusX = quantityX - stepGap - stepWidth", 1, true),
+    "Buy [-] must sit immediately left of the quantity box")
+PZLinuxTestAssert(initialiseBlock:find("self.offerTextWidths[i] = math.max(40, minusX - labelNameX - 8)", 1, true),
+    "the Buy name column must stop before the leftmost stepper")
+
+PZLinuxTestAssert(onBuyBlock:find("self.transactionQtys[lineIndex].pzlinuxStock = tonumber(rowData.stock) or 0", 1, true),
+    "a reused Buy row must refresh its stock before stepper clicks")
+PZLinuxTestAssert(onBuyBlock:find("stepper:setEnable(hasStock)", 1, true),
+    "Buy steppers must be disabled for sold-out rows, matching the BUY button")
+PZLinuxTestAssert(onBuyBlock:find("stepper:setTooltip(offerTooltip)", 1, true),
+    "Buy steppers must carry the row tooltip")
+
+print("PZLinux Dark Web stepper tests OK")

@@ -224,6 +224,9 @@ function darkWebUI:initialise()
     self.offerTextWidths = {}
     self.transactionBtns = {}
     self.transactionQtys = {}
+    self.transactionMinusBtns = {}
+    self.transactionPlusBtns = {}
+    self.transactionMaxBtns = {}
 
     local rowHeight = math.max(38, self.height * 0.05)
     local totalHeight = 100 * rowHeight + 10
@@ -269,18 +272,58 @@ function darkWebUI:initialise()
         local buttonWidth = math.min(offerBackground.width * 0.25, math.max(58, buyWidth + 16, soldOutWidth + 16))
         local buttonHeight = self.height * 0.025
         local quantityWidth = math.max(32, self.width * 0.035)
+        local stepGap = 3
+        local stepWidth = math.max(20, PZLinuxDarkWebTextWidth("-") + 12)
+        local maxStepWidth = math.max(26, PZLinuxDarkWebTextWidth("++") + 12)
         local buttonX = offerBackground.width - buttonWidth - 6
-        local quantityX = buttonX - quantityWidth - 5
-        self.offerTextWidths[i] = math.max(40, quantityX - labelNameX - 8)
+        local maxStepX = buttonX - stepGap - maxStepWidth
+        local plusX = maxStepX - stepGap - stepWidth
+        local quantityX = plusX - stepGap - quantityWidth
+        local minusX = quantityX - stepGap - stepWidth
+        self.offerTextWidths[i] = math.max(40, minusX - labelNameX - 8)
 
         local transactionQty = ISTextEntryBox:new("0", quantityX, (rowHeight - buttonHeight - 2) / 2, quantityWidth, self.height * 0.024)
         transactionQty.backgroundColor = {r=0, g=0, b=0, a=1}
         transactionQty.internal = i
+        transactionQty.pzlinuxStock = 0
         transactionQty:setVisible(true)
         transactionQty:initialise()
         transactionQty:setOnlyNumbers(true)
         offerBackground:addChild(transactionQty)
         self.transactionQtys[i] = transactionQty
+
+        local minusButton = ISButton:new(minusX, (rowHeight - buttonHeight) / 2, stepWidth, buttonHeight, "-", self, function()
+            PZLinuxDarkWebStepQuantity(transactionQty, -1, transactionQty.pzlinuxStock)
+        end)
+        minusButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        minusButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        minusButton.textColor = {r=0, g=1, b=0, a=1}
+        minusButton:setVisible(false)
+        minusButton:initialise()
+        offerBackground:addChild(minusButton)
+        self.transactionMinusBtns[i] = minusButton
+
+        local plusButton = ISButton:new(plusX, (rowHeight - buttonHeight) / 2, stepWidth, buttonHeight, "+", self, function()
+            PZLinuxDarkWebStepQuantity(transactionQty, 1, transactionQty.pzlinuxStock)
+        end)
+        plusButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        plusButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        plusButton.textColor = {r=0, g=1, b=0, a=1}
+        plusButton:setVisible(false)
+        plusButton:initialise()
+        offerBackground:addChild(plusButton)
+        self.transactionPlusBtns[i] = plusButton
+
+        local maxButton = ISButton:new(maxStepX, (rowHeight - buttonHeight) / 2, maxStepWidth, buttonHeight, "++", self, function()
+            PZLinuxDarkWebSetQuantity(transactionQty, transactionQty.pzlinuxStock, transactionQty.pzlinuxStock)
+        end)
+        maxButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        maxButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        maxButton.textColor = {r=0, g=1, b=0, a=1}
+        maxButton:setVisible(false)
+        maxButton:initialise()
+        offerBackground:addChild(maxButton)
+        self.transactionMaxBtns[i] = maxButton
 
         local transactionBtn = ISButton:new(buttonX, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
             local quantityTrading = tonumber(transactionQty:getText()) or 0
@@ -466,6 +509,7 @@ function darkWebUI:onBuy()
                     end
 
                     if self.transactionQtys[lineIndex] then
+                        self.transactionQtys[lineIndex].pzlinuxStock = tonumber(rowData.stock) or 0
                         self.transactionQtys[lineIndex]:setVisible(true)
                     end
 
@@ -492,6 +536,16 @@ function darkWebUI:onBuy()
                         self.transactionBtns[lineIndex]:setEnable((tonumber(rowData.stock) or 0) > 0)
                         if self.transactionBtns[lineIndex].setTooltip then
                             self.transactionBtns[lineIndex]:setTooltip(offerTooltip)
+                        end
+                    end
+
+                    local hasStock = (tonumber(rowData.stock) or 0) > 0
+                    for _, buttonList in ipairs({ self.transactionMinusBtns, self.transactionPlusBtns, self.transactionMaxBtns }) do
+                        local stepper = buttonList and buttonList[lineIndex] or nil
+                        if stepper then
+                            stepper:setVisible(true)
+                            stepper:setEnable(hasStock)
+                            if stepper.setTooltip then stepper:setTooltip(offerTooltip) end
                         end
                     end
 
@@ -531,7 +585,13 @@ function darkWebUI:onBuy()
             self.transactionBtns[j]:setVisible(false)
         end
         if self.transactionQtys[j] then
+            self.transactionQtys[j].pzlinuxStock = 0
             self.transactionQtys[j]:setVisible(false)
+        end
+        for _, buttonList in ipairs({ self.transactionMinusBtns, self.transactionPlusBtns, self.transactionMaxBtns }) do
+            if buttonList[j] then
+                buttonList[j]:setVisible(false)
+            end
         end
     end
 
