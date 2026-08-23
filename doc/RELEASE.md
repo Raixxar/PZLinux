@@ -32,8 +32,7 @@ tooltips.
 [h2]Community[/h2]
 
 [list]
-[*] Thanks to the community contributor who proposed and implemented the first
-Dark Web Sell quality-of-life buttons that became part of this release.
+[*] Thanks to the community contributor whose work helped shape this release.
 [/list]
 
 [h2]Compatibility[/h2]
