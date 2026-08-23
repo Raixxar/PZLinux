@@ -197,7 +197,7 @@ Problemes relies :
 - la reputation servant aux prix et aux mails est lue et modifiee dans ce meme arbre ;
 - une completion Mail retire les objets avant de garantir l'enregistrement du cadeau.
 
-Training a ete retire de ce constat en v1.0.15. Ses offres, prix, echeance,
+Training a ete retire de ce constat en v1.0.16. Ses offres, prix, echeance,
 formation active et progression sont desormais conserves dans
 `PZLinuxTrainingLedger`, indexe par l'identite persistante du personnage. Le
 `ModData` joueur n'est plus qu'un miroir et le serveur reconstruit les champs

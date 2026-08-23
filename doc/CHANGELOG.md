@@ -1,32 +1,28 @@
 # Changelog
 
-## [1.0.15]
+## [1.0.16]
 
-- Fixed Training offers rerolling whenever the application was reopened in
-  multiplayer. Courses, quoted prices, refresh deadline and active progress now
-  live in a persistent server-owned ledger keyed by character identity; player
-  ModData is only a synchronized compatibility mirror. A stale client can no
-  longer replace the authoritative offer list and make a course returned by the
-  server fail with `invalid_course` during payment.
-- Training now generates exactly three offers for a full 168 in-game hours from
-  the moment the list is created. Completing a course removes only that offer,
-  leaving two, one and finally zero courses until the stored deadline. Reopening
-  the panel, reconnecting or restarting the server neither rerolls the list nor
-  extends the deadline.
-- Replaced fixed Training prices with server-generated quotes persisted for the
-  complete offer cycle: 100 XP costs $5,000-$15,000, 200 XP costs
-  $10,000-$25,000, 400 XP costs $20,000-$40,000 and 800 XP costs
-  $30,000-$80,000. Purchases debit the exact canonical quote displayed by the
-  UI, with no client-provided price.
-- Doubled new Training durations from 2/3/4/5 to 4/6/8/10 in-game hours. Courses
-  already in progress during migration retain their previously purchased
-  duration and accumulated progress.
-- Training quotes now use the same world-age scarcity multiplier as Dark Web
-  and Buy Goods prices. The multiplier is applied when the weekly offers are
-  generated and remains frozen with each quote for the complete 168-hour cycle.
-- Rounded final Training quotes to the nearest $100 after scarcity is applied,
-  so prices remain readable and believable instead of exposing arbitrary exact
-  amounts such as $10,456.
+- Fixed a Poker turn-advance infinite loop when the player shoved all-in and the
+  only remaining opponent was already all-in. The engine now scans seats with a
+  bounded pass and correctly falls through to the all-in runout and showdown in
+  both single-player and multiplayer.
+- Fixed Poker short-stack legal actions so a player who can call or shove, but
+  cannot cover the minimum raise, is no longer shown a normal Raise action that
+  would always be rejected with `invalid_amount`.
+- Added Dark Web Sell quantity steppers requested by a community contributor:
+  `[-]`, `[+]` and `[++]` sit beside the quantity box, clamp typed values between
+  zero and owned stock, and make it possible to sell part of a stack without
+  manually typing the exact amount.
+- Added the same quantity steppers to Dark Web Buy rows for a consistent
+  `[-] [qty] [+] [++] [BUY/SELL]` interface. Buy steppers are disabled for
+  sold-out rows and clamp against the offer currently bound to each reused UI
+  row.
+- Preserved the Dark Web long-name overlap fix while adding the new buttons:
+  Buy and Sell item labels are now truncated before the leftmost stepper and
+  expose the full item name plus price/stock in tooltips.
+- Added regression coverage for the Poker all-in freeze, Poker short-stack
+  Raise visibility, Dark Web Buy/Sell quantity steppers, row rebinding and
+  long-name layout constraints.
 
 ## [1.0.14]
 

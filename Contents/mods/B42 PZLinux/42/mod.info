@@ -1,9 +1,9 @@
 name=PZLinux
 id=B42_PZLinux
-modversion=1.0.15
+modversion=1.0.16
 versionMin=42.20
 poster=poster.png
-description=PZLinux 1.0.15 fixes persistent server-owned Training offers and applies world-age scarcity to rounded course prices. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
+description=PZLinux 1.0.16 fixes a Poker all-in freeze, cleans up short-stack Raise actions, and adds consistent Dark Web Buy/Sell quantity steppers. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
 tooltip=PZLinux
 author=Raixxar
 category=features
