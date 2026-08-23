@@ -421,7 +421,7 @@ registries before PZLinux is advertised as resistant to hostile clients.
   Migrate Trading portfolios, daily Sell Surplus demand, reputation, mail
   rewards, Request vehicle orders and interrupted-game refunds out of
   player-controlled state. Training snapshots were moved to
-  `PZLinuxTrainingLedger` in v1.0.15.
+  `PZLinuxTrainingLedger` in v1.0.16.
 
 - [ ] **Harden ATM transactions**
 

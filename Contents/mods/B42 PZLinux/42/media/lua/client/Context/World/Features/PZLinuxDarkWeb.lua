@@ -38,6 +38,26 @@ local function PZLinuxDarkWebFitText(text, maxWidth)
     return text .. suffix
 end
 
+-- Shared by the Sell rows' [-] / [+] / [++] steppers. The quantity box is
+-- setOnlyNumbers(true), but that still lets a player type a number larger
+-- than they own (or leave it empty), so every stepper re-reads the box,
+-- clamps into [0, stock] and writes the clamped value back. That means a
+-- single click on [-] or [+] also repairs an out-of-range typed value
+-- instead of stepping away from an already-invalid number.
+local function PZLinuxDarkWebSetQuantity(entryBox, value, stock)
+    stock = math.max(0, math.floor(tonumber(stock) or 0))
+    value = math.floor(tonumber(value) or 0)
+    if value < 0 then value = 0 end
+    if value > stock then value = stock end
+    entryBox:setText(tostring(value))
+    return value
+end
+
+local function PZLinuxDarkWebStepQuantity(entryBox, delta, stock)
+    local current = math.floor(tonumber(entryBox:getText()) or 0)
+    return PZLinuxDarkWebSetQuantity(entryBox, current + delta, stock)
+end
+
 -- CONSTRUCTOR
 function darkWebUI:new(x, y, width, height, player)
     local o = ISPanel:new(x, y, width, height)
@@ -204,6 +224,9 @@ function darkWebUI:initialise()
     self.offerTextWidths = {}
     self.transactionBtns = {}
     self.transactionQtys = {}
+    self.transactionMinusBtns = {}
+    self.transactionPlusBtns = {}
+    self.transactionMaxBtns = {}
 
     local rowHeight = math.max(38, self.height * 0.05)
     local totalHeight = 100 * rowHeight + 10
@@ -249,18 +272,58 @@ function darkWebUI:initialise()
         local buttonWidth = math.min(offerBackground.width * 0.25, math.max(58, buyWidth + 16, soldOutWidth + 16))
         local buttonHeight = self.height * 0.025
         local quantityWidth = math.max(32, self.width * 0.035)
+        local stepGap = 3
+        local stepWidth = math.max(20, PZLinuxDarkWebTextWidth("-") + 12)
+        local maxStepWidth = math.max(26, PZLinuxDarkWebTextWidth("++") + 12)
         local buttonX = offerBackground.width - buttonWidth - 6
-        local quantityX = buttonX - quantityWidth - 5
-        self.offerTextWidths[i] = math.max(40, quantityX - labelNameX - 8)
+        local maxStepX = buttonX - stepGap - maxStepWidth
+        local plusX = maxStepX - stepGap - stepWidth
+        local quantityX = plusX - stepGap - quantityWidth
+        local minusX = quantityX - stepGap - stepWidth
+        self.offerTextWidths[i] = math.max(40, minusX - labelNameX - 8)
 
         local transactionQty = ISTextEntryBox:new("0", quantityX, (rowHeight - buttonHeight - 2) / 2, quantityWidth, self.height * 0.024)
         transactionQty.backgroundColor = {r=0, g=0, b=0, a=1}
         transactionQty.internal = i
+        transactionQty.pzlinuxStock = 0
         transactionQty:setVisible(true)
         transactionQty:initialise()
         transactionQty:setOnlyNumbers(true)
         offerBackground:addChild(transactionQty)
         self.transactionQtys[i] = transactionQty
+
+        local minusButton = ISButton:new(minusX, (rowHeight - buttonHeight) / 2, stepWidth, buttonHeight, "-", self, function()
+            PZLinuxDarkWebStepQuantity(transactionQty, -1, transactionQty.pzlinuxStock)
+        end)
+        minusButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        minusButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        minusButton.textColor = {r=0, g=1, b=0, a=1}
+        minusButton:setVisible(false)
+        minusButton:initialise()
+        offerBackground:addChild(minusButton)
+        self.transactionMinusBtns[i] = minusButton
+
+        local plusButton = ISButton:new(plusX, (rowHeight - buttonHeight) / 2, stepWidth, buttonHeight, "+", self, function()
+            PZLinuxDarkWebStepQuantity(transactionQty, 1, transactionQty.pzlinuxStock)
+        end)
+        plusButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        plusButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        plusButton.textColor = {r=0, g=1, b=0, a=1}
+        plusButton:setVisible(false)
+        plusButton:initialise()
+        offerBackground:addChild(plusButton)
+        self.transactionPlusBtns[i] = plusButton
+
+        local maxButton = ISButton:new(maxStepX, (rowHeight - buttonHeight) / 2, maxStepWidth, buttonHeight, "++", self, function()
+            PZLinuxDarkWebSetQuantity(transactionQty, transactionQty.pzlinuxStock, transactionQty.pzlinuxStock)
+        end)
+        maxButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        maxButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        maxButton.textColor = {r=0, g=1, b=0, a=1}
+        maxButton:setVisible(false)
+        maxButton:initialise()
+        offerBackground:addChild(maxButton)
+        self.transactionMaxBtns[i] = maxButton
 
         local transactionBtn = ISButton:new(buttonX, (rowHeight - buttonHeight) / 2, buttonWidth, buttonHeight, "", self, function(self, btn)
             local quantityTrading = tonumber(transactionQty:getText()) or 0
@@ -446,6 +509,7 @@ function darkWebUI:onBuy()
                     end
 
                     if self.transactionQtys[lineIndex] then
+                        self.transactionQtys[lineIndex].pzlinuxStock = tonumber(rowData.stock) or 0
                         self.transactionQtys[lineIndex]:setVisible(true)
                     end
 
@@ -472,6 +536,16 @@ function darkWebUI:onBuy()
                         self.transactionBtns[lineIndex]:setEnable((tonumber(rowData.stock) or 0) > 0)
                         if self.transactionBtns[lineIndex].setTooltip then
                             self.transactionBtns[lineIndex]:setTooltip(offerTooltip)
+                        end
+                    end
+
+                    local hasStock = (tonumber(rowData.stock) or 0) > 0
+                    for _, buttonList in ipairs({ self.transactionMinusBtns, self.transactionPlusBtns, self.transactionMaxBtns }) do
+                        local stepper = buttonList and buttonList[lineIndex] or nil
+                        if stepper then
+                            stepper:setVisible(true)
+                            stepper:setEnable(hasStock)
+                            if stepper.setTooltip then stepper:setTooltip(offerTooltip) end
                         end
                     end
 
@@ -511,7 +585,13 @@ function darkWebUI:onBuy()
             self.transactionBtns[j]:setVisible(false)
         end
         if self.transactionQtys[j] then
+            self.transactionQtys[j].pzlinuxStock = 0
             self.transactionQtys[j]:setVisible(false)
+        end
+        for _, buttonList in ipairs({ self.transactionMinusBtns, self.transactionPlusBtns, self.transactionMaxBtns }) do
+            if buttonList[j] then
+                buttonList[j]:setVisible(false)
+            end
         end
     end
 
@@ -630,9 +710,19 @@ function darkWebUI:onSell()
     local buttonWidth = math.min(self.scrollPanel.width * 0.25, math.max(58, buttonTextWidth + 16))
     local buttonHeight = self.height * 0.025
     local quantityWidth = math.max(32, self.width * 0.035)
+    -- Row controls are laid out right to left from the SELL button:
+    -- [-] [qty] [+] [++] [SELL]. Each stepper is sized from its own label
+    -- so [++] stays readable at any UI scale, and the name column is then
+    -- cut off at whatever space is left to its left.
+    local stepGap = 3
+    local stepWidth = math.max(20, PZLinuxDarkWebTextWidth("-") + 12)
+    local maxStepWidth = math.max(26, PZLinuxDarkWebTextWidth("++") + 12)
     local buttonX = self.scrollPanel.width - buttonWidth - 23
-    local quantityX = buttonX - quantityWidth - 5
-    local nameMaxWidth = math.max(40, quantityX - labelNameX - 8)
+    local maxStepX = buttonX - stepGap - maxStepWidth
+    local plusX = maxStepX - stepGap - stepWidth
+    local quantityX = plusX - stepGap - quantityWidth
+    local minusX = quantityX - stepGap - stepWidth
+    local nameMaxWidth = math.max(40, minusX - labelNameX - 8)
 
     local yOffset = 0
     for _, item in ipairs(itemsToSell) do
@@ -680,6 +770,45 @@ function darkWebUI:onSell()
         if sellQty.setTooltip then sellQty:setTooltip(sellTooltip) end
         self.scrollPanel:addChild(sellQty)
         self.transactionQtysSell[item.index] = sellQty
+
+        -- Stepper buttons around the quantity box. Typing an exact number
+        -- still works; these just save the keyboard trip for the common
+        -- cases -- nudge by one, or "sell the lot" with [++]. item.count is
+        -- captured per row, so each row clamps to its own stock.
+        local itemStock = tonumber(item.count) or 0
+        local minusButton = ISButton:new(minusX, controlY, stepWidth, buttonHeight, "-", self, function()
+            PZLinuxDarkWebStepQuantity(sellQty, -1, itemStock)
+        end)
+        minusButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        minusButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        minusButton.textColor = {r=0, g=1, b=0, a=1}
+        minusButton:setVisible(true)
+        minusButton:initialise()
+        if minusButton.setTooltip then minusButton:setTooltip(sellTooltip) end
+        self.scrollPanel:addChild(minusButton)
+
+        local plusButton = ISButton:new(plusX, controlY, stepWidth, buttonHeight, "+", self, function()
+            PZLinuxDarkWebStepQuantity(sellQty, 1, itemStock)
+        end)
+        plusButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        plusButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        plusButton.textColor = {r=0, g=1, b=0, a=1}
+        plusButton:setVisible(true)
+        plusButton:initialise()
+        if plusButton.setTooltip then plusButton:setTooltip(sellTooltip) end
+        self.scrollPanel:addChild(plusButton)
+
+        local maxButton = ISButton:new(maxStepX, controlY, maxStepWidth, buttonHeight, "++", self, function()
+            PZLinuxDarkWebSetQuantity(sellQty, itemStock, itemStock)
+        end)
+        maxButton.backgroundColor = {r=0, g=0, b=0, a=0.5}
+        maxButton.borderColor = {r=0, g=1, b=0, a=0.5}
+        maxButton.textColor = {r=0, g=1, b=0, a=1}
+        maxButton:setVisible(true)
+        maxButton:initialise()
+        if maxButton.setTooltip then maxButton:setTooltip(sellTooltip) end
+        self.scrollPanel:addChild(maxButton)
+
 
         local sellButton = ISButton:new(buttonX, controlY, buttonWidth, buttonHeight,
             PZLinuxGetText("IGUI_PZLinux_DarkWeb_Sell"), self, function(self, btn)

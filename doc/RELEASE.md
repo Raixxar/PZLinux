@@ -1,51 +1,43 @@
-[h1]PZLinux 1.0.15[/h1]
+[h1]PZLinux 1.0.16[/h1]
 
-PZLinux 1.0.15 is a maintenance and balance update for Project Zomboid Build
-42.20.2. It fixes multiplayer Training persistence and mailbox collection of
-heavy purchases while preserving existing saves.
+PZLinux 1.0.16 is a maintenance update for Project Zomboid Build 42.20.2. It
+fixes an all-in Poker freeze, tightens short-stack Poker actions and makes Dark
+Web quantity controls consistent between Buy and Sell.
 
-[h2]Training[/h2]
+[h2]Poker[/h2]
 
 [list]
-[*] Weekly Training offers are now stored in a persistent server-authoritative
-ledger per character. Reopening the application or reconnecting cannot reroll
-the list or make a displayed course fail during payment.
-[*] Each set of three courses remains fixed for a full 168 in-game hours after
-generation. Completed courses disappear one by one and do not refill before the
-stored deadline.
-[*] Course prices are randomized and frozen with their offer: $5,000-$15,000
-for 100 XP, $10,000-$25,000 for 200 XP, $20,000-$40,000 for 400 XP and
-$30,000-$80,000 for 800 XP before world-age scarcity. The server applies the
-same scarcity multiplier used by online item markets, then rounds the final
-weekly quote to the nearest $100.
-[*] New course durations are doubled to 4, 6, 8 and 10 in-game hours. Existing
-active courses retain their saved duration and progress.
+[*] Fixed a turn-advance infinite loop that could freeze a Poker hand when the
+player went all-in and the only remaining opponent was already all-in.
+[*] All-in hands now correctly run out the board and resolve at showdown in
+single-player, hosted multiplayer and dedicated multiplayer.
+[*] Short stacks can still call or go all-in, but the normal Raise action is no
+longer offered when the player cannot cover the minimum raise amount.
 [/list]
 
-[h2]Mailbox Deliveries[/h2]
+[h2]Dark Web[/h2]
 
 [list]
-[*] Mailbox collection now allows temporary overload up to an absolute carried
-weight of 60, regardless of the character's Strength. The limit is configurable.
-[*] Heavy purchases such as an Old Generator can therefore be collected by
-low-Strength characters instead of remaining permanently queued.
-[*] Orders heavier than 60 are automatically split into persistent parcel
-parts under the same order ID. Each part has its own delivery status, so
-collecting one part and returning later resumes with only what remains.
-[*] Weight is checked after each complete parcel is built. A parcel that would
-cross the limit is rolled back as a whole and remains queued for a later visit.
-[*] Dark Web purchases, Buy Goods orders and mail rewards use stable server-side
-order and parcel-part IDs, preventing partial parcel creation and duplicate
-collection.
-[*] Pending orders created by earlier versions are planned automatically on
-their next mailbox interaction; no save reset or manual migration is required.
-[*] Server logs now report delivered parcels, remaining orders and the active
-maximum weight to simplify multiplayer diagnostics.
+[*] Dark Web Sell rows now include quick quantity controls:
+[-] [qty] [+] [++] [SELL].
+[*] Dark Web Buy rows now use the same controls for a consistent interface:
+[-] [qty] [+] [++] [BUY].
+[*] Quantity steppers clamp typed values between zero and the available stock,
+so a row cannot be stepped below 0 or above what can actually be bought or sold.
+[*] The long item-name layout guard remains active: names are truncated before
+the row controls and the full item name, price and stock remain available in
+tooltips.
+[/list]
+
+[h2]Community[/h2]
+
+[list]
+[*] Thanks to the community contributor whose work helped shape this release.
 [/list]
 
 [h2]Compatibility[/h2]
 
-PZLinux 1.0.15 retains the B42_PZLinux mod ID and all existing player/world
+PZLinux 1.0.16 retains the B42_PZLinux mod ID and all existing player/world
 ModData. It supports single-player, hosted multiplayer and dedicated servers on
 Project Zomboid Build 42.20 and newer Build 42 versions. No additional mod
 dependency is required.
@@ -53,9 +45,10 @@ dependency is required.
 [h2]Validation[/h2]
 
 [list]
-[*] 53 automated gameplay and persistence tests pass.
+[*] Poker all-in, short-stack Raise and Dark Web quantity-stepper regressions
+pass.
 [*] All 66 Lua files parse successfully with no syntax errors.
-[*] All 20 translation catalogs contain the same 600 keys and parameters.
+[*] Release metadata and Workshop version checks pass for 1.0.16.
 [/list]
 
 [h2]Known Limitations[/h2]
