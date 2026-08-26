@@ -30,6 +30,12 @@ PZLinuxTestAssert(variables:find('PZLinuxContractsGetEntityObjective%(obj%) == "
     "cargo recovery must reuse an existing tagged object instead of duplicating it")
 PZLinuxTestAssert(not spawnCargoBranch:find("replaceExisting"),
     "cargo retries must never remove and recreate an already spawned server object")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsRestoreNearbyCargoObject")
+    and variables:find("PZLinuxContractsGetPlayerWorldRecord%(playerObj, 7%)")
+    and variables:find("PZLinuxContractsFindCargoObject%(record%.locationX")
+    and variables:find("PZLinuxContractsSpawnCargoObject")
+    and variables:find("proximity restore cargo", 1, true),
+    "the server must restore nearby cargo objectives even when the client-side spawn request is missed")
 PZLinuxTestAssert(variables:find("reused and retransmitted v3 crate", 1, true)
     and variables:find("PZLinuxCargoVersion = PZLinuxCargoObjectVersion", 1, true),
     "cargo retries must idempotently retransmit the canonical server object")
@@ -73,6 +79,12 @@ PZLinuxTestAssert(variables:find("PZLinux%.ManhuntTargets")
     and variables:find("runtimeTarget:getSquare%(%)")
     and variables:find("PZLinuxContractsConfigureManhuntZombie%(zombie, false%)"),
     "the server must retain and maintain the canonical manhunt target between recovery requests")
+PZLinuxTestAssert(variables:find("function PZLinuxContractsRestoreNearbyManhuntTarget")
+    and variables:find("PZLinuxContractsGetPlayerWorldRecord%(playerObj, 3%)")
+    and variables:find("PZLinuxIsPlayerNearPosition")
+    and variables:find("PZLinuxContractsEnsureManhuntZombie%(record%)")
+    and variables:find("proximity restore target", 1, true),
+    "the server must restore nearby manhunt targets even when the client-side restore request is missed")
 PZLinuxTestAssert(variables:find("PZLinuxContractsFindTaggedZombies")
     and variables:find("removedDuplicates", 1, true)
     and variables:find("PZLinuxContractsRemoveWorldEntity%(candidate%)"),
@@ -160,6 +172,10 @@ PZLinuxTestAssert(serverCommands:find("Events%.OnZombieDead%.Add%(PZLinuxServerO
     "the server must own zombie-death accounting")
 PZLinuxTestAssert(serverCommands:find("PZLinuxContractsMaintainManhuntTargets%(%)"),
     "the server must periodically keep the manhunt target passive")
+PZLinuxTestAssert(serverCommands:find("PZLinuxContractsRestoreNearbyManhuntTarget")
+    and serverCommands:find("PZLinuxContractsRestoreNearbyCargoObject")
+    and serverCommands:find("PZLinuxServerWorldObjectiveRestoreTicks"),
+    "the server must periodically restore nearby world objectives without depending on the client poll")
 PZLinuxTestAssert(variables:find("function PZLinuxContractsResolveZombieKiller")
     and variables:find("zombie%.authOwnerPlayer")
     and variables:find('"network_owner"'),

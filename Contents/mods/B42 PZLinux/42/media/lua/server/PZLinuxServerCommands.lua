@@ -693,11 +693,22 @@ Events.EveryOneMinute.Add(function()
 end)
 
 local PZLinuxServerManhuntMaintenanceTicks = 0
+local PZLinuxServerWorldObjectiveRestoreTicks = 0
 Events.OnTick.Add(function()
     PZLinuxServerManhuntMaintenanceTicks = PZLinuxServerManhuntMaintenanceTicks + 1
-    if PZLinuxServerManhuntMaintenanceTicks < 5 then return end
-    PZLinuxServerManhuntMaintenanceTicks = 0
-    PZLinuxContractsMaintainManhuntTargets()
+    if PZLinuxServerManhuntMaintenanceTicks >= 5 then
+        PZLinuxServerManhuntMaintenanceTicks = 0
+        PZLinuxContractsMaintainManhuntTargets()
+    end
+
+    PZLinuxServerWorldObjectiveRestoreTicks = PZLinuxServerWorldObjectiveRestoreTicks + 1
+    if PZLinuxServerWorldObjectiveRestoreTicks >= 30 then
+        PZLinuxServerWorldObjectiveRestoreTicks = 0
+        PZLinuxServerForEachOnlinePlayer(function(playerObj)
+            PZLinuxContractsRestoreNearbyManhuntTarget(playerObj)
+            PZLinuxContractsRestoreNearbyCargoObject(playerObj)
+        end)
+    end
 end)
 
 Events.EveryTenMinutes.Add(function()
