@@ -2,7 +2,7 @@ linuxUI = ISPanel:derive("linuxUI")
 
 local STAY_CONNECTED_TIME = 0
 local CONNECTED_TO_INTERNET_TIME = 0
-local PZLinuxVersion = "v1.0.16"
+local PZLinuxVersion = "v1.0.17"
 
 local function PZLinuxMainShowConnectRequired(ui)
     ui.promptLabel:setName(PZLinuxGetText("IGUI_PZLinux_Main_ConnectFirst"))

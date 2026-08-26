@@ -132,6 +132,44 @@ multiplayer safety may change the order.
   take effect after a save or server restart rather than halfway through an
   active transaction.
 
+- [ ] **Granular economy multipliers for custom server currencies**
+
+  Let hosts scale every real source of income and every major purchase family,
+  instead of presenting `PurchasePriceMultiplier` and `SalePriceMultiplier` as
+  if they controlled the complete PZLinux economy. Keep every default at `1.0`
+  so existing saves retain the current balance.
+
+  | Sandbox option | Controlled values |
+  | --- | --- |
+  | `PurchasePriceMultiplier` | Dark Web Buy and Buy Goods prices |
+  | `SalePriceMultiplier` | Dark Web Sell prices; preserve the existing internal option for compatibility |
+  | `SellSurplusMultiplier` | Sell Surplus offers and successful negotiation increments |
+  | `ContractRewardMultiplier` | Contract profit, excluding returned ATM-refill principal |
+  | `HackingRewardMultiplier` | Manual and Auto Hacking earnings |
+  | `TrainingPriceMultiplier` | Final Training quote after world-age scarcity |
+  | `MailCashRewardMultiplier` | Cash included in mail rewards |
+  | `GlobalIncomeMultiplier` | Final server-wide modifier applied to all genuine income sources above |
+
+  Support very small economies with values down to at least `0.001`. A value of
+  `0` disables that monetary reward while leaving the activity and non-cash
+  progression available. Apply the feature multiplier first, then the global
+  income multiplier, and finally normalize to whole currency units.
+
+  Do not scale transfers of money the player already owns: ATM withdrawals and
+  deposits, failed-order refunds, interrupted-session refunds, Poker cash-outs,
+  returned stakes and ATM-refill principal must remain exact. Trading and
+  gambling also need domain-specific controls rather than a naive payout
+  multiplier, otherwise a multiplier could alter returned capital or change the
+  intended house edge. Use configurable trading fees, table stakes, bet limits
+  and takeout rates for those systems.
+
+  Centralize the policy in `PZLinuxEconomy` and classify every
+  `PZLinuxApplyBankCredit` reason as income, refund or transfer. Server responses
+  and UI previews must always display the authoritative adjusted value. Add
+  regression tests proving that the minimum settings affect Contracts, Dark Web
+  Sell, Sell Surplus, Hacking, Training and mail cash without reducing any
+  refund or player-owned principal.
+
 - [ ] **Dark Web daily sell limit**
 
   Add a host-configurable per-day sell limit, separate from the existing Buy
@@ -166,6 +204,37 @@ multiplayer safety may change the order.
 
 For Poker and Blackjack, a compact free-text format may be preferable to one
 sandbox option per numeric value, following the `CustomDarkWebItems` pattern.
+
+### Interface And World Feedback
+
+- [ ] **Persistent computer power, green light and explicit shutdown**
+
+  Give every PZLinux computer a server-owned powered state attached to the
+  world object rather than to the player using it. While the terminal is
+  running, create a faint green dynamic light with a small radius so the screen
+  softly illuminates its surroundings without becoming a free room lamp. A
+  custom powered-on sprite is optional polish, not a requirement for the first
+  implementation.
+
+  Add a translated `POWER OFF` button to the computer interface. Shutting down
+  closes the session, removes the light and stops generator fuel consumption
+  immediately. Closing with `X`, pressing Escape, interrupting the timed action,
+  disconnecting, dying, losing electricity or removing the computer must use
+  the same fail-safe shutdown path so a stale session cannot continue consuming
+  fuel. Rebuild or clear stale visual state after a server restart.
+
+  Move the existing manual computer fuel drain to the authoritative server and
+  calculate it from the computer square, not the player's current square. One
+  powered computer must count as one load even when several clients can observe
+  or interact with it. It must draw no generator fuel while switched off or
+  while supplied by the electrical grid. Expose the computer consumption rate
+  as a sandbox value in litres per in-game hour, defaulting close to the current
+  displayed value of `0.02 L/h`; `0` disables the additional PZLinux drain.
+
+  Nearby players must receive the same powered state and light state in
+  multiplayer. Add regression coverage for duplicate-use attempts, normal and
+  interrupted shutdown, disconnect recovery, power loss, generator depletion
+  and single-player behavior.
 
 ### Localization Completion
 
