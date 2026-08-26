@@ -1,55 +1,46 @@
-[h1]PZLinux 1.0.16[/h1]
+[h1]PZLinux 1.0.17[/h1]
 
-PZLinux 1.0.16 is a maintenance update for Project Zomboid Build 42.20.2. It
-fixes an all-in Poker freeze, tightens short-stack Poker actions and makes Dark
-Web quantity controls consistent between Buy and Sell.
+PZLinux 1.0.17 is a maintenance update for Project Zomboid Build 42.20.x. It
+fixes a single-player banking identity reload issue that could make the bank
+balance reroll to a fresh starting amount after restarting the save.
 
-[h2]Poker[/h2]
-
-[list]
-[*] Fixed a turn-advance infinite loop that could freeze a Poker hand when the
-player went all-in and the only remaining opponent was already all-in.
-[*] All-in hands now correctly run out the board and resolve at showdown in
-single-player, hosted multiplayer and dedicated multiplayer.
-[*] Short stacks can still call or go all-in, but the normal Raise action is no
-longer offered when the player cannot cover the minimum raise amount.
-[/list]
-
-[h2]Dark Web[/h2]
+[h2]Banking[/h2]
 
 [list]
-[*] Dark Web Sell rows now include quick quantity controls:
-[-] [qty] [+] [++] [SELL].
-[*] Dark Web Buy rows now use the same controls for a consistent interface:
-[-] [qty] [+] [++] [BUY].
-[*] Quantity steppers clamp typed values between zero and the available stock,
-so a row cannot be stepped below 0 or above what can actually be bought or sold.
-[*] The long item-name layout guard remains active: names are truncated before
-the row controls and the full item name, price and stock remain available in
-tooltips.
+[*] Single-player saves now recover the existing PZLinux character identity from
+the global save ledger when the player ModData mirror or native character ID is
+not available during reload.
+[*] Reloading a solo save after deposits, purchases or other bank transactions
+no longer creates a new bank record and rerolls the configured starting balance.
+[*] The solo recovery key is local-only and is not used in hosted or dedicated
+multiplayer, where usernames alone still cannot claim another player's account.
+[*] Dead survivors remain isolated: after death, a replacement character with the
+same solo name receives a fresh account instead of inheriting the deceased one.
 [/list]
-
-[h2]Community[/h2]
-
-[list]
-[*] Thanks to the community contributor whose work helped shape this release.
-[/list]
-
-[h2]Compatibility[/h2]
-
-PZLinux 1.0.16 retains the B42_PZLinux mod ID and all existing player/world
-ModData. It supports single-player, hosted multiplayer and dedicated servers on
-Project Zomboid Build 42.20 and newer Build 42 versions. No additional mod
-dependency is required.
 
 [h2]Validation[/h2]
 
 [list]
-[*] Poker all-in, short-stack Raise and Dark Web quantity-stepper regressions
-pass.
-[*] All 66 Lua files parse successfully with no syntax errors.
-[*] Release metadata and Workshop version checks pass for 1.0.16.
+[*] Added regression coverage for solo reloads with missing player ModData, solo
+death/replacement rotation and MP isolation when no native character key exists.
+[*] Character identity, bank backup and starting-balance configuration
+regressions pass.
+[*] Release metadata and Workshop version checks pass for 1.0.17.
 [/list]
+
+[h2]Previous 1.0.16 Highlights[/h2]
+
+[list]
+[*] Fixed a Poker all-in freeze and short-stack Raise visibility.
+[*] Added consistent Dark Web Buy/Sell quantity steppers.
+[/list]
+
+[h2]Compatibility[/h2]
+
+PZLinux 1.0.17 retains the B42_PZLinux mod ID and all existing player/world
+ModData. It supports single-player, hosted multiplayer and dedicated servers on
+Project Zomboid Build 42.20 and newer Build 42 versions. No additional mod
+dependency is required.
 
 [h2]Known Limitations[/h2]
 

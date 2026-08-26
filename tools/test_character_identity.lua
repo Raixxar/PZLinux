@@ -187,4 +187,35 @@ PZLinuxTestAssert(PZLinuxLoadBankBalance(soloReconnect) == 500,
     "single-player bank initialization must survive the identity reload path")
 next = savedNext
 
+-- B42.20.2 solo can also fail to round-trip the player ModData mirror itself:
+-- without a native SQL/descriptor key, that made every reload look like a brand
+-- new character and reroll the starting balance. The username+local-player-slot
+-- fallback is allowed only in local single-player, where there is no remote
+-- player who can claim another account by name.
+local soloVolatileCharacter = PZLinuxTestPlayer("SoloVolatileAccount", {})
+local soloVolatileId = PZLinuxGetCharacterId(soloVolatileCharacter, true)
+PZLinuxSetBankBalance(soloVolatileCharacter, 4321)
+local soloVolatileReload = PZLinuxTestPlayer("SoloVolatileAccount", {})
+PZLinuxTestAssert(PZLinuxGetCharacterId(soloVolatileReload, true) == soloVolatileId,
+    "single-player reload must recover identity even when player ModData was not restored")
+PZLinuxTestAssert(PZLinuxLoadBankBalance(soloVolatileReload) == 4321,
+    "single-player reload must recover the existing bank ledger instead of rerolling the starting balance")
+
+local soloDeathCharacter = PZLinuxTestPlayer("SoloDeathAccount", {})
+local soloDeathId = PZLinuxGetCharacterId(soloDeathCharacter, true)
+PZLinuxSetBankBalance(soloDeathCharacter, 8765)
+PZLinuxBankMarkCharacterDead(soloDeathCharacter)
+PZLinuxMarkCharacterDead(soloDeathCharacter)
+local soloReplacement = PZLinuxTestPlayer("SoloDeathAccount", {})
+PZLinuxTestAssert(PZLinuxGetCharacterId(soloReplacement, true) ~= soloDeathId,
+    "a new single-player survivor after death must rotate the local fallback identity")
+PZLinuxTestAssert(PZLinuxLoadBankBalance(soloReplacement) == 500,
+    "a single-player replacement survivor must receive a fresh starting balance, not the deceased account")
+
+isServer = function() return true end
+local mpNoNativeA = PZLinuxTestPlayer("NoNativeMpAccount", {})
+local mpNoNativeB = PZLinuxTestPlayer("NoNativeMpAccount", {})
+PZLinuxTestAssert(PZLinuxGetCharacterId(mpNoNativeA, true) ~= PZLinuxGetCharacterId(mpNoNativeB, true),
+    "multiplayer must not use username-only fallback identity when no native key exists")
+
 print("PZLinux character identity, bank and delivery isolation tests OK")

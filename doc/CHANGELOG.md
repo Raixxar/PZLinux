@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.17]
+
+- Fixed single-player bank identity recovery on Build 42.20.x. When Project
+  Zomboid does not restore the player ModData mirror or expose a stable native
+  character ID during reload, PZLinux now uses a local-only solo account/slot
+  fallback to reconnect the survivor to the existing global character ledger
+  instead of rolling a fresh starting balance.
+- Kept the solo fallback out of hosted and dedicated multiplayer, so usernames
+  alone still cannot claim another player's bank account.
+- Preserved death isolation: when a survivor dies, the old character/account is
+  marked deceased and a replacement survivor with the same solo name receives a
+  fresh configured starting balance instead of inheriting the dead account.
+- Added regression coverage for solo reloads with missing player ModData, solo
+  death/replacement rotation, and MP no-native-key isolation.
+
 ## [1.0.16]
 
 - Fixed a Poker turn-advance infinite loop when the player shoved all-in and the

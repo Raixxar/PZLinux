@@ -36,6 +36,21 @@ function PZLinuxIdentityIsAuthoritative()
     return true
 end
 
+local function PZLinuxIdentityIsLocalSinglePlayer()
+    if isClient and isClient() then return false end
+    if isServer and isServer() then return false end
+    return true
+end
+
+local function PZLinuxIdentityGetLocalPlayerSlot(playerObj)
+    if playerObj and playerObj.getPlayerNum then
+        local ok, value = pcall(function() return playerObj:getPlayerNum() end)
+        value = ok and tonumber(value) or nil
+        if value and value >= 0 then return math.floor(value) end
+    end
+    return 0
+end
+
 function PZLinuxGetCharacterAccount(player)
     local playerObj = PZLinuxIdentityResolvePlayer(player)
     if playerObj and playerObj.getUsername then
@@ -83,6 +98,14 @@ local function PZLinuxIdentityGetNativeKeys(player)
     descriptorId = descriptorOk and tonumber(descriptorId) or nil
     if descriptorId and descriptorId > 0 then
         table.insert(keys, account .. ":descriptor:" .. tostring(math.floor(descriptorId)))
+    end
+
+    -- In B42.20 single-player, player ModData and the native descriptor can be
+    -- unavailable or unstable across reloads before the server-style SQL ID
+    -- exists. A local-only account+slot key keeps the same survivor attached to
+    -- its persistent ledgers without allowing username-based ownership in MP.
+    if PZLinuxIdentityIsLocalSinglePlayer() then
+        table.insert(keys, account .. ":solo:" .. tostring(PZLinuxIdentityGetLocalPlayerSlot(playerObj)))
     end
     return keys
 end
