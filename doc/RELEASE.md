@@ -1,6 +1,6 @@
-[h1]PZLinux 1.0.17[/h1]
+[h1]PZLinux 1.0.18[/h1]
 
-PZLinux 1.0.17 is a maintenance update for Project Zomboid Build 42.20.x. It
+PZLinux 1.0.18 is a maintenance update for Project Zomboid Build 42.20.x. It
 fixes a single-player banking identity reload issue that could make the bank
 balance reroll to a fresh starting amount after restarting the save.
 
@@ -25,7 +25,7 @@ same solo name receives a fresh account instead of inheriting the deceased one.
 death/replacement rotation and MP isolation when no native character key exists.
 [*] Character identity, bank backup and starting-balance configuration
 regressions pass.
-[*] Release metadata and Workshop version checks pass for 1.0.17.
+[*] Release metadata and Workshop version checks pass for 1.0.18.
 [/list]
 
 [h2]Previous 1.0.16 Highlights[/h2]
@@ -37,7 +37,7 @@ regressions pass.
 
 [h2]Compatibility[/h2]
 
-PZLinux 1.0.17 retains the B42_PZLinux mod ID and all existing player/world
+PZLinux 1.0.18 retains the B42_PZLinux mod ID and all existing player/world
 ModData. It supports single-player, hosted multiplayer and dedicated servers on
 Project Zomboid Build 42.20 and newer Build 42 versions. No additional mod
 dependency is required.
