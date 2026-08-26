@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.18]
+
+- Added server-side proximity recovery for Manhunt targets. When a player with
+  an active Manhunt contract reaches the target area, the server now restores or
+  spawns the canonical target even if the client-side restore poll missed its
+  normal `spawnManhunt` request.
+- Added the same server-side proximity recovery for Cargo contracts. Nearby
+  accepted or previously spawned Cargo objectives now recreate or reuse the
+  canonical v3 crate without depending on the client-side `spawnCargo` request.
+- Reduced automatic Hacking payouts substantially. Auto now pays `$100-$200`
+  per credit card per Electricity multiplier, down from `$300-$500`, making the
+  guaranteed no-risk option average roughly 15% of the manual hack's per-card
+  ceiling instead of roughly 40%.
+- Added regression coverage for server-side Manhunt/Cargo world-object
+  recovery so future client restore changes cannot silently break active
+  objectives again.
+
 ## [1.0.17]
 
 - Fixed single-player bank identity recovery on Build 42.20.x. When Project

@@ -5437,6 +5437,55 @@ function PZLinuxContractsSpawnCargoObject(x, y, z, contractWorldId)
     return true, true, square:getX(), square:getY(), square:getZ()
 end
 
+function PZLinuxContractsRestoreNearbyCargoObject(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return false end
+
+    local record = PZLinuxContractsGetPlayerWorldRecord(playerObj, 7)
+    if not record or not PZLinuxContractsIsRecordStatus(record, "accepted", "spawned") then
+        return false
+    end
+
+    if not PZLinuxIsPlayerNearPosition(playerObj, record.locationX, record.locationY, record.locationZ, 50) then
+        return false
+    end
+
+    local existingObject = PZLinuxContractsFindCargoObject(record.locationX, record.locationY, record.locationZ, record.id)
+    if existingObject and record.status == "spawned" then return true end
+
+    local cargoReady, cargoCreated, spawnX, spawnY, spawnZ = PZLinuxContractsSpawnCargoObject(
+        record.locationX,
+        record.locationY,
+        record.locationZ,
+        record.id
+    )
+    if not cargoReady then return false end
+
+    local changed = record.status ~= "spawned"
+        or record.spawnX ~= spawnX
+        or record.spawnY ~= spawnY
+        or record.spawnZ ~= spawnZ
+
+    record.spawned = true
+    record.status = "spawned"
+    record.spawnX = spawnX
+    record.spawnY = spawnY
+    record.spawnZ = spawnZ
+
+    if changed then
+        record.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or record.updatedHour
+        PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record)
+        PZLinuxContractsTransmitWorldData()
+        print("[PZLinux Cargo][server] proximity restore cargo"
+            .. " player=" .. tostring(PZLinuxGetPlayerKey(playerObj))
+            .. " contract=" .. tostring(record.id)
+            .. " created=" .. tostring(cargoCreated)
+            .. " at=" .. tostring(spawnX) .. "," .. tostring(spawnY) .. "," .. tostring(spawnZ))
+    end
+
+    return true
+end
+
 local function PZLinuxContractsFindZombieSpawnSquare(x, y, z)
     if not getCell then return nil end
     local centerX = math.floor(tonumber(x) or 0)
@@ -5645,6 +5694,57 @@ function PZLinuxContractsMaintainManhuntTargets()
             PZLinuxContractsConfigureManhuntZombie(zombie, false)
         end
     end
+end
+
+function PZLinuxContractsRestoreNearbyManhuntTarget(player)
+    local playerObj = PZLinuxGetPlayer(player)
+    if not playerObj then return false end
+
+    local record = PZLinuxContractsGetPlayerWorldRecord(playerObj, 3)
+    if not record or not PZLinuxContractsIsRecordStatus(record, "accepted", "spawned") then
+        return false
+    end
+
+    local activationRadius = tonumber(PZLinux.Config.Contracts.objectiveActivationRadius) or 80
+    if not PZLinuxIsPlayerNearPosition(
+        playerObj,
+        record.locationX,
+        record.locationY,
+        record.locationZ,
+        activationRadius
+    ) then
+        return false
+    end
+
+    local restored, spawned, spawnX, spawnY, spawnZ, spawnEntityId = PZLinuxContractsEnsureManhuntZombie(record)
+    if not restored then return false end
+
+    local changed = record.status ~= "spawned"
+        or record.spawnX ~= spawnX
+        or record.spawnY ~= spawnY
+        or record.spawnZ ~= spawnZ
+        or record.spawnEntityId ~= spawnEntityId
+
+    record.spawned = true
+    record.status = "spawned"
+    record.spawnX = spawnX
+    record.spawnY = spawnY
+    record.spawnZ = spawnZ
+    record.spawnEntityId = spawnEntityId
+
+    if changed then
+        record.updatedHour = getGameTime and getGameTime():getWorldAgeHours() or record.updatedHour
+        PZLinuxContractsSyncWorldRecordToPlayer(playerObj, record)
+        PZLinuxContractsTransmitWorldData()
+        print("[PZLinux Manhunt][server] proximity restore target"
+            .. " player=" .. tostring(PZLinuxGetPlayerKey(playerObj))
+            .. " contract=" .. tostring(record.id)
+            .. " spawned=" .. tostring(spawned)
+            .. " at=" .. tostring(spawnX) .. "," .. tostring(spawnY) .. "," .. tostring(spawnZ)
+            .. " onlineId=" .. tostring(spawnEntityId))
+    end
+
+    return true
 end
 
 local function PZLinuxContractsSpawnProtectZombies(record, count)
@@ -7216,7 +7316,9 @@ function PZLinuxHackingAuto(player, requestId)
         cardTypes = cardTypes,
     })
     local skillLevel = playerObj:getPerkLevel(Perks.Electricity) or 0
-    local valuePerCard = PZLinuxNormalizeMoney(ZombRand(300, 501) * (skillLevel + 1))
+    -- Auto is guaranteed and consumes every carried card at once, so it pays
+    -- about 15% of the manual hack's per-card ceiling on average.
+    local valuePerCard = PZLinuxNormalizeMoney(ZombRand(100, 201) * (skillLevel + 1))
     local amount = PZLinuxNormalizeMoney(valuePerCard * removed)
     local session = {
         mode = "auto",
