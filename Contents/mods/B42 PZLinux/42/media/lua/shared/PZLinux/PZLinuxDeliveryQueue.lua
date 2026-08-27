@@ -133,7 +133,7 @@ end
 
 local function PZLinuxDeliveryMaxParcelWeight()
     local config = PZLinux.Config and PZLinux.Config.Deliveries or {}
-    local maxCarryWeight = math.max(1, tonumber(config.maxCarryWeight) or 60)
+    local maxCarryWeight = math.max(1, tonumber(config.maxCarryWeight) or 80)
     return math.min(maxCarryWeight, math.max(1, tonumber(config.maxParcelWeight) or 60))
 end
 
@@ -484,7 +484,7 @@ function PZLinuxDeliveryDeliverPending(player, source)
 
     PZLinuxDeliveryTrimHistory(record)
     local deliveryConfig = PZLinux.Config and PZLinux.Config.Deliveries or {}
-    local maxCarryWeight = math.max(1, tonumber(deliveryConfig.maxCarryWeight) or 60)
+    local maxCarryWeight = math.max(1, tonumber(deliveryConfig.maxCarryWeight) or 80)
     local result = {
         ok = true,
         delivered = deliveredItems,

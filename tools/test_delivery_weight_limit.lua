@@ -29,7 +29,7 @@ end
 local worldInteractionsSource = readFile(luaRoot .. "/shared/PZLinux/PZLinuxWorldInteractions.lua")
 local helperStart = assert(worldInteractionsSource:find("function PZLinuxGetDeliveryMaxCarryWeight", 1, true))
 local helperEnd = assert(worldInteractionsSource:find("local function PZLinuxGetEntitySquare", helperStart, true))
-PZLinux = { Config = { Deliveries = { maxCarryWeight = 60 } } }
+PZLinux = { Config = { Deliveries = { maxCarryWeight = 80, maxParcelWeight = 60 } } }
 assert(loadstring(worldInteractionsSource:sub(helperStart, helperEnd - 1)))()
 
 local function makeInventory(current, max)
@@ -53,16 +53,19 @@ PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({
 PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(30, 6) end }) == true,
     "a low-Strength character must use the same absolute delivery limit")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(59.9, 20) end }) == true,
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(79.9, 20) end }) == true,
     "just under the absolute carrying limit must still allow another delivery attempt")
 
-PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(60, 20) end }) == false,
+PZLinuxTestAssert(PZLinuxDeliveryHasRoomForMoreParcels({ getInventory = function() return makeInventory(80, 20) end }) == false,
     "at the absolute carrying limit, another parcel must remain queued")
 
-PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(60, 6) end }) == true,
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(78, 6) end }) == true,
+    "thirteen vanilla iron ingots must fit under the raised absolute delivery limit")
+
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(80, 6) end }) == true,
     "a complete parcel ending exactly at the absolute carrying limit must be accepted")
 
-PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(60.1, 20) end }) == false,
+PZLinuxTestAssert(PZLinuxDeliveryIsWithinWeightLimit({ getInventory = function() return makeInventory(80.1, 20) end }) == false,
     "a complete parcel exceeding the absolute carrying limit must be rolled back")
 
 print("PZLinux delivery weight-limit helper tests OK")

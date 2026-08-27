@@ -90,7 +90,7 @@ end
 -- larger backlog remains queued instead of being lost or delivered partially.
 local function PZLinuxGetDeliveryMaxCarryWeight()
     local config = PZLinux.Config and PZLinux.Config.Deliveries or {}
-    return math.max(1, tonumber(config.maxCarryWeight) or 60)
+    return math.max(1, tonumber(config.maxCarryWeight) or 80)
 end
 
 function PZLinuxDeliveryHasRoomForMoreParcels(playerObj)

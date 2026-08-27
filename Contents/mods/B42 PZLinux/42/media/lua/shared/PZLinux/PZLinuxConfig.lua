@@ -28,16 +28,15 @@ PZLinux.Config.ATM.maxCash = tonumber(PZLinux.Config.ATM.maxCash) or 50000
 PZLinux.Config.ATM.restockPerHour = tonumber(PZLinux.Config.ATM.restockPerHour) or 500
 PZLinux.Config.ATM.restockCap = tonumber(PZLinux.Config.ATM.restockCap) or 15000
 
--- Mailbox deliveries may temporarily overload a character, but remain capped
--- so a large backlog cannot place an arbitrary amount of weight in one click.
--- The absolute limit keeps heavy parcels obtainable regardless of Strength;
--- orders exceeding it are split into persistent parcels that stay queued.
+-- Mailbox deliveries may temporarily overload a character up to an absolute
+-- carried-weight limit of 80. Individual parcels remain capped at 60 so large
+-- orders are split into persistent parts instead of arriving all at once.
 PZLinux.Config.Deliveries = PZLinux.Config.Deliveries or {
-    maxCarryWeight = 60,
+    maxCarryWeight = 80,
     maxParcelWeight = 60,
 }
 PZLinux.Config.Deliveries.maxCarryWeight =
-    math.max(1, tonumber(PZLinux.Config.Deliveries.maxCarryWeight) or 60)
+    math.max(1, tonumber(PZLinux.Config.Deliveries.maxCarryWeight) or 80)
 PZLinux.Config.Deliveries.maxParcelWeight = math.min(
     PZLinux.Config.Deliveries.maxCarryWeight,
     math.max(1, tonumber(PZLinux.Config.Deliveries.maxParcelWeight) or 60)
