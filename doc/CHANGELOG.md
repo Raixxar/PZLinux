@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.19]
+
+- Raised the absolute post-delivery mailbox carrying limit from 60 to 80 while
+  keeping the maximum weight of each persistent parcel at 60. Heavy orders are
+  therefore still split safely, but characters now have enough headroom to
+  collect parcels such as vanilla `Base.IronIngot` orders during normal play.
+- Preserved existing order IDs, parcel IDs, delivery statuses and retry logic in
+  both single-player and multiplayer. Parcels that would exceed the new limit
+  remain queued and cannot be duplicated by reopening the mailbox.
+- Added regression coverage for the reported 13-ingot order: all 13 items are
+  preserved across parts capped at 60, and its 78 total item weight remains
+  acceptable under the new absolute ceiling.
+
 ## [1.0.18]
 
 - Added server-side proximity recovery for Manhunt targets. When a player with

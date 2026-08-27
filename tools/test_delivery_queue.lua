@@ -23,9 +23,10 @@ ModData = {
 getGameTime = function()
     return { getWorldAgeHours = function() return 123 end }
 end
-PZLinux = { Config = { Deliveries = { maxCarryWeight = 60, maxParcelWeight = 60 } } }
+PZLinux = { Config = { Deliveries = { maxCarryWeight = 80, maxParcelWeight = 60 } } }
 local itemWeights = {
     ["Base.Generator_Old"] = 40,
+    ["Base.IronIngot"] = 6,
     ["Base.TestSword"] = 10,
 }
 getScriptManager = function()
@@ -128,6 +129,17 @@ PZLinuxTestAssert(#generatorOrder.parcels == 2
 PZLinuxTestAssert(generatorOrder.parcels[1].id ~= generatorOrder.parcels[2].id,
     "every parcel part must have a stable unique ID inside its parent order")
 
+local ironOrder = PZLinuxDeliveryEnqueue(
+    player, "iron-split", { { name = "Base.IronIngot", quantity = 13 } }, "buy-iron")
+local ironQuantity = 0
+for _, parcel in ipairs(ironOrder.parcels) do
+    ironQuantity = ironQuantity + parcel.items[1].quantity
+    PZLinuxTestAssert(parcel.estimatedWeight <= PZLinux.Config.Deliveries.maxParcelWeight,
+        "every iron-ingot parcel must stay under the 60-weight parcel ceiling")
+end
+PZLinuxTestAssert(#ironOrder.parcels == 2 and ironQuantity == 13,
+    "splitting an iron-ingot order must preserve all thirteen items")
+
 local swordOrder = PZLinuxDeliveryEnqueue(
     player, "sword-split", { { name = "Base.TestSword", quantity = 10 } }, "buy-swords")
 PZLinuxTestAssert(#swordOrder.parcels == 2
@@ -161,6 +173,13 @@ PZLinuxTestAssert(firstGeneratorParcel:getModData().PZLinuxDeliveryOrderId == ge
 local splitReplay = PZLinuxDeliveryDeliverPending(player, "generator-split")
 PZLinuxTestAssert(splitReplay.parcels == 0,
     "replaying a completed multi-parcel order must not duplicate any part")
+
+projectedWeightCallCount = 0
+projectedWeightFailOnCall = nil
+local ironDelivery = PZLinuxDeliveryDeliverPending(player, "iron-split")
+PZLinuxTestAssert(ironDelivery.ok and ironDelivery.parcels == 2
+    and ironDelivery.delivered == 13 and not ironDelivery.tooHeavy,
+    "all split iron-ingot parcels must remain deliverable under the 80-weight ceiling")
 
 local legacyOrder = PZLinuxDeliveryEnqueue(
     player, "legacy-plan", { { name = "Base.TestSword", quantity = 10 } }, "legacy-plan-request")

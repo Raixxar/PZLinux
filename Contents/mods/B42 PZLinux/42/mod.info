@@ -1,9 +1,9 @@
 name=PZLinux
 id=B42_PZLinux
-modversion=1.0.18
+modversion=1.0.19
 versionMin=42.20
 poster=poster.png
-description=PZLinux 1.0.18 fixes single-player bank identity recovery so balances no longer reroll after reloading when player ModData/native IDs are unavailable. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
+description=PZLinux 1.0.19 raises the mailbox delivery ceiling to 80 while keeping persistent parcels capped at 60, allowing heavy split orders to be collected safely. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
 tooltip=PZLinux
 author=Raixxar
 category=features
