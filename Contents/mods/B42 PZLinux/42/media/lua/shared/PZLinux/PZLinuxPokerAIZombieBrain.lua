@@ -23,22 +23,61 @@ local ZombieBrain = {
     name = "Zombie Brain",
 }
 
--- Skill levels run 1 (worst) to 5 (best) and are drawn from the weights in
--- PZLinuxPokerConfig.lua. Kept as seat.difficulty rather than an
--- engine-private field because the value predates the registry and older
--- saves and tools already read it under that name.
-local function ZombieBrainRandomDifficulty(random)
-    local roll = random(100) + 1
+-- Params this engine understands, all optional, all per lobby:
+--
+--   difficultyWeights  five relative weights for skill levels 1..5, e.g.
+--                      { 5, 10, 25, 35, 25 } to seat mostly strong players
+--   bluffChance        per-level bluff percentages, keyed [1]..[5]
+--
+-- Declared as a function rather than a table because these track the live
+-- values in PZLinuxPokerConfig.lua, which a server may change after this file
+-- has loaded. The registry merges a lobby's params over whatever this returns
+-- and hands the engine a complete, correctly typed table, so nothing below
+-- has to re-check what it was given -- a lobby naming no params plays exactly
+-- as it always has.
+function ZombieBrain:defaults()
+    return {
+        difficultyWeights = PZLinux.Poker.Config.aiDifficultyWeights,
+        bluffChance = PZLinux.Poker.Config.aiBluffChance,
+    }
+end
+
+-- Type-correct is not the same as usable: a five-entry weight list is still
+-- unusable if it is empty or sums to zero, and every seat would silently come
+-- out at the middle skill level. Fall back rather than seat a table of
+-- identical opponents nobody asked for.
+local ZOMBIEBRAIN_FALLBACK_WEIGHTS = { 25, 25, 25, 15, 10 }
+
+local function ZombieBrainUsableWeights(weights)
     local total = 0
-    for level, weight in ipairs(PZLinux.Poker.Config.aiDifficultyWeights or {}) do
+    for _, weight in ipairs(weights or {}) do
+        if type(weight) ~= "number" or weight < 0 then return ZOMBIEBRAIN_FALLBACK_WEIGHTS end
         total = total + weight
-        if roll <= total then return level end
     end
-    return 3
+    if total <= 0 then return ZOMBIEBRAIN_FALLBACK_WEIGHTS end
+    return weights
+end
+
+-- Skill levels run 1 (worst) to 5 (best). Kept as seat.difficulty rather
+-- than an engine-private field because the value predates the registry and
+-- older saves and tools already read it under that name.
+-- Weights are relative, so a list that does not sum to 100 still works: the
+-- roll is scaled to the total rather than assuming percentages.
+local function ZombieBrainRandomDifficulty(random, weights)
+    local total = 0
+    for _, weight in ipairs(weights) do total = total + weight end
+    local roll = (random(100) + 1) / 100 * total
+    local running = 0
+    for level, weight in ipairs(weights) do
+        running = running + weight
+        if roll <= running then return level end
+    end
+    return math.min(#weights, 3)
 end
 
 function ZombieBrain:createSeat(seat, lobby, context)
-    seat.difficulty = ZombieBrainRandomDifficulty(context.random)
+    local weights = ZombieBrainUsableWeights((context.params or {}).difficultyWeights)
+    seat.difficulty = ZombieBrainRandomDifficulty(context.random, weights)
 end
 
 function ZombieBrain:decide(context)
@@ -49,7 +88,8 @@ function ZombieBrain:decide(context)
     local difficulty = tonumber(seat.difficulty) or 3
 
     local noise = (6 - difficulty) * (context.random(30) - 15) / 100
-    local bluff = context.random(100) < (PZLinux.Poker.Config.aiBluffChance[difficulty] or 10)
+    local bluffChance = (context.params or {}).bluffChance or {}
+    local bluff = context.random(100) < (bluffChance[difficulty] or 10)
     local confidence = math.max(0, math.min(1, strength + noise + (bluff and 0.18 or 0)))
 
     if toCall > 0 and confidence < context.potOdds + 0.12 then

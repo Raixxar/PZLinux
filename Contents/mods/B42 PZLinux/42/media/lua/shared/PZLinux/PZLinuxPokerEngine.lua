@@ -673,6 +673,71 @@ end
 -- Seats whose engine is missing (a mod that added it was removed
 -- mid-session) fall back to the registry default rather than freezing the
 -- table.
+-- Engines get a copy of the table, never the table itself.
+--
+-- Lua hands tables over by reference, so before this existed an engine could
+-- simply write to what it was given: add 5000 to its own stack, swap its hole
+-- cards for aces, rewrite a community card, all while returning a perfectly
+-- legal action for the applier to approve. The applier validates the decision
+-- an engine returns; it cannot see damage done before the return.
+--
+-- So decide() receives this instead. Anything an engine writes lands on a
+-- throwaway and is collected with it. Seeing everything, including opponents'
+-- hole cards, remains deliberate -- a bot that peeks is a feature here, and a
+-- shady one fits the mod. Changing what it sees is not.
+--
+-- The undealt deck is the one thing withheld. Reading it is not peeking, it
+-- is knowing every future card, which no tell could ever betray to a player.
+local function PZLinuxPokerCopyEngineSeat(seat)
+    local copy = {}
+    for key, value in pairs(seat) do
+        -- Scalars copy by value; the tables worth exposing are rebuilt below,
+        -- and aiMemory is deliberately left out -- see context.memory.
+        if type(value) ~= "table" and type(value) ~= "function" then
+            copy[key] = value
+        end
+    end
+    copy.cards = PZLinuxPokerCopyCards(seat.cards, false)
+    copy.aiParams = PZLinuxPokerCopyEngineParams(seat.aiParams)
+    if seat.handValue then
+        local kickers = {}
+        for index, value in ipairs(seat.handValue.kickers or {}) do kickers[index] = value end
+        copy.handValue = { rank = seat.handValue.rank, name = seat.handValue.name, kickers = kickers }
+    end
+    return copy
+end
+
+function PZLinuxPokerBuildEngineView(session)
+    local seats = {}
+    for index, seat in ipairs(session.seats or {}) do
+        seats[index] = PZLinuxPokerCopyEngineSeat(seat)
+    end
+    local pots = {}
+    for index, pot in ipairs(session.pots or {}) do
+        local eligible = {}
+        for order, seatIndex in ipairs(pot.eligible or {}) do eligible[order] = seatIndex end
+        pots[index] = { amount = pot.amount, eligible = eligible }
+    end
+    local history = {}
+    for index, line in ipairs(session.history or {}) do history[index] = line end
+    return {
+        phase = session.phase,
+        handNumber = session.handNumber,
+        lobbyId = session.lobbyId,
+        smallBlind = session.smallBlind,
+        bigBlind = session.bigBlind,
+        currentBet = session.currentBet,
+        minRaise = session.minRaise,
+        dealer = session.dealer,
+        turn = session.turn,
+        showdown = session.showdown,
+        community = PZLinuxPokerCopyCards(session.community, false),
+        seats = seats,
+        pots = pots,
+        history = history,
+    }
+end
+
 local function PZLinuxPokerAIAct(session, seatIndex)
     local seat = session.seats[seatIndex]
     local engine = PZLinuxPokerGetAI(seat.aiEngine) or PZLinuxPokerGetFallbackAI()
@@ -682,9 +747,16 @@ local function PZLinuxPokerAIAct(session, seatIndex)
 
     local decision
     if engine then
+        local view = PZLinuxPokerBuildEngineView(session)
+        -- The one surface an engine may legitimately write to and have the
+        -- writes survive: a scratch table of its own, per seat, for things
+        -- like an opponent model built up over a session. It holds no chips
+        -- and no cards, so nothing an engine puts here can move money.
+        seat.aiMemory = seat.aiMemory or {}
         decision = engine:decide({
-            session = session,
-            seat = seat,
+            session = view,
+            seat = view.seats[seatIndex],
+            memory = seat.aiMemory,
             seatIndex = seatIndex,
             toCall = toCall,
             pot = pot,
@@ -693,6 +765,7 @@ local function PZLinuxPokerAIAct(session, seatIndex)
             minRaise = session.minRaise,
             bigBlind = session.bigBlind,
             strength = PZLinuxPokerSeatStrength(session, seat),
+            params = seat.aiParams or {},
             random = PZLinuxPokerRandom,
             randomRange = PZLinuxPokerRandomRange,
         })
@@ -880,16 +953,22 @@ function PZLinuxPokerCreateSession(player, lobbyId, buyIn, requestId)
     local aiMin = (PZLinux.Poker.Config.aiStackMinBigBlinds or 50) * lobby.bigBlind
     local aiMax = (PZLinux.Poker.Config.aiStackMaxBigBlinds or 100) * lobby.bigBlind
     for _ = 1, PZLinux.Poker.Config.opponentCount or 6 do
+        local entry = PZLinuxPokerPickAIEngineEntry(lobby, PZLinuxPokerRandom)
+        local engine = PZLinuxPokerGetAI(entry and entry.id)
         local seat = {
             name = PZLinuxPokerGenerateAIName(usedNames),
             stack = PZLinuxPokerRandomRange(aiMin, aiMax + 1),
             isHuman = false,
-            aiEngine = PZLinuxPokerPickAIEngineId(lobby, PZLinuxPokerRandom),
+            aiEngine = entry and entry.id or nil,
+            -- Resolved once, here: missing and malformed params fall back to
+            -- the engine's declared defaults, and the result is this seat's
+            -- own copy rather than a reference into shared lobby config.
+            aiParams = PZLinuxPokerResolveEngineParams(engine, entry and entry.params),
         }
-        local engine = PZLinuxPokerGetAI(seat.aiEngine)
         if engine and engine.createSeat then
             engine:createSeat(seat, lobby, {
                 session = session,
+                params = seat.aiParams,
                 random = PZLinuxPokerRandom,
                 randomRange = PZLinuxPokerRandomRange,
             })

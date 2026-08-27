@@ -26,18 +26,31 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
     -- tables played before engines were separable; new engines get mixed in
     -- by adding entries here and lowering this one, per lobby, without
     -- touching the poker engine itself.
+    -- An entry may also carry params, which reach the engine as
+    -- context.params and are documented by that engine rather than here.
+    -- Below, they buy what the tables never had before: the money you sit
+    -- down with decides how good the players across from you are. Micro is
+    -- mostly level 1-2 opposition, elite is mostly level 4-5. Delete a
+    -- params line and that lobby falls back to aiDifficultyWeights below,
+    -- which is the flat spread every table used to share.
     lobbies = {
         { id = "micro", smallBlind = 1, bigBlind = 2,
-          aiEngines = { { id = "zombiebrain", chance = 1.0 } } },
+          aiEngines = { { id = "zombiebrain", chance = 1.0,
+                          params = { difficultyWeights = { 45, 30, 15, 7, 3 } } } } },
         { id = "low", smallBlind = 5, bigBlind = 10,
-          aiEngines = { { id = "zombiebrain", chance = 1.0 } } },
+          aiEngines = { { id = "zombiebrain", chance = 1.0,
+                          params = { difficultyWeights = { 25, 30, 25, 14, 6 } } } } },
         { id = "high", smallBlind = 20, bigBlind = 40,
-          aiEngines = { { id = "zombiebrain", chance = 1.0 } } },
+          aiEngines = { { id = "zombiebrain", chance = 1.0,
+                          params = { difficultyWeights = { 10, 20, 30, 25, 15 } } } } },
         { id = "elite", smallBlind = 50, bigBlind = 100,
-          aiEngines = { { id = "zombiebrain", chance = 1.0 } } },
+          aiEngines = { { id = "zombiebrain", chance = 1.0,
+                          params = { difficultyWeights = { 3, 10, 22, 35, 30 } } } } },
     },
     -- Used for any lobby that does not declare its own aiEngines list.
     defaultAIEngines = { { id = "zombiebrain", chance = 1.0 } },
+    -- Fallback skill spread for any lobby or engine that names no
+    -- difficultyWeights params of its own.
     aiDifficultyWeights = { 25, 25, 25, 15, 10 },
     aiBluffChance = {
         [1] = 18,
