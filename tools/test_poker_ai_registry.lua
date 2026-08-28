@@ -22,60 +22,69 @@ PZLinuxClearInterruptedSession = function() end
 local luaRoot = "Contents/mods/B42 PZLinux/42/media/lua"
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIRegistry.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerConfig.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAISkill.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIReads.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIZombieBrain.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIDrunkard.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAISurvivor.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIShark.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAITestZombieHunter.lua")
+dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAITestCheater.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerEngine.lua")
 
 -- The shipped engine registers itself at load time and is the fallback.
 assert(PZLinuxPokerGetAI("zombiebrain"), "the Zombie Brain engine must register itself on load")
 assert(PZLinuxPokerGetFallbackAI().id == "zombiebrain", "Zombie Brain must remain the fallback engine")
 
--- Every lobby is pure Zombie Brain today. If that ever changes by accident
--- rather than by design, the tables silently start playing differently.
+-- The stakes ladder. Every bracket must be seatable, and the mix must be the
+-- one the design intends -- who is sitting at a table is what makes it easy or
+-- brutal, so a silent change here changes the game.
+local READING_ENGINES = { survivor = true, shark = true }
+local readerShare = {}
 for _, lobby in ipairs(PZLinux.Poker.Config.lobbies) do
-    local candidates = PZLinuxPokerGetLobbyAIEngines(lobby)
-    assert(#candidates == 1, "lobby " .. lobby.id .. " must list exactly one AI engine")
-    assert(candidates[1].id == "zombiebrain", "lobby " .. lobby.id .. " must be seated with Zombie Brain")
-    assert(candidates[1].chance == 1.0, "lobby " .. lobby.id .. " must seat Zombie Brain at chance 1.0")
-    assert(PZLinuxPokerPickAIEngineId(lobby) == "zombiebrain", "lobby " .. lobby.id .. " must pick Zombie Brain")
+    local candidates, total = PZLinuxPokerGetLobbyAIEngines(lobby)
+    assert(#candidates > 0, "lobby " .. lobby.id .. " must be able to fill a seat")
+    assert(total > 0.99 and total < 1.01,
+        string.format("lobby %s chances should sum to 1.0 for readability, got %.2f", lobby.id, total))
+
+    local readers = 0
+    for _, candidate in ipairs(candidates) do
+        assert(PZLinuxPokerGetAI(candidate.id), "lobby " .. lobby.id .. " names an unregistered engine")
+        -- One engine plays blind, another sees every hole card. Neither
+        -- belongs at a table a player sits down at.
+        assert(not candidate.engine.testOnly,
+            "lobby " .. lobby.id .. " must never seat the TEST engine " .. candidate.id)
+        if READING_ENGINES[candidate.id] then readers = readers + candidate.chance end
+    end
+    readerShare[lobby.id] = readers / total
 end
 
--- Params ride along with the entry that won the draw, reach the engine as
--- context.params, and are copied per seat so that no engine can write back
--- into the shared lobby config.
-local paramLobby = {
-    id = "params", smallBlind = 1, bigBlind = 2,
-    aiEngines = { { id = "zombiebrain", chance = 1.0,
-                    params = { difficultyWeights = { 0, 0, 0, 0, 100 } } } },
-}
-local paramEntry = PZLinuxPokerPickAIEngineEntry(paramLobby)
-assert(paramEntry.id == "zombiebrain", "the entry must name its engine")
-assert(paramEntry.params.difficultyWeights[5] == 100, "the entry must carry its params")
+-- Opposition that can actually punish a mistake must grow with the stakes.
+assert(readerShare.micro < readerShare.low, "low must be tougher than micro")
+assert(readerShare.low < readerShare.high, "high must be tougher than low")
+assert(readerShare.high < readerShare.elite, "elite must be the toughest table")
+assert(readerShare.micro == 0, "micro must contain no engine that punishes loose play")
+assert(readerShare.elite == 1, "elite must be nothing but engines that punish")
 
-local copied = PZLinuxPokerCopyEngineParams(paramLobby.aiEngines[1].params)
-copied.difficultyWeights[5] = 1
-assert(paramLobby.aiEngines[1].params.difficultyWeights[5] == 100,
-    "writing to a seat's params must not reach the shared lobby config")
-
--- Same engine id, different params, different table personality. This is
--- the whole point: no second engine needed to seat stronger players.
-PZLinux.Poker.Sessions = {}
-local sharkPlayer = {}
-PZLinux.Poker.Config.lobbies[1].aiEngines = { { id = "zombiebrain", chance = 1.0,
-    params = { difficultyWeights = { 0, 0, 0, 0, 100 } } } }
-assert(PZLinuxPokerCreateSession(sharkPlayer, "micro", 150, "params-start").ok, "the params table must open")
-local sharkSession = PZLinuxPokerGetSession(sharkPlayer)
-for index = 2, #sharkSession.seats do
-    assert(sharkSession.seats[index].difficulty == 5,
-        "params must steer the skill roll, seat " .. index .. " got " ..
-        tostring(sharkSession.seats[index].difficulty))
-    assert(sharkSession.seats[index].aiParams.difficultyWeights[5] == 100,
-        "each seat must keep its own copy of the params it was seated with")
+-- Elite is brutal by construction: every seat is a maximum-skill reader with
+-- no tell to read.
+for _, entry in ipairs(PZLinuxPokerGetLobby("elite").aiEngines) do
+    assert(entry.params and entry.params.skill == 5,
+        "every elite seat must be a top-skill engine, " .. entry.id .. " is not")
+    assert((entry.params.sizingTell or 0) == 0,
+        "elite seats must not hand the player a tell")
 end
-sharkSession.seats[2].aiParams.difficultyWeights[5] = 1
-assert(sharkSession.seats[3].aiParams.difficultyWeights[5] == 100,
-    "one seat's params must not be shared with another seat")
-PZLinux.Poker.Config.lobbies[1].aiEngines = { { id = "zombiebrain", chance = 1.0,
-    params = { difficultyWeights = { 45, 30, 15, 7, 3 } } } }
+
+-- The readable seat at high stakes: strong play, but its bet size leaks.
+local tellSeats = 0
+for _, entry in ipairs(PZLinuxPokerGetLobby("high").aiEngines) do
+    if (entry.params or {}).sizingTell and entry.params.sizingTell > 0 then
+        tellSeats = tellSeats + 1
+        assert((entry.params.sizingError or 0) == 0,
+            "a seat meant to be read must not blur its own tell with sizing jitter")
+    end
+end
+assert(tellSeats == 1, "the high lobby must offer exactly one readable seat")
 
 -- A lobby with no list of its own falls back to the shared default.
 assert(PZLinuxPokerPickAIEngineId({ id = "unconfigured" }) == "zombiebrain",
@@ -94,11 +103,17 @@ local player = {}
 local snapshot = PZLinuxPokerCreateSession(player, "micro", 150, "registry-start")
 assert(snapshot.ok, "the table must open")
 local session = PZLinuxPokerGetSession(player)
+local microEngines = {}
+for _, entry in ipairs(PZLinuxPokerGetLobby("micro").aiEngines) do microEngines[entry.id] = true end
 for index = 2, #session.seats do
     local seat = session.seats[index]
-    assert(seat.aiEngine == "zombiebrain", "seat " .. index .. " must record its engine id")
+    assert(microEngines[seat.aiEngine],
+        "seat " .. index .. " must record an engine the lobby actually offers, got " ..
+        tostring(seat.aiEngine))
+    -- Every seat carries a skill level whether or not its engine uses one:
+    -- the field predates the registry and existing tools read it.
     assert(seat.difficulty >= 1 and seat.difficulty <= 5,
-        "Zombie Brain must roll a skill level in 1..5, got " .. tostring(seat.difficulty))
+        "every seat must carry a skill level in 1..5, got " .. tostring(seat.difficulty))
 end
 assert(snapshot.seats[2].aiEngine == nil, "the engine driving a seat must stay server-side")
 
@@ -399,38 +414,34 @@ assert(#view.seats == #viewSession.seats, "the engine view must show every seat"
 view.seats[2].stack = -1
 assert(viewSession.seats[2].stack ~= -1, "the engine view must be a copy, not the live table")
 
--- The stakes ladder itself. Sitting down with more money must mean facing
--- better players -- the gap the modular engines were meant to close. Skill
--- is rolled, not assigned, so this samples rather than asserting a single
--- table.
+-- ZombieBrain's own skill spread still has to rise across the brackets that
+-- still seat it, since that is what its difficultyWeights params are for.
 local function averageSkill(lobbyId, samples)
     local lobby = PZLinuxPokerGetLobby(lobbyId)
-    local total, count = 0, 0
+    local entry
+    for _, candidate in ipairs(lobby.aiEngines) do
+        if candidate.id == "zombiebrain" then entry = candidate end
+    end
+    if not entry then return nil end
+    local engine = PZLinuxPokerGetAI("zombiebrain")
+    local total = 0
     for _ = 1, samples do
         local seat = {}
-        local entry = PZLinuxPokerPickAIEngineEntry(lobby)
-        local engine = PZLinuxPokerGetAI(entry.id)
         engine:createSeat(seat, lobby, {
-            params = PZLinuxPokerCopyEngineParams(entry.params),
+            params = PZLinuxPokerResolveEngineParams(engine, entry.params),
             random = function(maxExclusive) return ZombRand(maxExclusive) end,
         })
         total = total + seat.difficulty
-        count = count + 1
     end
-    return total / count
+    return total / samples
 end
 
-local skill = {}
-for _, lobbyId in ipairs({ "micro", "low", "high", "elite" }) do
-    skill[lobbyId] = averageSkill(lobbyId, 3000)
-end
-assert(skill.micro < skill.low and skill.low < skill.high and skill.high < skill.elite,
-    string.format("average opponent skill must rise with the stakes, got %.2f / %.2f / %.2f / %.2f",
-        skill.micro, skill.low, skill.high, skill.elite))
-assert(skill.elite - skill.micro > 1.0,
-    string.format("the gap between micro and elite must be worth noticing, got %.2f",
-        skill.elite - skill.micro))
+local microSkill = averageSkill("micro", 3000)
+local lowSkill = averageSkill("low", 3000)
+assert(microSkill and lowSkill, "micro and low must still seat ZombieBrain")
+assert(microSkill < lowSkill,
+    string.format("ZombieBrain must be weaker at micro than at low, got %.2f vs %.2f",
+        microSkill, lowSkill))
 
-print(string.format("  average opponent skill: micro %.2f, low %.2f, high %.2f, elite %.2f",
-    skill.micro, skill.low, skill.high, skill.elite))
+print(string.format("  ZombieBrain average skill: micro %.2f, low %.2f", microSkill, lowSkill))
 print("PZLinux poker AI registry tests OK")

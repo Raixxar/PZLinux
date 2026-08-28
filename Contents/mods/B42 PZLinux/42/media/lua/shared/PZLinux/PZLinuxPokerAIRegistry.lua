@@ -123,6 +123,19 @@ function PZLinuxPokerGetLobbyAIEngines(lobby)
     return candidates, total
 end
 
+-- Engines flagged testOnly exist to measure the others -- one plays blind,
+-- one sees every hole card. Neither belongs at a table a player sits down at,
+-- so seating one says so out loud rather than failing silently.
+local PZLinuxPokerTestEngineWarnings = {}
+
+function PZLinuxPokerWarnTestEngine(engine)
+    if not engine or not engine.testOnly then return end
+    if PZLinuxPokerTestEngineWarnings[engine.id] then return end
+    PZLinuxPokerTestEngineWarnings[engine.id] = true
+    print(string.format("[PZLinux Poker] seating TEST engine %s -- diagnostics only, not for a live lobby",
+        tostring(engine.id)))
+end
+
 -- Deep copy, so that a seat can never write through its params into the
 -- shared lobby config -- or into another seat that drew the same entry.
 function PZLinuxPokerCopyEngineParams(params)
@@ -201,14 +214,20 @@ function PZLinuxPokerPickAIEngineEntry(lobby, randomFn)
     end
     -- Single-candidate lobbies skip the draw entirely so that the default
     -- configuration consumes no randomness it did not consume before.
-    if #candidates == 1 then return candidates[1] end
+    if #candidates == 1 then
+        PZLinuxPokerWarnTestEngine(candidates[1].engine)
+        return candidates[1]
+    end
 
     randomFn = randomFn or PZLinuxPokerAIDefaultRandom
     local roll = (randomFn(100000) + 1) / 100000 * total
     local running = 0
     for _, candidate in ipairs(candidates) do
         running = running + candidate.chance
-        if roll <= running then return candidate end
+        if roll <= running then
+            PZLinuxPokerWarnTestEngine(candidate.engine)
+            return candidate
+        end
     end
     return candidates[#candidates]
 end

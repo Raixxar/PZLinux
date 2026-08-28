@@ -26,26 +26,57 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
     -- tables played before engines were separable; new engines get mixed in
     -- by adding entries here and lowering this one, per lobby, without
     -- touching the poker engine itself.
-    -- An entry may also carry params, which reach the engine as
-    -- context.params and are documented by that engine rather than here.
-    -- Below, they buy what the tables never had before: the money you sit
-    -- down with decides how good the players across from you are. Micro is
-    -- mostly level 1-2 opposition, elite is mostly level 4-5. Delete a
-    -- params line and that lobby falls back to aiDifficultyWeights below,
-    -- which is the flat spread every table used to share.
+    -- The stakes ladder. Each bracket is a different kind of table, not the
+    -- same table with bigger numbers -- who is sitting there is what makes a
+    -- game easy or brutal, far more than the blinds do.
+    --
+    -- micro  the shallow end. ZombieBrain folds to any bet and the Drunkard
+    --        plays blind, so a patient player prints money and learns the
+    --        interface without being punished for it.
+    --
+    -- low    the first table that folds correctly. Survivors will not pay off
+    --        a weak hand, so the loose play that won at micro stops working,
+    --        but two Drunkards are still there to fund the lesson.
+    --
+    -- high   a real game: competent opposition, one Drunkard as the loose
+    --        money everyone is competing for, and a Shark with a tell. That
+    --        seat is the point of the bracket -- it plays well, it bets big
+    --        when strong and small when weak, every time, and a player who
+    --        notices gets a genuine edge. Skill 4 rather than 5 so the tell
+    --        is not buried under perfect play.
+    --
+    -- elite  brutal on purpose. Every seat is a maximum-skill reading engine,
+    --        no tells, nobody loose. With no fish at the table the player is
+    --        the fish, which is exactly the intended experience -- and the
+    --        reason the buy-in cap above matters.
     lobbies = {
         { id = "micro", smallBlind = 1, bigBlind = 2,
-          aiEngines = { { id = "zombiebrain", chance = 1.0,
-                          params = { difficultyWeights = { 45, 30, 15, 7, 3 } } } } },
+          aiEngines = {
+              { id = "zombiebrain", chance = 0.55,
+                params = { difficultyWeights = { 45, 30, 15, 7, 3 } } },
+              { id = "drunkard", chance = 0.45 },
+          } },
         { id = "low", smallBlind = 5, bigBlind = 10,
-          aiEngines = { { id = "zombiebrain", chance = 1.0,
-                          params = { difficultyWeights = { 25, 30, 25, 14, 6 } } } } },
+          aiEngines = {
+              { id = "zombiebrain", chance = 0.30,
+                params = { difficultyWeights = { 25, 30, 25, 14, 6 } } },
+              { id = "drunkard", chance = 0.30 },
+              { id = "survivor", chance = 0.40, params = { skill = 2 } },
+          } },
         { id = "high", smallBlind = 20, bigBlind = 40,
-          aiEngines = { { id = "zombiebrain", chance = 1.0,
-                          params = { difficultyWeights = { 10, 20, 30, 25, 15 } } } } },
+          aiEngines = {
+              { id = "drunkard", chance = 0.20 },
+              { id = "survivor", chance = 0.40, params = { skill = 4 } },
+              { id = "shark", chance = 0.25, params = { skill = 3 } },
+              -- The readable seat: strong, but it tells you what it has.
+              { id = "shark", chance = 0.15,
+                params = { skill = 4, sizingTell = 0.7, sizingError = 0 } },
+          } },
         { id = "elite", smallBlind = 50, bigBlind = 100,
-          aiEngines = { { id = "zombiebrain", chance = 1.0,
-                          params = { difficultyWeights = { 3, 10, 22, 35, 30 } } } } },
+          aiEngines = {
+              { id = "survivor", chance = 0.45, params = { skill = 5 } },
+              { id = "shark", chance = 0.55, params = { skill = 5 } },
+          } },
     },
     -- Used for any lobby that does not declare its own aiEngines list.
     defaultAIEngines = { { id = "zombiebrain", chance = 1.0 } },
