@@ -2,10 +2,11 @@
 --
 -- An engine is only ever asked to decide on its own turn, so it cannot watch
 -- the table continuously. What it can do is look at what changed since it last
--- looked: every seat carries its most recent action, and the hand number and
--- phase say when that action happened. Signing each observation with
--- hand/phase/seat/action makes the same action count exactly once no matter
--- how many times the engine is asked to act.
+-- looked: every seat carries its most recent action plus the phase it happened
+-- in. Signing each observation with hand/phase/seat/action makes the same
+-- action count exactly once no matter how many times the engine is asked to
+-- act, while stale labels from an earlier street stay visible to the UI
+-- without being counted again.
 --
 -- Everything accumulates in context.memory, which is the one writable surface
 -- an engine has and which persists for as long as that seat is at the table.
@@ -21,12 +22,25 @@
 PZLinux = PZLinux or {}
 PZLinux.Poker = PZLinux.Poker or {}
 
-local function PZLinuxPokerAIActionKind(lastAction)
-    local action = tostring(lastAction or "")
+local function PZLinuxPokerAIActionKind(seatOrAction)
+    local explicit = nil
+    local action = seatOrAction
+    if type(seatOrAction) == "table" then
+        explicit = string.lower(tostring(seatOrAction.lastActionKind or ""))
+        action = seatOrAction.lastAction
+    end
+
+    if explicit == "fold" or explicit == "check" or explicit == "call" then return explicit end
+    if explicit == "bet" or explicit == "raise" then return "raise" end
+    if explicit == "allin" then return "raise" end
+    if explicit == "blind" or explicit == "win" then return nil end
+
+    action = tostring(action or "")
     if action == "" then return nil end
     if action:sub(1, 4) == "FOLD" then return "fold" end
     if action:sub(1, 5) == "CHECK" then return "check" end
     if action:sub(1, 4) == "CALL" then return "call" end
+    if action:sub(1, 3) == "BET" then return "raise" end
     if action:sub(1, 5) == "RAISE" then return "raise" end
     if action:sub(1, 6) == "ALL-IN" then return "allin" end
     return nil
@@ -110,12 +124,13 @@ function PZLinuxPokerAIObserve(context, options)
             local read = memory.reads[seat.name] or PZLinuxPokerAIBlankRead(seat.name)
             memory.reads[seat.name] = read
 
-            local kind = PZLinuxPokerAIActionKind(seat.lastAction)
-            if kind then
+            local kind = PZLinuxPokerAIActionKind(seat)
+            local actionPhase = seat.lastActionPhase
+            if kind and actionPhase == session.phase then
                 -- Sign the observation so re-seeing the same action on a later
                 -- turn of the same betting round does not count it twice.
                 local signature = table.concat({
-                    tostring(handNumber), tostring(session.phase), tostring(index),
+                    tostring(handNumber), tostring(actionPhase), tostring(index),
                     tostring(seat.lastAction), tostring(seat.committed or 0),
                 }, "|")
                 -- An imperfect memory simply misses things. The action still
@@ -150,10 +165,13 @@ function PZLinuxPokerAIObserve(context, options)
         end
     end
 
-    -- Who is being faced right now: the live opponent whose bet set the price.
+    -- Who is being faced right now: the live opponent whose raise set the
+    -- price. Callers can match currentBet, but they did not create it.
     local aggressor = nil
     for index, seat in ipairs(session.seats or {}) do
+        local kind = PZLinuxPokerAIActionKind(seat)
         if index ~= context.seatIndex and not seat.folded and seat.inHand
+            and kind == "raise" and seat.lastActionPhase == session.phase
             and (seat.bet or 0) > 0 and (seat.bet or 0) >= (session.currentBet or 0) then
             aggressor = memory.reads[seat.name]
         end

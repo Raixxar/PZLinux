@@ -3,7 +3,7 @@
 PZLinux gives cash a purpose in Project Zomboid by adding a persistent apocalypse
 economy accessed through computers, ATMs and mailboxes.
 
-**Release:** 1.0.19
+**Release:** 1.0.20
 
 **Game:** Project Zomboid Build 42.20 or newer
 
@@ -49,7 +49,7 @@ account hacks.
 Spend some downtime and risk your bank balance on:
 
 - Zombie Race betting;
-- Blackjack with a real 52-card deck;
+- Blackjack with a persistent per-table shoe;
 - six-seat Texas Hold'em Poker with persistent table stacks and AI opponents.
 
 ## Solo and Multiplayer
@@ -68,7 +68,7 @@ reference catalog. Community proofreading of translated text remains welcome.
 ## Known Limitations
 
 - Keyboard and mouse are currently required; full controller navigation is not implemented.
-- Split-screen is not officially supported or certified for the 1.0.19 release.
+- Split-screen is not officially supported or certified for the 1.0.20 release.
 - This package targets Build 42.20 and newer Build 42 versions only.
 
 ## Installation

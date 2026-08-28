@@ -103,7 +103,7 @@ local function SurvivorChoose(context)
         -- Free cards are always taken; betting is for hands that are ahead.
         if equity >= (params.raiseEquity or 72) then
             local target = math.floor(context.pot * PZLinuxPokerAISizing(context, 0.5, equity))
-            return { action = "raise", amount = math.max(context.minRaise, target) }
+            return { action = "raise", amount = PZLinux.Poker.AI.RaiseAmountForTarget(context, target) }
         end
         return { action = "check" }
     end
@@ -120,7 +120,7 @@ local function SurvivorChoose(context)
 
     if equity >= (params.raiseEquity or 72) then
         local target = math.floor(context.pot * PZLinuxPokerAISizing(context, 0.5, equity))
-        return { action = "raise", amount = math.max(context.toCall + context.minRaise, target) }
+        return { action = "raise", amount = PZLinux.Poker.AI.RaiseAmountForTarget(context, target) }
     end
 
     -- Blinding out is losing slowly. With a real hand and nothing behind,

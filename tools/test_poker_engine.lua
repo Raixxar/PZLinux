@@ -16,6 +16,7 @@ PZLinuxClearInterruptedSession = function() end
 -- Local test harness only. Project Zomboid loads the mod with require paths from media/lua.
 dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerAIRegistry.lua")
 dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerConfig.lua")
+PZLinux.Poker.Config.logActions = false
 dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerAIZombieBrain.lua")
 dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerEngine.lua")
 
@@ -96,6 +97,68 @@ local foldedResult = PZLinuxPokerAction(foldPlayer, "fold", 0, foldSnapshot.sess
 assert(foldedResult.phase == "hand_complete", "AI must finish the hand after the player folds, got " .. tostring(foldedResult.phase))
 assert(not foldedResult.legalActions.fold and not foldedResult.legalActions.check, "a folded player must not receive another betting action")
 assert(foldedResult.seats[1].lastAction == "FOLD", "the snapshot must expose the player's latest table action")
+
+-- Action diagnostics: when enabled, server logs must provide enough context
+-- to tie a player request to the table state and the AI actions it triggered.
+local function collectPokerLogs(worker)
+    local savedPrint = print
+    local savedLogActions = PZLinux.Poker.Config.logActions
+    local logs = {}
+    local ok, err = pcall(function()
+        PZLinux.Poker.Config.logActions = true
+        print = function(...)
+            local parts = {}
+            for index = 1, select("#", ...) do parts[index] = tostring(select(index, ...)) end
+            local line = table.concat(parts, " ")
+            if string.find(line, "[PZLinux Poker]", 1, true) then table.insert(logs, line) end
+        end
+        worker()
+    end)
+    print = savedPrint
+    PZLinux.Poker.Config.logActions = savedLogActions
+    if not ok then error(err, 0) end
+    return logs
+end
+
+local function hasPokerLog(logs, ...)
+    local needles = { ... }
+    for _, line in ipairs(logs) do
+        local found = true
+        for _, needle in ipairs(needles) do
+            if not string.find(line, needle, 1, true) then
+                found = false
+                break
+            end
+        end
+        if found then return true end
+    end
+    return false
+end
+
+PZLinux.Poker.Sessions = {}
+local logs = collectPokerLogs(function()
+    local logPlayer = {}
+    local logSnapshot = PZLinuxPokerCreateSession(logPlayer, "micro", 150, "log-start")
+    assert(logSnapshot.ok, "the logging table must open")
+    local rejected = PZLinuxPokerAction(logPlayer, "check", 0, logSnapshot.sessionId, "log-reject")
+    assert(not rejected.ok and rejected.error == "illegal_action", "the logging fixture must reject an illegal check")
+    local accepted = PZLinuxPokerAction(logPlayer, "fold", 0, logSnapshot.sessionId, "log-fold")
+    assert(accepted.ok, "the logging fixture must accept the fold")
+end)
+assert(hasPokerLog(logs, "JOIN player=test", "requestId=log-start", "session=", "lobby=micro"),
+    "join logs must include player, requestId, session and lobby")
+assert(hasPokerLog(logs, "HAND START", "requestId=log-start", "hand=1", "phase=preflop"),
+    "hand start logs must include requestId, hand and phase")
+assert(hasPokerLog(logs, "ACTION", "actor=system", "requestedAction=small_blind", "appliedAction=blind"),
+    "blind posts must be logged as system actions")
+assert(hasPokerLog(logs, "ACTION REJECT", "requestId=log-reject", "reason=illegal_action", "requestedAction=check"),
+    "rejected player actions must be logged with their reason")
+assert(hasPokerLog(logs, "ACTION", "requestId=log-fold", "actor=player", "requestedAction=fold", "appliedAction=fold"),
+    "accepted player actions must be logged with requestId and applied action")
+assert(hasPokerLog(logs, "ACTION", "requestId=log-fold", "actor=ai", "engine=", "appliedAction="),
+    "AI actions triggered by a player request must be logged with the engine id")
+assert(hasPokerLog(logs, "HAND END", "requestId=log-fold", "hand=1", "potBefore="),
+    "hand end logs must include requestId, hand and pot context")
 
 -- Design goal confirmed with the mod's author: gambling must stay a fun
 -- distraction, never a substitute for Contracts as the mod's one reliable

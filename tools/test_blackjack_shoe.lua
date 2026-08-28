@@ -253,34 +253,51 @@ assert(buildStateBlock:find("shoeShuffled = shoeState ~= nil and shoeState.shuff
 assert(not buildStateBlock:find("shoeCards", 1, true),
     "the remaining cards must never be sent to the client")
 
--- Client wiring: the panel line that would show the shoe (deck count, cards
--- left, and the reshuffle that kills a count) is written but deliberately
--- commented out until its three catalog keys have real translations in all 20
--- locales -- tools/check_translations.lua rejects a key that is missing from
--- any of them. It must stay parked rather than half-wired: a live call to a
--- commented-out method would error every time a hand is dealt.
+-- Client wiring: the panel must display only public shoe shape/depth data, not
+-- the shoe contents. This is enough for players to track the count themselves
+-- without the UI doing the counting for them.
 local bettingSource = readFile(luaRoot .. "/client/Context/World/Features/PZLinuxBetting.lua")
-assert(bettingSource:find("PARKED, PENDING TRANSLATION", 1, true),
-    "the parked shoe UI must keep saying why it is parked, or it reads as dead code and gets deleted")
-assert(bettingSource:find("-- function PZLinuxBettingUI:updateBlackjackShoeLabel(result)", 1, true),
-    "the shoe label renderer must be kept (commented) rather than dropped, so re-enabling it is an uncomment")
+local oldDisabledMarker = "PAR" .. "KED"
+assert(not bettingSource:find(oldDisabledMarker, 1, true),
+    "the Blackjack shoe UI comments should stay concise and avoid the old parking marker")
+assert(not bettingSource:find("Shoe label UI is disabled until its translation keys exist", 1, true),
+    "the Blackjack shoe label should no longer be described as disabled")
+assert(bettingSource:find("self.blackjackShoeLabel = ISLabel:new", 1, true),
+    "the Blackjack panel must create a visible shoe label")
+assert(bettingSource:find("function PZLinuxBettingUI:updateBlackjackShoeLabel(result)", 1, true),
+    "the Blackjack panel must have a live shoe label renderer")
+assert(not bettingSource:find("-- function PZLinuxBettingUI:updateBlackjackShoeLabel(result)", 1, true),
+    "the Blackjack shoe label renderer must not be left commented out")
+assert(bettingSource:find("self:updateBlackjackShoeLabel(nil)", 1, true),
+    "the Blackjack panel must initialize and refresh the shoe label before a hand is dealt")
+assert(bettingSource:find("self:updateBlackjackShoeLabel(result)", 1, true),
+    "the Blackjack panel must refresh the shoe label from live hand state")
+assert(bettingSource:find("result.shoeDecks", 1, true), "the client label must render the shoe deck count")
+assert(bettingSource:find("result.shoeRemaining", 1, true), "the client label must render cards remaining")
+assert(bettingSource:find("blackjackShoeShuffleIdsByTable", 1, true),
+    "the client must remember the last shoe shuffle id it saw per table")
+assert(bettingSource:find("local shuffleId = result and result.shoeShuffleId", 1, true),
+    "the client must read the monotonic shoe shuffle id, not only the transient shuffled flag")
+assert(bettingSource:find("previousShuffleId ~= nil and previousShuffleId ~= shuffleId", 1, true),
+    "a changed shoeShuffleId must be treated as a shuffle even if another player cleared the flag")
+assert(bettingSource:find("self.blackjackShoeShuffleIdsByTable[tableKey] = shuffleId", 1, true),
+    "the client must update its per-table shuffle id memory after every live state")
+assert(bettingSource:find("if shuffled then", 1, true),
+    "the label must use the derived shuffled state that includes shoeShuffleId changes")
+assert(not bettingSource:find("if result and result.shoeShuffled then", 1, true),
+    "the label must not depend only on the transient shoeShuffled flag")
+assert(not bettingSource:find("shoeCards", 1, true),
+    "the client label must not depend on the remaining card identities")
 
-for _, line in ipairs({ "self.blackjackShoeLabel", "self:updateBlackjackShoeLabel" }) do
-    for sourceLine in bettingSource:gmatch("[^\n]+") do
-        if sourceLine:find(line, 1, true) then
-            assert(sourceLine:match("^%s*%-%-"),
-                "every reference to the parked shoe UI must stay commented out, or the panel " ..
-                "would call a method that does not exist: " .. sourceLine)
-        end
-    end
-end
-
--- The keys must not appear as quoted literals anywhere under media/lua while
--- they are missing from the catalogs: the translation audit greps the raw
--- source for them and does not skip comments.
-for _, key in ipairs({ "IGUI_PZLinux_Betting_BlackjackShoe", "IGUI_PZLinux_Betting_BlackjackShoeIdle", "IGUI_PZLinux_Betting_BlackjackShuffled" }) do
-    assert(not bettingSource:find('"' .. key .. '"', 1, true),
-        key .. " must not appear as a quoted literal until it exists in all 20 locale catalogs")
+for _, key in ipairs({
+    "IGUI_PZLinux_Betting_BlackjackShoe",
+    "IGUI_PZLinux_Betting_BlackjackShoeIdle",
+    "IGUI_PZLinux_Betting_BlackjackShuffled",
+}) do
+    assert(bettingSource:find('"' .. key .. '"', 1, true),
+        key .. " must be used by the live Blackjack shoe UI")
+    assert(variablesSource:find(key, 1, true),
+        key .. " must have a shared fallback for engine-free contexts")
 end
 
 print("Blackjack shoe audit OK")

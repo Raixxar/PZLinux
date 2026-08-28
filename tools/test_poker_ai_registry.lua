@@ -22,6 +22,7 @@ PZLinuxClearInterruptedSession = function() end
 local luaRoot = "Contents/mods/B42 PZLinux/42/media/lua"
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIRegistry.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerConfig.lua")
+PZLinux.Poker.Config.logActions = false
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAISkill.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIReads.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIZombieBrain.lua")
@@ -135,7 +136,8 @@ local mixedLobby = {
     aiEngines = { { id = "zombiebrain", chance = 0.5 }, { id = "coinflip", chance = 0.5 } },
 }
 for _ = 1, 4000 do
-    seenCoinFlip[PZLinuxPokerPickAIEngineId(mixedLobby)] = seenCoinFlip[PZLinuxPokerPickAIEngineId(mixedLobby)] + 1
+    local pickedEngineId = PZLinuxPokerPickAIEngineId(mixedLobby)
+    seenCoinFlip[pickedEngineId] = seenCoinFlip[pickedEngineId] + 1
 end
 assert(seenCoinFlip.zombiebrain > 1200 and seenCoinFlip.coinflip > 1200,
     string.format("a 0.5/0.5 mix must seat both engines, got %d/%d",
@@ -238,6 +240,160 @@ for index = 2, #freeSession.seats do
         "seat " .. index .. " must check instead, got " .. tostring(seat.lastAction))
 end
 
+-- Invalid decisions follow the registry contract: if a bot owes chips, the
+-- invalid answer folds; if the action is free, the invalid answer checks.
+-- Covered shapes: nil return, a table with no action, and an unknown action.
+local invalidDecisionCases = {
+    { id = "invalid_nil", decide = function() return nil end },
+    { id = "invalid_missing_action", decide = function() return {} end },
+    { id = "invalid_unknown_action", decide = function() return { action = "teleport" } end },
+}
+
+for _, invalidCase in ipairs(invalidDecisionCases) do
+    PZLinuxPokerRegisterAI({ id = invalidCase.id, decide = invalidCase.decide })
+end
+
+local function prepareInvalidDecisionHand(session, engineId, currentBet)
+    while #session.community < 3 do table.insert(session.community, PZLinuxPokerDraw(session.deck)) end
+    session.phase = "flop"
+    session.currentBet = currentBet
+    session.minRaise = session.bigBlind
+    session.dealer = #session.seats
+    session.turn = 1
+    session.awaitingPlayer = true
+    session.showdown = false
+    session.pots = {}
+    session.equityCache = nil
+    for index, seat in ipairs(session.seats) do
+        seat.stack = index == 1 and (150 - currentBet) or 100
+        seat.bet = index == 1 and currentBet or 0
+        seat.committed = seat.bet
+        seat.folded = false
+        seat.allIn = false
+        seat.acted = false
+        seat.inHand = true
+        seat.eliminated = false
+        seat.state = "active"
+        seat.lastAction = ""
+        seat.handValue = nil
+        if index > 1 then seat.aiEngine = engineId end
+    end
+end
+
+for _, invalidCase in ipairs(invalidDecisionCases) do
+    PZLinux.Poker.Sessions = {}
+    local owedPlayer = {}
+    assert(PZLinuxPokerCreateSession(owedPlayer, "micro", 150, invalidCase.id .. "-owed").ok,
+        "the owed invalid-decision table must open for " .. invalidCase.id)
+    local owedSession = PZLinuxPokerGetSession(owedPlayer)
+    prepareInvalidDecisionHand(owedSession, invalidCase.id, 20)
+    local owedBefore = {}
+    for index = 2, #owedSession.seats do owedBefore[index] = owedSession.seats[index].stack end
+
+    local owedResult = PZLinuxPokerAction(owedPlayer, "check", 0, owedSession.sessionId, invalidCase.id .. "-owed-check")
+    assert(owedResult.ok, "the owed invalid-decision fixture must run for " .. invalidCase.id)
+    for index = 2, #owedSession.seats do
+        local seat = owedSession.seats[index]
+        assert(seat.folded, invalidCase.id .. " must fold when chips are owed")
+        assert(seat.lastAction == "FOLD",
+            invalidCase.id .. " must record FOLD when chips are owed, got " .. tostring(seat.lastAction))
+        assert(seat.stack == owedBefore[index] and seat.committed == 0,
+            invalidCase.id .. " must not pay a call after an invalid owed decision")
+    end
+
+    PZLinux.Poker.Sessions = {}
+    local freeInvalidPlayer = {}
+    assert(PZLinuxPokerCreateSession(freeInvalidPlayer, "micro", 150, invalidCase.id .. "-free").ok,
+        "the free invalid-decision table must open for " .. invalidCase.id)
+    local freeInvalidSession = PZLinuxPokerGetSession(freeInvalidPlayer)
+    prepareInvalidDecisionHand(freeInvalidSession, invalidCase.id, 0)
+    local freeBefore = {}
+    for index = 2, #freeInvalidSession.seats do freeBefore[index] = freeInvalidSession.seats[index].stack end
+
+    local freeResult = PZLinuxPokerAction(freeInvalidPlayer, "check", 0, freeInvalidSession.sessionId, invalidCase.id .. "-free-check")
+    assert(freeResult.ok, "the free invalid-decision fixture must run for " .. invalidCase.id)
+    for index = 2, #freeInvalidSession.seats do
+        local seat = freeInvalidSession.seats[index]
+        assert(not seat.folded, invalidCase.id .. " must not fold when checking is free")
+        assert(seat.lastAction == "CHECK",
+            invalidCase.id .. " must record CHECK when free, got " .. tostring(seat.lastAction))
+        assert(seat.stack == freeBefore[index],
+            invalidCase.id .. " must not move chips after an invalid free decision")
+    end
+end
+
+-- A throwing engine is also an invalid decision. The player action that woke
+-- it up must still return a snapshot, and the table should choose the same
+-- safe fold/check fallback while leaving a server-side diagnostic.
+PZLinuxPokerRegisterAI({
+    id = "throwing_decider",
+    decide = function() error("synthetic poker AI failure") end,
+})
+
+local savedPrint = print
+local throwingAILogs = 0
+local throwingTestOk, throwingTestError = pcall(function()
+    print = function(...)
+        local parts = {}
+        for index = 1, select("#", ...) do parts[index] = tostring(select(index, ...)) end
+        local line = table.concat(parts, " ")
+        if string.find(line, "[PZLinux Poker] AI ERROR", 1, true) and
+            string.find(line, "throwing_decider", 1, true) then
+            throwingAILogs = throwingAILogs + 1
+        end
+        savedPrint(...)
+    end
+
+    PZLinux.Poker.Sessions = {}
+    local throwingOwedPlayer = {}
+    assert(PZLinuxPokerCreateSession(throwingOwedPlayer, "micro", 150, "throwing-owed").ok,
+        "the owed throwing-decision table must open")
+    local throwingOwedSession = PZLinuxPokerGetSession(throwingOwedPlayer)
+    prepareInvalidDecisionHand(throwingOwedSession, "throwing_decider", 20)
+    local throwingOwedBefore = {}
+    for index = 2, #throwingOwedSession.seats do
+        throwingOwedBefore[index] = throwingOwedSession.seats[index].stack
+    end
+
+    local throwingOwedResult = PZLinuxPokerAction(
+        throwingOwedPlayer, "check", 0, throwingOwedSession.sessionId, "throwing-owed-check")
+    assert(throwingOwedResult.ok, "a throwing AI turn must not become an internal player error")
+    for index = 2, #throwingOwedSession.seats do
+        local seat = throwingOwedSession.seats[index]
+        assert(seat.folded, "a throwing engine must fold when chips are owed")
+        assert(seat.lastAction == "FOLD",
+            "a throwing engine must record FOLD when chips are owed, got " .. tostring(seat.lastAction))
+        assert(seat.stack == throwingOwedBefore[index] and seat.committed == 0,
+            "a throwing engine must not pay a call after failing")
+    end
+
+    PZLinux.Poker.Sessions = {}
+    local throwingFreePlayer = {}
+    assert(PZLinuxPokerCreateSession(throwingFreePlayer, "micro", 150, "throwing-free").ok,
+        "the free throwing-decision table must open")
+    local throwingFreeSession = PZLinuxPokerGetSession(throwingFreePlayer)
+    prepareInvalidDecisionHand(throwingFreeSession, "throwing_decider", 0)
+    local throwingFreeBefore = {}
+    for index = 2, #throwingFreeSession.seats do
+        throwingFreeBefore[index] = throwingFreeSession.seats[index].stack
+    end
+
+    local throwingFreeResult = PZLinuxPokerAction(
+        throwingFreePlayer, "check", 0, throwingFreeSession.sessionId, "throwing-free-check")
+    assert(throwingFreeResult.ok, "a throwing free AI turn must still return a table snapshot")
+    for index = 2, #throwingFreeSession.seats do
+        local seat = throwingFreeSession.seats[index]
+        assert(not seat.folded, "a throwing engine must not fold when checking is free")
+        assert(seat.lastAction == "CHECK",
+            "a throwing engine must record CHECK when free, got " .. tostring(seat.lastAction))
+        assert(seat.stack == throwingFreeBefore[index],
+            "a throwing engine must not move chips when checking is free")
+    end
+end)
+print = savedPrint
+if not throwingTestOk then error(throwingTestError, 0) end
+assert(throwingAILogs > 0, "a throwing AI decision must be logged")
+
 -- A seat whose engine vanished mid-session (its mod was uninstalled) must
 -- keep playing on the fallback rather than freezing the table.
 PZLinux.Poker.Sessions = {}
@@ -320,6 +476,74 @@ for caseIndex, badParams in ipairs(badConfigs) do
 end
 PZLinux.Poker.Config.lobbies[1].aiEngines = savedMicroEngines
 
+-- createSeat() has the same safety boundary as decide(): the engine can set
+-- harmless per-seat metadata, but the live table, stacks, cards, params and
+-- lobby config it sees are copies. Without that boundary, a setup hook could
+-- mint chips before the first hand even started.
+local setupSaw = {}
+PZLinuxPokerRegisterAI({
+    id = "seatmutator",
+    createSeat = function(_, seat, lobby, context)
+        setupSaw.sawStack = seat.stack
+        setupSaw.sawHumanStack = context.session.seats[1] and context.session.seats[1].stack or nil
+        seat.stack = 999999
+        seat.name = "Forged Seat"
+        seat.isHuman = true
+        seat.aiEngine = "zombiebrain"
+        seat.aiParams = { poisoned = true }
+        seat.aiMemory = { poisoned = true }
+        seat.cards = { { rank = "A", suit = "S", value = 14, label = "XX" } }
+        seat.bet = 999999
+        seat.committed = 999999
+        seat.difficulty = 5
+        seat.personalityStyle = "setup-ok"
+        context.params.poisoned = true
+        if lobby then lobby.bigBlind = 999999 end
+        if context.lobby then context.lobby.smallBlind = 999999 end
+        for _, other in ipairs(context.session.seats or {}) do
+            other.stack = 0
+            other.name = "Forged Other"
+        end
+    end,
+    decide = function() return { action = "call" } end,
+})
+
+local microLobby = PZLinuxPokerGetLobby("micro")
+local originalSmallBlind = microLobby.smallBlind
+local originalBigBlind = microLobby.bigBlind
+PZLinux.Poker.Config.lobbies[1].aiEngines = { { id = "seatmutator", chance = 1.0, params = { marker = true } } }
+PZLinux.Poker.Sessions = {}
+local setupPlayer = {}
+assert(PZLinuxPokerCreateSession(setupPlayer, "micro", 150, "setup-copy").ok, "the setup-copy table must open")
+local setupSession = PZLinuxPokerGetSession(setupPlayer)
+
+assert(setupSaw.sawStack and setupSaw.sawStack > 0, "createSeat must still receive a readable setup seat")
+assert(setupSaw.sawHumanStack == 150, "createSeat must still receive a readable setup session copy")
+assert(microLobby.smallBlind == originalSmallBlind and microLobby.bigBlind == originalBigBlind,
+    "createSeat must not mutate the live lobby config")
+assert(setupSession.seats[1].name == "You", "createSeat must not rewrite the human seat")
+assert(setupSession.seats[1].stack > 0, "createSeat must not reach into the human stack")
+for index = 2, #setupSession.seats do
+    local seat = setupSession.seats[index]
+    assert(seat.stack > 0 and seat.stack < 999999, "createSeat must not rewrite AI stack " .. index)
+    assert(seat.name ~= "Forged Seat", "createSeat must not rewrite protected AI identity")
+    assert(seat.isHuman == false, "createSeat must not turn an AI seat human")
+    assert(seat.aiEngine == "seatmutator", "createSeat must not swap its engine id")
+    assert(not (seat.aiParams or {}).poisoned, "createSeat must not rewrite live params")
+    assert(not (seat.aiMemory or {}).poisoned, "createSeat must not seed live memory")
+    assert(seat.bet < 999999 and seat.committed < 999999, "createSeat must not rewrite betting fields")
+    assert(seat.difficulty == 5, "createSeat must still set allowed seat metadata")
+    assert(seat.personalityStyle == "setup-ok",
+        "createSeat must still set custom non-gameplay metadata")
+    for _, card in ipairs(seat.cards or {}) do
+        assert(card.label ~= "XX", "createSeat must not forge hole cards")
+    end
+end
+local setupView = PZLinuxPokerBuildEngineView(setupSession)
+assert(setupView.seats[2].difficulty == 5 and setupView.seats[2].personalityStyle == "setup-ok",
+    "metadata copied out of createSeat must be visible in the AI seat view")
+PZLinux.Poker.Config.lobbies[1].aiEngines = savedMicroEngines
+
 -- Relative weights: a list that does not sum to 100 still distributes across
 -- exactly the levels it names.
 local twoLevel = { difficultyWeights = { 1, 1 } }
@@ -358,6 +582,8 @@ PZLinuxPokerRegisterAI({
         villainSaw.humanCards = session.seats[1].cards[1] and session.seats[1].cards[1].label or nil
         villainSaw.memory = context.memory
         context.memory.turns = (context.memory.turns or 0) + 1
+        context.params.poisoned = true
+        if context.params.nested then context.params.nested.stable = false end
         return { action = "call" }
     end,
 })
@@ -369,7 +595,10 @@ local villainSession = PZLinuxPokerGetSession(villainPlayer)
 local villainChipsBefore = 0
 for index, seat in ipairs(villainSession.seats) do
     villainChipsBefore = villainChipsBefore + seat.stack + (seat.committed or 0)
-    if index > 1 then seat.aiEngine = "villain" end
+    if index > 1 then
+        seat.aiEngine = "villain"
+        seat.aiParams = { marker = index, nested = { stable = true } }
+    end
 end
 local humanStackBefore = villainSession.seats[1].stack
 
@@ -405,6 +634,13 @@ assert(villainSaw.deck == nil, "engines must not see the undealt deck")
 assert(type(villainSaw.memory) == "table", "engines must get a scratch memory table")
 assert((villainSession.seats[2].aiMemory or {}).turns and villainSession.seats[2].aiMemory.turns > 0,
     "writes to context.memory must survive the decision")
+for index = 2, #villainSession.seats do
+    local params = villainSession.seats[index].aiParams or {}
+    assert(params.marker == index, "context.params writes must not replace live params")
+    assert(not params.poisoned, "context.params writes must not leak back to the live seat")
+    assert(params.nested and params.nested.stable == true,
+        "nested context.params writes must not leak back to the live seat")
+end
 
 -- The view itself: everything an engine needs to reason, and no deck.
 local viewSession = PZLinuxPokerGetSession(villainPlayer)

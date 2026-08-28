@@ -26,6 +26,7 @@ PZLinuxClearInterruptedSession = function() end
 local luaRoot = "Contents/mods/B42 PZLinux/42/media/lua"
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIRegistry.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerConfig.lua")
+PZLinux.Poker.Config.logActions = false
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAISkill.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIReads.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIZombieBrain.lua")
@@ -46,7 +47,8 @@ local function context(overrides)
     for index = 1, 3 do
         seats[index] = {
             name = "Seat" .. index, stack = 1000, bet = 0, committed = 0,
-            folded = false, inHand = true, allIn = false, lastAction = "",
+            folded = false, inHand = true, allIn = false,
+            lastAction = "", lastActionKind = "", lastActionPhase = nil,
             cards = {}, isHuman = index == 1,
         }
     end
@@ -71,6 +73,34 @@ local function context(overrides)
     built.equity = function() return built.equityValue end
     built.params = PZLinuxPokerResolveEngineParams(PZLinuxPokerGetAI(built.engineId), built.paramOverrides)
     return built
+end
+
+local function sessionWithSeatBet(seatBet, currentBet)
+    seatBet = seatBet or 0
+    currentBet = currentBet or seatBet
+    local opponentBet = currentBet > seatBet and currentBet or seatBet
+    local opponentAction = currentBet > seatBet and ("RAISE $" .. tostring(currentBet)) or ("CALL $" .. tostring(seatBet))
+    local opponentActionKind = currentBet > seatBet and "raise" or "call"
+    return {
+        handNumber = 1,
+        phase = "flop",
+        currentBet = currentBet,
+        community = {},
+        seats = {
+            { name = "Seat1", stack = 1000, bet = opponentBet, committed = opponentBet,
+              folded = false, inHand = true, allIn = false, cards = {}, lastAction = opponentAction,
+              lastActionKind = opponentActionKind, lastActionPhase = "flop",
+              isHuman = true },
+            { name = "Seat2", stack = 1000, bet = seatBet, committed = seatBet,
+              folded = false, inHand = true, allIn = false, cards = {}, lastAction = "",
+              lastActionKind = "", lastActionPhase = nil,
+              isHuman = false },
+            { name = "Seat3", stack = 1000, bet = opponentBet, committed = opponentBet,
+              folded = false, inHand = true, allIn = false, cards = {}, lastAction = opponentAction,
+              lastActionKind = opponentActionKind, lastActionPhase = "flop",
+              isHuman = false },
+        },
+    }
 end
 
 local function decide(engineId, overrides)
@@ -132,6 +162,16 @@ assert(decide("survivor", { equityValue = 90 }).action == "raise",
 assert(decide("survivor", { equityValue = 30 }).action == "check",
     "the Survivor must take a free card rather than bluff")
 
+local survivorBlindRaise, survivorBlindCtx = decide("survivor", {
+    equityValue = 90, pot = 100, toCall = 0, currentBet = 10,
+    session = sessionWithSeatBet(10, 10),
+})
+assert(survivorBlindRaise.action == "raise" and survivorBlindRaise.amount == 40,
+    "the Survivor must not count its blind twice: expected +40 to reach $50, got " ..
+    tostring(survivorBlindRaise.amount))
+assert(survivorBlindCtx.seat.bet + survivorBlindRaise.amount == 50,
+    "the Survivor's half-pot target must be the final street bet, not the added amount")
+
 -- Marginal spot, priced at 33%: it needs more than the pot odds and folds.
 assert(decide("survivor", { toCall = 50, pot = 100, potOdds = 0.33, equityValue = 35 }).action == "fold",
     "the Survivor must fold a spot that only just breaks even")
@@ -140,6 +180,10 @@ assert(decide("survivor", { toCall = 50, pot = 100, potOdds = 0.33, equityValue 
 local function survivorVersus(read)
     local ctx = context({ engineId = "survivor", toCall = 50, pot = 100, potOdds = 0.33, equityValue = 36 })
     ctx.session.seats[3].bet = 50
+    ctx.session.seats[3].committed = 50
+    ctx.session.seats[3].lastAction = "RAISE $50"
+    ctx.session.seats[3].lastActionKind = "raise"
+    ctx.session.seats[3].lastActionPhase = ctx.session.phase
     ctx.session.currentBet = 50
     ctx.memory.reads = { Seat3 = read }
     ctx.memory.hand = { number = 1, raised = {}, folded = {}, seen = {} }
@@ -176,6 +220,26 @@ assert(decide("survivor", {
 local sharkValue = decide("shark", { equityValue = 75, pot = 200, toCall = 0, minRaise = 10 })
 assert(sharkValue.action == "raise", "the Shark must bet when ahead")
 assert(sharkValue.amount >= 100, "the Shark must size to the pot, got " .. tostring(sharkValue.amount))
+
+local sharkBlindRaise, sharkBlindCtx = decide("shark", {
+    equityValue = 75, pot = 200, toCall = 0, currentBet = 10, minRaise = 10,
+    session = sessionWithSeatBet(10, 10),
+})
+assert(sharkBlindRaise.action == "raise" and sharkBlindRaise.amount == 140,
+    "the Shark must not count its blind twice: expected +140 to reach $150, got " ..
+    tostring(sharkBlindRaise.amount))
+assert(sharkBlindCtx.seat.bet + sharkBlindRaise.amount == 150,
+    "the Shark's pot-fraction target must be the final street bet, not the added amount")
+
+local sharkFacingRaise, sharkFacingCtx = decide("shark", {
+    equityValue = 75, pot = 160, toCall = 40, currentBet = 50, minRaise = 40,
+    session = sessionWithSeatBet(10, 50),
+})
+assert(sharkFacingRaise.action == "raise" and sharkFacingRaise.amount == 110,
+    "the Shark must subtract prior street chips after calling: expected +110 to reach $120, got " ..
+    tostring(sharkFacingRaise.amount))
+assert(sharkFacingCtx.seat.bet + sharkFacingRaise.amount == 120,
+    "a Shark facing a raise must still target the final street bet")
 
 -- Way ahead and shallow relative to the pot: it stops sizing and jams.
 local sharkShove = decide("shark", {
@@ -282,7 +346,11 @@ assert(PZLinuxPokerAISkillValue(mixedCtx.params, "equityError") > 0,
 local function recordedActions(accuracy)
     local ctx = context({ engineId = "shark" })
     ctx.session.seats[1].lastAction = "RAISE $50"
+    ctx.session.seats[1].lastActionKind = "raise"
+    ctx.session.seats[1].lastActionPhase = ctx.session.phase
     ctx.session.seats[3].lastAction = "FOLD"
+    ctx.session.seats[3].lastActionKind = "fold"
+    ctx.session.seats[3].lastActionPhase = ctx.session.phase
     local total = 0
     for hand = 1, 60 do
         ctx.session.handNumber = hand
@@ -296,6 +364,50 @@ local function recordedActions(accuracy)
 end
 assert(recordedActions(1.0) > recordedActions(0.25),
     "an inaccurate memory must record fewer actions than a perfect one")
+
+-- A label from the previous street stays visible but must not become a new
+-- behavioural read just because the phase changed.
+local staleStreetCtx = context({ engineId = "shark" })
+staleStreetCtx.session.currentBet = 50
+staleStreetCtx.session.seats[1].bet = 50
+staleStreetCtx.session.seats[1].committed = 50
+staleStreetCtx.session.seats[1].lastAction = "RAISE $50"
+staleStreetCtx.session.seats[1].lastActionKind = "raise"
+staleStreetCtx.session.seats[1].lastActionPhase = "flop"
+PZLinuxPokerAIObserve(staleStreetCtx, { accuracy = 1, window = 0, random = function() return 0 end })
+assert(staleStreetCtx.memory.reads.Seat1.actions == 1 and staleStreetCtx.memory.reads.Seat1.raises == 1,
+    "the original street action must be observed once")
+staleStreetCtx.session.phase = "turn"
+staleStreetCtx.session.currentBet = 0
+staleStreetCtx.session.seats[1].bet = 0
+PZLinuxPokerAIObserve(staleStreetCtx, { accuracy = 1, window = 0, random = function() return 0 end })
+assert(staleStreetCtx.memory.reads.Seat1.actions == 1 and staleStreetCtx.memory.reads.Seat1.raises == 1,
+    "a stale lastAction must not be re-counted on the next street")
+staleStreetCtx.session.seats[1].lastAction = "CHECK"
+staleStreetCtx.session.seats[1].lastActionKind = "check"
+staleStreetCtx.session.seats[1].lastActionPhase = "turn"
+PZLinuxPokerAIObserve(staleStreetCtx, { accuracy = 1, window = 0, random = function() return 0 end })
+assert(staleStreetCtx.memory.reads.Seat1.actions == 2 and staleStreetCtx.memory.reads.Seat1.checks == 1,
+    "a fresh action on the next street must still be counted")
+
+-- Facing a raise that got called: the caller has the same bet, but the
+-- aggressor read must point to the opponent that set the price.
+local callerAggressorCtx = context({ engineId = "survivor", toCall = 50, currentBet = 50 })
+callerAggressorCtx.session.currentBet = 50
+callerAggressorCtx.session.seats[1].bet = 50
+callerAggressorCtx.session.seats[1].committed = 50
+callerAggressorCtx.session.seats[1].lastAction = "RAISE $50"
+callerAggressorCtx.session.seats[1].lastActionKind = "raise"
+callerAggressorCtx.session.seats[1].lastActionPhase = callerAggressorCtx.session.phase
+callerAggressorCtx.session.seats[3].bet = 50
+callerAggressorCtx.session.seats[3].committed = 50
+callerAggressorCtx.session.seats[3].lastAction = "CALL $50"
+callerAggressorCtx.session.seats[3].lastActionKind = "call"
+callerAggressorCtx.session.seats[3].lastActionPhase = callerAggressorCtx.session.phase
+local callerAggressorReads = PZLinuxPokerAIObserve(
+    callerAggressorCtx, { accuracy = 1, window = 0, random = function() return 0 end })
+assert(callerAggressorReads.aggressor and callerAggressorReads.aggressor.name == "Seat1",
+    "the aggressor read must remain on the raiser, not the last caller")
 
 -- The window fades old evidence rather than accumulating forever.
 local fadeCtx = context({ engineId = "shark" })

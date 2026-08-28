@@ -169,9 +169,7 @@ local function playTable(lineup, book, rngSeed)
         seat.aiMemory = nil
         seat.stack = START_STACK
         local engine = PZLinuxPokerGetAI(entry.engine)
-        if engine.createSeat then
-            engine:createSeat(seat, nil, { params = seat.aiParams, random = ZombRand, randomRange = ZombRand })
-        end
+        PZLinuxPokerConfigureAISeat(engine, seat, nil, session)
     end
 
     local invested = {}
