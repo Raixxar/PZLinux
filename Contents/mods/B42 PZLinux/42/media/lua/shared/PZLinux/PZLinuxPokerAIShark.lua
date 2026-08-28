@@ -109,7 +109,7 @@ end
 
 local function SharkRaise(context, fraction, equityPercent)
     local target = math.floor(context.pot * PZLinuxPokerAISizing(context, fraction, equityPercent))
-    return { action = "raise", amount = math.max(context.toCall + context.minRaise, target) }
+    return { action = "raise", amount = PZLinux.Poker.AI.RaiseAmountForTarget(context, target) }
 end
 
 local function SharkChoose(context)

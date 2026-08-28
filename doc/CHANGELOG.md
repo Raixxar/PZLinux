@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.0.20]
+
+- Added a full six-seat Texas Hold'em Poker table with persistent stacks,
+  buy-ins, cash-out, hand history, legal-action snapshots and server-owned
+  action resolution for both single-player and multiplayer.
+- Added a registry-driven Poker AI system with multiple personalities:
+  ZombieBrain, Drunkard, Survivor and Shark. Skill-aware engines still base
+  their strategic decisions on per-seat Monte Carlo equity estimates, with
+  cached simulations so repeated equity reads in one board state stay cheap.
+- Mixed Poker AI engines per lobby so difficulty now scales by table: micro is
+  intentionally forgiving, low introduces disciplined folders, high adds
+  stronger readers with one exploitable tell, and elite removes the soft seats.
+- Hardened Poker money/session handling. Opening a table can no longer overwrite
+  an active session, failed post-debit table setup rolls the buy-in back, and AI
+  `createSeat()` receives copies so it cannot mutate live stacks or session
+  state.
+- Hardened Poker action handling. Shark and Survivor now convert desired total
+  bet sizes into only the additional amount still needed, invalid AI decisions
+  resolve as fold when chips are owed or check when free, and AI exceptions are
+  logged and recovered locally without leaving the table fragile.
+- Improved Poker reads so stale last actions from previous streets are ignored
+  and the aggressor is not overwritten by later callers.
+- Added structured Poker action diagnostics for production troubleshooting:
+  joins, rollbacks, blinds, player actions, AI actions, rejected actions, betting
+  rounds, hand endings, cash-outs and table settlements now include request,
+  session, hand, phase, actor, bet/stack/pot and fallback context.
+- Reworked Blackjack to deal from a persistent per-table shoe instead of a fresh
+  deck every hand. Players can now see public shoe depth, deck count and shuffle
+  status without exposing the remaining card identities.
+- Fixed multiplayer Blackjack shuffle visibility by tracking the monotonic
+  `shoeShuffleId` per table on the client, so a shuffle caused by another player
+  is still shown even if the transient `shoeShuffled` flag has already cleared.
+- Added Blackjack shoe/deck/remaining/shuffled UI translations across all
+  supported locales, plus structured Blackjack action diagnostics for deal,
+  debit, hit, stand, forfeit, finish and rejected actions.
+- Added Poker tournament/TrueSkill tooling and regression coverage for AI
+  selection, Monte Carlo usage, AI memory, setup isolation, invalid decisions,
+  exception recovery, raise sizing, Blackjack shoe behavior and the new
+  diagnostic logs.
+
 ## [1.0.19]
 
 - Raised the absolute post-delivery mailbox carrying limit from 60 to 80 while

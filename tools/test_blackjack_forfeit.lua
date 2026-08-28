@@ -98,4 +98,24 @@ for _, handlerName in ipairs({ "onBlackjackDeal", "onBlackjackHit", "onBlackjack
         handlerName .. " must check the debounce guard before acting on the click")
 end
 
+assert(variablesSource:find("local function PZLinuxBlackjackLogAction", 1, true),
+    "Blackjack must keep a shared structured action logger for production troubleshooting")
+assert(variablesSource:find('PZLinuxBlackjackLogAction("ACTION REJECT"', 1, true),
+    "Blackjack rejected actions must be logged with their reason")
+
+local function assertServerBlackjackLog(functionName, needle)
+    local block = variablesSource:match("function " .. functionName .. ".-\nend")
+    assert(block, functionName .. " must exist")
+    assert(block:find(needle, 1, true),
+        functionName .. " must log enough context to troubleshoot player actions")
+end
+
+assertServerBlackjackLog("PZLinuxBlackjackStart", 'PZLinuxBlackjackLogAction("START"')
+assertServerBlackjackLog("PZLinuxBlackjackStart", 'PZLinuxBlackjackLogAction("START DEBIT"')
+assertServerBlackjackLog("PZLinuxBlackjackStart", 'PZLinuxBlackjackLogAction("DEAL"')
+assertServerBlackjackLog("PZLinuxBlackjackHit", 'PZLinuxBlackjackLogAction("HIT"')
+assertServerBlackjackLog("PZLinuxBlackjackStand", 'PZLinuxBlackjackLogAction("STAND"')
+assertServerBlackjackLog("PZLinuxBlackjackForfeit", 'PZLinuxBlackjackLogAction("FORFEIT"')
+assertServerBlackjackLog("PZLinuxBlackjackFinish", 'PZLinuxBlackjackLogAction("FINISH"')
+
 print("PZLinux blackjack forfeit/debounce tests OK")

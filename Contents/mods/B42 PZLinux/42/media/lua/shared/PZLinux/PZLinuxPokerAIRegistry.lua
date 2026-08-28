@@ -35,6 +35,12 @@
 -- cannot leak that change into the shared config table or into any other
 -- seat.
 --
+-- createSeat() receives setup copies too. Writes to harmless per-seat metadata
+-- such as difficulty or style are copied back after the hook returns, but live
+-- gameplay fields are protected: stack, cards, bets, identity, params, memory
+-- and every session/lobby table handed to the engine cannot be mutated in
+-- place.
+--
 -- An engine should declare engine.defaults -- a table, or a function
 -- returning one, when the defaults follow live config that may change after
 -- load. Params from a lobby are then merged over those defaults: a key that
@@ -49,17 +55,19 @@
 --   currentBet, minRaise, bigBlind, strength, params, memory,
 --   random(maxExclusive), randomRange(minInclusive, maxExclusive)
 --
--- context.session and context.seat are freshly built copies, not the live
--- table. An engine may read everything on them, opponents' hole cards
--- included, but writing to them changes nothing -- the copy is discarded the
--- moment decide() returns. The undealt deck is not exposed at all.
+-- context.session, context.seat and context.params are freshly built copies,
+-- not the live table. An engine may read everything on them, opponents' hole
+-- cards included, but writing to them changes nothing -- the copy is discarded
+-- the moment decide() returns. The undealt deck is not exposed at all.
 --
 -- context.memory is the exception: a per-seat scratch table that does persist
 -- across decisions, for engines that build an opponent model over a session.
 -- It holds no chips and no cards, so nothing stored there can move money.
 --
 -- decide() returns { action = "fold" | "check" | "call" | "raise",
---                    amount = <total chips to put in on a raise> }
+--                    amount = <chips this action adds on a raise> }
+-- The raise amount includes any call first: when toCall is 20 and amount is
+-- 60, the seat pays 20 to call and 40 more to raise.
 -- An unknown or missing return is treated as check when nothing is owed
 -- and fold otherwise.
 

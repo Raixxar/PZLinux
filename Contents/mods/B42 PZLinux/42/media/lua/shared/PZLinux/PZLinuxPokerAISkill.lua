@@ -140,6 +140,17 @@ function PZLinuxPokerAISizing(context, fraction, equityPercent)
     return math.max(0.1, fraction)
 end
 
+-- Engine decisions express raise amounts as the chips added by this action,
+-- while pot-fraction sizing thinks in final street-bet totals. Convert the
+-- latter into the former without making blinds or previous raises count twice.
+function PZLinux.Poker.AI.RaiseAmountForTarget(context, targetBet)
+    local seatBet = math.max(0, math.floor(tonumber(context and context.seat and context.seat.bet) or 0))
+    local toCall = math.max(0, math.floor(tonumber(context and context.toCall) or 0))
+    local minRaise = math.max(0, math.floor(tonumber(context and context.minRaise) or 0))
+    targetBet = math.max(0, math.floor(tonumber(targetBet) or 0))
+    return math.max(toCall + minRaise, targetBet - seatBet)
+end
+
 -- The options PZLinuxPokerAIObserve needs to model an imperfect memory.
 function PZLinuxPokerAIMemoryOptions(context)
     return {

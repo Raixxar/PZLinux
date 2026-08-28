@@ -12,6 +12,7 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
     aiDecisionDelayTicks = 20,
     rakePercent = 0,
     maxActionHistory = 12,
+    logActions = true,
     -- Capped so even the top table's max buy-in ($10,000, at 100x its big
     -- blind) stays well below the single best-paying contract ($14,000) --
     -- gambling is meant to stay a fun distraction, never a substitute for
@@ -22,10 +23,10 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
     -- (see PZLinuxPokerAIRegistry.lua) and a 0.0 to 1.0 chance of a newly
     -- seated opponent using it. Chances are normalised by their sum, so a
     -- single entry at 1.0 means "every seat at this table plays this way".
-    -- Today every lobby is pure Zombie Brain, which is exactly how the
-    -- tables played before engines were separable; new engines get mixed in
-    -- by adding entries here and lowering this one, per lobby, without
-    -- touching the poker engine itself.
+    -- Lobbies now mix several engines directly here: micro stays forgiving,
+    -- low introduces disciplined folders, high adds readers plus one loose
+    -- seat, and elite removes the soft spots entirely without changing the
+    -- poker engine itself.
     -- The stakes ladder. Each bracket is a different kind of table, not the
     -- same table with bigger numbers -- who is sitting there is what makes a
     -- game easy or brutal, far more than the blinds do.
@@ -96,6 +97,7 @@ PZLinux.Poker.Config = PZLinux.Poker.Config or {
     },
 }
 PZLinux.Poker.Config.equitySimulationCount = PZLinux.Poker.Config.equitySimulationCount or 300
+if PZLinux.Poker.Config.logActions == nil then PZLinux.Poker.Config.logActions = true end
 
 function PZLinuxPokerGetLobby(lobbyId)
     for _, lobby in ipairs(PZLinux.Poker.Config.lobbies or {}) do

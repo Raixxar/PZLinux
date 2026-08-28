@@ -1,9 +1,9 @@
 name=PZLinux
 id=B42_PZLinux
-modversion=1.0.19
+modversion=1.0.20
 versionMin=42.20
 poster=poster.png
-description=PZLinux 1.0.19 raises the mailbox delivery ceiling to 80 while keeping persistent parcels capped at 60, allowing heavy split orders to be collected safely. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
+description=PZLinux 1.0.20 adds six-seat Texas Hold'em Poker with Monte Carlo driven AI opponents, completes Blackjack's persistent shoe UI and translations, and hardens betting money/session recovery with richer production diagnostics. Compatible with Build 42.20+, single-player and multiplayer. Core MP transactions are validated by the server. Keyboard and mouse required; controller and split-screen are not officially supported.
 tooltip=PZLinux
 author=Raixxar
 category=features

@@ -28,6 +28,7 @@ PZLinuxClearInterruptedSession = function() end
 local luaRoot = "Contents/mods/B42 PZLinux/42/media/lua"
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIRegistry.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerConfig.lua")
+PZLinux.Poker.Config.logActions = false
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAISkill.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIReads.lua")
 dofile(luaRoot .. "/shared/PZLinux/PZLinuxPokerAIZombieBrain.lua")
