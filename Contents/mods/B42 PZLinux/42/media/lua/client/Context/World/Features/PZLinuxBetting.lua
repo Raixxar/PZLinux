@@ -1165,6 +1165,38 @@ function PZLinuxBettingUI:showBlackjackMenu()
         tableButtonX = tableButtonX + tableButtonWidth + self.width * 0.005
     end
 
+    -- PARKED, PENDING TRANSLATION. Hands are dealt from a persistent shoe
+    -- that is dealt to its last card before being reshuffled
+    -- (PZLinuxBlackjackEngine.lua), which is what makes counting the cards
+    -- worth doing at all. This line
+    -- posts the two things a player at a real table can see but this UI
+    -- otherwise cannot show them: how many decks the table deals from and how
+    -- much of the shoe is left -- and, once a shoe is retired, that their
+    -- count no longer means anything.
+    --
+    -- It stays commented out only because it needs three new catalog keys
+    -- (Betting_BlackjackShoe, Betting_BlackjackShoeIdle and
+    -- Betting_BlackjackShuffled, all IGUI_PZLinux_-prefixed), and
+    -- tools/check_translations.lua requires every key to exist in all 20
+    -- locales -- which needs real translations, not guesses. The server
+    -- already sends shoeDecks/shoeRemaining/shoeShuffled/shoeShuffleId with
+    -- every hand (PZLinuxBlackjackBuildState) -- shoeShuffleId being the one
+    -- to compare against the previous hand's, since at a shared table another
+    -- player's hand can turn the shoe over between two of this player's --
+    -- so re-enabling this is: add the three
+    -- keys to the 20 catalogs plus PZLinux.TextFallbacks, then uncomment
+    -- this block, its two call sites and updateBlackjackShoeLabel below.
+    -- The keys are deliberately written unquoted in these comments: the
+    -- translation audit greps the raw source for quoted key literals and
+    -- does not skip comments, so a quoted key here would fail the audit
+    -- before the catalogs are updated.
+    --
+    -- self.blackjackShoeLabel = ISLabel:new(self.width * 0.20, self.height * 0.532, self.height * 0.018, "", 0.6, 1, 0.6, 1, UIFont.Small, true)
+    -- self.blackjackShoeLabel:initialise()
+    -- self.topBar:addChild(self.blackjackShoeLabel)
+    -- table.insert(self.blackjackControls, self.blackjackShoeLabel)
+    -- self:updateBlackjackShoeLabel(nil)
+
     self.blackjackAmountInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_Amount"), self.width * 0.20, self.height * 0.603, self.width * 0.18, self.height * 0.028)
     self.blackjackAmountInput:initialise()
     self.blackjackAmountInput:instantiate()
@@ -1243,6 +1275,7 @@ function PZLinuxBettingUI:onBlackjackSelectTable(button)
         tableButton.backgroundColor = (tableButton.tableId == self.blackjackSelectedTableId)
             and {r=0, g=0.4, b=0, a=1} or {r=0, g=0, b=0, a=0.5}
     end
+    -- self:updateBlackjackShoeLabel(nil) -- parked, see showBlackjackMenu
     self:showBlackjackError("")
 end
 
@@ -1329,6 +1362,7 @@ function PZLinuxBettingUI:showBlackjackState(result)
     end
 
     self:updateBalanceLabel(result.balance)
+    -- self:updateBlackjackShoeLabel(result) -- parked, see showBlackjackMenu
 
     PZLinuxBettingClearDisplayControls(self.blackjackCardControls)
     self.blackjackCardControls = {}
@@ -1403,6 +1437,38 @@ function PZLinuxBettingUI:showError(message)
     self.topBar:addChild(self.errorLabel)
     table.insert(self.raceControls, self.errorLabel)
 end
+
+-- PARKED, PENDING TRANSLATION -- see the shoe label block in
+-- showBlackjackMenu for what this renders and what re-enabling it needs.
+-- Before the first hand of a session (and right after switching tables) the
+-- client has no shoe to report on yet, so only the selected table's deck
+-- count is shown; every dealt hand then carries the live remaining count back
+-- from the server.
+--
+-- function PZLinuxBettingUI:updateBlackjackShoeLabel(result)
+--     if not self.blackjackShoeLabel then return end
+--
+--     local decks = result and result.shoeDecks
+--     if not decks then
+--         decks = PZLinuxBlackjackShoeDecksForTable(PZLinuxBlackjackGetTable(self.blackjackSelectedTableId))
+--     end
+--
+--     local remaining = result and result.shoeRemaining
+--     local text
+--     if remaining then
+--         text = PZLinuxFormatText(IGUI_PZLinux_Betting_BlackjackShoe,
+--             "Shoe: %s decks, %s cards left", decks, remaining)
+--     else
+--         text = PZLinuxFormatText(IGUI_PZLinux_Betting_BlackjackShoeIdle,
+--             "Shoe: %s decks", decks)
+--     end
+--
+--     if result and result.shoeShuffled then
+--         text = text .. " - " .. PZLinuxGetText(IGUI_PZLinux_Betting_BlackjackShuffled)
+--     end
+--
+--     self.blackjackShoeLabel:setName(text)
+-- end
 
 function PZLinuxBettingUI:showBlackjackError(message)
     if self.blackjackMessageLabel then

@@ -14,7 +14,9 @@ PZLinuxRegisterInterruptedSession = function() end
 PZLinuxClearInterruptedSession = function() end
 
 -- Local test harness only. Project Zomboid loads the mod with require paths from media/lua.
+dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerAIRegistry.lua")
 dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerConfig.lua")
+dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerAIZombieBrain.lua")
 dofile("Contents/mods/B42 PZLinux/42/media/lua/shared/PZLinux/PZLinuxPokerEngine.lua")
 
 local function card(label)

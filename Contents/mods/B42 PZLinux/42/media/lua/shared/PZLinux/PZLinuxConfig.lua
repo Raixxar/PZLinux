@@ -198,12 +198,29 @@ PZLinux.Config.Blackjack = PZLinux.Config.Blackjack or {
     -- table's max bet) stays below the single best-paying contract ($14,000)
     -- -- gambling is meant to stay a fun distraction, never a substitute for
     -- Contracts as the mod's one reliable income source.
+    -- Each table also posts how many 52-card decks it deals from. Hands are
+    -- dealt from a persistent shoe that is dealt down to its last card before
+    -- being reshuffled (see PZLinuxBlackjackEngine.lua), not from a fresh deck
+    -- every hand, so what has already been dealt stays gone and the shoe can
+    -- actually be counted. There is no cut card: a real casino uses one to cap
+    -- what an advantage player can take off the house, but here the house pays
+    -- from an infinite supply of in-game currency, and the posted table limits
+    -- above already do the only capping the economy needs. Deck count is the dial that decides how hard that is: the two
+    -- cheap tables deal single deck, where a patient player can genuinely
+    -- read the shoe, while the two high-stakes tables bury the count under
+    -- two and three decks. So counting pays best exactly where the posted
+    -- limits keep the winnings small, which is what keeps the tables a fun
+    -- skill to learn rather than a replacement for Contracts.
     tables = {
-        { id = "micro", minBet = 10, maxBet = 100 },
-        { id = "low", minBet = 50, maxBet = 500 },
-        { id = "high", minBet = 200, maxBet = 1000 },
-        { id = "elite", minBet = 1000, maxBet = 5000 },
+        { id = "micro", minBet = 10, maxBet = 100, decks = 1 },
+        { id = "low", minBet = 50, maxBet = 500, decks = 1 },
+        { id = "high", minBet = 200, maxBet = 1000, decks = 2 },
+        { id = "elite", minBet = 1000, maxBet = 5000, decks = 3 },
     },
+    -- Bounds a table definition's deck count is clamped into, so a bad table
+    -- entry can never produce an empty shoe or an uncountably deep one.
+    deckMin = 1,
+    deckMax = 3,
 }
 
 function PZLinuxBlackjackGetTable(tableId)
