@@ -39,6 +39,10 @@ lua5.1 tools/test_inventory_authority.lua
 lua5.1 tools/test_reputation_economy.lua
 lua5.1 tools/test_trading_fee.lua
 lua5.1 tools/test_poker_engine.lua
+lua5.1 tools/test_poker_ai_registry.lua
+lua5.1 tools/test_poker_ai_personalities.lua
+lua5.1 tools/test_poker_ai_testbots.lua
+lua5.1 tools/test_trueskill.lua
 lua5.1 tools/test_race_settlement.lua
 lua5.1 tools/test_typing.lua
 bash tools/simulate_zombie_races.sh

@@ -33,7 +33,11 @@ local function PZLinuxPokerRandomRange(minInclusive, maxExclusive)
     return math.random(minInclusive, maxExclusive - 1)
 end
 
-local function PZLinuxPokerCreateOrderedDeck()
+-- Global so that engines can rebuild the 52-card set and subtract what they
+-- can see. That is not a leak: it is a constant, and every engine already
+-- knows what a deck of cards contains. The live, shuffled deck stays out of
+-- the engine view.
+function PZLinuxPokerCreateOrderedDeck()
     local deck = {}
     for _, suit in ipairs(PZLINUX_POKER_SUITS) do
         for _, rank in ipairs(PZLINUX_POKER_RANKS) do
@@ -234,9 +238,9 @@ function PZLinuxPokerEvaluateHand(cards)
     return { rank = 0, name = PZLINUX_POKER_HAND_NAMES[0], kickers = highCards }
 end
 
-local function PZLinuxPokerEquityStateKey(session)
-    local parts = { tostring(session.handNumber or 0), tostring(session.phase or "") }
-    for _, card in ipairs((session.seats[1] and session.seats[1].cards) or {}) do
+local function PZLinuxPokerEquityStateKey(session, seatIndex)
+    local parts = { tostring(session.handNumber or 0), tostring(session.phase or ""), tostring(seatIndex) }
+    for _, card in ipairs((session.seats[seatIndex] and session.seats[seatIndex].cards) or {}) do
         table.insert(parts, tostring(card.label))
     end
     for _, card in ipairs(session.community or {}) do table.insert(parts, tostring(card.label)) end
@@ -268,14 +272,19 @@ local function PZLinuxPokerEquityDraw(deck, seed)
     return card, seed
 end
 
-function PZLinuxPokerEstimateEquity(session, simulationCount)
-    local playerSeat = session and session.seats and session.seats[1]
+-- Monte Carlo equity for any seat, not just the human's. The player's own
+-- display still calls this through PZLinuxPokerEstimateEquity below; engines
+-- reach it through context.equity, which pins the seat to whoever is acting.
+-- Each seat caches its own answer, because the board state alone does not
+-- identify a result that depends on which hole cards it was computed from.
+function PZLinuxPokerEstimateEquityForSeat(session, seatIndex, simulationCount)
+    local playerSeat = session and session.seats and session.seats[seatIndex]
     if not playerSeat or not playerSeat.inHand or playerSeat.folded or #(playerSeat.cards or {}) ~= 2 then return nil end
     if session.phase == "finished" or session.phase == "hand_complete" then return nil end
 
     local opponentCount = 0
     for index, seat in ipairs(session.seats or {}) do
-        if index ~= 1 and seat.inHand and not seat.folded then opponentCount = opponentCount + 1 end
+        if index ~= seatIndex and seat.inHand and not seat.folded then opponentCount = opponentCount + 1 end
     end
     if opponentCount == 0 then return 100 end
 
@@ -292,8 +301,9 @@ function PZLinuxPokerEstimateEquity(session, simulationCount)
     if opponentCount * 2 + missingBoardCards > #available then return nil end
 
     simulationCount = math.max(50, math.floor(tonumber(simulationCount) or 300))
-    local stateKey = PZLinuxPokerEquityStateKey(session)
-    local cache = session.playerEquityCache
+    local stateKey = PZLinuxPokerEquityStateKey(session, seatIndex)
+    session.equityCache = session.equityCache or {}
+    local cache = session.equityCache[seatIndex]
     if cache and cache.key == stateKey and cache.samples == simulationCount then return cache.equity end
 
     local equity = 0
@@ -338,8 +348,12 @@ function PZLinuxPokerEstimateEquity(session, simulationCount)
     end
 
     equity = math.floor(equity * 1000 / simulationCount + 0.5) / 10
-    session.playerEquityCache = { key = stateKey, samples = simulationCount, equity = equity }
+    session.equityCache[seatIndex] = { key = stateKey, samples = simulationCount, equity = equity }
     return equity
+end
+
+function PZLinuxPokerEstimateEquity(session, simulationCount)
+    return PZLinuxPokerEstimateEquityForSeat(session, 1, simulationCount)
 end
 
 local function PZLinuxPokerAddHistory(session, text)
@@ -381,16 +395,6 @@ local function PZLinuxPokerGenerateAIName(used)
         end
     end
     return "Player " .. tostring(PZLinuxPokerRandom(999) + 1)
-end
-
-local function PZLinuxPokerRandomDifficulty()
-    local roll = PZLinuxPokerRandom(100) + 1
-    local total = 0
-    for level, weight in ipairs(PZLinux.Poker.Config.aiDifficultyWeights or {}) do
-        total = total + weight
-        if roll <= total then return level end
-    end
-    return 3
 end
 
 local function PZLinuxPokerNextOccupiedSeat(session, fromIndex)
@@ -606,7 +610,10 @@ local function PZLinuxPokerAdvancePhase(session)
     end
 end
 
-local function PZLinuxPokerSeatStrength(session, seat)
+-- Shared hand-strength helper, available to every registered AI engine.
+-- Deliberately crude: a five-card evaluation scaled to 0..1 once the board
+-- allows one, and a preflop heuristic before that.
+function PZLinuxPokerSeatStrength(session, seat)
     local cards = {}
     for _, card in ipairs(seat.cards or {}) do table.insert(cards, card) end
     for _, card in ipairs(session.community or {}) do table.insert(cards, card) end
@@ -623,19 +630,17 @@ local function PZLinuxPokerSeatStrength(session, seat)
     return math.min(1, score)
 end
 
-local function PZLinuxPokerAIAct(session, seatIndex)
+-- Every chip an AI moves, moves here. Engines only return an intent, so a
+-- badly written or third-party engine can play badly but cannot corrupt a
+-- stack, a pot or the raise bookkeeping. Anything unrecognised degrades to
+-- the safest legal action rather than to a fold, and a "fold" with nothing
+-- owed is normalised to a check -- no engine gets to throw a free hand away.
+local function PZLinuxPokerApplyAIDecision(session, seatIndex, decision)
     local seat = session.seats[seatIndex]
     local toCall = math.max(0, session.currentBet - seat.bet)
-    local strength = PZLinuxPokerSeatStrength(session, seat)
-    local difficulty = tonumber(seat.difficulty) or 3
-    local noise = (6 - difficulty) * (PZLinuxPokerRandom(30) - 15) / 100
-    local bluff = PZLinuxPokerRandom(100) < (PZLinux.Poker.Config.aiBluffChance[difficulty] or 10)
-    local confidence = math.max(0, math.min(1, strength + noise + (bluff and 0.18 or 0)))
-    local pot = 0
-    for _, other in ipairs(session.seats) do pot = pot + (other.committed or 0) end
-    local potOdds = toCall > 0 and (toCall / math.max(1, pot + toCall)) or 0
+    local action = decision and tostring(decision.action or "") or ""
 
-    if toCall > 0 and confidence < potOdds + 0.12 then
+    if action == "fold" and toCall > 0 then
         seat.folded = true
         seat.acted = true
         seat.state = "folded"
@@ -644,19 +649,22 @@ local function PZLinuxPokerAIAct(session, seatIndex)
         return
     end
 
-    local raiseChance = confidence * 100 - 55 + difficulty * 4
-    if seat.stack > toCall + session.minRaise and PZLinuxPokerRandom(100) < raiseChance then
-        local raiseAmount = math.min(seat.stack, toCall + session.minRaise + PZLinuxPokerRandomRange(0, session.bigBlind + 1))
-        seat.stack = seat.stack - raiseAmount
-        seat.bet = seat.bet + raiseAmount
-        seat.committed = seat.committed + raiseAmount
-        session.currentBet = seat.bet
-        session.minRaise = math.max(session.minRaise, raiseAmount - toCall)
-        seat.acted = true
-        if seat.stack == 0 then seat.allIn = true seat.state = "allin" end
-        seat.lastAction = seat.allIn and "ALL-IN" or ("RAISE $" .. tostring(raiseAmount))
-        PZLinuxPokerAddHistory(session, seat.name .. " raises $" .. tostring(raiseAmount))
-        return
+    if action == "raise" then
+        local raiseAmount = math.floor(tonumber(decision and decision.amount) or 0)
+        raiseAmount = math.min(seat.stack, math.max(raiseAmount, toCall + session.minRaise))
+        if raiseAmount > toCall then
+            seat.stack = seat.stack - raiseAmount
+            seat.bet = seat.bet + raiseAmount
+            seat.committed = seat.committed + raiseAmount
+            session.currentBet = seat.bet
+            session.minRaise = math.max(session.minRaise, raiseAmount - toCall)
+            seat.acted = true
+            if seat.stack == 0 then seat.allIn = true seat.state = "allin" end
+            seat.lastAction = seat.allIn and "ALL-IN" or ("RAISE $" .. tostring(raiseAmount))
+            PZLinuxPokerAddHistory(session, seat.name .. " raises $" .. tostring(raiseAmount))
+            return
+        end
+        -- Not enough chips behind for a legal raise: fall through and call.
     end
 
     local paid = math.min(seat.stack, toCall)
@@ -672,6 +680,120 @@ local function PZLinuxPokerAIAct(session, seatIndex)
         seat.lastAction = "CHECK"
         PZLinuxPokerAddHistory(session, seat.name .. " checks")
     end
+end
+
+-- Builds the read-only view of the table an engine gets, asks the seat's
+-- engine what it wants to do, and hands the answer to the applier above.
+-- Seats whose engine is missing (a mod that added it was removed
+-- mid-session) fall back to the registry default rather than freezing the
+-- table.
+-- Engines get a copy of the table, never the table itself.
+--
+-- Lua hands tables over by reference, so before this existed an engine could
+-- simply write to what it was given: add 5000 to its own stack, swap its hole
+-- cards for aces, rewrite a community card, all while returning a perfectly
+-- legal action for the applier to approve. The applier validates the decision
+-- an engine returns; it cannot see damage done before the return.
+--
+-- So decide() receives this instead. Anything an engine writes lands on a
+-- throwaway and is collected with it. Seeing everything, including opponents'
+-- hole cards, remains deliberate -- a bot that peeks is a feature here, and a
+-- shady one fits the mod. Changing what it sees is not.
+--
+-- The undealt deck is the one thing withheld. Reading it is not peeking, it
+-- is knowing every future card, which no tell could ever betray to a player.
+local function PZLinuxPokerCopyEngineSeat(seat)
+    local copy = {}
+    for key, value in pairs(seat) do
+        -- Scalars copy by value; the tables worth exposing are rebuilt below,
+        -- and aiMemory is deliberately left out -- see context.memory.
+        if type(value) ~= "table" and type(value) ~= "function" then
+            copy[key] = value
+        end
+    end
+    copy.cards = PZLinuxPokerCopyCards(seat.cards, false)
+    copy.aiParams = PZLinuxPokerCopyEngineParams(seat.aiParams)
+    if seat.handValue then
+        local kickers = {}
+        for index, value in ipairs(seat.handValue.kickers or {}) do kickers[index] = value end
+        copy.handValue = { rank = seat.handValue.rank, name = seat.handValue.name, kickers = kickers }
+    end
+    return copy
+end
+
+function PZLinuxPokerBuildEngineView(session)
+    local seats = {}
+    for index, seat in ipairs(session.seats or {}) do
+        seats[index] = PZLinuxPokerCopyEngineSeat(seat)
+    end
+    local pots = {}
+    for index, pot in ipairs(session.pots or {}) do
+        local eligible = {}
+        for order, seatIndex in ipairs(pot.eligible or {}) do eligible[order] = seatIndex end
+        pots[index] = { amount = pot.amount, eligible = eligible }
+    end
+    local history = {}
+    for index, line in ipairs(session.history or {}) do history[index] = line end
+    return {
+        phase = session.phase,
+        handNumber = session.handNumber,
+        lobbyId = session.lobbyId,
+        smallBlind = session.smallBlind,
+        bigBlind = session.bigBlind,
+        currentBet = session.currentBet,
+        minRaise = session.minRaise,
+        dealer = session.dealer,
+        turn = session.turn,
+        showdown = session.showdown,
+        community = PZLinuxPokerCopyCards(session.community, false),
+        seats = seats,
+        pots = pots,
+        history = history,
+    }
+end
+
+local function PZLinuxPokerAIAct(session, seatIndex)
+    local seat = session.seats[seatIndex]
+    local engine = PZLinuxPokerGetAI(seat.aiEngine) or PZLinuxPokerGetFallbackAI()
+    local toCall = math.max(0, session.currentBet - seat.bet)
+    local pot = 0
+    for _, other in ipairs(session.seats) do pot = pot + (other.committed or 0) end
+
+    local decision
+    if engine then
+        local view = PZLinuxPokerBuildEngineView(session)
+        -- The one surface an engine may legitimately write to and have the
+        -- writes survive: a scratch table of its own, per seat, for things
+        -- like an opponent model built up over a session. It holds no chips
+        -- and no cards, so nothing an engine puts here can move money.
+        seat.aiMemory = seat.aiMemory or {}
+        decision = engine:decide({
+            session = view,
+            seat = view.seats[seatIndex],
+            memory = seat.aiMemory,
+            seatIndex = seatIndex,
+            toCall = toCall,
+            pot = pot,
+            potOdds = toCall > 0 and (toCall / math.max(1, pot + toCall)) or 0,
+            currentBet = session.currentBet,
+            minRaise = session.minRaise,
+            bigBlind = session.bigBlind,
+            strength = PZLinuxPokerSeatStrength(session, seat),
+            -- Real hand odds, on request and at the engine's own sample
+            -- budget: the simulation is the expensive part of a decision, so
+            -- an engine that does not ask never pays for it. Results are
+            -- cached per seat per board state, so asking twice in one
+            -- decision is free.
+            equity = function(simulationCount)
+                return PZLinuxPokerEstimateEquityForSeat(session, seatIndex, simulationCount)
+            end,
+            params = seat.aiParams or {},
+            random = PZLinuxPokerRandom,
+            randomRange = PZLinuxPokerRandomRange,
+        })
+    end
+
+    PZLinuxPokerApplyAIDecision(session, seatIndex, decision)
 end
 
 local function PZLinuxPokerRunAIUntilPlayer(session)
@@ -709,7 +831,7 @@ function PZLinuxPokerStartHand(session)
     session.currentBet = 0
     session.minRaise = session.bigBlind
     session.awaitingPlayer = false
-    session.playerEquityCache = nil
+    session.equityCache = nil
     for _, seat in ipairs(session.seats) do
         seat.cards = {}
         seat.bet = 0
@@ -853,12 +975,30 @@ function PZLinuxPokerCreateSession(player, lobbyId, buyIn, requestId)
     local aiMin = (PZLinux.Poker.Config.aiStackMinBigBlinds or 50) * lobby.bigBlind
     local aiMax = (PZLinux.Poker.Config.aiStackMaxBigBlinds or 100) * lobby.bigBlind
     for _ = 1, PZLinux.Poker.Config.opponentCount or 6 do
-        table.insert(session.seats, {
+        local entry = PZLinuxPokerPickAIEngineEntry(lobby, PZLinuxPokerRandom)
+        local engine = PZLinuxPokerGetAI(entry and entry.id)
+        local seat = {
             name = PZLinuxPokerGenerateAIName(usedNames),
             stack = PZLinuxPokerRandomRange(aiMin, aiMax + 1),
             isHuman = false,
-            difficulty = PZLinuxPokerRandomDifficulty(),
-        })
+            aiEngine = entry and entry.id or nil,
+            -- Resolved once, here: missing and malformed params fall back to
+            -- the engine's declared defaults, and the result is this seat's
+            -- own copy rather than a reference into shared lobby config.
+            aiParams = PZLinuxPokerResolveEngineParams(engine, entry and entry.params),
+        }
+        if engine and engine.createSeat then
+            engine:createSeat(seat, lobby, {
+                session = session,
+                params = seat.aiParams,
+                random = PZLinuxPokerRandom,
+                randomRange = PZLinuxPokerRandomRange,
+            })
+        end
+        -- Kept populated for engines that do not use a skill level: the
+        -- field predates the registry and existing tools read it.
+        seat.difficulty = tonumber(seat.difficulty) or 3
+        table.insert(session.seats, seat)
     end
     PZLinux.Poker.Sessions[session.playerKey] = session
     PZLinuxRegisterInterruptedSession(playerObj, "poker", { sessionId = session.sessionId, stack = buyIn, buyIn = buyIn, requestId = requestId })
