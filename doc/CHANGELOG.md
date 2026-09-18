@@ -2,6 +2,9 @@
 
 ## [1.0.20]
 
+- Fixed generator fuel percentages displaying incorrectly (such as 10% when
+  full) by preserving the game's native generator information and appending
+  the computer/ATM consumption lines instead of replacing the fuel display.
 - Added a full six-seat Texas Hold'em Poker table with persistent stacks,
   buy-ins, cash-out, hand history, legal-action snapshots and server-owned
   action resolution for both single-player and multiplayer.
