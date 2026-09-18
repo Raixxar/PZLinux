@@ -286,6 +286,7 @@ function PZLinuxBettingUI:new(x, y, width, height, player)
     o.blackjackCardControls = {}
     o.pokerControls = {}
     o.blackjackStakeMoodApplied = false
+    o.blackjackShoeShuffleIdsByTable = {}
     o.blackjackSelectedTableId = (PZLinux.Config.Blackjack.tables[1] or {}).id
     return o
 end
@@ -1165,6 +1166,12 @@ function PZLinuxBettingUI:showBlackjackMenu()
         tableButtonX = tableButtonX + tableButtonWidth + self.width * 0.005
     end
 
+    self.blackjackShoeLabel = ISLabel:new(self.width * 0.20, self.height * 0.532, self.height * 0.018, "", 0.6, 1, 0.6, 1, UIFont.Small, true)
+    self.blackjackShoeLabel:initialise()
+    self.topBar:addChild(self.blackjackShoeLabel)
+    table.insert(self.blackjackControls, self.blackjackShoeLabel)
+    self:updateBlackjackShoeLabel(nil)
+
     self.blackjackAmountInput = ISTextEntryBox:new(PZLinuxGetText("IGUI_PZLinux_Betting_Amount"), self.width * 0.20, self.height * 0.603, self.width * 0.18, self.height * 0.028)
     self.blackjackAmountInput:initialise()
     self.blackjackAmountInput:instantiate()
@@ -1243,6 +1250,7 @@ function PZLinuxBettingUI:onBlackjackSelectTable(button)
         tableButton.backgroundColor = (tableButton.tableId == self.blackjackSelectedTableId)
             and {r=0, g=0.4, b=0, a=1} or {r=0, g=0, b=0, a=0.5}
     end
+    self:updateBlackjackShoeLabel(nil)
     self:showBlackjackError("")
 end
 
@@ -1329,6 +1337,7 @@ function PZLinuxBettingUI:showBlackjackState(result)
     end
 
     self:updateBalanceLabel(result.balance)
+    self:updateBlackjackShoeLabel(result)
 
     PZLinuxBettingClearDisplayControls(self.blackjackCardControls)
     self.blackjackCardControls = {}
@@ -1402,6 +1411,51 @@ function PZLinuxBettingUI:showError(message)
     self.errorLabel:initialise()
     self.topBar:addChild(self.errorLabel)
     table.insert(self.raceControls, self.errorLabel)
+end
+
+function PZLinuxBettingUI:updateBlackjackShoeLabel(result)
+    if not self.blackjackShoeLabel then return end
+
+    local tableId = (result and result.tableId) or self.blackjackSelectedTableId
+    local decks = result and result.shoeDecks
+    if not decks then
+        local shoeDecksForTable = rawget(_G, "PZLinuxBlackjackShoeDecksForTable")
+        local tableDef = PZLinuxBlackjackGetTable(self.blackjackSelectedTableId)
+        decks = shoeDecksForTable and shoeDecksForTable(tableDef) or (tableDef and tableDef.decks) or 1
+    end
+
+    local shuffled = result and result.shoeShuffled == true
+    local shuffleId = result and result.shoeShuffleId
+    if tableId and shuffleId ~= nil then
+        self.blackjackShoeShuffleIdsByTable = self.blackjackShoeShuffleIdsByTable or {}
+        local tableKey = tostring(tableId)
+        local previousShuffleId = self.blackjackShoeShuffleIdsByTable[tableKey]
+        if previousShuffleId ~= nil and previousShuffleId ~= shuffleId then
+            shuffled = true
+        end
+        self.blackjackShoeShuffleIdsByTable[tableKey] = shuffleId
+    end
+
+    local remaining = result and result.shoeRemaining
+    local text
+    if remaining ~= nil then
+        text = PZLinuxFormatText(
+            "IGUI_PZLinux_Betting_BlackjackShoe",
+            "Shoe: %s deck(s), %s cards left",
+            decks,
+            remaining)
+    else
+        text = PZLinuxFormatText(
+            "IGUI_PZLinux_Betting_BlackjackShoeIdle",
+            "Shoe: %s deck(s)",
+            decks)
+    end
+
+    if shuffled then
+        text = text .. " - " .. PZLinuxGetText("IGUI_PZLinux_Betting_BlackjackShuffled")
+    end
+
+    self.blackjackShoeLabel:setName(text)
 end
 
 function PZLinuxBettingUI:showBlackjackError(message)

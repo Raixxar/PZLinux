@@ -181,44 +181,28 @@ function getNearbyGenerator(square, consommation)
     return generator
 end
 
-function ISGeneratorInfoWindow.getRichText(object, displayStats)
-	local square = object:getSquare()
-	if not displayStats then
-		local text = " <INDENT:10> "
-		if square and not square:isOutside() and square:getBuilding() then
-			text = text .. " <RED> " .. getText("IGUI_Generator_IsToxic")
-		end
-		return text
-	end
-	local fuel = math.ceil(object:getFuel())
-	local condition = object:getCondition()
-	local text = getText("IGUI_Generator_FuelAmount", fuel) .. " <LINE> " .. getText("IGUI_Generator_Condition", condition) .. " <LINE> "
-	if object:isActivated() then
-		text = text ..  " <LINE> " .. getText("IGUI_PowerConsumption") .. ": <LINE> ";
-		text = text .. " <INDENT:10> "
-		local items = object:getItemsPowered()
-		for i=0,items:size()-1 do
-			text = text .. "   " .. items:get(i) .. " <LINE> ";
-		end
+-- Keep the game's fuel/capacity formatting and any previously installed UI hook.
+require "ISUI/ISGeneratorInfoWindow"
+local PZLinuxGeneratorGetRichText = ISGeneratorInfoWindow.getRichText
 
-        local player = PZLinuxGetPlayer()
-        local modData = player and player:getModData() or {}
+function ISGeneratorInfoWindow.getRichText(object, displayStats, ...)
+    local text = PZLinuxGeneratorGetRichText(object, displayStats, ...)
+    if not displayStats or not object:isActivated() then return text end
 
-        if modData.PZLinuxIsPowered and modData.PZLinuxIsPowered == 1 then
-            text = text .. "Desktop Computer" .. " (0.02 L/h) <LINE> "
-        end
-
-        if modData.ATMIsPowered and modData.ATMIsPowered == 1 then
-            text = text .. "ATM" .. " (0.01 L/h) <LINE> "
-        end
-
-		text = text .. getText("IGUI_Generator_TypeGas") .. " (0.02 L/h) <LINE> "
-		text = text .. getText("IGUI_Total") .. ": " .. luautils.round(object:getTotalPowerUsing(), 3) .. " L/h <LINE> ";
-	end
-	if square and not square:isOutside() and square:getBuilding() then
-		text = text .. " <LINE> <RED> " .. getText("IGUI_Generator_IsToxic")
-	end
-	return text
+    local player = PZLinuxGetPlayer()
+    local modData = player and player:getModData() or {}
+    local extra = ""
+    if modData.PZLinuxIsPowered == 1 then
+        extra = extra .. "Desktop Computer (0.02 L/h) <LINE> "
+    end
+    if modData.ATMIsPowered == 1 then
+        extra = extra .. "ATM (0.01 L/h) <LINE> "
+    end
+    if extra ~= "" then
+        -- Vanilla text may end with the red indoor-generator warning.
+        text = text .. " <LINE> <RGB:1,1,1> <INDENT:10> " .. extra
+    end
+    return text
 end
 
 function PZLinuxUseFuel()

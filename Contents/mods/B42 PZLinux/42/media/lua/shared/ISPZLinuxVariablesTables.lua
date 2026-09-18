@@ -21,6 +21,7 @@ require "PZLinux/PZLinuxEconomy"
 require "PZLinux/PZLinuxInventoryCash"
 require "PZLinux/PZLinuxPokerConfig"
 require "PZLinux/PZLinuxPokerEngine"
+require "PZLinux/PZLinuxBlackjackEngine"
 
 function PZLinux.getPlayer(player)
     if player and type(player) == "number" and getSpecificPlayer then
@@ -149,6 +150,9 @@ PZLinux.TextFallbacks = PZLinux.TextFallbacks or {
     IGUI_PZLinux_Betting_Dealer = "Dealer: ",
     IGUI_PZLinux_Betting_Player = "Player: ",
     IGUI_PZLinux_Betting_Payout = "Payout: $",
+    IGUI_PZLinux_Betting_BlackjackShoe = "Shoe: %s deck(s), %s cards left",
+    IGUI_PZLinux_Betting_BlackjackShoeIdle = "Shoe: %s deck(s)",
+    IGUI_PZLinux_Betting_BlackjackShuffled = "Shuffled",
     IGUI_PZLinux_Betting_PokerLobby = "TEXAS HOLD'EM LOBBY",
     IGUI_PZLinux_Betting_PokerBuyIn = "Buy-in",
     IGUI_PZLinux_Betting_PokerInvalidBuyIn = "Buy-in outside lobby limits",
@@ -730,17 +734,10 @@ function PZLinuxApplyInterruptedSessionRollbacks(player)
             local credit = PZLinuxApplyBankCredit(playerObj, amount, "rollback-blackjack", blackjack.requestId)
             applied.blackjack = credit.amount or amount
         end
-        -- Temporary diagnostic logging for a reported bug (a Blackjack bet
-        -- sometimes not actually being lost -- balance unchanged after a
-        -- loss, "like free gambling"). This refund path exists to make a
-        -- player whole if their hand never gets a Finish call (server
-        -- restart/reload mid-hand, since PZLinux.blackjackSessions is
-        -- memory-only while this interrupted-session flag is persisted in
-        -- modData) -- but it runs before EVERY single idempotent command,
-        -- for any reason, so if it is ever misfiring on top of a hand that
-        -- actually did resolve normally, this is exactly where a spurious
-        -- refund canceling out a real loss would happen. Safe to remove
-        -- once the root cause is confirmed.
+        -- Rollback audit trail: this refund path exists to make a player
+        -- whole if their hand never gets a Finish call (server restart/reload
+        -- mid-hand, since PZLinux.blackjackSessions is memory-only while this
+        -- interrupted-session flag is persisted in modData).
         print(string.format(
             "[PZLinux Blackjack] ROLLBACK player=%s originalRequestId=%s amount=%d",
             tostring(playerKey), tostring(blackjack.requestId), amount))
@@ -1201,64 +1198,22 @@ end
 
 require "PZLinux/PZLinuxDarkWeb"
 
-local PZLINUX_BLACKJACK_RANKS = PZLinux.Config.Blackjack.ranks
-local PZLINUX_BLACKJACK_SUITS = PZLinux.Config.Blackjack.suits
-local PZLINUX_BLACKJACK_RANK_LABELS = { A = "A", T = "10", J = "J", Q = "Q", K = "K" }
-local PZLINUX_BLACKJACK_SUIT_LABELS = { C = "C", D = "D", H = "H", S = "S" }
-
-function PZLinuxBlackjackCreateDeck()
-    local deck = {}
-    for _, suit in ipairs(PZLINUX_BLACKJACK_SUITS) do
-        for _, rank in ipairs(PZLINUX_BLACKJACK_RANKS) do
-            table.insert(deck, {
-                rank = rank,
-                suit = suit,
-                label = (PZLINUX_BLACKJACK_RANK_LABELS[rank] or rank) .. (PZLINUX_BLACKJACK_SUIT_LABELS[suit] or suit),
-            })
-        end
-    end
-
-    for i = #deck, 2, -1 do
-        local j = ZombRand(1, i + 1)
-        deck[i], deck[j] = deck[j], deck[i]
-    end
-
-    return deck
-end
-
+-- Hands are dealt from a persistent multi-deck shoe (PZLinuxBlackjackEngine.lua)
+-- rather than from a freshly shuffled 52-card deck every hand, so that cards
+-- already dealt stay gone and the shoe can be counted.
 function PZLinuxBlackjackDraw(deck)
     if not deck or #deck == 0 then return nil end
     return table.remove(deck, #deck)
 end
 
-function PZLinuxBlackjackCardValue(card)
-    if not card then return 0 end
-    if card.rank == "A" then return 11 end
-    if card.rank == "K" or card.rank == "Q" or card.rank == "J" then return 10 end
-    return tonumber(card.rank) or 0
-end
-
-function PZLinuxBlackjackHandValue(hand)
-    local value = 0
-    local aces = 0
-
-    for _, card in ipairs(hand or {}) do
-        value = value + PZLinuxBlackjackCardValue(card)
-        if card.rank == "A" then
-            aces = aces + 1
-        end
+-- Every card a hand takes comes off the session's shoe, never off a private
+-- copy: a card dealt now has to still be missing from the shoe on the next
+-- hand, or counting it was pointless.
+function PZLinuxBlackjackSessionDraw(session)
+    if session and session.shoe then
+        return PZLinuxBlackjackShoeDraw(session.shoe)
     end
-
-    while value > 21 and aces > 0 do
-        value = value - 10
-        aces = aces - 1
-    end
-
-    return value
-end
-
-function PZLinuxBlackjackIsNatural(hand)
-    return hand and #hand == 2 and PZLinuxBlackjackHandValue(hand) == 21
+    return PZLinuxBlackjackDraw(session and session.deck)
 end
 
 function PZLinuxBlackjackCopyHand(hand, hideHole)
@@ -1281,8 +1236,84 @@ function PZLinuxBlackjackOutcomeMessage(outcome)
     return "Playing..."
 end
 
+local PZLINUX_BLACKJACK_LOG_FIELD_ORDER = {
+    "player", "requestId", "originalRequestId", "table", "action",
+    "result", "reason", "outcome", "amount", "bet", "payout",
+    "balanceBefore", "balanceAfter", "playerValueBefore", "playerValue",
+    "dealerValueBefore", "dealerValue", "playerCardsBefore", "playerCards",
+    "dealerCardsBefore", "dealerCards", "dealerHidden", "shoeDecks",
+    "shoeRemainingBefore", "shoeRemaining", "shoeShuffleId",
+    "shoeShuffled", "staleSessionPresent", "staleSessionFinished",
+    "finished", "forfeited",
+}
+
+local function PZLinuxBlackjackLogValue(value)
+    if value == nil then return "nil" end
+    local text = tostring(value)
+    if text == "" or string.find(text, "%s") or string.find(text, "\"", 1, true) then
+        text = string.gsub(text, "\\", "\\\\")
+        text = string.gsub(text, "\"", "\\\"")
+        return "\"" .. text .. "\""
+    end
+    return text
+end
+
+local function PZLinuxBlackjackPlayerKey(player)
+    local ok, key = pcall(PZLinuxGetPlayerKey, player)
+    if ok and key then return key end
+    return tostring(player)
+end
+
+local function PZLinuxBlackjackLog(kind, fields)
+    fields = fields or {}
+    local parts = { "[PZLinux Blackjack] " .. tostring(kind) }
+    for _, key in ipairs(PZLINUX_BLACKJACK_LOG_FIELD_ORDER) do
+        if fields[key] ~= nil then
+            table.insert(parts, key .. "=" .. PZLinuxBlackjackLogValue(fields[key]))
+        end
+    end
+    print(table.concat(parts, " "))
+end
+
+local function PZLinuxBlackjackLogSnapshot(session)
+    if not session then return {} end
+    local shoe = session.shoe
+    local hideDealerHole = not session.finished
+    return {
+        playerValue = PZLinuxBlackjackHandValue(session.playerHand),
+        dealerValue = hideDealerHole
+            and PZLinuxBlackjackCardValue(session.dealerHand and session.dealerHand[1])
+            or PZLinuxBlackjackHandValue(session.dealerHand),
+        playerCards = #(session.playerHand or {}),
+        dealerCards = #(session.dealerHand or {}),
+        dealerHidden = hideDealerHole == true,
+        shoeDecks = shoe and shoe.decks,
+        shoeRemaining = shoe and shoe.cards and #shoe.cards,
+        shoeShuffleId = shoe and shoe.shuffleId,
+        shoeShuffled = shoe ~= nil and shoe.shuffled == true,
+        finished = session.finished == true,
+    }
+end
+
+local function PZLinuxBlackjackLogAction(kind, player, session, requestId, fields)
+    fields = fields or {}
+    local snapshot = PZLinuxBlackjackLogSnapshot(session)
+    if fields.player == nil then fields.player = PZLinuxBlackjackPlayerKey(player) end
+    if fields.requestId == nil then fields.requestId = requestId or (session and session.requestId) end
+    if fields.table == nil then fields.table = session and session.tableId end
+    if fields.action == nil then fields.action = string.lower(tostring(kind)) end
+    if fields.bet == nil then fields.bet = session and session.bet end
+    if fields.payout == nil then fields.payout = session and session.payout end
+    if fields.outcome == nil then fields.outcome = session and session.outcome end
+    for key, value in pairs(snapshot) do
+        if fields[key] == nil then fields[key] = value end
+    end
+    PZLinuxBlackjackLog(kind, fields)
+end
+
 function PZLinuxBlackjackBuildState(player, session)
     local hideDealerHole = not session.finished
+    local shoeState = PZLinuxBlackjackShoeState(session.shoe)
     return {
         ok = true,
         requestId = session.requestId,
@@ -1299,35 +1330,40 @@ function PZLinuxBlackjackBuildState(player, session)
         playerValue = PZLinuxBlackjackHandValue(session.playerHand),
         dealerValue = hideDealerHole and PZLinuxBlackjackCardValue(session.dealerHand[1]) or PZLinuxBlackjackHandValue(session.dealerHand),
         dealerHidden = hideDealerHole,
+        -- Shoe shape only (decks, cards left, whether a shuffle has happened
+        -- since the previous hand), never its composition: the player has to
+        -- do the counting themselves, from the cards they were actually
+        -- shown. What this does give them is the two facts a counter cannot
+        -- infer from the table alone -- how deep the shoe is, and when it was
+        -- reshuffled out from under their count. The shuffled flag is read
+        -- live from the shoe rather than captured when the hand was dealt,
+        -- since with no cut card a hand can empty the shoe part way through.
+        -- shoeShuffleId is the one to trust at a shared table: the flag only
+        -- covers shuffles since this player's own previous hand, while the id
+        -- also catches a shoe another player at the table turned over.
+        shoeDecks = shoeState and shoeState.decks,
+        shoeSize = shoeState and shoeState.size,
+        shoeRemaining = shoeState and shoeState.remaining,
+        shoeShuffleId = shoeState and shoeState.shuffleId,
+        shoeShuffled = shoeState ~= nil and shoeState.shuffled == true,
     }
 end
 
 function PZLinuxBlackjackFinish(player, session, outcome)
     session.finished = true
     session.outcome = outcome
-    session.payout = 0
-
-    if outcome == "blackjack" then
-        session.payout = math.floor(session.bet * 2.5)
-    elseif outcome == "win" then
-        session.payout = session.bet * 2
-    elseif outcome == "push" then
-        session.payout = session.bet
-    end
+    session.payout = PZLinuxBlackjackPayout(outcome, session.bet)
 
     if session.payout > 0 then
         PZLinuxApplyBankCredit(player, session.payout, "blackjack", session.requestId)
     end
 
-    -- Temporary diagnostic logging, see PZLinuxBlackjackStart. Logs the
-    -- final outcome, bet and payout for every hand, so a server log can be
-    -- matched up against the START logs to see exactly which hands did or
-    -- didn't actually move money. Safe to remove once the root cause is
-    -- confirmed.
-    print(string.format(
-        "[PZLinux Blackjack] FINISH player=%s requestId=%s outcome=%s bet=%d payout=%d",
-        tostring(PZLinuxGetPlayerKey(player)), tostring(session.requestId), tostring(outcome),
-        session.bet, session.payout))
+    PZLinuxBlackjackLogAction("FINISH", player, session, session.requestId, {
+        action = "finish",
+        result = "settled",
+        outcome = outcome,
+        balanceAfter = PZLinuxLoadBankBalance(player),
+    })
 
     PZLinuxClearInterruptedSession(player, "blackjack")
     local state = PZLinuxBlackjackBuildState(player, session)
@@ -1345,9 +1381,23 @@ function PZLinuxBlackjackStart(player, tableId, amount, requestId)
     -- PZLinuxBlackjackGetTable in PZLinuxConfig.lua.
     local tableDef = PZLinuxBlackjackGetTable(tableId)
     if not tableDef then
+        PZLinuxBlackjackLogAction("ACTION REJECT", player, nil, requestId, {
+            table = tableId,
+            action = "start",
+            reason = "invalid_table",
+            amount = amount,
+            balanceAfter = PZLinuxLoadBankBalance(player),
+        })
         return { ok = false, error = "invalid_table", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
     end
     if amount < tableDef.minBet or amount > tableDef.maxBet then
+        PZLinuxBlackjackLogAction("ACTION REJECT", player, nil, requestId, {
+            table = tableId,
+            action = "start",
+            reason = "bet_out_of_range",
+            amount = amount,
+            balanceAfter = PZLinuxLoadBankBalance(player),
+        })
         return {
             ok = false,
             error = "bet_out_of_range",
@@ -1359,21 +1409,25 @@ function PZLinuxBlackjackStart(player, tableId, amount, requestId)
         }
     end
 
-    -- Temporary diagnostic logging for a reported bug (bets sometimes not
-    -- taken, letting several hands be played "for free"). Logs whether a
-    -- previous session was still sitting around unfinished when a new hand
-    -- starts, and the exact debit outcome/balance for every single hand.
-    -- Safe to remove once the root cause is confirmed.
     local staleSession = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
-    print(string.format(
-        "[PZLinux Blackjack] START player=%s requestId=%s table=%s amount=%d staleSessionPresent=%s staleSessionFinished=%s",
-        tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), tostring(tableId), amount,
-        tostring(staleSession ~= nil), tostring(staleSession and staleSession.finished)))
+    PZLinuxBlackjackLogAction("START", player, nil, requestId, {
+        table = tableId,
+        action = "start",
+        amount = amount,
+        balanceBefore = PZLinuxLoadBankBalance(player),
+        staleSessionPresent = staleSession ~= nil,
+        staleSessionFinished = staleSession and staleSession.finished == true,
+    })
 
     local debit = PZLinuxApplyBankDebit(player, amount, "blackjack", requestId)
-    print(string.format(
-        "[PZLinux Blackjack] START DEBIT player=%s requestId=%s ok=%s balanceAfter=%s",
-        tostring(PZLinuxGetPlayerKey(player)), tostring(requestId), tostring(debit.ok), tostring(debit.balance)))
+    PZLinuxBlackjackLogAction("START DEBIT", player, nil, requestId, {
+        table = tableId,
+        action = "start",
+        result = debit.ok and "debited" or "debit_failed",
+        amount = amount,
+        balanceBefore = debit.previousBalance,
+        balanceAfter = debit.balance,
+    })
     if not debit.ok then
         debit.game = "blackjack"
         return debit
@@ -1384,28 +1438,46 @@ function PZLinuxBlackjackStart(player, tableId, amount, requestId)
         requestId = requestId,
     })
 
-    local deck = PZLinuxBlackjackCreateDeck()
+    -- The shoe belongs to the table, not to this hand or this player: it is
+    -- dealt all the way down and only reshuffled once it is out of cards, and
+    -- in multiplayer every player at the same table draws from that one shared
+    -- shoe. See PZLinuxBlackjackEngine.lua.
+    local shoe = PZLinuxBlackjackShoeAcquire(tableDef)
+
+    -- Dealt one card at a time, in the real table order (player, dealer,
+    -- player, dealer's hole card), rather than both of one hand and then both
+    -- of the other -- with a shoe that persists, the order cards leave it is
+    -- part of what a player is watching.
+    local playerFirst = PZLinuxBlackjackShoeDraw(shoe)
+    local dealerUp = PZLinuxBlackjackShoeDraw(shoe)
+    local playerSecond = PZLinuxBlackjackShoeDraw(shoe)
+    local dealerHole = PZLinuxBlackjackShoeDraw(shoe)
+
     local session = {
         requestId = requestId,
         tableId = tableId,
         bet = amount,
         previousBalance = debit.previousBalance,
-        deck = deck,
-        playerHand = { PZLinuxBlackjackDraw(deck), PZLinuxBlackjackDraw(deck) },
-        dealerHand = { PZLinuxBlackjackDraw(deck), PZLinuxBlackjackDraw(deck) },
+        shoe = shoe,
+        deck = shoe.cards,
+        playerHand = { playerFirst, playerSecond },
+        dealerHand = { dealerUp, dealerHole },
         finished = false,
     }
 
     PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)] = session
 
-    local playerNatural = PZLinuxBlackjackIsNatural(session.playerHand)
-    local dealerNatural = PZLinuxBlackjackIsNatural(session.dealerHand)
-    if playerNatural and dealerNatural then
-        return PZLinuxBlackjackFinish(player, session, "push")
-    elseif playerNatural then
-        return PZLinuxBlackjackFinish(player, session, "blackjack")
-    elseif dealerNatural then
-        return PZLinuxBlackjackFinish(player, session, "lose")
+    PZLinuxBlackjackLogAction("DEAL", player, session, requestId, {
+        action = "deal",
+        result = "dealt",
+        amount = amount,
+        balanceBefore = debit.previousBalance,
+        balanceAfter = debit.balance,
+    })
+
+    local naturalOutcome = PZLinuxBlackjackResolveNaturals(session.playerHand, session.dealerHand)
+    if naturalOutcome then
+        return PZLinuxBlackjackFinish(player, session, naturalOutcome)
     end
 
     return PZLinuxBlackjackBuildState(player, session)
@@ -1414,39 +1486,68 @@ end
 function PZLinuxBlackjackHit(player, requestId)
     local session = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
     if not session then
+        PZLinuxBlackjackLogAction("ACTION REJECT", player, nil, requestId, {
+            action = "hit",
+            reason = "no_blackjack_session",
+            balanceAfter = PZLinuxLoadBankBalance(player),
+        })
         return { ok = false, error = "no_blackjack_session", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
     end
 
+    local before = PZLinuxBlackjackLogSnapshot(session)
     session.requestId = requestId or session.requestId
-    table.insert(session.playerHand, PZLinuxBlackjackDraw(session.deck))
+    table.insert(session.playerHand, PZLinuxBlackjackSessionDraw(session))
     if PZLinuxBlackjackHandValue(session.playerHand) > 21 then
+        PZLinuxBlackjackLogAction("HIT", player, session, requestId, {
+            action = "hit",
+            result = "bust",
+            playerValueBefore = before.playerValue,
+            playerCardsBefore = before.playerCards,
+            shoeRemainingBefore = before.shoeRemaining,
+        })
         return PZLinuxBlackjackFinish(player, session, "lose")
     end
 
+    PZLinuxBlackjackLogAction("HIT", player, session, requestId, {
+        action = "hit",
+        result = "drawn",
+        playerValueBefore = before.playerValue,
+        playerCardsBefore = before.playerCards,
+        shoeRemainingBefore = before.shoeRemaining,
+    })
     return PZLinuxBlackjackBuildState(player, session)
 end
 
 function PZLinuxBlackjackStand(player, requestId)
     local session = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
     if not session then
+        PZLinuxBlackjackLogAction("ACTION REJECT", player, nil, requestId, {
+            action = "stand",
+            reason = "no_blackjack_session",
+            balanceAfter = PZLinuxLoadBankBalance(player),
+        })
         return { ok = false, error = "no_blackjack_session", requestId = requestId, balance = PZLinuxLoadBankBalance(player) }
     end
 
+    local before = PZLinuxBlackjackLogSnapshot(session)
     session.requestId = requestId or session.requestId
-    while PZLinuxBlackjackHandValue(session.dealerHand) < 17 do
-        table.insert(session.dealerHand, PZLinuxBlackjackDraw(session.deck))
+    while PZLinuxBlackjackDealerShouldHit(session.dealerHand) do
+        table.insert(session.dealerHand, PZLinuxBlackjackSessionDraw(session))
     end
 
-    local playerValue = PZLinuxBlackjackHandValue(session.playerHand)
-    local dealerValue = PZLinuxBlackjackHandValue(session.dealerHand)
+    PZLinuxBlackjackLogAction("STAND", player, session, requestId, {
+        action = "stand",
+        result = "dealer_resolved",
+        dealerValueBefore = before.dealerValue,
+        dealerCardsBefore = before.dealerCards,
+        shoeRemainingBefore = before.shoeRemaining,
+    })
 
-    if dealerValue > 21 or playerValue > dealerValue then
-        return PZLinuxBlackjackFinish(player, session, "win")
-    elseif playerValue == dealerValue then
-        return PZLinuxBlackjackFinish(player, session, "push")
-    end
+    local outcome = PZLinuxBlackjackResolveStand(
+        PZLinuxBlackjackHandValue(session.playerHand),
+        PZLinuxBlackjackHandValue(session.dealerHand))
 
-    return PZLinuxBlackjackFinish(player, session, "lose")
+    return PZLinuxBlackjackFinish(player, session, outcome)
 end
 
 -- Closing/minimizing the betting panel mid-hand used to just abandon the
@@ -1462,9 +1563,22 @@ end
 function PZLinuxBlackjackForfeit(player, requestId)
     local session = PZLinux.blackjackSessions[PZLinuxGetPlayerKey(player)]
     if not session or session.finished then
+        PZLinuxBlackjackLogAction("FORFEIT", player, session, requestId, {
+            action = "forfeit",
+            result = "noop",
+            reason = session and "already_finished" or "no_blackjack_session",
+            forfeited = false,
+            balanceAfter = PZLinuxLoadBankBalance(player),
+        })
         return { ok = true, requestId = requestId, forfeited = false, balance = PZLinuxLoadBankBalance(player) }
     end
 
+    session.requestId = requestId or session.requestId
+    PZLinuxBlackjackLogAction("FORFEIT", player, session, requestId, {
+        action = "forfeit",
+        result = "settling_push",
+        forfeited = true,
+    })
     local state = PZLinuxBlackjackFinish(player, session, "push")
     state.forfeited = true
     return state

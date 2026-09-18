@@ -1,8 +1,8 @@
-version=1.0.19
+version=1.0.20
 id=3414468585
 title=PZLinux
 
-[h1]PZLinux 1.0.19[/h1]
+[h1]PZLinux 1.0.20[/h1]
 
 PZLinux gives cash a purpose in Project Zomboid by adding a persistent apocalypse
 economy accessed through computers, ATMs and mailboxes.
@@ -33,8 +33,8 @@ cards and rewards are validated by the server in multiplayer.
 
 [h2]Online Betting[/h2]
 
-Bet on Zombie Races, play Blackjack with a real 52-card deck, or join a six-seat
-Texas Hold'em Poker table against AI opponents.
+Bet on Zombie Races, play Blackjack from a persistent per-table shoe, or join a
+six-seat Texas Hold'em Poker table against AI opponents.
 
 [h2]Solo and Multiplayer[/h2]
 
